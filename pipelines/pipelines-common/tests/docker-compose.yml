@@ -139,7 +139,7 @@ services:
   python-uv:
     profiles:
       - tests
-    image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
     working_dir: /opt/app
     environment:
       - UV_LINK_MODE=copy

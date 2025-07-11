@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --script
 # /// script
-# requires-python = ">=3.12"
+# requires-python = "==3.13.*"
 # dependencies = [
 #     "pandas>=2.2.3,<2.3.0",
 #     "pipelines-common",

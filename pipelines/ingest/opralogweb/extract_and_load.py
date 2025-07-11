@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --script
 # /// script
-# requires-python = ">=3.12"
+# requires-python = "==3.13.*"
 # dependencies = [
 #     "dlt[sql-database]>=1.10.0,<1.11.0",
 #     "html2text==2025.4.15",

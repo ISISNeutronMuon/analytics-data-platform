@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.12"
+# requires-python = "==3.13.*"
 # dependencies = [
 #     "requests",
 # ]
@@ -15,6 +15,7 @@ The following environment variables are required:
 - LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL
 - LAKEKEEPER_BOOTSTRAP__WAREHOUSE_JSON_FILE
 """
+
 import dataclasses
 import json
 from pathlib import Path
