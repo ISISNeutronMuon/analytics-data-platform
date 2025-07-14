@@ -18,3 +18,4 @@ docker_daemon_options:
 
 docker_users:
   - "{{ openstack_vm_user }}"
+  - "{{ lookup('env', 'USER') }}"
