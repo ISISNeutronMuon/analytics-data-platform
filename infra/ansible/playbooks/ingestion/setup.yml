@@ -4,7 +4,7 @@
   hosts: ingestion
   vars:
     uv_python_version: "3.12"
-    ingestion_elt_git_url: https://github.com/ISISNeutronMuon/ddf-lakehouse-prototype.git
+    ingestion_elt_git_url: https://github.com/ISISNeutronMuon/analytics-data-platform.git
     ingestion_elt_git_dest: "{{ ansible_env['HOME'] }}/var/elt_sources"
     ingestion_elt_cron_scripts_dir: "{{ ansible_env['HOME'] }}/etc/cron"
     ingestion_elt_cron_log_dir: "{{ ansible_env['HOME'] }}/var/log/elt-pipelines/cron"
