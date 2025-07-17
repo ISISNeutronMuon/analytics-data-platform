@@ -16,9 +16,10 @@ steps have been followed generate a certificate for local development:
 ```sh
 cd certs
 mkcert analytics.dev
+cat analytics.dev.pem analytics.dev-key.pem > analytics.dev-combined.pem
 ```
 
-The configurations defined below will expect the generated files to be found in the `certs` subdirectory.
+The configuration defined below will expect the generated files to be found in the `certs` subdirectory.
 
 ## Services
 

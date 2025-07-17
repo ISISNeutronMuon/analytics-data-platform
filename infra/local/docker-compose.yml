@@ -1,0 +1,277 @@
+# A development stack to emulate the Lakehouse. This is intended for local development.
+#
+# Prerequisites:
+#
+#   - A /etc/hosts entry "127.0.0.1  analytics.dev"
+#
+# The standard port for TLS (443) can be used some processes, e.g. the Rancher Desktop ssh socket.
+# For simplicity port 8443 is used externally to route to port 443 internally.
+# The base address of all services is therefore "https://analytics.dev:8443"
+
+# image versions
+x-traefik-image: &traefik-image traefik:v3.4.4
+x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-06-13T11-33-47Z
+x-postgres-image: &postgres-image postgres:16.9-bookworm
+x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.9.2
+
+services:
+  #########################################################
+  # Ingress
+  #########################################################
+  traefik:
+    container_name: local-lakehouse-traefik
+    image: *traefik-image
+    ports:
+      - "8443:443"
+    volumes:
+      - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
+      - "./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
+      - "./certs:/certs"
+    networks:
+      local-lakehouse-net:
+
+  #########################################################
+  # Database shared by all services
+  #########################################################
+  shared-database:
+    container_name: local-lakehouse-shared-database
+    image: *postgres-image
+    environment:
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DATABASE: unused
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USERNAME -p 5432"]
+      interval: 2s
+      timeout: 10s
+      retries: 2
+      start_period: 10s
+    networks:
+      - local-lakehouse-net
+
+  shared-database-createdatabases:
+    container_name: local-lakehouse-shared-database-createdatabases
+    image: *postgres-image
+    restart: "no"
+    environment:
+      PGPASSWORD: postgres
+    depends_on:
+      shared-database:
+        condition: service_healthy
+    entrypoint: |
+      /bin/bash -c "
+      create_db_if_not_exists() {
+        psql -v ON_ERROR_STOP=1 --host shared-database --username postgres <<-EOSQL
+          SELECT 'CREATE DATABASE $1' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$1')\\gexec
+      EOSQL
+      }
+      create_db_if_not_exists lakekeeper
+      "
+    networks:
+      - local-lakehouse-net
+
+  #########################################################
+  # Keycloak - Identity provider
+  #########################################################
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    depends_on:
+      shared-database:
+        condition: service_healthy
+    # volumes:
+    #   - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'exec 3<>/dev/tcp/127.0.0.1/8080;echo -e "GET /realms/master/.well-known/openid-configuration HTTP/1.1\r\nhost: 127.0.0.1:8080\r\nConnection: close\r\n\r\n" >&3;grep "jwks_uri"  <&3',
+        ]
+      interval: 2s
+      timeout: 10s
+      retries: 2
+      start_period: 60s
+    command:
+      [
+        "start-dev",
+        "--hostname=https://analytics.dev:8443/keycloak",
+        "--proxy-headers=xforwarded",
+        "--metrics-enabled=true",
+        "--health-enabled=true",
+#        "--import-realm",
+        "--verbose",
+        "--log-level=DEBUG",
+        "--features=token-exchange",
+      ]
+    networks:
+      - local-lakehouse-net
+
+  #########################################################
+  # MinIO - Object store emulating the Ceph object store
+  # in SCD. This does not exist in production
+  #########################################################
+  minio:
+    container_name: local-lakehouse-minio
+    image: *minio-image
+    environment:
+      MINIO_ROOT_USER: minio-root-user
+      MINIO_ROOT_PASSWORD: minio-root-password
+      MINIO_API_PORT_NUMBER: 9000
+      MINIO_CONSOLE_PORT_NUMBER: 9001
+      MINIO_SCHEME: http
+      # This needs to match the route in traefik/traefik-dynamic.yml
+      MINIO_BROWSER_REDIRECT_URL: https://analytics.dev:8443/lakekeeper
+    command: ["server", "/data", "--console-address", ":9001"]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - local-lakehouse-net
+
+  minio-createbucket:
+    depends_on:
+      minio:
+        condition: service_healthy
+    image: quay.io/minio/mc:RELEASE.2025-05-21T01-59-54Z
+    environment:
+      MINIO_ROOT_USER: minio-root-user
+      MINIO_ROOT_PASSWORD: minio-root-password
+      MINIO_BUCKET_NAME: local-lakehouse-isis
+    entrypoint: |
+      /bin/sh -c "
+      /usr/bin/mc alias set minio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} \
+      if ! /usr/bin/mc ls minio/$${MINIO_BUCKET_NAME}; then \
+        echo \"Bucket '$${MINIO_BUCKET_NAME}' not found, creating...\" \
+        /usr/bin/mc mb minio/$${MINIO_BUCKET_NAME}; \
+        echo \"Bucket '$${MINIO_BUCKET_NAME}' created.\" \
+      else \
+        echo \"Found bucket '$${MINIO_BUCKET_NAME}'\" \
+      fi \
+      "
+    networks:
+      - local-lakehouse-net
+
+  #########################################################
+  # Lakekeeper - Iceberg REST catalog
+  #########################################################
+  lakekeeper:
+    container_name: local-lakehouse-lakekeeper
+    image: *lakekeeper-image
+    environment:
+      - LAKEKEEPER__PG_ENCRYPTION_KEY=This-is-NOT-Secure!
+      - LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://postgres:postgres@shared-database:5432/lakekeeper
+      - LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://postgres:postgres@shared-database:5432/lakekeeper
+      - RUST_LOG=trace,lakekeeper=trace,lakekeeper_bin=trace,iceberg_ext=trace
+    command: ["serve"]
+    healthcheck:
+      test: ["CMD", "/home/nonroot/lakekeeper", "healthcheck"]
+      interval: 1s
+      timeout: 10s
+      retries: 3
+      start_period: 3s
+    depends_on:
+      lakekeeper-migrate:
+        condition: service_completed_successfully
+      shared-database:
+        condition: service_healthy
+      minio-createbucket:
+        condition: service_completed_successfully
+    networks:
+      - local-lakehouse-net
+
+  lakekeeper-migrate:
+    container_name: local-lakehouse-lakekeeper-migrate
+    image: *lakekeeper-image
+    environment:
+      LAKEKEEPER__PG_ENCRYPTION_KEY: This-is-NOT-Secure!
+      LAKEKEEPER__PG_DATABASE_URL_READ: postgresql://postgres:postgres@shared-database:5432/lakekeeper
+      LAKEKEEPER__PG_DATABASE_URL_WRITE: postgresql://postgres:postgres@shared-database:5432/lakekeeper
+      RUST_LOG: info
+    restart: "no"
+    command: ["migrate"]
+    depends_on:
+      shared-database-createdatabases:
+        condition: service_completed_successfully
+    networks:
+      - local-lakehouse-net
+
+  lakekeeper-createwarehouse:
+    container_name: local-lakehouse-lakekeeper-createwarehouse
+    image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
+    environment:
+      UV_LINK_MODE: copy
+      UV_PROJECT_ENVIRONMENT: /opt/uv-venv
+      LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL: http://lakekeeper:8181
+      LAKEKEEPER_BOOTSTRAP__WAREHOUSE_JSON_FILE: /opt/work/bootstrap-warehouse.json
+    command: ["uv", "run", "/opt/work/bootstrap-warehouse.py"]
+    depends_on:
+      lakekeeper:
+        condition: service_healthy
+      minio-createbucket:
+        condition: service_completed_successfully
+    volumes:
+      - "../deployment/roles/lakekeeper/files/bootstrap-warehouse-no-auth.py:/opt/work/bootstrap-warehouse.py"
+      - "./lakekeeper/bootstrap-warehouse.json:/opt/work/bootstrap-warehouse.json"
+    networks:
+      - local-lakehouse-net
+
+networks:
+  local-lakehouse-net:
+    name: local-lakehouse-net
+
+  # lakekeeper:
+  #   image: ${LAKEKEEPER_TEST__SERVER_IMAGE:-quay.io/lakekeeper/catalog:latest-main}
+  #   pull_policy: always
+  #   environment:
+  #     - LAKEKEEPER__PG_ENCRYPTION_KEY=This-is-NOT-Secure!
+  #     - LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://postgres:postgres@db:5432/postgres
+  #     - LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://postgres:postgres@db:5432/postgres
+  #     - LAKEKEEPER__AUTHZ_BACKEND=openfga
+  #     - LAKEKEEPER__OPENFGA__ENDPOINT=http://openfga:8081
+  #     - LAKEKEEPER__OPENID_PROVIDER_URI=http://keycloak:8080/realms/iceberg
+  #     - LAKEKEEPER__OPENID_ADDITIONAL_ISSUERS=http://localhost:30080/realms/iceberg
+  #     - LAKEKEEPER__OPENID_AUDIENCE=lakekeeper
+  #     - LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
+  #     - LAKEKEEPER__UI__OPENID_PROVIDER_URI=http://localhost:30080/realms/iceberg
+  #     - LAKEKEEPER__OPENFGA__CLIENT_ID=openfga
+  #     - LAKEKEEPER__OPENFGA__CLIENT_SECRET=xqE1vUrifVDKAZdLuz6JAnDxMYLdGu5z
+  #     - LAKEKEEPER__OPENFGA__TOKEN_ENDPOINT=http://keycloak:8080/realms/iceberg/protocol/openid-connect/token
+  #     - RUST_LOG=info,lakekeeper=trace,middle=trace
+  #   command: [ "serve" ]
+  #   healthcheck:
+  #     test: [ "CMD", "/home/nonroot/lakekeeper", "healthcheck" ]
+  #     interval: 1s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 3s
+  #   depends_on:
+  #     migrate:
+  #       condition: service_completed_successfully
+  #     db:
+  #       condition: service_healthy
+  #     minio:
+  #       condition: service_healthy
+  #   ports:
+  #     - "8181:8181"
+  #   networks:
+  #     iceberg_net:
+
+  # trino:
+  #   image: trinodb/trino:467
+  #   environment:
+  #     - CATALOG_MANAGEMENT=dynamic
+  #   healthcheck:
+  #     test: [ "CMD", "curl", "-I", "http://localhost:8080/v1/status" ]
+  #     interval: 2s
+  #     timeout: 10s
+  #     retries: 2
+  #     start_period: 10s
+  #   ports:
+  #     - "9999:8080"
+  #   networks:
+  #     - iceberg_net
