@@ -1,0 +1,70 @@
+tls:
+  certificates:
+    - certFile: /certs/analytics.dev.pem
+      keyFile: /certs/analytics.dev-key.pem
+
+http:
+  routers:
+    traefik:
+      entryPoints: websecure
+      rule: Host(`analytics.dev`) && (PathPrefix(`/traefik`) || HeaderRegexp(`Referer`, `/traefik`))
+      service: api@internal
+      middlewares:
+        - traefik-strip-prefix
+      tls: {}
+
+    keycloak:
+      entryPoints: websecure
+      rule: Host(`analytics.dev`) && PathPrefix(`/keycloak`)
+      middlewares:
+        - keycloak-strip-prefix
+      service: keycloak
+      tls: {}
+
+    minio:
+      entryPoints: websecure
+      rule: Host(`analytics.dev`) && PathPrefix(`/minio`)
+      middlewares:
+        - minio-strip-prefix
+      service: minio
+      tls: {}
+
+    lakekeeper:
+      entryPoints: websecure
+      rule: Host(`analytics.dev`) && PathPrefix(`/lakekeeper`)
+      middlewares:
+        - lakekeeper-strip-prefix
+      service: lakekeeper
+      tls: {}
+
+  middlewares:
+    traefik-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/traefik"
+    keycloak-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/keycloak"
+    minio-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/minio"
+    lakekeeper-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/lakekeeper"
+
+  services:
+    keycloak:
+      loadBalancer:
+        servers:
+          - url: "http://keycloak:8080"
+    minio:
+      loadBalancer:
+        servers:
+          - url: "http://minio:9001"
+    lakekeeper:
+      loadBalancer:
+        servers:
+          - url: "http://lakekeeper:8181"
