@@ -21,12 +21,20 @@ http:
       service: keycloak
       tls: {}
 
-    minio:
+    minio-console:
       entryPoints: websecure
-      rule: Host(`analytics.dev`) && PathPrefix(`/minio`)
+      rule: Host(`analytics.dev`) && PathPrefix(`/minio/console`)
       middlewares:
-        - minio-strip-prefix
-      service: minio
+        - minio-console-strip-prefix
+      service: minio-console
+      tls: {}
+
+    minio-api:
+      entryPoints: websecure
+      rule: Host(`analytics.dev`) && PathPrefix(`/minio/api`)
+      middlewares:
+        - minio-api-strip-prefix
+      service: minio-api
       tls: {}
 
     lakekeeper:
@@ -35,6 +43,12 @@ http:
       middlewares:
         - lakekeeper-strip-prefix
       service: lakekeeper
+      tls: {}
+
+    trino:
+      entryPoints: trinosecure
+      rule: Host(`analytics.dev`) && PathPrefix(`/`)
+      service: trino
       tls: {}
 
   middlewares:
@@ -46,10 +60,14 @@ http:
       stripPrefix:
         prefixes:
           - "/keycloak"
-    minio-strip-prefix:
+    minio-console-strip-prefix:
       stripPrefix:
         prefixes:
-          - "/minio"
+          - "/minio/console"
+    minio-api-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/minio/api"
     lakekeeper-strip-prefix:
       stripPrefix:
         prefixes:
@@ -60,11 +78,19 @@ http:
       loadBalancer:
         servers:
           - url: "http://keycloak:8080"
-    minio:
+    minio-console:
       loadBalancer:
         servers:
           - url: "http://minio:9001"
+    minio-api:
+      loadBalancer:
+        servers:
+          - url: "http://minio:9000"
     lakekeeper:
       loadBalancer:
         servers:
           - url: "http://lakekeeper:8181"
+    trino:
+      loadBalancer:
+        servers:
+          - url: "http://trino:8080"
