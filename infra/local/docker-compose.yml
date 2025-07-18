@@ -9,10 +9,17 @@
 # The base address of all services is therefore "https://analytics.dev:8443"
 
 # image versions
-x-traefik-image: &traefik-image traefik:v3.4.4
+x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.1.4
+# We'll require a minimum of v0.9.3 due to https://github.com/lakekeeper/lakekeeper/pull/1248
+x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:4e126289-amd64
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-06-13T11-33-47Z
-x-postgres-image: &postgres-image postgres:16.9-bookworm
-x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.9.2
+x-postgres-image: &postgres-image ghcr.io/cloudnative-pg/postgresql:16.3-bookworm
+x-traefik-image: &traefik-image traefik:v3.4.4
+x-trino-image: &trino-image trinodb/trino:475
+
+# networks
+x-lakehouse-networks: &lakehouse-networks
+  - local-lakehouse-net
 
 services:
   #########################################################
@@ -23,12 +30,12 @@ services:
     image: *traefik-image
     ports:
       - "8443:443"
+      - "8444:8444"
     volumes:
       - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
       - "./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
       - "./certs:/certs"
-    networks:
-      local-lakehouse-net:
+    networks: *lakehouse-networks
 
   #########################################################
   # Database shared by all services
@@ -46,8 +53,9 @@ services:
       timeout: 10s
       retries: 2
       start_period: 10s
-    networks:
-      - local-lakehouse-net
+    networks: *lakehouse-networks
+    volumes:
+      - "shared_database_data:/var/lib/postgresql/data"
 
   shared-database-createdatabases:
     container_name: local-lakehouse-shared-database-createdatabases
@@ -67,47 +75,46 @@ services:
       }
       create_db_if_not_exists lakekeeper
       "
-    networks:
-      - local-lakehouse-net
+    networks: *lakehouse-networks
 
   #########################################################
   # Keycloak - Identity provider
   #########################################################
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.0.7
-    environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-    depends_on:
-      shared-database:
-        condition: service_healthy
-    # volumes:
-    #   - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          'exec 3<>/dev/tcp/127.0.0.1/8080;echo -e "GET /realms/master/.well-known/openid-configuration HTTP/1.1\r\nhost: 127.0.0.1:8080\r\nConnection: close\r\n\r\n" >&3;grep "jwks_uri"  <&3',
-        ]
-      interval: 2s
-      timeout: 10s
-      retries: 2
-      start_period: 60s
-    command:
-      [
-        "start-dev",
-        "--hostname=https://analytics.dev:8443/keycloak",
-        "--proxy-headers=xforwarded",
-        "--metrics-enabled=true",
-        "--health-enabled=true",
-#        "--import-realm",
-        "--verbose",
-        "--log-level=DEBUG",
-        "--features=token-exchange",
-      ]
-    networks:
-      - local-lakehouse-net
+  #   keycloak:
+  #     container_name: local-lakehouse-keycloak
+  #     image: *keycloak-image
+  #     environment:
+  #       KC_BOOTSTRAP_ADMIN_USERNAME: admin
+  #       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+  #     depends_on:
+  #       shared-database:
+  #         condition: service_healthy
+  #     # volumes:
+  #     #   - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json
+  #     healthcheck:
+  #       test:
+  #         [
+  #           "CMD-SHELL",
+  #           'exec 3<>/dev/tcp/127.0.0.1/8080;echo -e "GET /realms/master/.well-known/openid-configuration HTTP/1.1\r\nhost: 127.0.0.1:8080\r\nConnection: close\r\n\r\n" >&3;grep "jwks_uri"  <&3',
+  #         ]
+  #       interval: 2s
+  #       timeout: 10s
+  #       retries: 2
+  #       start_period: 60s
+  #     command:
+  #       [
+  #         "start-dev",
+  #         "--hostname=https://analytics.dev:8443/keycloak",
+  #         "--proxy-headers=xforwarded",
+  #         "--metrics-enabled=true",
+  #         "--health-enabled=true",
+  # #        "--import-realm",
+  #         "--verbose",
+  #         "--log-level=DEBUG",
+  #         "--features=token-exchange",
+  #       ]
+  #     networks: *lakehouse-networks
 
   #########################################################
   # MinIO - Object store emulating the Ceph object store
@@ -123,15 +130,18 @@ services:
       MINIO_CONSOLE_PORT_NUMBER: 9001
       MINIO_SCHEME: http
       # This needs to match the route in traefik/traefik-dynamic.yml
-      MINIO_BROWSER_REDIRECT_URL: https://analytics.dev:8443/lakekeeper
+      MINIO_BROWSER_REDIRECT_URL: https://analytics.dev:8443/minio/console
+    ports:
+      - "9000:9000"
     command: ["server", "/data", "--console-address", ":9001"]
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 30s
       timeout: 20s
       retries: 3
-    networks:
-      - local-lakehouse-net
+    networks: *lakehouse-networks
+    volumes:
+      - "minio_data:/data"
 
   minio-createbucket:
     depends_on:
@@ -153,8 +163,7 @@ services:
         echo \"Found bucket '$${MINIO_BUCKET_NAME}'\" \
       fi \
       "
-    networks:
-      - local-lakehouse-net
+    networks: *lakehouse-networks
 
   #########################################################
   # Lakekeeper - Iceberg REST catalog
@@ -181,8 +190,7 @@ services:
         condition: service_healthy
       minio-createbucket:
         condition: service_completed_successfully
-    networks:
-      - local-lakehouse-net
+    networks: *lakehouse-networks
 
   lakekeeper-migrate:
     container_name: local-lakehouse-lakekeeper-migrate
@@ -197,8 +205,7 @@ services:
     depends_on:
       shared-database-createdatabases:
         condition: service_completed_successfully
-    networks:
-      - local-lakehouse-net
+    networks: *lakehouse-networks
 
   lakekeeper-createwarehouse:
     container_name: local-lakehouse-lakekeeper-createwarehouse
@@ -215,63 +222,29 @@ services:
       minio-createbucket:
         condition: service_completed_successfully
     volumes:
-      - "../deployment/roles/lakekeeper/files/bootstrap-warehouse-no-auth.py:/opt/work/bootstrap-warehouse.py"
+      - "./lakekeeper/bootstrap-warehouse-no-auth.py:/opt/work/bootstrap-warehouse.py"
       - "./lakekeeper/bootstrap-warehouse.json:/opt/work/bootstrap-warehouse.json"
-    networks:
-      - local-lakehouse-net
+    networks: *lakehouse-networks
+
+  #########################################################
+  # Trino query engine
+  #########################################################
+  trino:
+    image: *trino-image
+    volumes:
+      - "./trino/etc:/etc/trino:ro"
+    healthcheck:
+      test: ["CMD", "curl", "-I", "http://localhost:8080/v1/status"]
+      interval: 2s
+      timeout: 10s
+      retries: 2
+      start_period: 10s
+    networks: *lakehouse-networks
 
 networks:
   local-lakehouse-net:
     name: local-lakehouse-net
 
-  # lakekeeper:
-  #   image: ${LAKEKEEPER_TEST__SERVER_IMAGE:-quay.io/lakekeeper/catalog:latest-main}
-  #   pull_policy: always
-  #   environment:
-  #     - LAKEKEEPER__PG_ENCRYPTION_KEY=This-is-NOT-Secure!
-  #     - LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://postgres:postgres@db:5432/postgres
-  #     - LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://postgres:postgres@db:5432/postgres
-  #     - LAKEKEEPER__AUTHZ_BACKEND=openfga
-  #     - LAKEKEEPER__OPENFGA__ENDPOINT=http://openfga:8081
-  #     - LAKEKEEPER__OPENID_PROVIDER_URI=http://keycloak:8080/realms/iceberg
-  #     - LAKEKEEPER__OPENID_ADDITIONAL_ISSUERS=http://localhost:30080/realms/iceberg
-  #     - LAKEKEEPER__OPENID_AUDIENCE=lakekeeper
-  #     - LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
-  #     - LAKEKEEPER__UI__OPENID_PROVIDER_URI=http://localhost:30080/realms/iceberg
-  #     - LAKEKEEPER__OPENFGA__CLIENT_ID=openfga
-  #     - LAKEKEEPER__OPENFGA__CLIENT_SECRET=xqE1vUrifVDKAZdLuz6JAnDxMYLdGu5z
-  #     - LAKEKEEPER__OPENFGA__TOKEN_ENDPOINT=http://keycloak:8080/realms/iceberg/protocol/openid-connect/token
-  #     - RUST_LOG=info,lakekeeper=trace,middle=trace
-  #   command: [ "serve" ]
-  #   healthcheck:
-  #     test: [ "CMD", "/home/nonroot/lakekeeper", "healthcheck" ]
-  #     interval: 1s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 3s
-  #   depends_on:
-  #     migrate:
-  #       condition: service_completed_successfully
-  #     db:
-  #       condition: service_healthy
-  #     minio:
-  #       condition: service_healthy
-  #   ports:
-  #     - "8181:8181"
-  #   networks:
-  #     iceberg_net:
-
-  # trino:
-  #   image: trinodb/trino:467
-  #   environment:
-  #     - CATALOG_MANAGEMENT=dynamic
-  #   healthcheck:
-  #     test: [ "CMD", "curl", "-I", "http://localhost:8080/v1/status" ]
-  #     interval: 2s
-  #     timeout: 10s
-  #     retries: 2
-  #     start_period: 10s
-  #   ports:
-  #     - "9999:8080"
-  #   networks:
-  #     - iceberg_net
+volumes:
+  shared_database_data:
+  minio_data:
