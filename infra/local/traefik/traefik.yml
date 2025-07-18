@@ -12,6 +12,8 @@ log:
 entryPoints:
   websecure:
     address: :443
+  trinosecure:
+    address: :8444
 
 # file configuration backend
 providers:
