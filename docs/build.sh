@@ -26,7 +26,7 @@ user_build_args=$*
 
 # Create and configure environment
 pushd $project_root
-test -d $VENV_DIR || uv venv $VENV_DIR
+uv venv $VENV_DIR
 uv pip install -r requirements.txt
 
 # Build

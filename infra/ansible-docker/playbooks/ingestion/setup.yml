@@ -3,7 +3,7 @@
 - name: Configure Ingestion instance
   hosts: ingestion
   vars:
-    uv_python_version: "3.12"
+    uv_python_version: "3.13"
     ingestion_elt_git_url: https://github.com/ISISNeutronMuon/analytics-data-platform.git
     ingestion_elt_git_dest: "{{ ansible_env['HOME'] }}/var/elt_sources"
     ingestion_elt_cron_scripts_dir: "{{ ansible_env['HOME'] }}/etc/cron"
@@ -41,11 +41,12 @@
 
     - name: Find compatible Python version
       ansible.builtin.command: uv python find --quiet "{{ uv_python_version }}"
+      ignore_errors: true
       register: uv_python_find
 
     - name: Ensure Python is installed
       ansible.builtin.command: uv python install "{{ uv_python_version }}"
-      when: uv_python_find.rc == 0
+      when: uv_python_find.rc != 0
 
     # ---------- AWS S3 ----------
     - name: Ensure S3 configuration directory exists

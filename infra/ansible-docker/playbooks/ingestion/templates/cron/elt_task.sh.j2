@@ -48,7 +48,7 @@ uv run \
 # Transform
 if [ -n "$dbt_project_dir" ]; then
   cd $ELT_GIT_DEST/$dbt_project_dir
-  test -d .venv || uv venv
+  uv venv
   uv pip install -r requirements/$REQUIREMENTS_TXT
   export SPARK_CONF_DIR
   uv run \

@@ -86,7 +86,7 @@
 - name: Ensure Lakekeeper is bootstrapped
   community.docker.docker_container:
     name: "{{ lakekeeper_container_name }}_bootstrap"
-    image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
     command: ["uv", "run", "/opt/work/bootstrap-warehouse.py"]
     state: started
     cleanup: true
