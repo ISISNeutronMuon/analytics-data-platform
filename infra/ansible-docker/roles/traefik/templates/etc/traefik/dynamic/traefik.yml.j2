@@ -2,7 +2,7 @@ http:
   routers:
     # TLS
     traefik:
-      entryPoints: web_tls
+      entryPoints: websecure
       rule: Host(`{{ top_level_domain }}`) && (PathPrefix(`/traefik`) || HeaderRegexp(`Referer`, `/traefik`))
       service: api@internal
       middlewares:

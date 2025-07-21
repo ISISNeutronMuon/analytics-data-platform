@@ -20,13 +20,13 @@ entryPoints:
     http:
       redirections:
         entryPoint:
-          to: web_tls
+          to: websecure
           scheme: https
   sparkcontroller:
     address: ":7077"
 
   # TLS entrypoints
-  web_tls:
+  websecure:
     address: ":443"
 {% if 'minio' in groups %}
   minio_tls:

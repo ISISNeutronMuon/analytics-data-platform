@@ -2,14 +2,14 @@ http:
   routers:
     # TLS
     docs-no-trailing-slash:
-      entryPoints: web_tls
+      entryPoints: websecure
       rule: Host(`{{ top_level_domain }}`) && Host(`{{ top_level_domain }}`) && PathRegexp(`^/docs$`)
       middlewares:
         - docs-redirect-to-index
       service: docs
       tls: {}
     docs:
-      entryPoints: web_tls
+      entryPoints: websecure
       rule: Host(`{{ top_level_domain }}`) && Host(`{{ top_level_domain }}`) && PathPrefix(`/docs`)
       service: docs
       middlewares:

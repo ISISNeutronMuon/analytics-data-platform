@@ -2,7 +2,7 @@ http:
   routers:
     # TLS
     root:
-      entryPoints: web_tls
+      entryPoints: websecure
       rule: Host(`{{ top_level_domain }}`) && PathRegexp(`^/?$`)
       middlewares:
         - root-redirect-to-docs
