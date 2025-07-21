@@ -1,18 +1,7 @@
 # Development infrastructure
 
 The services defined here are intended for local development and should not be used for production.
-
-## /etc/hosts
-
-Add the following lines to `/etc/hosts`:
-
-```sh
-127.0.0.1  analytics.dev
-127.0.0.1  minio
-```
-
-The base url for the local services is https://analytics.dev:8443. The `minio` entry is required
-for `pyiceberg` clients running on the host to find the MinIO object store.
+The base url for all services is configured to be *https://analytics.local*.
 
 ## Certificates
 
@@ -21,11 +10,23 @@ generate a certificate for local development:
 
 ```sh
 cd certs
-mkcert analytics.dev
-cat analytics.dev.pem analytics.dev-key.pem > analytics.dev-combined.pem
+mkcert analytics.local
+cat analytics.local.pem analytics.local-key.pem > analytics.local-combined.pem
 ```
 
 The configuration defined below will expect the generated files to be found in the `certs` subdirectory.
+
+## /etc/hosts
+
+Add the following lines to `/etc/hosts`:
+
+```sh
+127.0.0.1  analytics.local  # Local DNS name
+127.0.0.1  minio  # Required by clients on the host access MinIO directly
+```
+
+The base url for the local services is https://analytics.local:8443. The `minio` entry is required
+for `pyiceberg` clients running on the host to find the MinIO object store.
 
 ### Python
 
@@ -56,7 +57,7 @@ Create and add the following to `$HOME/.dlt/secrets.toml`:
 bucket_url = "s3://local-lakehouse-isis"
 
 [destination.pyiceberg.credentials]
-uri = "https://analytics.dev:8443/lakekeeper/catalog"
+uri = "https://analytics.local:8443/lakekeeper/catalog"
 warehouse = "isis"
 ```
 
