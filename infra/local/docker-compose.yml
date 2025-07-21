@@ -1,12 +1,10 @@
 # A development stack to emulate the Lakehouse. This is intended for local development.
 #
-# Prerequisites:
-#
-#   - A /etc/hosts entry "127.0.0.1  analytics.dev"
+# See README.md for configuration required before running "compose up".
 #
 # The standard port for TLS (443) can be used some processes, e.g. the Rancher Desktop ssh socket.
 # For simplicity port 8443 is used externally to route to port 443 internally.
-# The base address of all services is therefore "https://analytics.dev:8443"
+# The base address of all services is therefore "https://analytics.local:8443"
 
 # image versions
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.1.4
@@ -105,7 +103,7 @@ services:
   #     command:
   #       [
   #         "start-dev",
-  #         "--hostname=https://analytics.dev:8443/keycloak",
+  #         "--hostname=https://analytics.local:8443/keycloak",
   #         "--proxy-headers=xforwarded",
   #         "--metrics-enabled=true",
   #         "--health-enabled=true",
@@ -130,7 +128,7 @@ services:
       MINIO_CONSOLE_PORT_NUMBER: 9001
       MINIO_SCHEME: http
       # This needs to match the route in traefik/traefik-dynamic.yml
-      MINIO_BROWSER_REDIRECT_URL: https://analytics.dev:8443/minio/console
+      MINIO_BROWSER_REDIRECT_URL: https://analytics.local:8443/minio/console
     ports:
       - "9000:9000"
     command: ["server", "/data", "--console-address", ":9001"]
