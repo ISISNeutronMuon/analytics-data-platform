@@ -1,12 +1,7 @@
 # Superset
 
 <!-- Common links -->
-[isis-superset]: https://data-accelerator.isis.cclrc.ac.uk/analytics/superset "ISIS Superset"
 [apache-superset]: https://superset.apache.org/ "Apache Superset"
-
-## Quick links
-
-- [ISIS Superset][isis-superset]
 
 ## Getting started
 
@@ -20,7 +15,7 @@ pre-configured datasets.
 
 ### Logging in
 
-When visiting [Superset][isis-superset] for the first time you will
+When visiting Superset for the first time you will
 be presented with a login screen:
 
 ![Superset login screen](../assets/images/superset/isis-superset-login-screen.png)

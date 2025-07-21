@@ -2,7 +2,7 @@ http:
   routers:
     lakekeeper_tls:
       entryPoints: web_tls
-      rule: PathPrefix(`{{ lakekeeper_base_path }}`)
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ lakekeeper_base_path }}`)
       service: lakekeeper
 {% if lakekeeper_base_path != '/' %}
       middlewares:

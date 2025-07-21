@@ -16,7 +16,7 @@ http:
   routers:
     sparkcontrollerui:
       entryPoints: sparkcontrollerui_tls
-      rule:  PathPrefix(`/`)
+      rule: Host(`{{ top_level_domain }}`) &&  PathPrefix(`/`)
       service: sparkcontrollerui
       tls: {}
 

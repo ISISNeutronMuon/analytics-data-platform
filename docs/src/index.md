@@ -11,7 +11,9 @@ operational data.
 
 ## Quick links
 
-- [ISIS Superset][isis-superset]
+Dashboards:
+
+- [Accelerator][isis-superset]
 
 ## Getting started
 
@@ -26,4 +28,4 @@ The platform consists of several components, each focused on a specific purpose.
 If you are unsure where to start then [Superset](./superset/index.md) is a good place to begin exploring.
 
 <!-- Common links -->
-[isis-superset]: https://data-accelerator.isis.cclrc.ac.uk/analytics/superset "ISIS Superset"
+[accelerator-superset]: https://analytics.isis.cclrc.ac.uk/workspace/accelerator/ "Accelerator Superset"
