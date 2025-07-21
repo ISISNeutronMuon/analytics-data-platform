@@ -3,7 +3,7 @@ http:
     # TLS
     superset:
       entryPoints: web_tls
-      rule: PathPrefix(`{{ superset_app_root }}`)
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ superset_app_root }}`)
       service: superset
       tls: {}
 

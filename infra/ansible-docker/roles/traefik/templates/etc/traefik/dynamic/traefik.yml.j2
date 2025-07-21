@@ -3,7 +3,7 @@ http:
     # TLS
     traefik:
       entryPoints: web_tls
-      rule: PathPrefix(`/traefik`) || HeaderRegexp(`Referer`, `/traefik`)
+      rule: Host(`{{ top_level_domain }}`) && (PathPrefix(`/traefik`) || HeaderRegexp(`Referer`, `/traefik`))
       service: api@internal
       middlewares:
         - traefik-strip-prefix

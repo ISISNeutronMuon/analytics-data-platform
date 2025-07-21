@@ -3,7 +3,7 @@ http:
     # TLS
     trino:
       entryPoints: trino_tls
-      rule: PathPrefix(`/`)
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`/`)
       service: trino
       tls: {}
 

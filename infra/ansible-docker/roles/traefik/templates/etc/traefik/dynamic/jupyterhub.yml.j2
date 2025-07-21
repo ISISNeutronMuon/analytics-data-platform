@@ -3,7 +3,7 @@ http:
     # TLS
     jupyterhub:
       entryPoints: web_tls
-      rule: PathPrefix(`{{ jupyterhub_base_path }}`)
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ jupyterhub_base_path }}`)
       service: jupyterhub
       tls: {}
 

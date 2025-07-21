@@ -3,7 +3,7 @@ http:
     # TLS
     keycloak:
       entryPoints: web_tls
-      rule: PathPrefix(`{{ keycloak_base_path }}`)
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ keycloak_base_path }}`)
       service: keycloak
       middlewares:
         - keycloak-strip-prefix
