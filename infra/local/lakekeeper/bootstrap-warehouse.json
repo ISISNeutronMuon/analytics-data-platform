@@ -3,8 +3,8 @@
   "project-id": "00000000-0000-0000-0000-000000000000",
   "storage-credential": {
     "type": "s3",
-    "aws-access-key-id": "minio-root-user",
-    "aws-secret-access-key": "minio-root-password",
+    "aws-access-key-id": "adpuser",
+    "aws-secret-access-key": "adppass",
     "credential-type": "access-key"
   },
   "storage-profile": {
