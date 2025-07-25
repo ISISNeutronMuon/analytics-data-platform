@@ -1,55 +1,48 @@
-tls:
-  certificates:
-    - certFile: /certs/analytics.local.pem
-      keyFile: /certs/analytics.local-key.pem
+# tls:
+#   certificates:
+#     - certFile: /certs/analytics.local.pem
+#       keyFile: /certs/analytics.local-key.pem
 
 http:
   routers:
     traefik:
-      entryPoints: websecure
+      entryPoints: web
       rule: Host(`analytics.local`) && (PathPrefix(`/traefik`) || HeaderRegexp(`Referer`, `/traefik`))
       service: api@internal
       middlewares:
         - traefik-strip-prefix
-      tls: {}
 
     keycloak:
-      entryPoints: websecure
+      entryPoints: web
       rule: Host(`analytics.local`) && PathPrefix(`/keycloak`)
       middlewares:
         - keycloak-strip-prefix
       service: keycloak
-      tls: {}
 
     minio-console:
-      entryPoints: websecure
+      entryPoints: web
       rule: Host(`analytics.local`) && PathPrefix(`/minio/console`)
       middlewares:
         - minio-console-strip-prefix
       service: minio-console
-      tls: {}
 
     minio-api:
-      entryPoints: websecure
-      rule: Host(`analytics.local`) && PathPrefix(`/minio/api`)
-      middlewares:
-        - minio-api-strip-prefix
+      entryPoints: minioapi
+      rule: Host(`analytics.local`)
       service: minio-api
-      tls: {}
 
     lakekeeper:
-      entryPoints: websecure
+      entryPoints: web
       rule: Host(`analytics.local`) && PathPrefix(`/lakekeeper`)
       middlewares:
         - lakekeeper-strip-prefix
       service: lakekeeper
-      tls: {}
 
-    trino:
-      entryPoints: trinosecure
-      rule: Host(`analytics.local`) && PathPrefix(`/`)
-      service: trino
-      tls: {}
+    # trino:
+    #   entryPoints: trinosecure
+    #   rule: Host(`analytics.local`) && PathPrefix(`/`)
+    #   service: trino
+    #   tls: {}
 
   middlewares:
     traefik-strip-prefix:
@@ -64,10 +57,6 @@ http:
       stripPrefix:
         prefixes:
           - "/minio/console"
-    minio-api-strip-prefix:
-      stripPrefix:
-        prefixes:
-          - "/minio/api"
     lakekeeper-strip-prefix:
       stripPrefix:
         prefixes:
