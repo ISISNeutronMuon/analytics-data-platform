@@ -27,8 +27,8 @@ services:
     container_name: local-lakehouse-traefik
     image: *traefik-image
     ports:
-      - "8443:443"
-      - "8444:8444"
+      - "58080:80"
+      - "59000:9000" # MinIO. Lakekeeper won't allow a path on the storage/endpoint value
     volumes:
       - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
       - "./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
@@ -43,11 +43,11 @@ services:
     image: *postgres-image
     environment:
       POSTGRES_USER: adpuser
-      POSTGRES_PASSWORD: adppass
+      POSTGRES_PASSWORD: adppassword
       POSTGRES_DATABASE: unused
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -p 5432"]
-      interval: 2s
+      interval: 30s
       timeout: 10s
       retries: 2
       start_period: 10s
@@ -60,7 +60,7 @@ services:
     image: *postgres-image
     restart: "no"
     environment:
-      PGPASSWORD: adppass
+      PGPASSWORD: adppassword
     depends_on:
       shared-database:
         condition: service_healthy
@@ -103,7 +103,7 @@ services:
   #     command:
   #       [
   #         "start-dev",
-  #         "--hostname=https://analytics.local:8443/keycloak",
+  #         "--hostname=http://analytics.local:58080/keycloak",
   #         "--proxy-headers=xforwarded",
   #         "--metrics-enabled=true",
   #         "--health-enabled=true",
@@ -123,14 +123,12 @@ services:
     image: *minio-image
     environment:
       MINIO_ROOT_USER: adpuser
-      MINIO_ROOT_PASSWORD: adppass
+      MINIO_ROOT_PASSWORD: adppassword
       MINIO_API_PORT_NUMBER: 9000
       MINIO_CONSOLE_PORT_NUMBER: 9001
       MINIO_SCHEME: http
       # This needs to match the route in traefik/traefik-dynamic.yml
       MINIO_BROWSER_REDIRECT_URL: https://analytics.local:8443/minio/console
-    ports:
-      - "9000:9000"
     command: ["server", "/data", "--console-address", ":9001"]
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
@@ -148,7 +146,7 @@ services:
     image: quay.io/minio/mc:RELEASE.2025-05-21T01-59-54Z
     environment:
       MINIO_ROOT_USER: adpuser
-      MINIO_ROOT_PASSWORD: adppass
+      MINIO_ROOT_PASSWORD: adppassword
       MINIO_BUCKET_NAME: local-lakehouse-isis
     entrypoint: |
       /bin/sh -c "
@@ -171,13 +169,13 @@ services:
     image: *lakekeeper-image
     environment:
       - LAKEKEEPER__PG_ENCRYPTION_KEY=This-is-NOT-Secure!
-      - LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://adpuser:adppass@shared-database:5432/lakekeeper
-      - LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://adpuser:adppass@shared-database:5432/lakekeeper
+      - LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://adpuser:adppassword@shared-database:5432/lakekeeper
+      - LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://adpuser:adppassword@shared-database:5432/lakekeeper
       - RUST_LOG=info,lakekeeper=info,lakekeeper_bin=info,iceberg_ext=info
     command: ["serve"]
     healthcheck:
       test: ["CMD", "/home/nonroot/lakekeeper", "healthcheck"]
-      interval: 1s
+      interval: 30s
       timeout: 10s
       retries: 3
       start_period: 3s
@@ -189,14 +187,16 @@ services:
       minio-createbucket:
         condition: service_completed_successfully
     networks: *lakehouse-networks
+    extra_hosts:
+      - "analytics.local:host-gateway"
 
   lakekeeper-migrate:
     container_name: local-lakehouse-lakekeeper-migrate
     image: *lakekeeper-image
     environment:
       LAKEKEEPER__PG_ENCRYPTION_KEY: This-is-NOT-Secure!
-      LAKEKEEPER__PG_DATABASE_URL_READ: postgresql://adpuser:adppass@shared-database:5432/lakekeeper
-      LAKEKEEPER__PG_DATABASE_URL_WRITE: postgresql://adpuser:adppass@shared-database:5432/lakekeeper
+      LAKEKEEPER__PG_DATABASE_URL_READ: postgresql://adpuser:adppassword@shared-database:5432/lakekeeper
+      LAKEKEEPER__PG_DATABASE_URL_WRITE: postgresql://adpuser:adppassword@shared-database:5432/lakekeeper
       RUST_LOG: info
     restart: "no"
     command: ["migrate"]
@@ -227,17 +227,17 @@ services:
   #########################################################
   # Trino query engine
   #########################################################
-  trino:
-    image: *trino-image
-    volumes:
-      - "./trino/etc:/etc/trino:ro"
-    healthcheck:
-      test: ["CMD", "curl", "-I", "http://localhost:8080/v1/status"]
-      interval: 2s
-      timeout: 10s
-      retries: 2
-      start_period: 10s
-    networks: *lakehouse-networks
+  # trino:
+  #   image: *trino-image
+  #   volumes:
+  #     - "./trino/etc:/etc/trino:ro"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-I", "http://localhost:8080/v1/status"]
+  #     interval: 2s
+  #     timeout: 10s
+  #     retries: 2
+  #     start_period: 10s
+  #   networks: *lakehouse-networks
 
 networks:
   local-lakehouse-net:

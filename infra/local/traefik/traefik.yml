@@ -10,10 +10,10 @@ log:
   noColor: true
 
 entryPoints:
-  websecure:
-    address: :443
-  trinosecure:
-    address: :8444
+  web:
+    address: :80
+  minioapi:
+    address: :9000
 
 # file configuration backend
 providers:

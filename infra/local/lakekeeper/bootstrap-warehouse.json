@@ -4,14 +4,14 @@
   "storage-credential": {
     "type": "s3",
     "aws-access-key-id": "adpuser",
-    "aws-secret-access-key": "adppass",
+    "aws-secret-access-key": "adppassword",
     "credential-type": "access-key"
   },
   "storage-profile": {
     "type": "s3",
     "bucket": "local-lakehouse-isis",
     "key-prefix": "",
-    "endpoint": "http://minio:9000",
+    "endpoint": "http://analytics.local:59000",
     "region": "local-01",
     "path-style-access": true,
     "sts-enabled": false,
