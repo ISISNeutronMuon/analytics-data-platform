@@ -1,46 +1,46 @@
 # tls:
 #   certificates:
-#     - certFile: /certs/analytics.local.pem
-#       keyFile: /certs/analytics.local-key.pem
+#     - certFile: /certs/analytics.localhost.pem
+#       keyFile: /certs/analytics.localhost-key.pem
 
 http:
   routers:
     traefik:
       entryPoints: web
-      rule: Host(`analytics.local`) && (PathPrefix(`/traefik`) || HeaderRegexp(`Referer`, `/traefik`))
+      rule: Host(`analytics.localhost`) && (PathPrefix(`/traefik`) || HeaderRegexp(`Referer`, `/traefik`))
       service: api@internal
       middlewares:
         - traefik-strip-prefix
 
     keycloak:
       entryPoints: web
-      rule: Host(`analytics.local`) && PathPrefix(`/keycloak`)
+      rule: Host(`analytics.localhost`) && PathPrefix(`/keycloak`)
       middlewares:
         - keycloak-strip-prefix
       service: keycloak
 
     minio-console:
       entryPoints: web
-      rule: Host(`analytics.local`) && PathPrefix(`/minio/console`)
+      rule: Host(`analytics.localhost`) && PathPrefix(`/minio/console`)
       middlewares:
         - minio-console-strip-prefix
       service: minio-console
 
     minio-api:
       entryPoints: minioapi
-      rule: Host(`analytics.local`)
+      rule: Host(`analytics.localhost`)
       service: minio-api
 
     lakekeeper:
       entryPoints: web
-      rule: Host(`analytics.local`) && PathPrefix(`/lakekeeper`)
+      rule: Host(`analytics.localhost`) && PathPrefix(`/lakekeeper`)
       middlewares:
         - lakekeeper-strip-prefix
       service: lakekeeper
 
     # trino:
     #   entryPoints: trinosecure
-    #   rule: Host(`analytics.local`) && PathPrefix(`/`)
+    #   rule: Host(`analytics.localhost`) && PathPrefix(`/`)
     #   service: trino
     #   tls: {}
 
