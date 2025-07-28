@@ -2,9 +2,7 @@
 #
 # See README.md for configuration required before running "compose up".
 #
-# The standard port for TLS (443) can be used some processes, e.g. the Rancher Desktop ssh socket.
-# For simplicity port 8443 is used externally to route to port 443 internally.
-# The base address of all services is therefore "https://analytics.localhosthost:8443"
+# The base address of all services is "https//analytics.localhosthost:58080"
 
 # image versions
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.1.4
@@ -18,6 +16,19 @@ x-trino-image: &trino-image trinodb/trino:475
 # networks
 x-lakehouse-networks: &lakehouse-networks
   - local-lakehouse-net
+
+# superset options
+x-superset-build: &superset-build ./superset
+x-superset-user: &superset-user root
+x-superset-depends-on: &superset-depends-on
+  superset-redis:
+    condition: service_started
+x-superset-env: &superset-env
+  - path: superset/docker/env-for-testing
+    required: true
+x-superset-volumes: &superset-volumes
+  - ./superset/docker/docker-init.sh:/app/docker/docker-init.sh:ro
+  - ./superset/docker/pythonpath:/app/docker/pythonpath:ro
 
 services:
   #########################################################
@@ -72,6 +83,7 @@ services:
       EOSQL
       }
       create_db_if_not_exists lakekeeper
+      create_db_if_not_exists superset
       "
     networks: *lakehouse-networks
 
@@ -188,7 +200,7 @@ services:
         condition: service_completed_successfully
     networks: *lakehouse-networks
     extra_hosts:
-      - "analytics.localhosthost:host-gateway"
+      - "analytics.localhost:host-gateway"
 
   lakekeeper-migrate:
     container_name: local-lakehouse-lakekeeper-migrate
@@ -239,10 +251,92 @@ services:
   #     start_period: 10s
   #   networks: *lakehouse-networks
 
+  #########################################################
+  # Superset BI tool
+  #########################################################
+
+  superset-redis:
+    container_name: local-lakehouse-superset-redis
+    env_file: *superset-env
+    image: redis:7
+    restart: unless-stopped
+    volumes:
+      - shared_redis_data:/data
+    networks: *lakehouse-networks
+
+  superset-app:
+    container_name: local-lakehouse-superset-app
+    env_file: *superset-env
+    build: *superset-build
+    command: ["/app/docker/docker-bootstrap.sh", "app-gunicorn"]
+    user: *superset-user
+    restart: unless-stopped
+    depends_on:
+      <<: *superset-depends-on
+      superset-init:
+        condition: service_completed_successfully
+    volumes: *superset-volumes
+    networks: *lakehouse-networks
+
+  superset-init:
+    container_name: local-lakehouse-superset-init
+    env_file: *superset-env
+    build: *superset-build
+    command: ["/app/docker/docker-init.sh"]
+    depends_on:
+      <<: *superset-depends-on
+      shared-database:
+        condition: service_healthy
+    user: *superset-user
+    volumes: *superset-volumes
+    healthcheck:
+      disable: true
+    networks: *lakehouse-networks
+
+  superset-worker:
+    container_name: local-lakehouse-superset-worker
+    env_file: *superset-env
+    build: *superset-build
+    command: ["/app/docker/docker-bootstrap.sh", "worker"]
+    restart: unless-stopped
+    depends_on:
+      <<: *superset-depends-on
+      superset-app:
+        condition: service_healthy
+    user: *superset-user
+    volumes: *superset-volumes
+    networks: *lakehouse-networks
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME",
+        ]
+
+  superset-worker-beat:
+    container_name: local-lakehouse-superset-worker-beat
+    env_file: *superset-env
+    build: *superset-build
+    command: ["/app/docker/docker-bootstrap.sh", "beat"]
+    restart: unless-stopped
+    depends_on:
+      <<: *superset-depends-on
+      superset-app:
+        condition: service_healthy
+    user: *superset-user
+    volumes: *superset-volumes
+    networks: *lakehouse-networks
+    healthcheck:
+      disable: true
+
 networks:
   local-lakehouse-net:
     name: local-lakehouse-net
 
 volumes:
   shared_database_data:
+    name: local-lakehouse_shared_database_data
   minio_data:
+    name: local-lakehouse_minio_data
+  shared_redis_data:
+    name: local-lakehouse_shared_redis_data

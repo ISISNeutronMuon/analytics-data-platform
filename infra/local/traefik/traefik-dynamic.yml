@@ -38,6 +38,11 @@ http:
         - lakekeeper-strip-prefix
       service: lakekeeper
 
+    superset:
+      entryPoints: web
+      rule: Host(`analytics.localhost`) && PathPrefix(`/workspace/example`)
+      service: superset
+
     # trino:
     #   entryPoints: trinosecure
     #   rule: Host(`analytics.localhost`) && PathPrefix(`/`)
@@ -83,3 +88,7 @@ http:
       loadBalancer:
         servers:
           - url: "http://trino:8080"
+    superset:
+      loadBalancer:
+        servers:
+          - url: "http://superset-app:8088"

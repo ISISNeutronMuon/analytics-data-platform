@@ -1,0 +1,98 @@
+x-superset-build: &superset-build ./
+x-superset-user: &superset-user root
+x-superset-depends-on: &superset-depends-on
+  redis:
+    condition: service_started
+x-superset-env: &superset-env
+  - path: docker/.env # default
+    required: true
+x-superset-volumes: &superset-volumes
+  - /config/superset/docker/docker-init.sh:/app/docker/docker-init.sh:ro
+  - /config/superset/docker/pythonpath:/app/docker/pythonpath:ro
+  - superset_home:/app/superset_home
+  - /config/superset/certs:/certs:ro
+x-networks: &superset-networks
+  - superset
+
+
+services:
+  redis:
+    env_file: *superset-env
+    image: redis:7
+    container_name: superset_cache
+    restart: unless-stopped
+    volumes:
+      - redis:/data
+    networks: *superset-networks
+
+  superset:
+    env_file: *superset-env
+    build: *superset-build
+    container_name: superset_app
+    command: [ "/app/docker/docker-bootstrap.sh", "app-gunicorn" ]
+    user: *superset-user
+    restart: unless-stopped
+    ports:
+      - 8088:8088
+    depends_on:
+      <<: *superset-depends-on
+      superset-init:
+        condition: service_completed_successfully
+    volumes: *superset-volumes
+    networks: *superset-networks
+
+  superset-init:
+    env_file: *superset-env
+    build: *superset-build
+    container_name: superset_init
+    command: [ "/app/docker/docker-init.sh" ]
+    depends_on: *superset-depends-on
+    user: *superset-user
+    volumes: *superset-volumes
+    healthcheck:
+      disable: true
+    networks: *superset-networks
+
+  superset-worker:
+    env_file: *superset-env
+    build: *superset-build
+    container_name: superset_worker
+    command: [ "/app/docker/docker-bootstrap.sh", "worker" ]
+    restart: unless-stopped
+    depends_on:
+     <<: *superset-depends-on
+     superset:
+        condition: service_healthy
+    user: *superset-user
+    volumes: *superset-volumes
+    networks: *superset-networks
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME"
+        ]
+
+  superset-worker-beat:
+    env_file: *superset-env
+    build: *superset-build
+    container_name: superset_worker_beat
+    command: [ "/app/docker/docker-bootstrap.sh", "beat" ]
+    restart: unless-stopped
+    depends_on:
+     <<: *superset-depends-on
+     superset:
+        condition: service_healthy
+    user: *superset-user
+    volumes: *superset-volumes
+    networks: *superset-networks
+    healthcheck:
+      disable: true
+
+volumes:
+  redis:
+  superset_home:
+
+networks:
+  superset:
+    external: true
