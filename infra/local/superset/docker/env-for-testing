@@ -18,7 +18,7 @@ REDIS_PORT=6379
 SUPERSET_ADMIN_USER=adpuser
 SUPERSET_ADMIN_FIRSTNAME=Admin
 SUPERSET_ADMIN_LASTNAME=Admin
-SUPERSET_ADMIN_EMAIL=admin@fake.email
+SUPERSET_ADMIN_EMAIL=test@example.com
 SUPERSET_ADMIN_PASSWORD=adppassword
 
 # Environment/development settings
