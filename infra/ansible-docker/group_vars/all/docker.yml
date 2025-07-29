@@ -1,17 +1,4 @@
 ---
-docker_edition: "ce"
-docker_packages:
-  - "docker-{{ docker_edition }}"
-  - "docker-{{ docker_edition }}-cli"
-  - "docker-{{ docker_edition }}-rootless-extras"
-docker_obsolete_packages:
-  - docker
-  - docker.io
-  - docker-engine
-  - podman-docker
-  - containerd
-  - runc
-docker_packages_state: present
 docker_daemon_options:
   mtu: 1450
   registry-mirrors: ["https://dockerhub.stfc.ac.uk"]

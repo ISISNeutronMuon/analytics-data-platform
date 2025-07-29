@@ -1,6 +1,9 @@
 ---
+# docker
+docker_configure_container_network: "{{ keycloak_container_network }}"
+
+# postgres
 postgres_db_data_path: "{{ cephfs_mount_mount_path }}/live/keycloak/data"
-postgres_container_network: "{{ keycloak_container_network }}"
 postgres_port: "{{ keycloak_db_port }}"
 postgres_db_user: "{{ keycloak_db_user }}"
 postgres_db_passwd: "{{ keycloak_db_passwd }}"

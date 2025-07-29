@@ -1,6 +1,9 @@
 ---
+# docker
+docker_configure_container_network: "{{ lakekeeper_container_network }}"
+
+# postgres
 postgres_db_data_path: "{{ cephfs_mount_mount_path }}/live/lakekeeper/dbdata"
-postgres_container_network: "{{ lakekeeper_container_network }}"
 postgres_port: "{{ lakekeeper_store_port }}"
 postgres_db_user: "{{ lakekeeper_store_user }}"
 postgres_db_passwd: "{{ lakekeeper_store_passwd }}"

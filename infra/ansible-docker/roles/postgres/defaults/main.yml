@@ -1,6 +1,5 @@
 ---
 postgres_image: ghcr.io/cloudnative-pg/postgresql:16.3-bookworm
-postgres_container_network: postgres
 postgres_db_port: 5432
 postgres_db_data_path: /data/postgres
 postgres_db_user: postgres
