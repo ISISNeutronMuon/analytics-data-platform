@@ -1,0 +1,16 @@
+---
+# Install docker
+- ansible.builtin.include_role:
+    name: geerlingguy.docker
+    apply:
+      become: true
+
+# Create docker network if needed
+- name: Create container network
+  become: true
+  community.docker.docker_network:
+    name: "{{ docker_configure_container_network }}"
+    driver_options:
+      com.docker.network.bridge.name: "{{ docker_configure_container_network }}0"
+      com.docker.network.driver.mtu: "{{ docker_daemon_options.mtu }}"
+  when: docker_configure_container_network is defined and docker_configure_container_network != ""

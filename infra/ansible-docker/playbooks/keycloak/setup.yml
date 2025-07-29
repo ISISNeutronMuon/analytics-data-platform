@@ -3,7 +3,6 @@
   hosts: keycloak
   roles:
     - role: cephfs_mount
-    - role: geerlingguy.docker
-      become: true
+    - role: docker_configure
     - role: postgres
     - role: keycloak

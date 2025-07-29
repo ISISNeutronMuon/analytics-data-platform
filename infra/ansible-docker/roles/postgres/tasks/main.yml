@@ -38,11 +38,6 @@
     dest: "{{ postgres_docker_initdb_path }}/init-catalogs-dbs.sh"
     mode: "u=rwx,g=rwx,o=r"
 
-- name: Create container network
-  become: true
-  community.docker.docker_network:
-    name: "{{ postgres_container_network }}"
-
 - name: Ensure Postgresql container is running
   become: true
   community.docker.docker_container:
@@ -61,6 +56,6 @@
       - /secrets:/secrets:ro
       - "{{ postgres_docker_initdb_path }}:/docker-entrypoint-initdb.d"
     networks:
-      - name: "{{ postgres_container_network }}"
+      - name: "{{ docker_configure_container_network | default('bridge') }}"
     comparisons:
       networks: strict

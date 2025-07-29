@@ -5,7 +5,6 @@
     - role: cephfs_mount
     - role: geerlingguy.pip
       become: true
-    - role: geerlingguy.docker
-      become: true
+    - role: docker_configure
     - role: postgres
     - role: superset

@@ -4,8 +4,7 @@
   roles:
     - role: geerlingguy.pip
       become: true
-    - role: geerlingguy.docker
-      become: true
+    - role: docker_configure
     - role: docs
       become: true
     - role: traefik
