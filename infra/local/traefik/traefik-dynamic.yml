@@ -1,27 +1,33 @@
-# tls:
-#   certificates:
-#     - certFile: /certs/analytics.localhost.pem
-#       keyFile: /certs/analytics.localhost-key.pem
-
 http:
   routers:
+    #############################################
+    # user services
+    #############################################
+    superset:
+      entryPoints: web
+      rule: Host(`analytics.localhost`) && PathPrefix(`/workspace/example`)
+      service: superset
+
+    #############################################
+    # backend services
+    #############################################
     traefik:
       entryPoints: web
-      rule: Host(`analytics.localhost`) && (PathPrefix(`/traefik`) || HeaderRegexp(`Referer`, `/traefik`))
+      rule: Host(`analytics.localhost`) && (PathPrefix(`/internal/traefik`) || HeaderRegexp(`Referer`, `/internal/traefik`))
       service: api@internal
       middlewares:
         - traefik-strip-prefix
 
-    keycloak:
+    lakekeeper:
       entryPoints: web
-      rule: Host(`analytics.localhost`) && PathPrefix(`/keycloak`)
+      rule: Host(`analytics.localhost`) && PathPrefix(`/internal/iceberg-rest`)
       middlewares:
-        - keycloak-strip-prefix
-      service: keycloak
+        - lakekeeper-strip-prefix
+      service: lakekeeper
 
     minio-console:
       entryPoints: web
-      rule: Host(`analytics.localhost`) && PathPrefix(`/minio/console`)
+      rule: Host(`analytics.localhost`) && PathPrefix(`/internal/minio/console`)
       middlewares:
         - minio-console-strip-prefix
       service: minio-console
@@ -31,47 +37,26 @@ http:
       rule: Host(`analytics.localhost`)
       service: minio-api
 
-    lakekeeper:
-      entryPoints: web
-      rule: Host(`analytics.localhost`) && PathPrefix(`/lakekeeper`)
-      middlewares:
-        - lakekeeper-strip-prefix
-      service: lakekeeper
-
-    superset:
-      entryPoints: web
-      rule: Host(`analytics.localhost`) && PathPrefix(`/workspace/example`)
-      service: superset
-
-    # trino:
-    #   entryPoints: trinosecure
-    #   rule: Host(`analytics.localhost`) && PathPrefix(`/`)
-    #   service: trino
-    #   tls: {}
+    trino:
+      entryPoints: trino
+      rule: Host(`analytics.localhost`)
+      service: trino
 
   middlewares:
     traefik-strip-prefix:
       stripPrefix:
         prefixes:
-          - "/traefik"
-    keycloak-strip-prefix:
-      stripPrefix:
-        prefixes:
-          - "/keycloak"
+          - "/internal/traefik"
     minio-console-strip-prefix:
       stripPrefix:
         prefixes:
-          - "/minio/console"
+          - "/internal/minio/console"
     lakekeeper-strip-prefix:
       stripPrefix:
         prefixes:
-          - "/lakekeeper"
+          - "/internal/iceberg-rest"
 
   services:
-    keycloak:
-      loadBalancer:
-        servers:
-          - url: "http://keycloak:8080"
     minio-console:
       loadBalancer:
         servers:

@@ -5,7 +5,6 @@
 # The base address of all services is "https//analytics.localhosthost:58080"
 
 # image versions
-x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.1.4
 x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.9.3
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-06-13T11-33-47Z
 x-postgres-image: &postgres-image postgres:16.9-bookworm
@@ -38,6 +37,7 @@ services:
     image: *traefik-image
     ports:
       - "58080:80"
+      - "58088:8088" # Trino won't allow itself to be deployed on a prefix path
       - "59000:9000" # MinIO. Lakekeeper won't allow a path on the storage/endpoint value
     volumes:
       - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
@@ -85,45 +85,6 @@ services:
       create_db_if_not_exists superset
       "
     networks: *lakehouse-networks
-
-  #########################################################
-  # Keycloak - Identity provider
-  #########################################################
-
-  #   keycloak:
-  #     container_name: local-lakehouse-keycloak
-  #     image: *keycloak-image
-  #     environment:
-  #       KC_BOOTSTRAP_ADMIN_USERNAME: admin
-  #       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-  #     depends_on:
-  #       shared-database:
-  #         condition: service_healthy
-  #     # volumes:
-  #     #   - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json
-  #     healthcheck:
-  #       test:
-  #         [
-  #           "CMD-SHELL",
-  #           'exec 3<>/dev/tcp/127.0.0.1/8080;echo -e "GET /realms/master/.well-known/openid-configuration HTTP/1.1\r\nhost: 127.0.0.1:8080\r\nConnection: close\r\n\r\n" >&3;grep "jwks_uri"  <&3',
-  #         ]
-  #       interval: 2s
-  #       timeout: 10s
-  #       retries: 2
-  #       start_period: 60s
-  #     command:
-  #       [
-  #         "start-dev",
-  #         "--hostname=http://analytics.localhosthost:58080/keycloak",
-  #         "--proxy-headers=xforwarded",
-  #         "--metrics-enabled=true",
-  #         "--health-enabled=true",
-  # #        "--import-realm",
-  #         "--verbose",
-  #         "--log-level=DEBUG",
-  #         "--features=token-exchange",
-  #       ]
-  #     networks: *lakehouse-networks
 
   #########################################################
   # MinIO - Object store emulating the Ceph object store
@@ -239,17 +200,17 @@ services:
   #########################################################
   # Trino query engine
   #########################################################
-  # trino:
-  #   image: *trino-image
-  #   volumes:
-  #     - "./trino/etc:/etc/trino:ro"
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-I", "http://localhost:8080/v1/status"]
-  #     interval: 2s
-  #     timeout: 10s
-  #     retries: 2
-  #     start_period: 10s
-  #   networks: *lakehouse-networks
+  trino:
+    image: *trino-image
+    volumes:
+      - "./trino/etc:/etc/trino:ro"
+    healthcheck:
+      test: ["CMD", "curl", "-I", "http://localhost:8080/v1/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 2
+      start_period: 10s
+    networks: *lakehouse-networks
 
   #########################################################
   # Superset BI tool

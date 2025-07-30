@@ -12,6 +12,8 @@ log:
 entryPoints:
   web:
     address: :80
+  trino:
+    address: :8088
   minioapi:
     address: :9000
 

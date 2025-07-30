@@ -22,7 +22,7 @@ set -e
 #
 /app/docker/docker-bootstrap.sh
 
-STEP_CNT=3
+STEP_CNT=4
 
 echo_step() {
 cat <<EOF
@@ -57,3 +57,10 @@ echo_step "2" "Complete" "Setting up admin user"
 echo_step "3" "Starting" "Setting up roles and perms"
 superset init
 echo_step "3" "Complete" "Setting up roles and perms"
+
+# Create a database connection
+echo_step "4" "Starting" "Setting up Iceberg catalog connection"
+superset set-database-uri \
+  --database_name isis \
+  --uri "trino://trino@trino:8080/isis"
+echo_step "4" "Complete" "Setting up data source database connection"
