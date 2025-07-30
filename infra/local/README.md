@@ -7,11 +7,11 @@ certificates are trusted correctly across the host and all service containers.
 
 ## /etc/hosts
 
-The base url for all services is configured to be *http://analytics.localhosthost:58080*.
+The base url for all services is configured to be *http://analytics.localhost:58080*.
 Add the following lines to `/etc/hosts`:
 
 ```sh
-127.0.0.1  analytics.localhosthost  # Local DNS name
+127.0.0.1  analytics.localhost  # Local DNS name
 ```
 
 to allow the host system to resolve our local DNS name.
@@ -27,7 +27,7 @@ Create and add the following to `$HOME/.dlt/secrets.toml`:
 bucket_url = "s3://local-lakehouse-isis"
 
 [destination.pyiceberg.credentials]
-uri = "http://analytics.localhosthost:58080/lakekeeper/catalog"
+uri = "http://analytics.localhost:58080/iceberg-rest/catalog"
 warehouse = "isis"
 ```
 

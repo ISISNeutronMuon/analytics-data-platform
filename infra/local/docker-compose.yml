@@ -2,7 +2,7 @@
 #
 # See README.md for configuration required before running "compose up".
 #
-# The base address of all services is "https//analytics.localhosthost:58080"
+# The base address of all services is "http://analytics.localhost:58080"
 
 # image versions
 x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.9.3
@@ -100,7 +100,7 @@ services:
       MINIO_CONSOLE_PORT_NUMBER: 9001
       MINIO_SCHEME: http
       # This needs to match the route in traefik/traefik-dynamic.yml
-      MINIO_BROWSER_REDIRECT_URL: https://analytics.localhosthost:8443/minio/console
+      MINIO_BROWSER_REDIRECT_URL: http://analytics.localhost:58080/internal/minio/console
     command: ["server", "/data", "--console-address", ":9001"]
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
