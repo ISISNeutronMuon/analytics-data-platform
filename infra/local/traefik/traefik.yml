@@ -1,0 +1,24 @@
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+api:
+  dashboard: true
+
+log:
+  level: DEBUG
+  noColor: true
+
+entryPoints:
+  web:
+    address: :80
+  trino:
+    address: :8088
+  minioapi:
+    address: :9000
+
+# file configuration backend
+providers:
+  file:
+    filename: /etc/traefik/traefik-dynamic.yml
+    watch: false

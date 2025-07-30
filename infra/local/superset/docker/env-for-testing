@@ -1,0 +1,34 @@
+###############################################################################
+# WARNING: DO NOT USE THIS FILE FOR PRODUCTION
+###############################################################################
+
+# Metadata DB
+SUPERSET_DB_HOST=shared-database
+SUPERSET_DB_USER=adpuser
+SUPERSET_DB_PASSWORD=adppassword
+SUPERSET_DB_NAME=superset
+SUPERSET_DB_PORT=5432
+SUPERSET_DB_DIALECT=postgresql
+
+# Caching layer (match service name and port in compose file)
+REDIS_HOST=superset-redis
+REDIS_PORT=6379
+
+# Admin user
+SUPERSET_ADMIN_USER=adpuser
+SUPERSET_ADMIN_FIRSTNAME=Admin
+SUPERSET_ADMIN_LASTNAME=Admin
+SUPERSET_ADMIN_EMAIL=test@example.com
+SUPERSET_ADMIN_PASSWORD=adppassword
+
+# Environment/development settings
+PYTHONPATH=/app/docker/pythonpath
+SCARF_ANALYTICS=false
+FLASK_DEBUG=True
+SUPERSET_ENV=development
+SUPERSET_PORT=8088
+# Needs to match traefik rule.
+SUPERSET_APP_ROOT=/workspace/example
+
+# Make sure you set this to a unique secure random value on production
+SUPERSET_SECRET_KEY=0123456789
