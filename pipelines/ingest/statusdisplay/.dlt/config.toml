@@ -4,7 +4,7 @@ log_level = "WARNING"
 
 [sources]
 base_url = "https://status.isis.stfc.ac.uk/api"
-resources = ["schedule"]
+resources = ["cycles"]
 
 [sources.data_writer]
 file_max_items = 100000

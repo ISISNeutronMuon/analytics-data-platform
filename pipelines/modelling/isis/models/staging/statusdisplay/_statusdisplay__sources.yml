@@ -3,4 +3,5 @@ version: 2
 sources:
   - name: src_statusdisplay
     tables:
-      - name: schedule
+      - name: cycles
+      - name: cycles__phases
