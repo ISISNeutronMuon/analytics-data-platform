@@ -6,8 +6,7 @@
 
 # image versions
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.1.4
-# We'll require a minimum of v0.9.3 due to https://github.com/lakekeeper/lakekeeper/pull/1248
-x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:4e126289-amd64
+x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.9.3
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-06-13T11-33-47Z
 x-postgres-image: &postgres-image postgres:16.9-bookworm
 x-traefik-image: &traefik-image traefik:v3.4.4
