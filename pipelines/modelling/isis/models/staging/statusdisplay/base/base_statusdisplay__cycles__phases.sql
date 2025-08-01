@@ -9,7 +9,7 @@ with source as (
 renamed as (
 
     select
-        type,
+        type as phase,
         target,
         start as started_at,
         {{ identifier("end") }} as ended_at,

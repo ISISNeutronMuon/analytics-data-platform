@@ -15,7 +15,7 @@ renamed as (
 
     select
         _dlt_id as dlt_id,
-        label as cycle_name
+        label as name
 
     from source
 

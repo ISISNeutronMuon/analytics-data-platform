@@ -20,10 +20,10 @@ base_cycles__phases as (
 join_cycle_labels_and_phases as (
 
   select
-    cycle_name,
+    name,
     started_at,
     ended_at,
-    type,
+    phase,
     target
 
   from base_cycles
