@@ -98,33 +98,8 @@ downtime_records_with_cycle as (
   select
     d.equipment,
     d.fault_date,
-    (
-      select
-        {{ dbt.any_value("r.cycle_name") }}
-      from
-        {{ ref('cycles') }} r
-      where
-        d.fault_occurred_at >= r.started_at
-        and d.fault_occurred_at <= r.ended_at
-    ) as cycle_name,
-    (
-      select
-        {{ dbt.any_value("r.label") }}
-      from
-        {{ ref('cycles') }} r
-      where
-        d.fault_occurred_at >= r.started_at
-        and d.fault_occurred_at <= r.ended_at
-    ) as cycle_interval_label,
-    (
-      select
-        {{ dbt.any_value("r.type") }}
-      from
-        {{ ref('cycles') }} r
-      where
-        d.fault_occurred_at >= r.started_at
-        and d.fault_occurred_at <= r.ended_at
-    ) as cycle_interval_type,
+    c.name as cycle_name,
+    c.phase as cycle_phase,
     d.downtime_mins,
     d.fault_occurred_at,
     d.{{ identifier("group") }},
@@ -134,6 +109,7 @@ downtime_records_with_cycle as (
   from
 
     downtime_records d
+    left join {{ ref("cycle") }} c on d.fault_occurred_at between c.started_at and c.ended_at
 )
 
 select
