@@ -20,18 +20,15 @@ SITE_URL = "https://stfc365.sharepoint.com/sites/ISIS-AcceleratorDivision"
 def read_excel(
     items: Iterator[FileItemDict], **pandas_kwargs: Any
 ) -> Iterator[TDataItems]:
-    """Reads csv file with Pandas chunk by chunk.
+    """Reads an excel file with Pandas
 
-    :param chunksize (int): Number of records to read in one chunk
-    :param **pandas_kwargs: Additional keyword arguments passed to Pandas.read_csv
+    :param **pandas_kwargs: Additional keyword arguments passed to Pandas.read_excel
     :yield: TDataItem: The file content
     """
     import pandas as pd
 
     for file_obj in items:
-        # Here we use pandas chunksize to read the file in chunks and avoid loading the whole file
-        # in memory.
-        df = pd.read_excel(io.BytesIO(file_obj["file_content"]))
+        df = pd.read_excel(io.BytesIO(file_obj["file_content"]), **pandas_kwargs)
         yield df.to_dict(orient="records")
 
 
