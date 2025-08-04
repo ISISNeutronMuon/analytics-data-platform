@@ -19,7 +19,7 @@ clean-targets: # directories to be removed by `dbt clean`
 
 vars:
   # The start date of equipment downtime records from Opralog
-  opralog_epoch: "2017-04-25"
+  opralog_epoch_date: "2017-04-25"
 
 models:
   +file_format: parquet
