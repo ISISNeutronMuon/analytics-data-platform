@@ -51,6 +51,6 @@ if [ -n "$dbt_project_dir" ]; then
   uv venv
   uv pip install -r requirements/$REQUIREMENTS_TXT
   export SPARK_CONF_DIR
-  uv run \
-    dbt run $*
+  uv run dbt deps
+  uv run dbt run $*
 fi
