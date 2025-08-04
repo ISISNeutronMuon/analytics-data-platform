@@ -32,18 +32,32 @@ def read_excel(
         yield df.to_dict(orient="records")
 
 
-files = sharepoint(
-    site_url=SITE_URL,
-    file_glob="Beam Data/Equipment downtime data 11_08_24.xlsx",
-    extract_content=True,
-)
-reader = (files | read_excel()).with_name("equipment_downtime_data_historic")
+# The FaultDate/FaultTime columns don't have consistent timestamp types in the excel data
+# Read them as strings and convert in the transformation layer
+def equipment_downtime_records_archive():
+    files = sharepoint(
+        site_url=SITE_URL,
+        file_glob="Beam Data/Equipment downtime data 11_08_24.xlsx",
+        extract_content=True,
+    )
+    reader = (
+        (files | read_excel())
+        .with_name("equipment_downtime_data_11_08_24")
+        .apply_hints(
+            columns={
+                "FaultDate": {"data_type": "text"},
+                "FaultTime": {"data_type": "text"},
+            }
+        )
+    )
+    return reader
 
 
-cli_main(
-    pipeline_name="accelerator_division_sharepoint",
-    data_generator=reader,
-    default_destination="duckdb",
-    dataset_name_suffix="accelerator_division_sharepoint",
-    default_write_disposition="replace",
-)
+if __name__ == "__main__":
+    cli_main(
+        pipeline_name="accelerator_sharepoint",
+        default_destination="pipelines_common.dlt_destinations.pyiceberg",
+        data_generator=equipment_downtime_records_archive(),
+        dataset_name_suffix="accelerator_sharepoint",
+        default_write_disposition="replace",
+    )
