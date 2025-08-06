@@ -9,6 +9,7 @@ import dlt
 from dlt.common.destination.reference import TDestinationReferenceArg
 from dlt.common.typing import TLoaderFileFormat
 from dlt.common.schema.typing import TWriteDisposition
+from dlt.extract.reference import SourceFactory
 from dlt.pipeline.progress import TCollectorArg, _NULL_COLLECTOR as NULL_COLLECTOR
 import humanize
 
@@ -104,8 +105,12 @@ def cli_main(
     LOGGER.info(f"-- Starting pipeline={pipeline.pipeline_name} --")
     LOGGER.info("Dropping pending packages to ensure a clean new load")
     pipeline.drop_pending_packages()
+    if isinstance(data_generator, SourceFactory):
+        data = data_generator()
+    else:
+        data = data_generator
     pipeline.run(
-        data_generator,
+        data,
         loader_file_format=args.loader_file_format,
         write_disposition=args.write_disposition,
     )

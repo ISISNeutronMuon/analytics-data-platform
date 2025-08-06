@@ -3,3 +3,5 @@ clouds.yaml
 .env
 .venv/
 **/dbt.log
+# ignore secrets, virtual environments and typical python compilation artifacts
+secrets.toml
