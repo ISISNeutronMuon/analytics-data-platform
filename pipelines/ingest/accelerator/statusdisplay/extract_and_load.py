@@ -7,7 +7,7 @@
 # ]
 #
 # [tool.uv.sources]
-# pipelines-common = { path = "../../pipelines-common" }
+# pipelines-common = { path = "../../../pipelines-common" }
 # ///
 
 import dlt

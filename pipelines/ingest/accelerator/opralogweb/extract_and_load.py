@@ -10,7 +10,7 @@
 # ]
 #
 # [tool.uv.sources]
-# pipelines-common = { path = "../../pipelines-common" }
+# pipelines-common = { path = "../../../pipelines-common" }
 # ///
 from collections.abc import Generator, Iterator, Sequence
 
