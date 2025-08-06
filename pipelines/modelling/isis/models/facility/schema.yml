@@ -1,5 +1,5 @@
 version: 2
 
 models:
-  - name: cycle
+  - name: cycles
     description: "The ISIS cycle dates, including pre and post user-cycle phases."

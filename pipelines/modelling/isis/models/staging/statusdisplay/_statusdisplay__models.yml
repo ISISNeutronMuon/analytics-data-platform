@@ -1,4 +1,4 @@
 version: 2
 
 models:
-  - name: stg_statusdisplay__cycle
+  - name: stg_statusdisplay__cycles
