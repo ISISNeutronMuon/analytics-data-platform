@@ -1,1 +1,1 @@
-infra/ansible/group_vars/all/vault.yml diff=ansible-vault merge=binary
+infra/ansible-docker/group_vars/all/vault.yml diff=ansible-vault merge=binary
