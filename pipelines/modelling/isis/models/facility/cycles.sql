@@ -8,7 +8,7 @@ with
 
 staged as (
 
-  select * from {{ ref('stg_statusdisplay__cycle') }}
+  select * from {{ ref('stg_statusdisplay__cycles') }}
 
 ),
 

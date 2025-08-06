@@ -111,7 +111,7 @@ downtime_records_with_cycle as (
   from
 
     downtime_records d
-    left join {{ ref("cycle") }} c on d.fault_occurred_at between c.started_at and c.ended_at
+    left join {{ ref("cycles") }} c on d.fault_occurred_at between c.started_at and c.ended_at
 )
 
 select
