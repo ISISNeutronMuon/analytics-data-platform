@@ -1,8 +1,13 @@
 # /// script
-# requires-python = ">=3.12"
+# requires-python = ">=3.13"
 # dependencies = [
 #     "openpyxl>=3.1.5,<3.2",
+#     "pandas>=2.2.3,<2.3.0",
+#     "pipelines-common",
 # ]
+#
+# [tool.uv.sources]
+# pipelines-common = { path = "../../../pipelines-common" }
 # ///
 import io
 from typing import Any, Iterator
