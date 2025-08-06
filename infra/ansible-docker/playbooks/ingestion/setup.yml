@@ -126,7 +126,7 @@
         state: "{{ ingestion_cron_state | default('present') }}"
         minute: "15"
         hour: "0"
-        job: "{{ ingestion_elt_cron_scripts_dir }}/elt_task.sh pipelines/ingest/statusdisplay pipelines/modelling/isis --select '+models/facility' > {{ ingestion_elt_cron_log_dir }}/statusdisplay/elt-$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log 2>&1"
+        job: "{{ ingestion_elt_cron_scripts_dir }}/elt_task.sh pipelines/ingest/accelerator/statusdisplay pipelines/modelling/isis --select '+models/facility' > {{ ingestion_elt_cron_log_dir }}/statusdisplay/elt-$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log 2>&1"
 
     # ---------- Opralog ----------
     - name: Ensure Opralog cron logs directory exists
@@ -145,4 +145,4 @@
         state: "{{ ingestion_cron_state | default('present') }}"
         minute: "10"
         hour: "2"
-        job: "{{ ingestion_elt_cron_scripts_dir }}/elt_task.sh pipelines/ingest/opralogweb pipelines/modelling/isis --select '+models/accelerator' > {{ ingestion_elt_cron_log_dir }}/opralogweb/elt-$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log 2>&1"
+        job: "{{ ingestion_elt_cron_scripts_dir }}/elt_task.sh pipelines/ingest/accelerator/opralogweb pipelines/modelling/isis --select '+models/accelerator' > {{ ingestion_elt_cron_log_dir }}/opralogweb/elt-$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log 2>&1"

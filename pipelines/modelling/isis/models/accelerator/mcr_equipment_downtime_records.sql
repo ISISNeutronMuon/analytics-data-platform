@@ -7,7 +7,6 @@
 )
 }}
 {% set MCR_LOGBOOK = dbt.string_literal("MCR Running Log") %}
-{% set OPRALOG_EPOCH = dbt.string_literal('2017-04-25') %} -- Opralog started being used from cycle 2017/01
 
 with
 
@@ -17,6 +16,7 @@ staging_logbook_chapter as ( select * from {{ ref('stg_opralogweb__logbook_chapt
 staging_logbooks as ( select * from {{ ref('stg_opralogweb__logbooks') }} ),
 staging_more_entry_columns as ( select * from {{ ref('stg_opralogweb__more_entry_columns') }} ),
 staging_additional_columns as ( select * from {{ ref('stg_opralogweb__additional_columns') }} ),
+staging_equipment_downtime_data_pre_opralog as (select * from {{ ref('stg_accelerator-sharepoint__equipment_downtime_data_pre_opralog') }} ),
 
 denormalized as (
   select
@@ -50,9 +50,7 @@ downtime_records as (
   from
     (
       select
-        entry_id,
-        fault_date,
-        fault_occurred_at,
+
         min(
           case
             column_title
@@ -65,6 +63,8 @@ downtime_records as (
             when 'Lost Time' then number_data
           end
         ) as downtime_mins,
+        fault_date,
+        fault_occurred_at,
         min(
           case
             column_title
@@ -81,7 +81,6 @@ downtime_records as (
       from
         denormalized
       group by
-        entry_id,
         fault_occurred_at,
         fault_date,
         fault_description
@@ -90,8 +89,11 @@ downtime_records as (
     equipment is not null
     and downtime_mins is not null
     and {{ identifier("group") }} is not null
-    and -- Opralog started being used from cycle 2017/01
-    fault_occurred_at >= from_iso8601_timestamp({{ OPRALOG_EPOCH }})
+
+  union all
+
+  select * from staging_equipment_downtime_data_pre_opralog
+
 ),
 
 downtime_records_with_cycle as (
