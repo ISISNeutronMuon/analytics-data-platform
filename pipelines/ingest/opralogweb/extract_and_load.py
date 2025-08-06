@@ -74,7 +74,7 @@ if __name__ == "__main__":
     cli_utils.cli_main(
         pipeline_name="opralogweb",
         default_destination="pipelines_common.dlt_destinations.pyiceberg",
-        data_generator=opralogwebdb(),
+        data_generator=opralogwebdb,
         dataset_name_suffix="opralogweb",
         default_write_disposition="append",
     )
