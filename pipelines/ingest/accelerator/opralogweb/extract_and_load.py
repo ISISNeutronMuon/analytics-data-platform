@@ -23,7 +23,7 @@ import pyarrow as pa
 import pipelines_common.cli as cli_utils
 
 
-@dlt.transformer(standalone=True)
+@dlt.transformer()
 def html_to_markdown(
     table: pa.Table, *, column_names: Sequence[str]
 ) -> Iterator[pa.Table]:

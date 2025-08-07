@@ -18,7 +18,7 @@ MTIME_DISPATCH[MSGDRIVEFS_PROTOCOL] = MTIME_DISPATCH["file"]
 # This is designed to look similar to the dlt.filesystem resource where the resource returns DriveItem
 # objects that include the content as raw bytes. The bytes need to be parsed by an appropriate
 # transformer
-@decorators.resource(standalone=True)
+@decorators.resource()
 def sharepoint(
     site_url: str = dlt.config.value,
     credentials: M365CredentialsResource = dlt.secrets.value,
@@ -45,7 +45,7 @@ def sharepoint(
     for file_model in glob_files(
         sp_library, bucket_url=f"{MSGDRIVEFS_PROTOCOL}://", file_glob=file_glob
     ):
-        file_dict = FileItemDict(file_model, credentials=sp_library)
+        file_dict = FileItemDict(file_model, fsspec=sp_library)
         if extract_content:
             file_dict["file_content"] = file_dict.read_bytes()
         files_chunk.append(file_dict)

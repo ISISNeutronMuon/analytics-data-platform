@@ -21,7 +21,7 @@ from pipelines_common.dlt_sources.m365 import sharepoint
 SITE_URL = "https://stfc365.sharepoint.com/sites/ISIS-AcceleratorDivision"
 
 
-@dlt.transformer(standalone=True)
+@dlt.transformer(section="m365")
 def read_excel(
     items: Iterator[FileItemDict], **pandas_kwargs: Any
 ) -> Iterator[TDataItems]:

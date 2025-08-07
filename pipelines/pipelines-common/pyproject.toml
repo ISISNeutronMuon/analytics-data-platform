@@ -7,9 +7,9 @@ name = "pipelines-common"
 version = "0.1.0"
 description = "A set of common utility routines for data pipelines."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
-    "dlt[parquet,s3]>=1.10.0,<1.11.0",
+    "dlt[parquet,s3]>=1.15.0,<1.16.0",
     "lock>=2018.3.25.2110",
     "msgraphfs>=0.1,<0.2",
     "pyiceberg>=0.9.1,<1.0.0",

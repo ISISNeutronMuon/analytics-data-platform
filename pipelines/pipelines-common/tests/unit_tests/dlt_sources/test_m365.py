@@ -76,7 +76,7 @@ def test_extract_sharepoint_files_yields_files_matching_glob(
     transformer_calls = 0
     file_paths_seen = set()
 
-    @dlt.transformer(standalone=True)
+    @dlt.transformer()
     def assert_expected_drive_items(drive_items: Iterator[FileItemDict]):
         nonlocal transformer_calls
         assert len(list(drive_items)) == expected_transfomer_item_sizes[transformer_calls]
