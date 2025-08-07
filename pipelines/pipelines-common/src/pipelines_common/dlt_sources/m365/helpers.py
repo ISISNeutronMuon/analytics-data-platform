@@ -31,27 +31,14 @@ class M365CredentialsResource:
         return f"{self.authority_url}/oauth2/v2.0/token"
 
     def fetch_token(self) -> Dict[str, Any]:
-        """Acquire tokens via OAuth"""
+        """Acquire tokens via OAuth. Raises an Exception if an error occurs"""
         oauth_client = OAuth2Client(
             self.client_id,
             self.client_secret,
             token_endpoint=self.oauth2_token_endpoint,
             scope=self.default_scope,
         )
-        response = oauth_client.fetch_token()
-        if response:
-            if "access_token" in response:
-                return response
-            elif "error" in response:
-                raise RuntimeError(
-                    f"Error acquiring graph client token: {response['error']} - {response['error_description']}"
-                )
-            else:
-                raise RuntimeError(
-                    "Error acquiring graph client token: No error description found in the response."
-                )
-        else:
-            raise RuntimeError("Error acquiring graph client token. No response found.")
+        return oauth_client.fetch_token()
 
     def oauth2_client_params(self, token: Dict[str, Any]):
         """Return a set of parameters suitable for initializing an OAuth client"""
