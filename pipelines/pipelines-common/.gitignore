@@ -5,3 +5,7 @@
 **/*$py.class
 **/build/
 **/*.egg-info/
+
+# testing
+.coverage
+htmlcov
