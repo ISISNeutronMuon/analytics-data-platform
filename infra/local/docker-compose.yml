@@ -219,7 +219,7 @@ services:
   superset-redis:
     container_name: local-lakehouse-superset-redis
     env_file: *superset-env
-    image: redis:7
+    image: redis:8
     restart: unless-stopped
     volumes:
       - shared_redis_data:/data
