@@ -1,12 +1,13 @@
 import datetime
 import itertools
-from typing import Iterator
+from typing import cast, Iterator
 import unittest.mock
 
 import dlt
 from dlt.common.configuration.exceptions import ConfigFieldMissingException
 from dlt.common.storages.fsspec_filesystem import FileItemDict
 from dlt.pipeline.exceptions import PipelineStepFailed
+import pendulum
 
 from pipelines_common.dlt_sources.m365 import sharepoint, M365CredentialsResource
 
@@ -45,7 +46,7 @@ def test_extract_sharepoint_source_raises_error_without_config(pipeline: dlt.Pip
         (2, False),
     ],
 )
-def test_extract_sharepoint_files_yields_files_matching_glob(
+def test_extract_sharepoint_yields_files_matching_glob(
     pipeline: dlt.Pipeline,
     mocker: MockerFixture,
     httpx_mock: HTTPXMock,
@@ -129,3 +130,60 @@ def test_extract_sharepoint_files_yields_files_matching_glob(
     # check we've seen each expected_file
     for file_path in drivefs_glob_return_value.keys():
         assert file_path in file_paths_seen
+
+
+def test_extract_sharepoint_yields_files_matching_glob_respecting_modified_after(
+    pipeline: dlt.Pipeline,
+    mocker: MockerFixture,
+    httpx_mock: HTTPXMock,
+):
+    num_files_matching_glob = 6
+    drivefs_glob_return_value = {
+        f"/Folder/{index}.csv": {
+            "name": f"/Folder/{index}.csv",
+            "type": "file",
+            "mtime": datetime.datetime.fromisoformat("2025-01-01T00:00:00Z")
+            + datetime.timedelta(minutes=1 * index),
+            "size": "10",
+        }
+        for index in range(num_files_matching_glob)
+    }
+
+    modified_after = cast(pendulum.DateTime, pendulum.parse("2025-01-01T00:03:00Z"))
+    num_files_matching_glob_and_modified_bound = 2
+    transformer_called = False
+
+    @dlt.transformer()
+    def assert_expected_drive_items(drive_items: Iterator[FileItemDict]):
+        nonlocal transformer_called
+        transformer_called = True
+
+        assert len(list(drive_items)) == num_files_matching_glob_and_modified_bound
+        for drive_obj in drive_items:
+            assert drive_obj["modification_date"] > modified_after
+
+    credentials = M365CredentialsResource("tid", "cid", "cs3cr3t")
+    SharePointTestSettings.mock_get_drive_id_responses(httpx_mock, credentials)
+
+    # Mock out drive client to return known items from glob.
+    # Beware that the test_glob & resulting return values are not linked so changing test_glob
+    # will not affect the glob.return_value. Here we are relying on the MSDDriveFS client to do the
+    # right thing and we just test we call it correctly.
+    patched_drivefs_cls = mocker.patch(
+        "pipelines_common.dlt_sources.m365.MSGDriveFS", autospec=True
+    )
+    patched_drivefs = patched_drivefs_cls.return_value
+    test_glob = "/Folder/*.csv"
+    patched_drivefs.glob.return_value = drivefs_glob_return_value
+
+    pipeline.extract(
+        sharepoint(
+            SharePointTestSettings.site_url,
+            credentials=credentials,
+            file_glob=test_glob,
+            modified_after=modified_after,
+        )
+        | assert_expected_drive_items()
+    )
+
+    assert transformer_called
