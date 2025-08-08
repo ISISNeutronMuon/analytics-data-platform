@@ -8,7 +8,6 @@
 # [tool.uv.sources]
 # pipelines-common = { path = "../../pipelines-common" }
 # ///
-from typing import Iterable
 
 import dlt
 from dlt.extract.resource import DltResource
@@ -19,6 +18,11 @@ from pipelines_common.dlt_sources.m365 import sharepoint
 SITE_URL = "https://stfc365.sharepoint.com/sites/ISISSustainability"
 PIPELINE_NAME = "electricity_sharepoint"
 
+# The transformer is the last in the resource chain and is defined in dlt.souces.filesystem
+# so the resource tries to lookup the config in sources.filesystem.credentials rather than
+# sources.m365.credentials.
+read_csv.section = sharepoint.section
+
 
 def rdm_data() -> DltResource:
     files = sharepoint(
@@ -26,11 +30,8 @@ def rdm_data() -> DltResource:
         file_glob="/General/RDM Data/*.csv",
         extract_content=True,
     )
-    reader = (
-        files | read_csv(**dlt.config[f"{PIPELINE_NAME}__pandas_read_csv_kwargs"])
-    ).with_name("rdm_data")
-    reader.section = "m365"
-    return reader
+    reader = files | read_csv(**dlt.config[f"{PIPELINE_NAME}__pandas_read_csv_kwargs"])
+    return reader.with_name("rdm_data")
 
 
 cli_main(
