@@ -5,6 +5,7 @@ from typing import Iterator, List
 import dlt
 from dlt.common.storages.fsspec_filesystem import FileItemDict, glob_files, MTIME_DISPATCH
 from dlt.extract import decorators
+import dlt.common.logger as logger
 from msgraphfs import MSGDriveFS
 import pendulum
 
@@ -47,13 +48,16 @@ def sharepoint(
     for file_model in glob_files(
         sp_library, bucket_url=f"{MSGDRIVEFS_PROTOCOL}://", file_glob=file_glob
     ):
-        if modified_after and file_model["modification_date"] <= modified_after:
-            continue
-
-        file_dict = FileItemDict(file_model, fsspec=sp_library)
-        if extract_content:
-            file_dict["file_content"] = file_dict.read_bytes()
-        files_chunk.append(file_dict)
+        log_msg = f"Found '{file_model['file_name']}' with modification date '{file_model['modification_date']}'"
+        if modified_after and file_model["modification_date"] > modified_after:
+            log_msg += ": added for processing."
+            file_dict = FileItemDict(file_model, fsspec=sp_library)
+            if extract_content:
+                file_dict["file_content"] = file_dict.read_bytes()
+            files_chunk.append(file_dict)
+        else:
+            log_msg += ": skipped old item."
+        logger.debug(log_msg)
 
         # wait for the chunk to be full
         if len(files_chunk) >= files_per_page:
