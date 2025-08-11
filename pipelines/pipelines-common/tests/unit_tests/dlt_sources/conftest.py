@@ -5,8 +5,9 @@ import dlt
 
 import pytest
 from pytest_httpx import HTTPXMock
+from pytest_mock import MockerFixture
 
-from pipelines_common.dlt_sources.m365 import M365CredentialsResource
+from pipelines_common.dlt_sources.m365 import M365CredentialsResource, M365DriveFS
 
 
 class SharePointTestSettings:
@@ -54,3 +55,10 @@ def pipeline():
             dev_mode=True,
         )
         yield pipeline
+
+
+@pytest.fixture()
+def mock_drivefs_cls(mocker: MockerFixture):
+    patched_cls = mocker.patch("pipelines_common.dlt_sources.m365.M365DriveFS", autospec=True)
+    patched_cls.protocol = M365DriveFS.protocol
+    return patched_cls

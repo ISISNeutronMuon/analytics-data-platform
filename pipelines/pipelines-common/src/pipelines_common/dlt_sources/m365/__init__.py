@@ -6,15 +6,14 @@ import dlt
 from dlt.common.storages.fsspec_filesystem import FileItemDict, glob_files, MTIME_DISPATCH
 from dlt.extract import decorators
 import dlt.common.logger as logger
-from msgraphfs import MSGDriveFS
 import pendulum
 
-from .helpers import M365CredentialsResource, get_site_drive_id
+from .helpers import M365CredentialsResource, M365DriveFS
 from .settings import DEFAULT_CHUNK_SIZE
 
-# Add our MSGDriveFS protocol to the known modificaton time mappings
-MSGDRIVEFS_PROTOCOL = MSGDriveFS.protocol[0]
-MTIME_DISPATCH[MSGDRIVEFS_PROTOCOL] = MTIME_DISPATCH["file"]
+# Add our M365DriveFS protocol(s) to the known modificaton time mappings
+for protocol in M365DriveFS.protocol:
+    MTIME_DISPATCH[protocol] = MTIME_DISPATCH["file"]
 
 
 # This is designed to look similar to the dlt.filesystem resource where the resource returns DriveItem
@@ -37,26 +36,21 @@ def sharepoint(
                        library in folder 'incoming' then the file_path would be '/incoming/file_to_ingest.csv'
     :return: List[DltResource]: A list of DriveItems representing the file
     """
-    oauth_token = credentials.fetch_token()
-    access_token = oauth_token["access_token"]
-    sp_library = MSGDriveFS(
-        drive_id=get_site_drive_id(site_url, access_token),
-        oauth2_client_params=credentials.oauth2_client_params(oauth_token),
-    )
-
+    sp_library = M365DriveFS(credentials, site_url)
     files_chunk: List[FileItemDict] = []
     for file_model in glob_files(
-        sp_library, bucket_url=f"{MSGDRIVEFS_PROTOCOL}://", file_glob=file_glob
+        sp_library, bucket_url=M365DriveFS.protocol[0] + "://", file_glob=file_glob
     ):
         log_msg = f"Found '{file_model['file_name']}' with modification date '{file_model['modification_date']}'"
-        if modified_after and file_model["modification_date"] > modified_after:
+        if modified_after and file_model["modification_date"] <= modified_after:
+            log_msg += ": skipped old item."
+            continue
+        else:
             log_msg += ": added for processing."
             file_dict = FileItemDict(file_model, fsspec=sp_library)
             if extract_content:
                 file_dict["file_content"] = file_dict.read_bytes()
             files_chunk.append(file_dict)
-        else:
-            log_msg += ": skipped old item."
         logger.debug(log_msg)
 
         # wait for the chunk to be full

@@ -12,8 +12,6 @@ import pendulum
 from pipelines_common.dlt_sources.m365 import sharepoint, M365CredentialsResource
 
 import pytest
-from pytest_mock import MockerFixture
-from pytest_httpx import HTTPXMock
 
 from unit_tests.dlt_sources.conftest import SharePointTestSettings
 
@@ -48,8 +46,7 @@ def test_extract_sharepoint_source_raises_error_without_config(pipeline: dlt.Pip
 )
 def test_extract_sharepoint_yields_files_matching_glob(
     pipeline: dlt.Pipeline,
-    mocker: MockerFixture,
-    httpx_mock: HTTPXMock,
+    mock_drivefs_cls: unittest.mock.MagicMock,
     files_per_page: int,
     extract_content: bool,
 ):
@@ -82,8 +79,8 @@ def test_extract_sharepoint_yields_files_matching_glob(
         nonlocal transformer_calls
         assert len(list(drive_items)) == expected_transfomer_item_sizes[transformer_calls]
         for drive_obj in drive_items:
-            assert drive_obj["file_url"].startswith("msgd:///Folder/")
-            file_paths_seen.add(drive_obj["file_url"][len("msgd://") :])
+            assert drive_obj["file_url"].startswith("m365:///Folder/")
+            file_paths_seen.add(drive_obj["file_url"][len("m365://") :])
             assert drive_obj["modification_date"] == datetime.datetime.fromisoformat(
                 "2025-01-01T00:00:00Z"
             )
@@ -94,19 +91,14 @@ def test_extract_sharepoint_yields_files_matching_glob(
         transformer_calls += 1
 
     credentials = M365CredentialsResource("tid", "cid", "cs3cr3t")
-    SharePointTestSettings.mock_get_drive_id_responses(httpx_mock, credentials)
 
-    # Mock out drive client to return known items from glob.
     # Beware that the test_glob & resulting return values are not linked so changing test_glob
     # will not affect the glob.return_value. Here we are relying on the MSDDriveFS client to do the
     # right thing and we just test we call it correctly.
-    patched_drivefs_cls = mocker.patch(
-        "pipelines_common.dlt_sources.m365.MSGDriveFS", autospec=True
-    )
-    patched_drivefs = patched_drivefs_cls.return_value
     test_glob = "/Folder/*.csv"
-    patched_drivefs.glob.return_value = drivefs_glob_return_value
-    patched_drivefs.open = unittest.mock.mock_open(read_data=b"0123456789")
+    mock_drivefs = mock_drivefs_cls.return_value
+    mock_drivefs.glob.return_value = drivefs_glob_return_value
+    mock_drivefs.open = unittest.mock.mock_open(read_data=b"0123456789")
 
     pipeline.extract(
         sharepoint(
@@ -119,13 +111,8 @@ def test_extract_sharepoint_yields_files_matching_glob(
         | assert_expected_drive_items()
     )
 
-    patched_drivefs_cls.assert_called_once_with(
-        drive_id=SharePointTestSettings.library_id,
-        oauth2_client_params=credentials.oauth2_client_params(
-            {"access_token": SharePointTestSettings.access_token}
-        ),
-    )
-    patched_drivefs.glob.assert_called_with(test_glob, detail=True)
+    mock_drivefs_cls.assert_called_once_with(credentials, SharePointTestSettings.site_url)
+    mock_drivefs.glob.assert_called_with(test_glob, detail=True)
     assert expected_transfomer_calls == transformer_calls
     # check we've seen each expected_file
     for file_path in drivefs_glob_return_value.keys():
@@ -134,8 +121,7 @@ def test_extract_sharepoint_yields_files_matching_glob(
 
 def test_extract_sharepoint_yields_files_matching_glob_respecting_modified_after(
     pipeline: dlt.Pipeline,
-    mocker: MockerFixture,
-    httpx_mock: HTTPXMock,
+    mock_drivefs_cls: unittest.mock.MagicMock,
 ):
     num_files_matching_glob = 6
     drivefs_glob_return_value = {
@@ -163,18 +149,14 @@ def test_extract_sharepoint_yields_files_matching_glob_respecting_modified_after
             assert drive_obj["modification_date"] > modified_after
 
     credentials = M365CredentialsResource("tid", "cid", "cs3cr3t")
-    SharePointTestSettings.mock_get_drive_id_responses(httpx_mock, credentials)
+    # SharePointTestSettings.mock_get_drive_id_responses(httpx_mock, credentials)
 
-    # Mock out drive client to return known items from glob.
     # Beware that the test_glob & resulting return values are not linked so changing test_glob
-    # will not affect the glob.return_value. Here we are relying on the MSDDriveFS client to do the
+    # will not affect the glob.return_value. Here we are relying on the M365DriveFS client to do the
     # right thing and we just test we call it correctly.
-    patched_drivefs_cls = mocker.patch(
-        "pipelines_common.dlt_sources.m365.MSGDriveFS", autospec=True
-    )
-    patched_drivefs = patched_drivefs_cls.return_value
     test_glob = "/Folder/*.csv"
-    patched_drivefs.glob.return_value = drivefs_glob_return_value
+    mock_drivefs = mock_drivefs_cls.return_value
+    mock_drivefs.glob.return_value = drivefs_glob_return_value
 
     pipeline.extract(
         sharepoint(
@@ -187,3 +169,4 @@ def test_extract_sharepoint_yields_files_matching_glob_respecting_modified_after
     )
 
     assert transformer_called
+    mock_drivefs.glob.assert_called_with(test_glob, detail=True)
