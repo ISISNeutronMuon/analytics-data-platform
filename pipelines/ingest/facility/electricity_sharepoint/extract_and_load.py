@@ -15,21 +15,17 @@ import dlt
 from dlt.common.storages.fsspec_filesystem import (
     FileItemDict,
 )
-from dlt.extract.resource import DltResource
 from dlt.sources import TDataItems
 import pendulum
 
 from pipelines_common.cli import cli_main
-from pipelines_common.dlt_sources.m365 import sharepoint
+from pipelines_common.dlt_sources.m365 import (
+    sharepoint,
+)
 
 SITE_URL = "https://stfc365.sharepoint.com/sites/ISISSustainability"
 PIPELINE_NAME = "electricity_sharepoint"
 RDM_TIMEZONE = "Europe/London"
-
-# The transformer is the last in the resource chain and is defined in dlt.souces.filesystem
-# so the resource tries to lookup the config in sources.filesystem.credentials rather than
-# sources.m365.credentials.
-# read_csv.section = sharepoint.section
 
 
 @dlt.transformer(section="m365")
@@ -65,15 +61,13 @@ def extract_content_and_read_csv(
             yield df.to_dict(orient="records")
 
 
-@dlt.resource(merge_key="datetime")
+@dlt.resource(merge_key="DateTime")
 def rdm_data(
     datetime_cur=dlt.sources.incremental(
         "DateTime",
-        initial_value=pendulum.from_format(
-            "07/08/25 00:00:00", fmt="DD/MM/YY HH:mm:ss"
-        ),
+        initial_value=pendulum.DateTime.EPOCH,
     ),
-):
+) -> Iterator[TDataItems]:
     files = sharepoint(
         site_url=SITE_URL,
         file_glob="/General/RDM Data/**/*.csv",
@@ -84,9 +78,6 @@ def rdm_data(
         **dlt.config[f"{PIPELINE_NAME}__pandas_read_csv_kwargs"]
     )
     yield from reader
-
-    # #.apply_hints(merge_key="datetime", incremental=datetime_col)
-    # return reader.with_name("rdm_data")
 
 
 cli_main(
