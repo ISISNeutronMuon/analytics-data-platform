@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "pandas>=2.3.1,<2.4",
+#     "pandas~=2.3.1",
 #     "pipelines-common",
 # ]
 #
