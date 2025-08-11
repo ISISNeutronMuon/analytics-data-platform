@@ -1,15 +1,17 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
+#     "openpyxl~=3.1.5",
 #     "pandas~=2.3.1",
 #     "pipelines-common",
 # ]
 #
 # [tool.uv.sources]
-# pipelines-common = { path = "../../pipelines-common" }
+# pipelines-common = { path = "../../../pipelines-common" }
 # ///
 import io
-from typing import Any, Iterator
+import pathlib
+from typing import Iterator
 
 import dlt
 from dlt.common.storages.fsspec_filesystem import (
@@ -17,7 +19,7 @@ from dlt.common.storages.fsspec_filesystem import (
 )
 from dlt.sources import TDataItems
 import pendulum
-
+import pandas as pd
 from pipelines_common.cli import cli_main
 from pipelines_common.dlt_sources.m365 import (
     sharepoint,
@@ -29,36 +31,41 @@ RDM_TIMEZONE = "Europe/London"
 
 
 @dlt.transformer(section="m365")
-def extract_content_and_read_csv(
-    items: Iterator[FileItemDict], chunksize: int = 10000, **pandas_kwargs: Any
+def extract_content_and_read(
+    items: Iterator[FileItemDict], skiprows: int
 ) -> Iterator[TDataItems]:
-    """Extracts the file content and reads it assuming it is csv.
+    """Extracts the file content and reads it assuming it is a .csv or a .xlsx file
 
     Combines the Date and Time columns into a DateTime field to simplify incremental
     processing.
-    Args:
-        chunksize (int): Number of records to read in one chunk
-        **pandas_kwargs: Additional keyword arguments passed to Pandas.read_csv
-    Returns:
-        TDataItem: The file content
+
+    :param items: An iterator of dicts describing the file content
+    :param skiprows: Number of rows in the csv/xlsx files to skip
     """
-    import pandas as pd
 
     # apply defaults to pandas kwargs
-    kwargs = {**{"header": "infer", "chunksize": chunksize}, **pandas_kwargs}
+    kwargs = {"header": "infer", "skiprows": skiprows}
 
     for file_obj in items:
-        for df in pd.read_csv(io.BytesIO(file_obj.read_bytes()), **kwargs):
-            # Store UTC not local timezone
-            df["DateTime"] = (
-                pd.to_datetime(
-                    df["Date"] + " " + df["Time"], format="%d/%m/%y %H:%M:%S"
+        file_content = io.BytesIO(file_obj.read_bytes())
+        match pathlib.Path(file_obj["file_name"]).suffix:
+            case ".csv":
+                df = pd.read_csv(file_content, **kwargs)
+            case ".xlsx":
+                df = pd.read_excel(file_content, **kwargs)
+            case _:
+                raise RuntimeError(
+                    f"Unsupported file extension in '{file_obj['file_name']}'"
                 )
-                .dt.tz_localize(RDM_TIMEZONE)
-                .dt.tz_convert("UTC")
-            )
-            df = df.drop(["Date", "Time"], axis=1)
-            yield df.to_dict(orient="records")
+
+        # Store UTC not local timezone
+        df["DateTime"] = (
+            pd.to_datetime(df["Date"] + " " + df["Time"], format="%d/%m/%y %H:%M:%S")
+            .dt.tz_localize(RDM_TIMEZONE)
+            .dt.tz_convert("UTC")
+        )
+        df = df.drop(["Date", "Time"], axis=1)
+        yield df.to_dict(orient="records")
 
 
 @dlt.resource(merge_key="DateTime")
@@ -70,12 +77,12 @@ def rdm_data(
 ) -> Iterator[TDataItems]:
     files = sharepoint(
         site_url=SITE_URL,
-        file_glob="/General/RDM Data/**/*.csv",
+        file_glob="/General/RDM Data/**/*.*",
         extract_content=False,
         modified_after=datetime_cur.start_value,
     )
-    reader = files | extract_content_and_read_csv(
-        **dlt.config[f"{PIPELINE_NAME}__pandas_read_csv_kwargs"]
+    reader = files | extract_content_and_read(
+        **dlt.config[f"{PIPELINE_NAME}__pandas_read_kwargs"]
     )
     yield from reader
 
