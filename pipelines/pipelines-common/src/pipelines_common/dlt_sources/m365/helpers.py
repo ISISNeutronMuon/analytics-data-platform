@@ -60,23 +60,11 @@ class M365DriveFS(AbstractFileSystem):
         self.client.ensure_active_token(self.client.fetch_token())
         self.drive_url = f"{self.drives_api_url}/{self._get_site_drive_id(site_url)}"
 
-    def cat_file(self, path, start=None, end=None, **kwargs) -> bytes:
-        """Get the content of a file
-
-        Parameters
-        ----------
-        path: URL of file on this filesystems
-        start, end: int
-            Bytes limits of the read. If negative, backwards from end,
-            like usual python slices. Either can be None for start or
-            end of file, respectively
-        kwargs: passed to ``open()``.
+    def fetch_all(self, path: str) -> bytes:
+        """Given a path to a drive item, including the protocol string, fetch
+        the content of the file as bytes.
         """
-        if start is not None or end is not None:
-            raise NotImplementedError("cat_file does not currently support reading parts of a file")
-
-        url = self._path_to_url(path, action="content")
-        return self.client.request("GET", url, headers=kwargs.get("headers", None)).content
+        return self.client.request("GET", self._path_to_url(path, action="content")).content
 
     def info(self, path: str, **_) -> dict:
         """Get information about a file or directory.
