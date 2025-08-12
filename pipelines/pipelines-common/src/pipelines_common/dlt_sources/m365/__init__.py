@@ -16,7 +16,7 @@ for protocol in M365DriveFS.protocol:
     MTIME_DISPATCH[protocol] = MTIME_DISPATCH["file"]
 
 
-class M365DDriveItem(FileItemDict):
+class M365DriveItem(FileItemDict):
     """Specialises FileItemDict to add 'fetch_bytes' to bypass complicated file reading/caching in
     'read_bytes' and just download the file content"""
 
@@ -28,7 +28,7 @@ class M365DDriveItem(FileItemDict):
 # This is designed to look similar to the dlt.filesystem resource where the resource returns DriveItem
 # objects that include the content as raw bytes. The bytes need to be parsed by an appropriate
 # transformer
-@decorators.resource()
+@decorators.resource
 def sharepoint(
     site_url: str = dlt.config.value,
     credentials: M365CredentialsResource = dlt.secrets.value,
@@ -36,7 +36,7 @@ def sharepoint(
     files_per_page: int = DEFAULT_CHUNK_SIZE,
     extract_content: bool = False,
     modified_after: pendulum.DateTime | None = None,
-) -> Iterator[List[M365DDriveItem]]:
+) -> Iterator[List[M365DriveItem]]:
     """A dlt resource to pull files stored in a SharePoint document library.
 
     :param site_url: The absolute url to the main page of the SharePoint site
@@ -46,7 +46,7 @@ def sharepoint(
     :return: List[DltResource]: A list of DriveItems representing the file
     """
     sp_library = M365DriveFS(credentials, site_url)
-    files_chunk: List[M365DDriveItem] = []
+    files_chunk: List[M365DriveItem] = []
     for file_model in glob_files(
         sp_library, bucket_url=M365DriveFS.protocol[0] + "://", file_glob=file_glob
     ):
@@ -56,7 +56,7 @@ def sharepoint(
             continue
         else:
             log_msg += ": added for processing."
-            file_dict = M365DDriveItem(file_model, fsspec=sp_library)
+            file_dict = M365DriveItem(file_model, fsspec=sp_library)
             if extract_content:
                 file_dict["file_content"] = file_dict.read_bytes()
             files_chunk.append(file_dict)

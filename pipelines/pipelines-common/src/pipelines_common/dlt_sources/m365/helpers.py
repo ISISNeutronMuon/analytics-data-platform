@@ -5,6 +5,7 @@ from authlib.integrations.httpx_client import OAuth2Client
 from fsspec import AbstractFileSystem
 from dlt.common.configuration.specs import configspec
 from dlt.common.typing import TSecretStrValue
+from httpx import Response
 import pendulum
 
 
@@ -47,6 +48,7 @@ class M365DriveFS(AbstractFileSystem):
 
     protocol = ("m365",)
     drives_api_url = f"{M365CredentialsResource.api_url}/drives"
+    http_retries = 5
 
     def __init__(self, credentials: M365CredentialsResource, site_url: str, **extra_kwargs):
         super_kwargs = extra_kwargs.copy()
@@ -64,7 +66,7 @@ class M365DriveFS(AbstractFileSystem):
         """Given a path to a drive item, including the protocol string, fetch
         the content of the file as bytes.
         """
-        return self.client.request("GET", self._path_to_url(path, action="content")).content
+        return self._msgraph_get(self._path_to_url(path, action="content")).content
 
     def info(self, path: str, **_) -> dict:
         """Get information about a file or directory.
@@ -75,7 +77,7 @@ class M365DriveFS(AbstractFileSystem):
             Path to get information about
         """
         url = self._path_to_url(path)
-        response = self.client.request("GET", url)
+        response = self._msgraph_get(url)
         return self._drive_item_info_to_fsspec_info(response.json())
 
     def ls(
@@ -99,7 +101,7 @@ class M365DriveFS(AbstractFileSystem):
         """
 
         def _get_page(page_url: str, page_params: dict | None = None) -> tuple[list, str | None]:
-            response = self.client.request("GET", page_url, params=page_params)
+            response = self._msgraph_get(page_url, params=page_params)
             response_json = response.json()
             return response_json.get("value", []), (response_json.get("@odata.nextLink", None))
 
@@ -138,7 +140,7 @@ class M365DriveFS(AbstractFileSystem):
         #  - get the site ID from the path
         #  - get the drive ID from the /drive resource of the site
         def _get_id(endpoint_url: str) -> str:
-            response = self.client.request("GET", endpoint_url, params={"$select": "id"})
+            response = self._msgraph_get(endpoint_url, params={"$select": "id"})
             response.raise_for_status()
             return response.json()["id"]
 
@@ -211,3 +213,18 @@ class M365DriveFS(AbstractFileSystem):
             path = f":{path}:"
 
         return f"{self.drive_url}/root{path}{action}"
+
+    def _msgraph_get(self, url: str, **kwargs) -> Response:
+        return self._msgraph_request("GET", url, **kwargs)
+
+    def _msgraph_request(self, method: str, url: str, **kwargs) -> Response:
+        from retry.api import retry_call
+
+        return retry_call(
+            self.client.request,
+            fargs=(method, url),
+            fkwargs=kwargs,
+            tries=self.http_retries,
+            backoff=1.7,
+            max_delay=15,
+        )

@@ -43,6 +43,18 @@ class SharePointTestSettings:
             json={"id": SharePointTestSettings.library_id},
         )
 
+    @classmethod
+    def mock_glob_responses(
+        cls,
+        httpx_mock: HTTPXMock,
+        credentials: M365CredentialsResource,
+        files_to_be_found: dict,
+    ):
+        for file_path, file_info in files_to_be_found.items():
+            httpx_mock.add_response(
+                method="GET", url=f"{credentials.api_url}/root:{file_path}", json=file_info
+            )
+
 
 @pytest.fixture
 def pipeline():

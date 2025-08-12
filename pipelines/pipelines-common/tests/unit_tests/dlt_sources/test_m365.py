@@ -12,7 +12,8 @@ import pendulum
 from pipelines_common.dlt_sources.m365 import sharepoint, M365CredentialsResource
 
 import pytest
-
+from pytest_mock import MockerFixture
+from pytest_httpx import HTTPXMock
 from unit_tests.dlt_sources.conftest import SharePointTestSettings
 
 
@@ -46,29 +47,29 @@ def test_extract_sharepoint_source_raises_error_without_config(pipeline: dlt.Pip
 )
 def test_extract_sharepoint_yields_files_matching_glob(
     pipeline: dlt.Pipeline,
-    mock_drivefs_cls: unittest.mock.MagicMock,
+    httpx_mock: HTTPXMock,
     files_per_page: int,
     extract_content: bool,
 ):
-    num_files_found = 6
-    drivefs_glob_return_value = {
+    num_files_to_be_found = 6
+    files_to_be_found = {
         f"/Folder/{index}.csv": {
             "name": f"/Folder/{index}.csv",
             "type": "file",
             "mtime": datetime.datetime.fromisoformat("2025-01-01T00:00:00Z"),
             "size": "10",
         }
-        for index in range(num_files_found)
+        for index in range(num_files_to_be_found)
     }
-    if files_per_page >= num_files_found:
+    if files_per_page >= num_files_to_be_found:
         expected_transfomer_calls = 1
-        expected_transfomer_item_sizes = [num_files_found]
+        expected_transfomer_item_sizes = [num_files_to_be_found]
     else:
         expected_transfomer_calls = (
-            int(num_files_found / files_per_page) + num_files_found % files_per_page
+            int(num_files_to_be_found / files_per_page) + num_files_to_be_found % files_per_page
         )
         expected_transfomer_item_sizes = [
-            sum(batch) for batch in itertools.batched([1] * num_files_found, files_per_page)
+            sum(batch) for batch in itertools.batched([1] * num_files_to_be_found, files_per_page)
         ]
 
     transformer_calls = 0
@@ -91,14 +92,19 @@ def test_extract_sharepoint_yields_files_matching_glob(
         transformer_calls += 1
 
     credentials = M365CredentialsResource("tid", "cid", "cs3cr3t")
+    SharePointTestSettings.mock_get_drive_id_responses(httpx_mock, credentials)
+    SharePointTestSettings.mock_glob_responses(httpx_mock, credentials, files_to_be_found)
 
     # Beware that the test_glob & resulting return values are not linked so changing test_glob
     # will not affect the glob.return_value. Here we are relying on the MSDDriveFS client to do the
     # right thing and we just test we call it correctly.
     test_glob = "/Folder/*.csv"
-    mock_drivefs = mock_drivefs_cls.return_value
-    mock_drivefs.glob.return_value = drivefs_glob_return_value
-    mock_drivefs.open = unittest.mock.mock_open(read_data=b"0123456789")
+    # mock_drivefs = mock_drivefs_cls.return_value
+    # mock_drivefs.glob.return_value = drivefs_glob_return_value
+    # mock_drive_item_cls = mocker.patch(
+    #     "pipelines_common.dlt_sources.m365.M365DriveItem", autospec=True
+    # )
+    # mock_drive_item_cls.read_bytes.return_value = b"0123456789"
 
     pipeline.extract(
         sharepoint(
@@ -111,11 +117,11 @@ def test_extract_sharepoint_yields_files_matching_glob(
         | assert_expected_drive_items()
     )
 
-    mock_drivefs_cls.assert_called_once_with(credentials, SharePointTestSettings.site_url)
-    mock_drivefs.glob.assert_called_with(test_glob, detail=True)
+    # mock_drivefs_cls.assert_called_once_with(credentials, SharePointTestSettings.site_url)
+    # mock_drivefs.glob.assert_called_with(test_glob, detail=True)
     assert expected_transfomer_calls == transformer_calls
     # check we've seen each expected_file
-    for file_path in drivefs_glob_return_value.keys():
+    for file_path in files_to_be_found.keys():
         assert file_path in file_paths_seen
 
 

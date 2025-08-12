@@ -18,7 +18,15 @@ from dlt.sources import TDataItems
 import pendulum
 import pandas as pd
 from pipelines_common.cli import cli_main
-from pipelines_common.dlt_sources.m365 import sharepoint, M365DDriveItem
+from pipelines_common.dlt_sources.m365 import (
+    sharepoint,
+    M365DriveItem,
+)
+from pipelines_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
+    pyiceberg_adapter,
+    pyiceberg_partition,
+)
+
 
 EXCEL_ENGINE = "calamine"
 PIPELINE_NAME = "electricity_sharepoint"
@@ -27,7 +35,7 @@ SITE_URL = "https://stfc365.sharepoint.com/sites/ISISSustainability"
 
 
 def to_utc(ts: pd.Series) -> pd.Series:
-    """Convert timestamp to UTC"""
+    """Assumes timezone unaware data and converts to UTC"""
     return ts.dt.tz_localize(RDM_TIMEZONE).dt.tz_convert("UTC")
 
 
@@ -60,7 +68,7 @@ def read_power_consumption_excel(
 
 @dlt.transformer(section="m365")
 def extract_content_and_read(
-    items: Iterator[M365DDriveItem], skiprows: int
+    items: Iterator[M365DriveItem], skiprows: int
 ) -> Iterator[TDataItems]:
     """Extracts the file content and reads it assuming it is a .csv or a .xlsx file
 
@@ -70,7 +78,8 @@ def extract_content_and_read(
     :param items: An iterator of dicts describing the file content
     :param skiprows: Number of rows in the csv/xlsx files to skip
     """
-
+    # Each individual chunk is small so batch up the reads and yield a single DataFrame
+    df_batch = None
     for file_obj in items:
         file_content = io.BytesIO(file_obj.read_bytes())
         match pathlib.Path(file_obj["file_name"]).suffix:
@@ -82,8 +91,9 @@ def extract_content_and_read(
                 raise RuntimeError(
                     f"Unsupported file extension in '{file_obj['file_name']}'"
                 )
+        df_batch = pd.concat((df_batch, df)) if df_batch is not None else df
 
-        yield df
+    yield df_batch
 
 
 @dlt.resource(merge_key="DateTime")
@@ -108,7 +118,9 @@ def rdm_data(
 cli_main(
     pipeline_name=PIPELINE_NAME,
     default_destination="pipelines_common.dlt_destinations.pyiceberg",
-    data_generator=rdm_data,
+    data_generator=pyiceberg_adapter(
+        rdm_data, partition=pyiceberg_partition.year("date_time")
+    ),
     dataset_name_suffix=PIPELINE_NAME,
     default_write_disposition="merge",
 )
