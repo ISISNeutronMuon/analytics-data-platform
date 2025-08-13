@@ -4,7 +4,7 @@ set -euo pipefail
 # Constants
 ELT_GIT_URL={{ ingestion_elt_git_url }}
 ELT_GIT_DEST={{ ingestion_elt_git_dest }}
-ELT_GIT_REF=main
+ELT_GIT_REF=${ELT_GIT_REF:-main}
 EXTRACT_AND_LOAD_SCRIPT=extract_and_load.py
 LOG_LEVEL=DEBUG
 ON_PIPELINE_FAILURE=log_and_continue
