@@ -9,9 +9,10 @@
 # [tool.uv.sources]
 # pipelines-common = { path = "../../../pipelines-common" }
 # ///
+import concurrent.futures
 import io
 import pathlib
-from typing import Iterator
+from typing import Iterator, Optional
 
 import dlt
 from dlt.sources import TDataItems
@@ -39,13 +40,15 @@ def to_utc(ts: pd.Series) -> pd.Series:
     return ts.dt.tz_localize(RDM_TIMEZONE).dt.tz_convert("UTC")
 
 
-def read_power_consumption_csv(file_content: io.BytesIO, skiprows: int) -> pd.DataFrame:
+def read_power_consumption_csv(
+    file_content: io.BytesIO, skip_rows: int
+) -> pd.DataFrame:
     """Read csv-formatted power consumption records.
 
     Expected columns: Date, Time, Total Power (MW)
     The Date & Time columns together to create a single DateTime column.
     """
-    df = pd.read_csv(file_content, skiprows=skiprows)
+    df = pd.read_csv(file_content, skiprows=skip_rows)
     df["DateTime"] = to_utc(
         pd.to_datetime(df["Date"] + " " + df["Time"], format="%d/%m/%y %H:%M:%S")
     )
@@ -53,14 +56,14 @@ def read_power_consumption_csv(file_content: io.BytesIO, skiprows: int) -> pd.Da
 
 
 def read_power_consumption_excel(
-    file_content: io.BytesIO, skiprows: int
+    file_content: io.BytesIO, skip_rows: int
 ) -> pd.DataFrame:
     """Read an excel-formatted power consumption record.
 
     Expected columns: Time, Total Power (MW)
     The Time column is renamed DateTime for consistency.
     """
-    df = pd.read_excel(file_content, engine=EXCEL_ENGINE, skiprows=skiprows)
+    df = pd.read_excel(file_content, engine=EXCEL_ENGINE, skiprows=skip_rows)
     df = df.rename(columns={"Time": "DateTime"})
     df["DateTime"] = to_utc(df["DateTime"])
     return df
@@ -68,7 +71,9 @@ def read_power_consumption_excel(
 
 @dlt.transformer(section="m365")
 def extract_content_and_read(
-    items: Iterator[M365DriveItem], skiprows: int
+    items: Iterator[M365DriveItem],
+    skip_rows: int = dlt.config.value,
+    max_threads: Optional[int] = dlt.config.value,
 ) -> Iterator[TDataItems]:
     """Extracts the file content and reads it assuming it is a .csv or a .xlsx file
 
@@ -76,22 +81,32 @@ def extract_content_and_read(
     processing.
 
     :param items: An iterator of dicts describing the file content
-    :param skiprows: Number of rows in the csv/xlsx files to skip
+    :param skip_rows: Number of rows in the csv/xlsx files to skip
+    :param max_threads (optional): How many threads to use to process the files. Defaults to concurrent.futures.ThreadPoolExecutor default value.
     """
-    # Each individual chunk is small so batch up the reads and yield a single DataFrame
-    df_batch = None
-    for file_obj in items:
+
+    # The files are all independent. Process them in parallel and combine for a single yield
+    def read_as_dataframe(file_obj: M365DriveItem) -> pd.DataFrame:
         file_content = io.BytesIO(file_obj.read_bytes())
         match pathlib.Path(file_obj["file_name"]).suffix:
             case ".csv":
-                df = read_power_consumption_csv(file_content, skiprows)
+                df = read_power_consumption_csv(file_content, skip_rows)
             case ".xlsx":
-                df = read_power_consumption_excel(file_content, skiprows)
+                df = read_power_consumption_excel(file_content, skip_rows)
             case _:
                 raise RuntimeError(
                     f"Unsupported file extension in '{file_obj['file_name']}'"
                 )
-        df_batch = pd.concat((df_batch, df)) if df_batch is not None else df
+        return df
+
+    df_batch = None
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
+        future_to_file_item = {
+            executor.submit(read_as_dataframe, file_obj): file_obj for file_obj in items
+        }
+        for future in concurrent.futures.as_completed(future_to_file_item):
+            df = future.result()
+            df_batch = pd.concat((df_batch, df)) if df_batch is not None else df
 
     yield df_batch
 
@@ -109,9 +124,7 @@ def rdm_data(
         extract_content=False,
         modified_after=datetime_cur.start_value,
     )
-    reader = files | extract_content_and_read(
-        **dlt.config[f"{PIPELINE_NAME}__pandas_read"]
-    )
+    reader = files | extract_content_and_read()
     yield from reader
 
 

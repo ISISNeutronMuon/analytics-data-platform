@@ -1,5 +1,6 @@
 import re
 from tempfile import TemporaryDirectory
+from typing import Dict
 
 import dlt
 
@@ -48,12 +49,48 @@ class SharePointTestSettings:
         cls,
         httpx_mock: HTTPXMock,
         credentials: M365CredentialsResource,
-        files_to_be_found: dict,
+        files_to_be_found: Dict[str, list],
+        mock_fetch_content: bool,
     ):
-        for file_path, file_info in files_to_be_found.items():
+        for dir_name, dir_contents in files_to_be_found.items():
+            dir_path = f"/{dir_name}"
+            # response for folder
             httpx_mock.add_response(
-                method="GET", url=f"{credentials.api_url}/root:{file_path}", json=file_info
+                method="GET",
+                url=f"{credentials.api_url}/drives/{cls.library_id}/root:{dir_path}:",
+                json={
+                    "parentReference": {"path": "/drive/root:"},
+                    "name": dir_name,
+                    "folder": {"childCount": len(dir_contents)},
+                },
+                is_reusable=True,
             )
+            # responses for file item info
+            httpx_mock.add_response(
+                method="GET",
+                url=f"{credentials.api_url}/drives/{cls.library_id}/root:{dir_path}:/children",
+                json={
+                    "value": [
+                        {
+                            "id": f"{index}" * 10,
+                            "name": file_item["name"],
+                            "size": file_item["size"],
+                            "file": {"mimeType": "image/png"},
+                            "lastModifiedDateTime": file_item["mtime"],
+                            "parentReference": {"path": f"/drive/root:/{dir_name}"},
+                        }
+                        for index, file_item in enumerate(dir_contents)
+                    ]
+                },
+                is_reusable=True,
+            )
+            if mock_fetch_content:
+                for file_item in dir_contents:
+                    httpx_mock.add_response(
+                        method="GET",
+                        url=f"{credentials.api_url}/drives/{cls.library_id}/root:{dir_path}/{file_item['name']}:/content",
+                        content=b"0123456789",
+                    )
 
 
 @pytest.fixture

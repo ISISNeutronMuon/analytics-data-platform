@@ -6,7 +6,7 @@ from fsspec import AbstractFileSystem
 from dlt.common.configuration.specs import configspec
 from dlt.common.typing import TSecretStrValue
 from httpx import Response
-import pendulum
+import datetime
 
 
 @configspec
@@ -166,11 +166,11 @@ class M365DriveFS(AbstractFileSystem):
             "size": drive_item_info.get("size", 0),
             "type": _type,
             "item_info": drive_item_info,
-            "time": pendulum.parse(
-                drive_item_info.get("createdDateTime", pendulum.DateTime.EPOCH.isoformat())
+            "time": datetime.datetime.fromisoformat(
+                drive_item_info.get("createdDateTime", "1970-01-01T00:00:00Z")
             ),
-            "mtime": pendulum.parse(
-                drive_item_info.get("lastModifiedDateTime", pendulum.DateTime.EPOCH.isoformat())
+            "mtime": datetime.datetime.fromisoformat(
+                drive_item_info.get("lastModifiedDateTime", "1970-01-01T00:00:00Z")
             ),
             "id": drive_item_info.get("id"),
         }
