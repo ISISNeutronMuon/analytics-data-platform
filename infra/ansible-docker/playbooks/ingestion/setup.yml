@@ -146,3 +146,22 @@
         minute: "10"
         hour: "2"
         job: "{{ ingestion_elt_cron_scripts_dir }}/elt_task.sh pipelines/ingest/accelerator/opralogweb pipelines/modelling/isis --select '+models/accelerator' > {{ ingestion_elt_cron_log_dir }}/opralogweb/elt-$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log 2>&1"
+
+    # ---------- Electricity ----------
+    - name: Ensure Electricity SharePoint cron logs directory exists
+      become: true
+      ansible.builtin.file:
+        path: "{{ ingestion_elt_cron_log_dir }}/electricity_sharepoint"
+        state: directory
+        recurse: true
+        mode: "u=rwx,g=rx,o=rx"
+        owner: 1000
+        group: 1000
+
+    - name: Ensure Electricity SharePoint ingest job exists
+      ansible.builtin.cron:
+        name: "Electricity SharePoint ingest"
+        state: "{{ ingestion_cron_state | default('present') }}"
+        minute: "05"
+        hour: "*"
+        job: "{{ ingestion_elt_cron_scripts_dir }}/elt_task.sh pipelines/ingest/facility/electricity_sharepoint pipelines/modelling/isis --select '+models/facility/power_consumption.sql' > {{ ingestion_elt_cron_log_dir }}/electricity_sharepoint/elt-$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log 2>&1"

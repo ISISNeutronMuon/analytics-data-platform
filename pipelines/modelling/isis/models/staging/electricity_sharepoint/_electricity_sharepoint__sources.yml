@@ -1,0 +1,6 @@
+version: 2
+
+sources:
+  - name: src_electricity_sharepoint
+    tables:
+      - name: rdm_data

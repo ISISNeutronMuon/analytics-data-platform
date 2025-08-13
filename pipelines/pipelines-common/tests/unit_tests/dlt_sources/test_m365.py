@@ -1,19 +1,17 @@
 import datetime
 import itertools
-from typing import Iterator
-import unittest.mock
+from typing import cast, Iterator
 
 import dlt
 from dlt.common.configuration.exceptions import ConfigFieldMissingException
 from dlt.common.storages.fsspec_filesystem import FileItemDict
 from dlt.pipeline.exceptions import PipelineStepFailed
+import pendulum
 
 from pipelines_common.dlt_sources.m365 import sharepoint, M365CredentialsResource
 
 import pytest
-from pytest_mock import MockerFixture
 from pytest_httpx import HTTPXMock
-
 from unit_tests.dlt_sources.conftest import SharePointTestSettings
 
 
@@ -38,75 +36,76 @@ def test_extract_sharepoint_source_raises_error_without_config(pipeline: dlt.Pip
 
 
 @pytest.mark.parametrize(
-    ["files_per_page", "extract_content"],
+    ["files_per_page", "extract_content", "modified_after"],
     [
-        (100, False),
-        (100, True),
-        (2, False),
+        (100, False, None),
+        (100, True, None),
+        (2, False, None),
+        # The datetime provided here is based on the data set in conftest.py
+        (100, False, cast(pendulum.DateTime, pendulum.parse("2025-01-01T00:03:00Z"))),
     ],
 )
-def test_extract_sharepoint_files_yields_files_matching_glob(
+def test_extract_sharepoint_yields_files_matching_glob(
     pipeline: dlt.Pipeline,
-    mocker: MockerFixture,
     httpx_mock: HTTPXMock,
     files_per_page: int,
     extract_content: bool,
+    modified_after: pendulum.DateTime | None,
 ):
-    num_files_found = 6
-    drivefs_glob_return_value = {
-        f"/Folder/{index}.csv": {
-            "name": f"/Folder/{index}.csv",
-            "type": "file",
-            "mtime": datetime.datetime.fromisoformat("2025-01-01T00:00:00Z"),
-            "size": "10",
-        }
-        for index in range(num_files_found)
+    files_available_count = 6
+    files_available = {
+        "Folder": [
+            {
+                "name": f"{index}.csv",
+                "mtime": (
+                    datetime.datetime(2025, 1, 1) + datetime.timedelta(minutes=1 * index)
+                ).isoformat(),
+                "size": "10",
+            }
+            for index in range(files_available_count)
+        ]
     }
-    if files_per_page >= num_files_found:
+
+    if files_per_page >= files_available_count:
         expected_transfomer_calls = 1
-        expected_transfomer_item_sizes = [num_files_found]
+        expected_transformer_item_sizes = [files_available_count if modified_after is None else 2]
     else:
         expected_transfomer_calls = (
-            int(num_files_found / files_per_page) + num_files_found % files_per_page
+            int(files_available_count / files_per_page) + files_available_count % files_per_page
         )
-        expected_transfomer_item_sizes = [
-            sum(batch) for batch in itertools.batched([1] * num_files_found, files_per_page)
+        expected_transformer_item_sizes = [
+            sum(batch) for batch in itertools.batched([1] * files_available_count, files_per_page)
         ]
 
     transformer_calls = 0
-    file_paths_seen = set()
 
     @dlt.transformer()
     def assert_expected_drive_items(drive_items: Iterator[FileItemDict]):
         nonlocal transformer_calls
-        assert len(list(drive_items)) == expected_transfomer_item_sizes[transformer_calls]
-        for drive_obj in drive_items:
-            assert drive_obj["file_url"].startswith("msgd:///Folder/")
-            file_paths_seen.add(drive_obj["file_url"][len("msgd://") :])
-            assert drive_obj["modification_date"] == datetime.datetime.fromisoformat(
-                "2025-01-01T00:00:00Z"
-            )
+
+        expected_items_size = expected_transformer_item_sizes[transformer_calls]
+        drive_items_list = list(drive_items)
+        assert len(drive_items_list) == expected_items_size
+        for drive_obj in drive_items_list:
+            assert drive_obj["file_url"].startswith("m365:///Folder/")
             assert drive_obj["size_in_bytes"] == 10
+            assert isinstance((drive_obj["modification_date"]), datetime.datetime)
+            if modified_after is not None:
+                assert drive_obj["modification_date"] > modified_after
             if extract_content:
-                assert drive_obj["file_content"] == b"0123456789"
+                assert (
+                    pendulum.parse(drive_obj["file_content"].decode("utf-8"))
+                    == drive_obj["modification_date"]
+                )
 
         transformer_calls += 1
 
     credentials = M365CredentialsResource("tid", "cid", "cs3cr3t")
     SharePointTestSettings.mock_get_drive_id_responses(httpx_mock, credentials)
-
-    # Mock out drive client to return known items from glob.
-    # Beware that the test_glob & resulting return values are not linked so changing test_glob
-    # will not affect the glob.return_value. Here we are relying on the MSDDriveFS client to do the
-    # right thing and we just test we call it correctly.
-    patched_drivefs_cls = mocker.patch(
-        "pipelines_common.dlt_sources.m365.MSGDriveFS", autospec=True
+    test_glob = "/Folder/*.csv"  # if this is changed the mock responses will need updating
+    SharePointTestSettings.mock_glob_responses(
+        httpx_mock, credentials, files_available, extract_content
     )
-    patched_drivefs = patched_drivefs_cls.return_value
-    test_glob = "/Folder/*.csv"
-    patched_drivefs.glob.return_value = drivefs_glob_return_value
-    patched_drivefs.open = unittest.mock.mock_open(read_data=b"0123456789")
-
     pipeline.extract(
         sharepoint(
             SharePointTestSettings.site_url,
@@ -114,18 +113,9 @@ def test_extract_sharepoint_files_yields_files_matching_glob(
             file_glob=test_glob,
             files_per_page=files_per_page,
             extract_content=extract_content,
+            modified_after=modified_after,
         )
         | assert_expected_drive_items()
     )
 
-    patched_drivefs_cls.assert_called_once_with(
-        drive_id=SharePointTestSettings.library_id,
-        oauth2_client_params=credentials.oauth2_client_params(
-            {"access_token": SharePointTestSettings.access_token}
-        ),
-    )
-    patched_drivefs.glob.assert_called_with(test_glob, detail=True)
     assert expected_transfomer_calls == transformer_calls
-    # check we've seen each expected_file
-    for file_path in drivefs_glob_return_value.keys():
-        assert file_path in file_paths_seen

@@ -1,0 +1,6 @@
+[electricity_sharepoint.extract]
+workers = 1
+
+[electricity_sharepoint.sources.m365]
+files_per_page = 200
+skip_rows = 7
