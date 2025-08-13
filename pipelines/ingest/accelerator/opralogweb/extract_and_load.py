@@ -2,11 +2,11 @@
 # /// script
 # requires-python = "==3.13.*"
 # dependencies = [
-#     "dlt[sql-database]>=1.10.0,<1.11.0",
+#     "dlt[sql-database]",
 #     "html2text==2025.4.15",
-#     "pandas>=2.2.3,<2.3.0",
+#     "pandas~=2.3.1",
 #     "pipelines-common",
-#     "pymssql>=2.3.4,<2.4.0",
+#     "pymssql~=2.3.4",
 # ]
 #
 # [tool.uv.sources]
