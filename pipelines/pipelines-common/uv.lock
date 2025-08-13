@@ -755,6 +755,7 @@ source = { editable = "." }
 dependencies = [
     { name = "authlib" },
     { name = "dlt", extra = ["parquet", "s3"] },
+    { name = "httpx" },
     { name = "lock" },
     { name = "pyiceberg" },
 ]
@@ -775,6 +776,7 @@ dev = [
 requires-dist = [
     { name = "authlib", specifier = "~=1.6.1" },
     { name = "dlt", extras = ["parquet", "s3"], specifier = "~=1.15.0" },
+    { name = "httpx", specifier = "~=0.28.1" },
     { name = "lock", specifier = ">=2018.3.25.2110" },
     { name = "pyiceberg", specifier = "~=0.9.1" },
 ]

@@ -11,6 +11,7 @@ requires-python = ">=3.13"
 dependencies = [
     "authlib~=1.6.1",
     "dlt[parquet,s3]~=1.15.0",
+    "httpx~=0.28.1",
     "lock>=2018.3.25.2110",
     "pyiceberg~=0.9.1",
 ]
