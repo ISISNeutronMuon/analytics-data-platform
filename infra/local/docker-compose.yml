@@ -5,6 +5,7 @@
 # The base address of all services is "http://analytics.localhost:58080"
 
 # image versions
+x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3.2
 x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.9.3
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-06-13T11-33-47Z
 x-postgres-image: &postgres-image postgres:16.9-bookworm
@@ -84,6 +85,26 @@ services:
       create_db_if_not_exists lakekeeper
       create_db_if_not_exists superset
       "
+    networks: *lakehouse-networks
+
+  #########################################################
+  # Keycloak - Identity provider
+  #########################################################
+  keycloak:
+    container_name: local-lakehouse-keycloak
+    image: *keycloak-image
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: adpuser
+      KC_BOOTSTRAP_ADMIN_PASSWORD: adppassword
+    command:
+      [
+        "start-dev",
+        "--verbose",
+        "--log-level=INFO",
+        "--features=token-exchange",
+        "--proxy-headers=xforwarded",
+        "--hostname=http://analytics.localhost:58080/auth",
+      ]
     networks: *lakehouse-networks
 
   #########################################################
