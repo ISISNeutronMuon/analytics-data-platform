@@ -19,6 +19,7 @@ from dlt.sources import TDataItems
 import pendulum
 import pandas as pd
 from pipelines_common.cli import cli_main
+from pipelines_common.logging import logging
 from pipelines_common.dlt_sources.m365 import (
     sharepoint,
     M365DriveItem,
@@ -27,6 +28,8 @@ from pipelines_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
     pyiceberg_adapter,
     pyiceberg_partition,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 
 EXCEL_ENGINE = "calamine"
@@ -43,7 +46,7 @@ def to_utc(ts: pd.Series) -> pd.Series:
 def read_power_consumption_csv(
     file_content: io.BytesIO, skip_rows: int
 ) -> pd.DataFrame:
-    """Read csv-formatted power consumption records.
+    """Read csv-formatted power consumption records. This can return None if there is not data in the file.
 
     Expected columns: Date, Time, Total Power (MW)
     The Date & Time columns together to create a single DateTime column.
@@ -86,17 +89,24 @@ def extract_content_and_read(
     """
 
     # The files are all independent. Process them in parallel and combine for a single yield
-    def read_as_dataframe(file_obj: M365DriveItem) -> pd.DataFrame:
+    def read_as_dataframe(file_obj: M365DriveItem) -> pd.DataFrame | None:
         file_content = io.BytesIO(file_obj.read_bytes())
-        match pathlib.Path(file_obj["file_name"]).suffix:
-            case ".csv":
-                df = read_power_consumption_csv(file_content, skip_rows)
-            case ".xlsx":
-                df = read_power_consumption_excel(file_content, skip_rows)
-            case _:
-                raise RuntimeError(
-                    f"Unsupported file extension in '{file_obj['file_name']}'"
-                )
+        try:
+            match pathlib.Path(file_obj["file_name"]).suffix:
+                case ".csv":
+                    df = read_power_consumption_csv(file_content, skip_rows)
+                case ".xlsx":
+                    df = read_power_consumption_excel(file_content, skip_rows)
+                case _:
+                    raise RuntimeError(
+                        f"Unsupported file extension in '{file_obj['file_name']}'"
+                    )
+        except ValueError as exc:
+            LOGGER.warning(
+                f"Error reading '{file_obj['file_name']}': {str(exc)}. Skipping"
+            )
+            df = None
+
         return df
 
     df_batch = None
@@ -106,7 +116,8 @@ def extract_content_and_read(
         }
         for future in concurrent.futures.as_completed(future_to_file_item):
             df = future.result()
-            df_batch = pd.concat((df_batch, df)) if df_batch is not None else df
+            if df is not None:
+                df_batch = pd.concat((df_batch, df)) if df_batch is not None else df
 
     yield df_batch
 
