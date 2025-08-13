@@ -36,6 +36,7 @@ EXCEL_ENGINE = "calamine"
 PIPELINE_NAME = "electricity_sharepoint"
 RDM_TIMEZONE = "Europe/London"
 SITE_URL = "https://stfc365.sharepoint.com/sites/ISISSustainability"
+LAG_WINDOW_SECONDS = 24 * 60 * 60
 
 
 def to_utc(ts: pd.Series) -> pd.Series:
@@ -122,11 +123,17 @@ def extract_content_and_read(
     yield df_batch
 
 
+# Occasionally pandas raises a EmptyDataError when parsing the CSV content indicating
+# there is no data. This is likely an issue with a file being listed but no content yet available.
+# We skip these files but want to make sure we grab them next time so we use the lag functionality
+# to look back LAG_WINDOW_SECONDS when the next load is run.
 @dlt.resource(merge_key="DateTime")
 def rdm_data(
     datetime_cur=dlt.sources.incremental(
         "DateTime",
         initial_value=pendulum.DateTime.EPOCH,
+        lag=LAG_WINDOW_SECONDS,
+        last_value_func=max,
     ),
 ) -> Iterator[TDataItems]:
     files = sharepoint(
