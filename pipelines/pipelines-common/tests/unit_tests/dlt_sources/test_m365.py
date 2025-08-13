@@ -1,7 +1,6 @@
 import datetime
 import itertools
 from typing import cast, Iterator
-import unittest.mock
 
 import dlt
 from dlt.common.configuration.exceptions import ConfigFieldMissingException
@@ -12,7 +11,6 @@ import pendulum
 from pipelines_common.dlt_sources.m365 import sharepoint, M365CredentialsResource
 
 import pytest
-from pytest_mock import MockerFixture
 from pytest_httpx import HTTPXMock
 from unit_tests.dlt_sources.conftest import SharePointTestSettings
 
@@ -54,8 +52,8 @@ def test_extract_sharepoint_yields_files_matching_glob(
     extract_content: bool,
     modified_after: pendulum.DateTime | None,
 ):
-    num_files_to_be_found = 6
-    files_to_be_found = {
+    files_available_count = 6
+    files_available = {
         "Folder": [
             {
                 "name": f"{index}.csv",
@@ -64,46 +62,49 @@ def test_extract_sharepoint_yields_files_matching_glob(
                 ).isoformat(),
                 "size": "10",
             }
-            for index in range(num_files_to_be_found)
+            for index in range(files_available_count)
         ]
     }
 
-    if files_per_page >= num_files_to_be_found:
+    if files_per_page >= files_available_count:
         expected_transfomer_calls = 1
-        expected_transformer_item_sizes = [num_files_to_be_found if modified_after is None else 2]
+        expected_transformer_item_sizes = [files_available_count if modified_after is None else 2]
     else:
         expected_transfomer_calls = (
-            int(num_files_to_be_found / files_per_page) + num_files_to_be_found % files_per_page
+            int(files_available_count / files_per_page) + files_available_count % files_per_page
         )
         expected_transformer_item_sizes = [
-            sum(batch) for batch in itertools.batched([1] * num_files_to_be_found, files_per_page)
+            sum(batch) for batch in itertools.batched([1] * files_available_count, files_per_page)
         ]
 
     transformer_calls = 0
-    file_paths_seen = set()
 
     @dlt.transformer()
     def assert_expected_drive_items(drive_items: Iterator[FileItemDict]):
         nonlocal transformer_calls
+
         expected_items_size = expected_transformer_item_sizes[transformer_calls]
         drive_items_list = list(drive_items)
         assert len(drive_items_list) == expected_items_size
-        for drive_obj in drive_items_list[-expected_items_size:]:
+        for drive_obj in drive_items_list:
             assert drive_obj["file_url"].startswith("m365:///Folder/")
-            file_paths_seen.add(drive_obj["file_url"][len("m365://") :])
-            assert isinstance((drive_obj["modification_date"]), datetime.datetime)
             assert drive_obj["size_in_bytes"] == 10
+            assert isinstance((drive_obj["modification_date"]), datetime.datetime)
+            if modified_after is not None:
+                assert drive_obj["modification_date"] > modified_after
             if extract_content:
-                assert drive_obj["file_content"] == b"0123456789"
+                assert (
+                    pendulum.parse(drive_obj["file_content"].decode("utf-8"))
+                    == drive_obj["modification_date"]
+                )
 
         transformer_calls += 1
 
     credentials = M365CredentialsResource("tid", "cid", "cs3cr3t")
     SharePointTestSettings.mock_get_drive_id_responses(httpx_mock, credentials)
-
     test_glob = "/Folder/*.csv"  # if this is changed the mock responses will need updating
     SharePointTestSettings.mock_glob_responses(
-        httpx_mock, credentials, files_to_be_found, extract_content
+        httpx_mock, credentials, files_available, extract_content
     )
     pipeline.extract(
         sharepoint(
@@ -118,7 +119,3 @@ def test_extract_sharepoint_yields_files_matching_glob(
     )
 
     assert expected_transfomer_calls == transformer_calls
-    # check we've seen each expected files
-    for dir_name, dir_contents in files_to_be_found.items():
-        for file_item in dir_contents[:]:
-            assert f"/{dir_name}/{file_item['name']}" in file_paths_seen

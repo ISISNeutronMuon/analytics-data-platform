@@ -1,0 +1,1065 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users('2353c70e-342f-44cb-b03b-e1dd34567c46')/drive/root/children",
+  "@microsoft.graph.tips": "Use $select to choose only the properties your app needs, as this can lead to performance improvements. For example: GET me/drive/root/children?$select=audio,bundle",
+  "value": [
+    {
+      "createdDateTime": "2024-03-25T13:38:56Z",
+      "eTag": "\"{92579C4D-9FFE-4837-82F8-969F015ED72B},1\"",
+      "id": "01WRQGZLSNTRLZF7U7G5EIF6EWT4AV5VZL",
+      "lastModifiedDateTime": "2024-03-25T13:38:56Z",
+      "name": "Apps",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Apps",
+      "cTag": "\"c:{92579C4D-9FFE-4837-82F8-969F015ED72B},0\"",
+      "size": 0,
+      "createdBy": {
+        "application": {
+          "id": "4765445b-32c6-49b0-83e6-1d93765276ca",
+          "displayName": "OfficeHome"
+        },
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "application": {
+          "id": "4765445b-32c6-49b0-83e6-1d93765276ca",
+          "displayName": "OfficeHome"
+        },
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2024-03-25T13:38:56Z",
+        "lastModifiedDateTime": "2024-03-25T13:38:56Z"
+      },
+      "folder": {
+        "childCount": 0
+      },
+      "specialFolder": {
+        "name": "apps"
+      }
+    },
+    {
+      "createdDateTime": "2024-06-21T12:54:10Z",
+      "eTag": "\"{4B1C44BB-9EBC-446D-B128-6625319046F9},2\"",
+      "id": "01WRQGZLV3IQOEXPE6NVCLCKDGEUYZARXZ",
+      "lastModifiedDateTime": "2024-06-21T12:53:35Z",
+      "name": "Atlassian",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Atlassian",
+      "cTag": "\"c:{4B1C44BB-9EBC-446D-B128-6625319046F9},0\"",
+      "size": 1324861,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2024-06-21T12:54:10Z",
+        "lastModifiedDateTime": "2024-06-21T12:53:35Z"
+      },
+      "folder": {
+        "childCount": 1
+      }
+    },
+    {
+      "createdDateTime": "2020-10-15T09:58:34Z",
+      "eTag": "\"{FF789CFC-2538-4722-9B02-3BB82CEF8181},1\"",
+      "id": "01WRQGZLX4TR4P6OBFEJDZWAR3XAWO7AMB",
+      "lastModifiedDateTime": "2020-10-15T09:58:34Z",
+      "name": "Attachments",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Attachments",
+      "cTag": "\"c:{FF789CFC-2538-4722-9B02-3BB82CEF8181},0\"",
+      "size": 37714,
+      "createdBy": {
+        "application": {
+          "id": "00000002-0000-0ff1-ce00-000000000000",
+          "displayName": "Microsoft.Exchange"
+        },
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "application": {
+          "id": "00000002-0000-0ff1-ce00-000000000000",
+          "displayName": "Microsoft.Exchange"
+        },
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2020-10-15T09:58:34Z",
+        "lastModifiedDateTime": "2020-10-15T09:58:34Z"
+      },
+      "folder": {
+        "childCount": 2
+      },
+      "specialFolder": {
+        "name": "attachments"
+      }
+    },
+    {
+      "createdDateTime": "2024-01-04T12:19:01Z",
+      "eTag": "\"{F50536C1-AA1B-4B12-8DB0-D843FF626585},4\"",
+      "id": "01WRQGZLWBGYC7KG5KCJFY3MGYIP7WEZMF",
+      "lastModifiedDateTime": "2024-01-04T09:20:56Z",
+      "name": "Away Days",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Away%20Days",
+      "cTag": "\"c:{F50536C1-AA1B-4B12-8DB0-D843FF626585},0\"",
+      "size": 20119459,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2024-01-04T12:19:01Z",
+        "lastModifiedDateTime": "2024-01-04T09:20:56Z"
+      },
+      "folder": {
+        "childCount": 2
+      }
+    },
+    {
+      "createdDateTime": "2021-02-04T10:29:58Z",
+      "eTag": "\"{A7EFE9F0-0CE2-481D-8303-FEECB7BC2786},2\"",
+      "id": "01WRQGZLXQ5HX2PYQMDVEIGA765S33YJ4G",
+      "lastModifiedDateTime": "2021-02-04T12:01:53Z",
+      "name": "Chartership - CITP",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Chartership%20-%20CITP",
+      "cTag": "\"c:{A7EFE9F0-0CE2-481D-8303-FEECB7BC2786},0\"",
+      "size": 152038,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2021-02-04T10:29:58Z",
+        "lastModifiedDateTime": "2021-02-04T12:01:53Z"
+      },
+      "folder": {
+        "childCount": 2
+      }
+    },
+    {
+      "createdDateTime": "2020-09-25T07:45:27Z",
+      "eTag": "\"{3E7270C9-BB55-4920-A77B-D6F82E585451},1\"",
+      "id": "01WRQGZLWJOBZD4VN3EBE2O66W7AXFQVCR",
+      "lastModifiedDateTime": "2020-09-25T07:45:27Z",
+      "name": "Data Reduction",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Data%20Reduction",
+      "cTag": "\"c:{3E7270C9-BB55-4920-A77B-D6F82E585451},0\"",
+      "size": 36213986,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2020-09-25T07:45:27Z",
+        "lastModifiedDateTime": "2020-09-25T07:45:27Z"
+      },
+      "folder": {
+        "childCount": 16
+      }
+    },
+    {
+      "createdDateTime": "2023-10-02T14:46:05Z",
+      "eTag": "\"{A8CEF44C-8EE2-4285-A52A-9F04D06419F5},1\"",
+      "id": "01WRQGZLSM6THKRYUOQVBKKKU7ATIGIGPV",
+      "lastModifiedDateTime": "2023-10-02T14:46:05Z",
+      "name": "ICD Technology Radar",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/ICD%20Technology%20Radar",
+      "cTag": "\"c:{A8CEF44C-8EE2-4285-A52A-9F04D06419F5},0\"",
+      "size": 2170,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2023-10-02T14:46:05Z",
+        "lastModifiedDateTime": "2023-10-02T14:46:05Z"
+      },
+      "folder": {
+        "childCount": 1
+      }
+    },
+    {
+      "createdDateTime": "2024-06-17T07:30:12Z",
+      "eTag": "\"{2EA43ABF-CB02-412B-85EA-AFED3B874A97},1\"",
+      "id": "01WRQGZLV7HKSC4AWLFNAYL2VP5U5YOSUX",
+      "lastModifiedDateTime": "2024-06-17T07:30:12Z",
+      "name": "Interviews",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Interviews",
+      "cTag": "\"c:{2EA43ABF-CB02-412B-85EA-AFED3B874A97},0\"",
+      "size": 0,
+      "createdBy": {
+        "application": {
+          "id": "c58637bb-e2e1-4312-8a00-04b5ffcd3403",
+          "displayName": "SharePoint Online Client Extensibility"
+        },
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "application": {
+          "id": "c58637bb-e2e1-4312-8a00-04b5ffcd3403",
+          "displayName": "SharePoint Online Client Extensibility"
+        },
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2024-06-17T07:30:12Z",
+        "lastModifiedDateTime": "2024-06-17T07:30:12Z"
+      },
+      "folder": {
+        "childCount": 1
+      }
+    },
+    {
+      "createdDateTime": "2023-03-09T13:01:04Z",
+      "eTag": "\"{FFCD6380-A584-41D6-98F7-FD862A00E1D0},3\"",
+      "id": "01WRQGZLUAMPG77BFF2ZAZR575QYVABYOQ",
+      "lastModifiedDateTime": "2024-01-30T09:30:00Z",
+      "name": "ISIS Data Policy",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/ISIS%20Data%20Policy",
+      "cTag": "\"c:{FFCD6380-A584-41D6-98F7-FD862A00E1D0},0\"",
+      "size": 172095,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2023-03-09T13:01:04Z",
+        "lastModifiedDateTime": "2024-01-30T09:30:00Z"
+      },
+      "folder": {
+        "childCount": 5
+      }
+    },
+    {
+      "createdDateTime": "2022-12-07T13:54:48Z",
+      "eTag": "\"{345E0DCF-11A0-417B-AF32-2369857792D2},2\"",
+      "id": "01WRQGZLWPBVPDJIARPNA26MRDNGCXPEWS",
+      "lastModifiedDateTime": "2023-01-03T08:24:11Z",
+      "name": "ISIS Data Solutions Architect",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/ISIS%20Data%20Solutions%20Architect",
+      "cTag": "\"c:{345E0DCF-11A0-417B-AF32-2369857792D2},0\"",
+      "size": 767165416,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2022-12-07T13:54:48Z",
+        "lastModifiedDateTime": "2023-01-03T08:24:11Z"
+      },
+      "folder": {
+        "childCount": 12
+      }
+    },
+    {
+      "createdDateTime": "2020-10-08T06:47:03Z",
+      "eTag": "\"{BFCB392F-6753-4665-85BE-B910CCF4C070},1\"",
+      "id": "01WRQGZLRPHHF36U3HMVDILPVZCDGPJQDQ",
+      "lastModifiedDateTime": "2020-10-08T06:47:03Z",
+      "name": "Line Management",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Line%20Management",
+      "cTag": "\"c:{BFCB392F-6753-4665-85BE-B910CCF4C070},0\"",
+      "size": 6149432,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2020-10-08T06:47:03Z",
+        "lastModifiedDateTime": "2020-10-08T06:47:03Z"
+      },
+      "folder": {
+        "childCount": 14
+      }
+    },
+    {
+      "createdDateTime": "2024-10-14T15:00:51Z",
+      "eTag": "\"{05604487-61D6-4EE7-BD27-E63110A982B3},1\"",
+      "id": "01WRQGZLUHIRQALVTB45HL2J7GGEIKTAVT",
+      "lastModifiedDateTime": "2024-10-14T15:00:51Z",
+      "name": "Microsoft Copilot Chat Files",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Microsoft%20Copilot%20Chat%20Files",
+      "cTag": "\"c:{05604487-61D6-4EE7-BD27-E63110A982B3},0\"",
+      "size": 0,
+      "createdBy": {
+        "application": {
+          "id": "c0ab8ce9-e9a0-42e7-b064-33d422df41f1",
+          "displayName": "M365ChatClient"
+        },
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "application": {
+          "id": "c0ab8ce9-e9a0-42e7-b064-33d422df41f1",
+          "displayName": "M365ChatClient"
+        },
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2024-10-14T15:00:51Z",
+        "lastModifiedDateTime": "2024-10-14T15:00:51Z"
+      },
+      "folder": {
+        "childCount": 0
+      },
+      "specialFolder": {
+        "name": "copilotuploads"
+      }
+    },
+    {
+      "createdDateTime": "2021-04-26T10:55:05Z",
+      "eTag": "\"{861AFF5A-8FC5-462A-937C-7422F50BBA5A},1\"",
+      "id": "01WRQGZLS274NINRMPFJDJG7DUEL2QXOS2",
+      "lastModifiedDateTime": "2021-04-26T10:55:05Z",
+      "name": "Microsoft Teams Chat Files",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Microsoft%20Teams%20Chat%20Files",
+      "cTag": "\"c:{861AFF5A-8FC5-462A-937C-7422F50BBA5A},0\"",
+      "size": 24924533,
+      "createdBy": {
+        "application": {
+          "id": "cc15fd57-2c6c-4117-a88c-83b1d56b4bbe",
+          "displayName": "Skype Teams Services"
+        },
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "application": {
+          "id": "cc15fd57-2c6c-4117-a88c-83b1d56b4bbe",
+          "displayName": "Skype Teams Services"
+        },
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2021-04-26T10:55:05Z",
+        "lastModifiedDateTime": "2021-04-26T10:55:05Z"
+      },
+      "folder": {
+        "childCount": 20
+      }
+    },
+    {
+      "createdDateTime": "2022-10-20T08:49:58Z",
+      "eTag": "\"{0162274A-1A17-480B-AB62-8EBF9DBA5719},1\"",
+      "id": "01WRQGZLSKE5RACFY2BNEKWYUOX6O3UVYZ",
+      "lastModifiedDateTime": "2022-10-20T08:49:58Z",
+      "name": "Notebooks",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Notebooks",
+      "cTag": "\"c:{0162274A-1A17-480B-AB62-8EBF9DBA5719},0\"",
+      "size": 995924877,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2022-10-20T08:49:58Z",
+        "lastModifiedDateTime": "2022-10-20T08:49:58Z"
+      },
+      "folder": {
+        "childCount": 10
+      }
+    },
+    {
+      "createdDateTime": "2024-01-18T14:52:05Z",
+      "eTag": "\"{7EF441E9-2501-4F93-B0B4-D41386AED8FC},2\"",
+      "id": "01WRQGZLXJIH2H4AJFSNH3BNGUCODK5WH4",
+      "lastModifiedDateTime": "2024-01-18T14:51:31Z",
+      "name": "Offices",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Offices",
+      "cTag": "\"c:{7EF441E9-2501-4F93-B0B4-D41386AED8FC},0\"",
+      "size": 25723187,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2024-01-18T14:52:05Z",
+        "lastModifiedDateTime": "2024-01-18T14:51:31Z"
+      },
+      "folder": {
+        "childCount": 13
+      }
+    },
+    {
+      "createdDateTime": "2025-02-12T15:05:05Z",
+      "eTag": "\"{2733F99F-23DB-4B36-B7F1-CAB9DEB473CF},1\"",
+      "id": "01WRQGZLU77EZSPWZDGZF3P4OKXHPLI46P",
+      "lastModifiedDateTime": "2025-02-12T15:05:05Z",
+      "name": "PowerAutomate-Testing",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/PowerAutomate-Testing",
+      "cTag": "\"c:{2733F99F-23DB-4B36-B7F1-CAB9DEB473CF},0\"",
+      "size": 1119232,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2025-02-12T15:05:05Z",
+        "lastModifiedDateTime": "2025-02-12T15:05:05Z"
+      },
+      "folder": {
+        "childCount": 1
+      }
+    },
+    {
+      "createdDateTime": "2021-02-15T08:08:53Z",
+      "eTag": "\"{0CB91697-6F56-46AE-9A5E-CD227494A16D},10\"",
+      "id": "01WRQGZLUXC24QYVTPVZDJUXWNEJ2JJILN",
+      "lastModifiedDateTime": "2021-11-30T13:58:56Z",
+      "name": "Presentations",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Presentations",
+      "cTag": "\"c:{0CB91697-6F56-46AE-9A5E-CD227494A16D},0\"",
+      "size": 146525877,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2021-02-15T08:08:53Z",
+        "lastModifiedDateTime": "2021-11-30T13:58:56Z"
+      },
+      "folder": {
+        "childCount": 17
+      }
+    },
+    {
+      "createdDateTime": "2025-07-08T12:50:49Z",
+      "eTag": "\"{DAC6187C-BB2E-41A2-9A84-248B0E075E60},1\"",
+      "id": "01WRQGZLT4DDDNULV3UJAZVBBERMHAOXTA",
+      "lastModifiedDateTime": "2025-07-08T12:50:49Z",
+      "name": "Recordings",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Recordings",
+      "cTag": "\"c:{DAC6187C-BB2E-41A2-9A84-248B0E075E60},0\"",
+      "size": 776589,
+      "createdBy": {
+        "application": {
+          "id": "7084e364-df71-4a4a-9e8f-d375b5529913",
+          "displayName": "Messaging Async Media"
+        },
+        "user": {
+          "displayName": "SharePoint App"
+        }
+      },
+      "lastModifiedBy": {
+        "application": {
+          "id": "7084e364-df71-4a4a-9e8f-d375b5529913",
+          "displayName": "Messaging Async Media"
+        },
+        "user": {
+          "displayName": "SharePoint App"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2025-07-08T12:50:49Z",
+        "lastModifiedDateTime": "2025-07-08T12:50:49Z"
+      },
+      "folder": {
+        "childCount": 1
+      },
+      "specialFolder": {
+        "name": "recordings"
+      }
+    },
+    {
+      "createdDateTime": "2024-06-11T15:15:16Z",
+      "eTag": "\"{F993BF7D-68E6-4EDE-8988-5074D8FF16B7},6\"",
+      "id": "01WRQGZLT5X6J7TZTI3ZHITCCQOTMP6FVX",
+      "lastModifiedDateTime": "2024-06-11T15:15:15Z",
+      "name": "Scratch",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Scratch",
+      "cTag": "\"c:{F993BF7D-68E6-4EDE-8988-5074D8FF16B7},0\"",
+      "size": 2211558,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2024-06-11T15:15:16Z",
+        "lastModifiedDateTime": "2024-06-11T15:15:15Z"
+      },
+      "folder": {
+        "childCount": 13
+      },
+      "shared": {
+        "scope": "users"
+      }
+    },
+    {
+      "createdDateTime": "2020-10-08T06:48:53Z",
+      "eTag": "\"{CC4854AF-29EE-4718-B0A0-6B1141942988},1\"",
+      "id": "01WRQGZLVPKREMZ3RJDBD3BIDLCFAZIKMI",
+      "lastModifiedDateTime": "2020-10-08T06:48:53Z",
+      "name": "STFC",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/STFC",
+      "cTag": "\"c:{CC4854AF-29EE-4718-B0A0-6B1141942988},0\"",
+      "size": 2671715,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2020-10-08T06:48:53Z",
+        "lastModifiedDateTime": "2020-10-08T06:48:53Z"
+      },
+      "folder": {
+        "childCount": 12
+      }
+    },
+    {
+      "createdDateTime": "2020-11-26T08:32:06Z",
+      "eTag": "\"{67935F78-42AF-4074-90F7-3AB29B0A2F56},1\"",
+      "id": "01WRQGZLTYL6JWPL2CORAJB5Z2WKNQUL2W",
+      "lastModifiedDateTime": "2020-11-26T08:32:06Z",
+      "name": "Training Resources",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Training%20Resources",
+      "cTag": "\"c:{67935F78-42AF-4074-90F7-3AB29B0A2F56},0\"",
+      "size": 318791757,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2020-11-26T08:32:06Z",
+        "lastModifiedDateTime": "2020-11-26T08:32:06Z"
+      },
+      "folder": {
+        "childCount": 28
+      }
+    },
+    {
+      "createdDateTime": "2022-06-14T06:58:47Z",
+      "eTag": "\"{6EE7DAD9-C752-4FB3-9402-BEF88B6A0F2E},1\"",
+      "id": "01WRQGZLWZ3LTW4UWHWNHZIAV67CFWUDZO",
+      "lastModifiedDateTime": "2022-06-14T06:58:47Z",
+      "name": "Whiteboards",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Whiteboards",
+      "cTag": "\"c:{6EE7DAD9-C752-4FB3-9402-BEF88B6A0F2E},0\"",
+      "size": 151432,
+      "createdBy": {
+        "application": {
+          "id": "95de633a-083e-42f5-b444-a4295d8e9314",
+          "displayName": "Microsoft Whiteboard Services"
+        },
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "application": {
+          "id": "95de633a-083e-42f5-b444-a4295d8e9314",
+          "displayName": "Microsoft Whiteboard Services"
+        },
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2022-06-14T06:58:47Z",
+        "lastModifiedDateTime": "2022-06-14T06:58:47Z"
+      },
+      "folder": {
+        "childCount": 3
+      }
+    },
+    {
+      "@microsoft.graph.downloadUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/_layouts/15/download.aspx?UniqueId=44a36c6c-f337-41f7-9ac4-5eb75435a32f&Translate=false&tempauth=v1.eyJzaXRlaWQiOiI2ODk0ZTY1Ni02NDhiLTQzNmQtODFlOC0yNWQwMWYxYWE2MTgiLCJhcHBfZGlzcGxheW5hbWUiOiJHcmFwaCBFeHBsb3JlciIsImFwcGlkIjoiZGU4YmM4YjUtZDlmOS00OGIxLWE4YWQtYjc0OGRhNzI1MDY0IiwiYXVkIjoiMDAwMDAwMDMtMDAwMC0wZmYxLWNlMDAtMDAwMDAwMDAwMDAwL3N0ZmMzNjUtbXkuc2hhcmVwb2ludC5jb21AM2Y2NjM2MWMtYTg3ZS00MTU4LThmNjEtOTllODJkYjNjYWM4IiwiZXhwIjoiMTc1NTAzMTU1MSJ9.CkAKDGVudHJhX2NsYWltcxIwQ0x5eDdzUUdFQUFhRmtwUFNUWkpXV05zUkVVMk1HcDJkREI0VVRSR1FVRXFBQT09CjIKCmFjdG9yYXBwaWQSJDAwMDAwMDAzLTAwMDAtMDAwMC1jMDAwLTAwMDAwMDAwMDAwMAoKCgRzbmlkEgI2NBILCISj3ILc-Kw-EAUaDDQwLjEyNi40MS4yNCosUFJiTjlnVnMyVS8yN3dzeSs5aUhOYWtldWg1dDFpdWpZbTdINnBweVdtcz0wmQE4AUIQobsf4mbgANCWS54HvftL30oQaGFzaGVkcHJvb2Z0b2tlblIIWyJrbXNpIl1qJDAwM2Q1ZjA5LTZhOWUtNDRiYy0xMDE4LWJmM2M0YmVjMWJmZXIpMGguZnxtZW1iZXJzaGlwfDEwMDMwMDAwOWMwOGQ1MjdAbGl2ZS5jb216ATKCARIJHDZmP36oWEERj2GZ6C2zysiSAQZNYXJ0eW6aAQRHaWdnogEWbWFydHluLmdpZ2dAc3RmYy5hYy51a6oBEDEwMDMwMDAwOUMwOEQ1MjeyAS5hbGxmaWxlcy53cml0ZSBhbGxzaXRlcy53cml0ZSBhbGxwcm9maWxlcy5yZWFkyAEB.ijkZOwN_PKUuSqqGoSj0sTKIq-mJ2OlEigLo58Gu5F4&ApiVersion=2.0",
+      "createdDateTime": "2024-06-12T11:40:47Z",
+      "eTag": "\"{44A36C6C-F337-41F7-9AC4-5EB75435A32F},2\"",
+      "id": "01WRQGZLTMNSRUIN7T65AZVRC6W5KDLIZP",
+      "lastModifiedDateTime": "2024-06-12T09:48:34Z",
+      "name": "AR2024_ICD_RSE.docx",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/_layouts/15/Doc.aspx?sourcedoc=%7B44A36C6C-F337-41F7-9AC4-5EB75435A32F%7D&file=AR2024_ICD_RSE.docx&action=default&mobileredirect=true",
+      "cTag": "\"c:{44A36C6C-F337-41F7-9AC4-5EB75435A32F},2\"",
+      "size": 15670,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "file": {
+        "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "hashes": {
+          "quickXorHash": "XlY18kBbfBbfiWBrX5bWvq7+BNE="
+        }
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2024-06-12T11:40:47Z",
+        "lastModifiedDateTime": "2024-06-12T09:48:34Z"
+      }
+    },
+    {
+      "@microsoft.graph.downloadUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/_layouts/15/download.aspx?UniqueId=970d5ec2-3d9c-44f3-bfa9-8bfbbb032405&Translate=false&tempauth=v1.eyJzaXRlaWQiOiI2ODk0ZTY1Ni02NDhiLTQzNmQtODFlOC0yNWQwMWYxYWE2MTgiLCJhcHBfZGlzcGxheW5hbWUiOiJHcmFwaCBFeHBsb3JlciIsImFwcGlkIjoiZGU4YmM4YjUtZDlmOS00OGIxLWE4YWQtYjc0OGRhNzI1MDY0IiwiYXVkIjoiMDAwMDAwMDMtMDAwMC0wZmYxLWNlMDAtMDAwMDAwMDAwMDAwL3N0ZmMzNjUtbXkuc2hhcmVwb2ludC5jb21AM2Y2NjM2MWMtYTg3ZS00MTU4LThmNjEtOTllODJkYjNjYWM4IiwiZXhwIjoiMTc1NTAzMTU1MSJ9.CkAKDGVudHJhX2NsYWltcxIwQ0x5eDdzUUdFQUFhRmtwUFNUWkpXV05zUkVVMk1HcDJkREI0VVRSR1FVRXFBQT09CjIKCmFjdG9yYXBwaWQSJDAwMDAwMDAzLTAwMDAtMDAwMC1jMDAwLTAwMDAwMDAwMDAwMAoKCgRzbmlkEgI2NBILCISj3ILc-Kw-EAUaDDQwLjEyNi40MS4yNCosZ2ZoYzMyVmtMR1NZajZpWHlramZWcWJGbktiaEhhOVJyOUg3ckxnUVFMVT0wmQE4AUIQobsf4mbgANCWS54HvftL30oQaGFzaGVkcHJvb2Z0b2tlblIIWyJrbXNpIl1qJDAwM2Q1ZjA5LTZhOWUtNDRiYy0xMDE4LWJmM2M0YmVjMWJmZXIpMGguZnxtZW1iZXJzaGlwfDEwMDMwMDAwOWMwOGQ1MjdAbGl2ZS5jb216ATKCARIJHDZmP36oWEERj2GZ6C2zysiSAQZNYXJ0eW6aAQRHaWdnogEWbWFydHluLmdpZ2dAc3RmYy5hYy51a6oBEDEwMDMwMDAwOUMwOEQ1MjeyAS5hbGxmaWxlcy53cml0ZSBhbGxzaXRlcy53cml0ZSBhbGxwcm9maWxlcy5yZWFkyAEB.u5BeoRSARNIEHbTQEh-3dM4lTnezWha8L813KjP3Pf8&ApiVersion=2.0",
+      "createdDateTime": "2024-02-27T13:54:51Z",
+      "eTag": "\"{970D5EC2-3D9C-44F3-BFA9-8BFBBB032405},2\"",
+      "id": "01WRQGZLWCLYGZPHB56NCL7KML7O5QGJAF",
+      "lastModifiedDateTime": "2023-10-26T11:05:56Z",
+      "name": "ICD-Movember.drawio",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/ICD-Movember.drawio",
+      "cTag": "\"c:{970D5EC2-3D9C-44F3-BFA9-8BFBBB032405},2\"",
+      "size": 1046,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "file": {
+        "mimeType": "application/octet-stream",
+        "hashes": {
+          "quickXorHash": "jCO/wL/2LcDgEFkaKYwkLnVqQN4="
+        }
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2024-02-27T13:54:51Z",
+        "lastModifiedDateTime": "2023-10-26T11:05:56Z"
+      }
+    },
+    {
+      "@microsoft.graph.downloadUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/_layouts/15/download.aspx?UniqueId=3cfc1997-1aa0-4e7c-8134-3d5122213041&Translate=false&tempauth=v1.eyJzaXRlaWQiOiI2ODk0ZTY1Ni02NDhiLTQzNmQtODFlOC0yNWQwMWYxYWE2MTgiLCJhcHBfZGlzcGxheW5hbWUiOiJHcmFwaCBFeHBsb3JlciIsImFwcGlkIjoiZGU4YmM4YjUtZDlmOS00OGIxLWE4YWQtYjc0OGRhNzI1MDY0IiwiYXVkIjoiMDAwMDAwMDMtMDAwMC0wZmYxLWNlMDAtMDAwMDAwMDAwMDAwL3N0ZmMzNjUtbXkuc2hhcmVwb2ludC5jb21AM2Y2NjM2MWMtYTg3ZS00MTU4LThmNjEtOTllODJkYjNjYWM4IiwiZXhwIjoiMTc1NTAzMTU1MSJ9.CkAKDGVudHJhX2NsYWltcxIwQ0x5eDdzUUdFQUFhRmtwUFNUWkpXV05zUkVVMk1HcDJkREI0VVRSR1FVRXFBQT09CjIKCmFjdG9yYXBwaWQSJDAwMDAwMDAzLTAwMDAtMDAwMC1jMDAwLTAwMDAwMDAwMDAwMAoKCgRzbmlkEgI2NBILCMas74Lc-Kw-EAUaDDQwLjEyNi40MS4yNCosTWtPNEN0WXlUc1pva0xUaVRXekhpMG1zNE4xOGtWanZCckNLSkdZS3docz0wmQE4AUIQobsf4mbgANCWS54HvftL30oQaGFzaGVkcHJvb2Z0b2tlblIIWyJrbXNpIl1qJDAwM2Q1ZjA5LTZhOWUtNDRiYy0xMDE4LWJmM2M0YmVjMWJmZXIpMGguZnxtZW1iZXJzaGlwfDEwMDMwMDAwOWMwOGQ1MjdAbGl2ZS5jb216ATKCARIJHDZmP36oWEERj2GZ6C2zysiSAQZNYXJ0eW6aAQRHaWdnogEWbWFydHluLmdpZ2dAc3RmYy5hYy51a6oBEDEwMDMwMDAwOUMwOEQ1MjeyAS5hbGxmaWxlcy53cml0ZSBhbGxzaXRlcy53cml0ZSBhbGxwcm9maWxlcy5yZWFkyAEB.ihe6iy1ZF710VppyAw5S_l10fMHC_tjpriSXpky3OkY&ApiVersion=2.0",
+      "createdDateTime": "2021-12-23T13:50:30Z",
+      "eTag": "\"{3CFC1997-1AA0-4E7C-8134-3D5122213041},2\"",
+      "id": "01WRQGZLUXDH6DZIA2PRHICNB5KERCCMCB",
+      "lastModifiedDateTime": "2021-12-23T13:50:27Z",
+      "name": "Signature.png",
+      "webUrl": "https://stfc365-my.sharepoint.com/personal/martyn_gigg_stfc_ac_uk/Documents/Signature.png",
+      "cTag": "\"c:{3CFC1997-1AA0-4E7C-8134-3D5122213041},2\"",
+      "size": 21592,
+      "createdBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "lastModifiedBy": {
+        "user": {
+          "email": "martyn.gigg@stfc.ac.uk",
+          "id": "2353c70e-342f-44cb-b03b-e1dd34567c46",
+          "displayName": "Gigg, Martyn (STFC,RAL,ISIS)"
+        }
+      },
+      "parentReference": {
+        "driveType": "business",
+        "driveId": "b!VuaUaItkbUOB6CXQHxqmGA-WY97inLtFt81BBTjK8Nmt9V3KDA15R4YXtEWLQL4q",
+        "id": "01WRQGZLV6Y2GOVW7725BZO354PWSELRRZ",
+        "name": "Documents",
+        "path": "/drive/root:",
+        "siteId": "6894e656-648b-436d-81e8-25d01f1aa618"
+      },
+      "file": {
+        "mimeType": "image/png",
+        "hashes": {
+          "quickXorHash": "dcf2GhZx1o/7bIaPGLlRV2R12/k="
+        }
+      },
+      "fileSystemInfo": {
+        "createdDateTime": "2021-12-23T13:50:30Z",
+        "lastModifiedDateTime": "2021-12-23T13:50:27Z"
+      },
+      "image": {
+        "height": 201,
+        "width": 265
+      },
+      "photo": {}
+    }
+  ]
+}

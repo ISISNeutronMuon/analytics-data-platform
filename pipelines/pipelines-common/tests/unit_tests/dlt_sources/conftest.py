@@ -6,9 +6,8 @@ import dlt
 
 import pytest
 from pytest_httpx import HTTPXMock
-from pytest_mock import MockerFixture
 
-from pipelines_common.dlt_sources.m365 import M365CredentialsResource, M365DriveFS
+from pipelines_common.dlt_sources.m365 import M365CredentialsResource
 
 
 class SharePointTestSettings:
@@ -89,7 +88,7 @@ class SharePointTestSettings:
                     httpx_mock.add_response(
                         method="GET",
                         url=f"{credentials.api_url}/drives/{cls.library_id}/root:{dir_path}/{file_item['name']}:/content",
-                        content=b"0123456789",
+                        content=file_item["mtime"].encode("utf-8"),
                     )
 
 
@@ -104,10 +103,3 @@ def pipeline():
             dev_mode=True,
         )
         yield pipeline
-
-
-@pytest.fixture()
-def mock_drivefs_cls(mocker: MockerFixture):
-    patched_cls = mocker.patch("pipelines_common.dlt_sources.m365.M365DriveFS", autospec=True)
-    patched_cls.protocol = M365DriveFS.protocol
-    return patched_cls
