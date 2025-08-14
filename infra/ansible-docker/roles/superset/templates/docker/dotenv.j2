@@ -22,7 +22,8 @@ PYTHONPATH=/app/docker/pythonpath
 SCARF_ANALYTICS=false
 FLASK_DEBUG={{ superset_flask_debug }}
 SUPERSET_ENV={{ superset_env_name }}
-SUPERSET_PORT={{ superset_http_port }}
+# Use fixed container port.
+SUPERSET_PORT=8088
 SUPERSET_APP_ROOT={{ superset_app_root }}
 
 # Make sure you set this to a unique secure random value on production
