@@ -1,20 +1,11 @@
 ---
-# postgres
-postgres_db_data_path: "{{ cephfs_mount_mount_path }}/live/superset/postgres/data"
-postgres_db_host: "{{ superset_metadb_host }}"
-postgres_db_user: "{{ superset_metadb_user }}"
-postgres_db_passwd: "{{ superset_metadb_passwd }}"
-postgres_db_names:
-  - superset
-
 superset_container_network: superset
-docker_configure_container_network: "{{ superset_container_network }}"
 superset_http_port: 8088
 
 superset_metadb_host: "{{ vault_db_host }}"
 superset_metadb_port: "{{ vault_db_port }}"
 superset_metadb_name: "{{ vault_superset_accelerator_metadb_name }}"
-superset_metadb_user: "{{ vault_superset_accelerator_user }}"
+superset_metadb_user: "{{ vault_superset_accelerator_metadb_user }}"
 superset_metadb_passwd: "{{ vault_superset_accelerator_metadb_passwd }}"
 
 superset_secret_key: "{{ vault_superset_accelerator_secret_key }}"
@@ -27,3 +18,14 @@ superset_build_git_ref: 901412e9a8346153c26949b4e8d5085856cc9bf2
 superset_app_root: "/workspace/accelerator"
 superset_flask_debug: true
 superset_env_name: qa
+
+# docker
+docker_configure_container_network: "{{ superset_container_network }}"
+
+# local postgres instance
+postgres_db_data_path: "{{ cephfs_mount_mount_path }}/live/superset/postgres/data"
+postgres_db_host: "{{ superset_metadb_host }}"
+postgres_db_user: "{{ superset_metadb_user }}"
+postgres_db_passwd: "{{ superset_metadb_passwd }}"
+postgres_db_names:
+  - "{{ superset_metadb_name }}"
