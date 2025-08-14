@@ -1,4 +1,18 @@
 ---
+# superset node
+openstack_security_group_name: superset
+openstack_security_group_description: Ingress to superset ports
+openstack_security_group_rules:
+  - direction: ingress
+    ether_type: IPv4
+    protocol: tcp
+    port_range_min: "{{ superset_http_port }}"
+    port_range_max: "{{ superset_http_port }}"
+openstack_flavor: l3.micro
+openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
+inventory_group: superset
+
+# superset app
 superset_container_network: superset
 superset_http_port: 8088
 
@@ -23,7 +37,7 @@ superset_env_name: qa
 docker_configure_container_network: "{{ superset_container_network }}"
 
 # local postgres instance
-postgres_db_data_path: "{{ cephfs_mount_mount_path }}/live/superset/postgres/data"
+postgres_db_data_path: "/var/superset_accelerator/postgres/data"
 postgres_db_host: "{{ superset_metadb_host }}"
 postgres_db_user: "{{ superset_metadb_user }}"
 postgres_db_passwd: "{{ superset_metadb_passwd }}"

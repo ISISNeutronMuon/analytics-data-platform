@@ -1,6 +1,6 @@
 ---
 - name: Configure Apache Superset
-  hosts: superset
+  hosts: "{{ target_group }}"
   roles:
     - role: cephfs_mount
     - role: geerlingguy.pip
