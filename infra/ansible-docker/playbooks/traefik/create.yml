@@ -29,13 +29,3 @@
   roles:
     - role: security_group_create
     - role: vm_create
-
-- import_playbook: ../inventory/inventory_persist.yml
-
-- name: (Re-)configure /etc/hosts across all nodes
-  hosts: all:!localhost
-  gather_facts: True
-  vars:
-    inventory_group: traefik
-  tasks:
-    - ansible.builtin.include_tasks: ../../tasks/configure_etc_hosts.yml
