@@ -2,9 +2,7 @@
 - name: Configure Apache Superset
   hosts: "{{ target_group }}"
   roles:
-    - role: cephfs_mount
     - role: geerlingguy.pip
       become: true
     - role: docker_configure
-    - role: postgres
     - role: superset

@@ -1,9 +1,4 @@
 ---
-- name: Create container network
-  become: true
-  community.docker.docker_network:
-    name: "{{ superset_container_network }}"
-
 - name: Pull Superset sources
   become: true
   ansible.builtin.git:

@@ -1,4 +1,7 @@
 ---
+superset_container_network: superset_accelerator
+superset_http_port: 8088
+
 # superset node
 openstack_security_group_name: superset
 openstack_security_group_description: Ingress to superset ports
@@ -13,9 +16,6 @@ openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
 inventory_group: superset
 
 # superset app
-superset_container_network: superset
-superset_http_port: 8088
-
 superset_metadb_host: "{{ vault_db_host }}"
 superset_metadb_port: "{{ vault_db_port }}"
 superset_metadb_name: "{{ vault_superset_accelerator_metadb_name }}"
@@ -35,11 +35,3 @@ superset_env_name: qa
 
 # docker
 docker_configure_container_network: "{{ superset_container_network }}"
-
-# local postgres instance
-postgres_db_data_path: "/var/superset_accelerator/postgres/data"
-postgres_db_host: "{{ superset_metadb_host }}"
-postgres_db_user: "{{ superset_metadb_user }}"
-postgres_db_passwd: "{{ superset_metadb_passwd }}"
-postgres_db_names:
-  - "{{ superset_metadb_name }}"
