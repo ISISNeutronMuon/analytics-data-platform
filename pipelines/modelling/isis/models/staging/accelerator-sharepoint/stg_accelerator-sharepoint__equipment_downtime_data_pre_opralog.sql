@@ -16,7 +16,7 @@ cropped as (
         substring(fault_date, 1, 10) as fault_date_str,
         -- keep the time portion of any possible string
         substring(fault_time, -8) as fault_time_str,
-        {{ identifier('group') }},
+        {{ adapter.quote('group') }},
         fault_description,
         managerscomments
 
@@ -32,8 +32,8 @@ renamed as (
         downtime_minutesx as downtime_mins,
         date(fault_date_str) as fault_date,
         -- fault_time is just a time before the opralog_epoch but a full timestamp after
-        {{ parse_utc_timestamp(fault_date_str, 'yyyy-MM-dd', fault_time_str) }} as fault_occurred_at,
-        {{ identifier('group') }},
+        {{ parse_utc_timestamp('fault_date_str', 'yyyy-MM-dd', 'fault_time_str') }} as fault_occurred_at,
+        {{ adapter.quote('group') }},
         fault_description,
         managerscomments as managers_comments
 

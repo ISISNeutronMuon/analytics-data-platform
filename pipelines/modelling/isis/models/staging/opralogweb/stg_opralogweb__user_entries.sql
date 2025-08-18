@@ -12,7 +12,7 @@ renamed as (
 
       entry_id,
       entry_timestamp as fault_occurred_at,
-      cast({{ identifier("entry_timestamp") }} as date) as fault_date,
+      cast({{ adapter.quote('entry_timestamp') }} as date) as fault_date,
       trim(additional_comment) as fault_description
 
   from source

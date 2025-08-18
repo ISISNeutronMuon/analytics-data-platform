@@ -70,7 +70,7 @@ downtime_records as (
             column_title
             when 'Group' then string_data
           end
-        ) as {{ identifier("group") }},
+        ) as {{ adapter.quote('group') }},
         fault_description,
         min(
           case
@@ -88,7 +88,7 @@ downtime_records as (
   where
     equipment is not null
     and downtime_mins is not null
-    and {{ identifier("group") }} is not null
+    and {{ adapter.quote('group') }} is not null
 
   union all
 
@@ -104,7 +104,7 @@ downtime_records_with_cycle as (
     c.phase as cycle_phase,
     d.downtime_mins,
     d.fault_occurred_at,
-    d.{{ identifier("group") }},
+    d.{{ adapter.quote('group') }},
     d.fault_description,
     d.managers_comments
 
