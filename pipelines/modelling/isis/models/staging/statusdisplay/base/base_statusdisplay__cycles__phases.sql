@@ -12,7 +12,7 @@ renamed as (
         type as phase,
         target,
         start as started_at,
-        {{ identifier("end") }} as ended_at,
+        {{ adapter.quote("end") }} as ended_at,
         _dlt_parent_id as dlt_cycles_id
 
     from source
