@@ -24,11 +24,11 @@ Create and add the following to `$HOME/.dlt/secrets.toml`:
 
 ```sh
 [destination.pyiceberg]
-bucket_url = "s3://local-lakehouse-isis"
+bucket_url = "s3://local-lakehouse"
 
 [destination.pyiceberg.credentials]
 uri = "http://analytics.localhost:58080/internal/iceberg-rest/catalog"
-warehouse = "isis"
+warehouse = "local_lakehouse"
 ```
 
 **Do not put production secrets here.**

@@ -120,7 +120,7 @@ services:
     environment:
       MINIO_ROOT_USER: adpuser
       MINIO_ROOT_PASSWORD: adppassword
-      MINIO_BUCKET_NAME: local-lakehouse-isis
+      MINIO_BUCKET_NAME: local-lakehouse
     entrypoint: |
       /bin/sh -c "
       /usr/bin/mc alias set minio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} \
@@ -201,6 +201,7 @@ services:
   # Trino query engine
   #########################################################
   trino:
+    container_name: local-lakehouse-trino
     image: *trino-image
     volumes:
       - "./trino/etc:/etc/trino:ro"
