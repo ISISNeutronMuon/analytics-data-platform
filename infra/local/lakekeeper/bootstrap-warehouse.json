@@ -1,5 +1,5 @@
 {
-  "warehouse-name": "isis",
+  "warehouse-name": "local_lakehouse",
   "project-id": "00000000-0000-0000-0000-000000000000",
   "storage-credential": {
     "type": "s3",
@@ -9,7 +9,7 @@
   },
   "storage-profile": {
     "type": "s3",
-    "bucket": "local-lakehouse-isis",
+    "bucket": "local-lakehouse",
     "key-prefix": "",
     "endpoint": "http://analytics.localhost:59000",
     "region": "local-01",
