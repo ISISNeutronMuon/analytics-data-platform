@@ -1,9 +1,10 @@
 ---
-superset_build_path: /build/superset
+# base image name built by superset task
 superset_base_image: local/superset
+superset_build_path: /build/superset
 superset_config_path: /config/superset
-superset_metadb_image: ghcr.io/cloudnative-pg/postgresql:16.3-bookworm
-superset_metadb: superset
-superset_admin_user: admin
+superset_git_url: https://github.com/apache/superset/
+
+# app
 superset_flask_debug: false
 superset_env_name: production

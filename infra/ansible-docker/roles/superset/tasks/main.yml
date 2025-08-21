@@ -2,7 +2,7 @@
 - name: Pull Superset sources
   become: true
   ansible.builtin.git:
-    repo: https://github.com/martyngigg/superset/
+    repo: "{{ superset_git_url }}"
     dest: "{{ superset_build_path }}"
     version: "{{ superset_build_git_ref }}"
   register: sources
@@ -54,6 +54,14 @@
       }
   loop_control:
     loop_var: superset_template
+
+- name: Ensure superset_config.yml exists
+  become: true
+  no_log: true
+  ansible.builtin.copy:
+    dest: "{{ superset_config_path }}/docker/pythonpath/superset_config.yml"
+    content: "{{ vault_superset_config_yaml | to_nice_yaml }}"
+    mode: "u=rw,g=r,o=r"
 
 - name: Ensure certificates directory exists
   become: true

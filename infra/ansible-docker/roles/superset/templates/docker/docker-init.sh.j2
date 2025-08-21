@@ -22,7 +22,7 @@ set -e
 #
 /app/docker/docker-bootstrap.sh
 
-STEP_CNT=4
+STEP_CNT=3
 
 echo_step() {
 cat <<EOF
@@ -44,23 +44,24 @@ superset db upgrade
 echo_step "1" "Complete" "Applying DB migrations"
 
 # Create an admin user
-echo_step "2" "Starting" "Setting up admin user admin "
+{# echo_step "2" "Starting" "Setting up admin user admin "
 superset fab create-admin \
               --username $SUPERSET_ADMIN_USER \
               --firstname $SUPERSET_ADMIN_FIRSTNAME \
               --lastname $SUPERSET_ADMIN_LASTNAME \
               --email $SUPERSET_ADMIN_EMAIL \
               --password $SUPERSET_ADMIN_PASSWORD
-echo_step "2" "Complete" "Setting up admin user"
+echo_step "2" "Complete" "Setting up admin user" #}
 
 # Create default roles and permissions
-echo_step "3" "Starting" "Setting up roles and perms"
+echo_step "2" "Starting" "Setting up roles and perms"
 superset init
-echo_step "3" "Complete" "Setting up roles and perms"
+echo_step "2" "Complete" "Setting up roles and perms"
 
-# Create a database connection
-echo_step "4" "Starting" "Setting up Iceberg catalog connection"
-superset set-database-uri \
-  --database_name {{ lakekeeper_catalog.name }} \
-  --uri "trino://{{ trino_superset_username }}:{{ vault_trino_superset_passwd }}@{{ top_level_domain }}:{{ trino_https_port }}/{{ lakekeeper_catalog.name }}"
-echo_step "4" "Complete" "Setting up data source database connection"
+# Create a database connection(s)
+echo_step "3" "Starting" "Setting up Iceberg catalog connection(s)"
+{% for analytic_db in superset_analytic_dbs %}
+  superset set-database-uri \
+    --database_name {{ analytic_db.database_name }} --uri "{{ analytic_db.uri }}"
+{% endfor %}
+echo_step "3" "Complete" "Setting up data source database connection(s)"
