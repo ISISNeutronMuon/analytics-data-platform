@@ -1,10 +1,7 @@
 ---
-# base image name built by superset task
-superset_base_image: local/superset
-superset_build_path: /build/superset
-superset_config_path: /config/superset
-superset_git_url: https://github.com/apache/superset/
+# Define 'superset_instance_name' at playbook level
+superset_work_dir: "/var/{{ superset_instance_name }}"
 
 # app
-superset_flask_debug: false
-superset_env_name: production
+superset_flask_debug: true
+superset_env_name: qa

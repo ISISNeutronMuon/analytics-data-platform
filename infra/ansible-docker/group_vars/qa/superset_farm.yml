@@ -1,0 +1,14 @@
+---
+# superset_farm node
+openstack_security_group_name: superset_farm
+openstack_security_group_description: Ingress to superset ports
+openstack_security_group_rules:
+  - direction: ingress
+    ether_type: IPv4
+    protocol: tcp
+    port_range_min: 8088 # how can we not duplicate this...
+    port_range_max: 8089
+openstack_flavor: l3.tiny
+openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
+inventory_group: superset_farm
+docker_configure_container_network_external: false

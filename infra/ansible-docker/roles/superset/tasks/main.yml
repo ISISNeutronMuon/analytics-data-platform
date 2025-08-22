@@ -1,29 +1,24 @@
 ---
-- name: Pull Superset sources
-  become: true
-  ansible.builtin.git:
-    repo: "{{ superset_git_url }}"
-    dest: "{{ superset_build_path }}"
-    version: "{{ superset_build_git_ref }}"
-  register: sources
+- name: "Verify required variables are defined"
+  ansible.builtin.assert:
+    that:
+      - var_name is defined
+      - var_name | length > 0
+    fail_msg: "{{ var_name }} needs to be set for the role to work"
+    success_msg: "Required variable {{ var_name }} is defined"
+  loop_control:
+    loop_var: var_name
+  with_items:
+    - superset_instance_name
 
-- name: Build base Superset docker image
-  become: true
-  community.docker.docker_image_build:
-    name: "{{ superset_base_image }}"
-    path: "{{ superset_build_path }}"
-    args:
-      DEV_MODE: false
-      INCLUDE_FIREFOX: true
-      INCLUDE_CHROMIUM: false
-    target: lean
-    rebuild: always
-  when: sources.changed or (superset_rebuild_base_image | default(false))
+- name: "Include instance-specific variables ({{ superset_instance_name }})"
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/{{ superset_instance_name }}.yml"
 
-- name: Ensure configuration directory exists
+- name: Ensure working directory exists
   become: true
   ansible.builtin.file:
-    path: "{{ superset_config_path }}"
+    path: "{{ superset_work_dir }}"
     state: directory
     mode: "u=rwx,g=rx,o=rx"
 
@@ -32,7 +27,7 @@
   ansible.posix.synchronize:
     use_ssh_args: true
     src: ./
-    dest: "{{ superset_config_path }}/"
+    dest: "{{ superset_work_dir }}/"
     archive: false
     recursive: true
     delete: true
@@ -41,10 +36,9 @@
   become: true
   ansible.builtin.template:
     src: "{{ superset_template.src }}"
-    dest: "{{ superset_config_path }}/{{ superset_template.dest }}"
+    dest: "{{ superset_work_dir }}/{{ superset_template.dest }}"
     mode: "{{ superset_template.mode|default('u=rw,g=r,o=r') }}"
   loop:
-    - { src: Dockerfile.j2, dest: Dockerfile }
     - { src: docker-compose.yml.j2, dest: docker-compose.yml }
     - { src: docker/dotenv.j2, dest: docker/.env }
     - {
@@ -59,14 +53,14 @@
   become: true
   no_log: true
   ansible.builtin.copy:
-    dest: "{{ superset_config_path }}/docker/pythonpath/superset_config.yml"
-    content: "{{ vault_superset_config_yaml | to_nice_yaml }}"
+    dest: "{{ superset_work_dir }}/docker/pythonpath/superset_config.yml"
+    content: "{{ superset_config_yaml | to_nice_yaml }}"
     mode: "u=rw,g=r,o=r"
 
 - name: Ensure certificates directory exists
   become: true
   ansible.builtin.file:
-    path: "{{ superset_config_path }}/certs"
+    path: "{{ superset_work_dir }}/certs"
     state: directory
     mode: "u=rwx,g=rx,o=rx"
 
@@ -74,7 +68,7 @@
   become: true
   no_log: true
   ansible.builtin.copy:
-    dest: "{{ superset_config_path }}/certs/{{ certificate.filename }}"
+    dest: "{{ superset_work_dir }}/certs/{{ certificate.filename }}"
     content: "{{ certificate.content }}"
     owner: root
     group: root
@@ -87,7 +81,7 @@
 - name: Run Superset services
   become: true
   community.docker.docker_compose_v2:
-    project_src: "{{ superset_config_path }}"
+    project_src: "{{ superset_work_dir }}"
     build: always
     recreate: always
     state: present

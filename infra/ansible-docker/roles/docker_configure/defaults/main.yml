@@ -1,4 +1,5 @@
 ---
+# geerlingguy.docker
 docker_edition: "ce"
 docker_packages:
   - "docker-{{ docker_edition }}"
@@ -12,3 +13,6 @@ docker_obsolete_packages:
   - containerd
   - runc
 docker_packages_state: present
+
+# this role
+docker_configure_container_network_external: true

@@ -1,4 +1,4 @@
-x-superset-build: &superset-build ./
+x-superset-image: &superset-image ghcr.io/martyngigg/adp-superset:6.0.0rc1-py311
 x-superset-user: &superset-user root
 x-superset-depends-on: &superset-depends-on
   redis:
@@ -12,7 +12,7 @@ x-superset-volumes: &superset-volumes
   - superset_home:/app/superset_home
   - {{ superset_config_path }}/certs:/certs:ro
 x-networks: &superset-networks
-  - {{ superset_container_network }}
+  - {{ superset_instance_name }}
 
 
 services:
@@ -27,7 +27,7 @@ services:
 
   superset:
     env_file: *superset-env
-    build: *superset-build
+    image: *superset-image
     container_name: superset_app
     command: [ "/app/docker/docker-bootstrap.sh", "app-gunicorn" ]
     user: *superset-user
@@ -43,7 +43,7 @@ services:
 
   superset-init:
     env_file: *superset-env
-    build: *superset-build
+    image: *superset-image
     container_name: superset_init
     command: [ "/app/docker/docker-init.sh" ]
     depends_on: *superset-depends-on
@@ -55,7 +55,7 @@ services:
 
   superset-worker:
     env_file: *superset-env
-    build: *superset-build
+    image: *superset-image
     container_name: superset_worker
     command: [ "/app/docker/docker-bootstrap.sh", "worker" ]
     restart: unless-stopped
@@ -75,7 +75,7 @@ services:
 
   superset-worker-beat:
     env_file: *superset-env
-    build: *superset-build
+    image: *superset-image
     container_name: superset_worker_beat
     command: [ "/app/docker/docker-bootstrap.sh", "beat" ]
     restart: unless-stopped
@@ -94,5 +94,6 @@ volumes:
   superset_home:
 
 networks:
-  {{ superset_container_network }}:
-    external: true
+  {{ superset_instance_name }}:
+    driver_opts:
+      com.docker.network.driver.mtu: "{{ docker_daemon_options.mtu }}"

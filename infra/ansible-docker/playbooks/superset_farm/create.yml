@@ -1,4 +1,7 @@
 ---
+# We run multiple instances of Apache Superset on a single node to maximise resource usage.
+# This playbook creates the instance.
+#
 # The following variables are required on the command line:
 #  - deploy_type: One of {qa}
 #  - openstack_cloud_name: Name of the cloud in ~/.config/clouds.yaml

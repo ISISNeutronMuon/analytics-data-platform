@@ -1,21 +1,6 @@
 ---
 # network
-superset_container_network: superset_accelerator
 superset_http_port: 8088
-docker_configure_container_network: "{{ superset_container_network }}"
-
-# superset node
-openstack_security_group_name: superset
-openstack_security_group_description: Ingress to superset ports
-openstack_security_group_rules:
-  - direction: ingress
-    ether_type: IPv4
-    protocol: tcp
-    port_range_min: "{{ superset_http_port }}"
-    port_range_max: "{{ superset_http_port }}"
-openstack_flavor: l3.micro
-openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
-inventory_group: superset
 
 # superset app
 superset_metadb_host: "{{ vault_db_host }}"
@@ -24,8 +9,6 @@ superset_metadb_name: "{{ vault_superset_accelerator_metadb_name }}"
 superset_metadb_user: "{{ vault_superset_accelerator_metadb_user }}"
 superset_metadb_passwd: "{{ vault_superset_accelerator_metadb_passwd }}"
 superset_secret_key: "{{ vault_superset_accelerator_secret_key }}"
-superset_git_url: https://github.com/martyngigg/superset/
-superset_build_git_ref: 901412e9a8346153c26949b4e8d5085856cc9bf2
 superset_app_root: "/workspace/accelerator"
 superset_flask_debug: false
 superset_env_name: production

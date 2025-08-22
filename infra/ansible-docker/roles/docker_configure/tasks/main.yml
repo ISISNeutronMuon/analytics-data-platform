@@ -6,10 +6,11 @@
       become: true
 
 # Create docker network if needed
+# TODO: Migrate this into each role that needs it
 - name: Create container network
   become: true
   community.docker.docker_network:
     name: "{{ docker_configure_container_network }}"
     driver_options:
       com.docker.network.driver.mtu: "{{ docker_daemon_options.mtu }}"
-  when: docker_configure_container_network is defined and docker_configure_container_network != ""
+  when: docker_configure_container_network_external and docker_configure_container_network is defined

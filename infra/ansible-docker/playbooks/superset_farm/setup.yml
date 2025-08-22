@@ -1,0 +1,25 @@
+---
+# Configure all instances of Superset on the single host
+- name: Configure Apache Superset Prerequisites
+  hosts: superset_farm
+  roles:
+    - role: geerlingguy.pip
+      become: true
+    - role: docker_configure
+
+- name: Configure Superset instances
+  hosts: superset_farm
+  vars:
+    superset_instances_all:
+      - superset_accelerator
+      - superset_management
+  tasks:
+    - name: Configure Superset instances
+      ansible.builtin.include_role:
+        name: superset
+        apply:
+          vars:
+            superset_instance_name: "{{ instance_name }}"
+      with_items: "{{ superset_only_instance | default(superset_instances_all) }}"
+      loop_control:
+        loop_var: instance_name

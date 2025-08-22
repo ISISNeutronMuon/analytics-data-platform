@@ -1,8 +1,0 @@
----
-- name: Configure Apache Superset
-  hosts: "{{ target_group }}"
-  roles:
-    - role: geerlingguy.pip
-      become: true
-    - role: docker_configure
-    - role: superset
