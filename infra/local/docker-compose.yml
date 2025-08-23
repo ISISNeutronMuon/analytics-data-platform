@@ -16,7 +16,7 @@ x-lakehouse-networks: &lakehouse-networks
   - local-lakehouse-net
 
 # superset options
-x-superset-build: &superset-build ./superset
+x-superset-image: &superset-image ghcr.io/martyngigg/adp-superset-forked:901412e
 x-superset-user: &superset-user root
 x-superset-depends-on: &superset-depends-on
   superset-redis:
@@ -229,7 +229,7 @@ services:
   superset-app:
     container_name: local-lakehouse-superset-app
     env_file: *superset-env
-    build: *superset-build
+    image: *superset-image
     command: ["/app/docker/docker-bootstrap.sh", "app-gunicorn"]
     user: *superset-user
     restart: unless-stopped
@@ -243,7 +243,7 @@ services:
   superset-init:
     container_name: local-lakehouse-superset-init
     env_file: *superset-env
-    build: *superset-build
+    image: *superset-image
     command: ["/app/docker/docker-init.sh"]
     depends_on:
       <<: *superset-depends-on
@@ -258,7 +258,7 @@ services:
   superset-worker:
     container_name: local-lakehouse-superset-worker
     env_file: *superset-env
-    build: *superset-build
+    image: *superset-image
     command: ["/app/docker/docker-bootstrap.sh", "worker"]
     restart: unless-stopped
     depends_on:
@@ -278,7 +278,7 @@ services:
   superset-worker-beat:
     container_name: local-lakehouse-superset-worker-beat
     env_file: *superset-env
-    build: *superset-build
+    image: *superset-image
     command: ["/app/docker/docker-bootstrap.sh", "beat"]
     restart: unless-stopped
     depends_on:
