@@ -15,7 +15,14 @@ from flask_login import login_user
 from superset.security import SupersetSecurityManager
 import yaml
 
-logger = logging.getLogger()
+logger = logging.getLogger("superset_config")
+
+#####
+# Logging configuration used in Superset initialization
+# The above logger object cannot be used to log at module level as logging as not been
+# configured when this file is read. It can be used inside class methods of classes defined here
+log_level_text = os.getenv("SUPERSET_LOG_LEVEL", "INFO")
+LOG_LEVEL = getattr(logging, log_level_text.upper(), logging.INFO)
 
 #####
 # Supersets own database details
@@ -35,48 +42,12 @@ SQLALCHEMY_DATABASE_URI = (
 
 # Our own config options
 SUPERSET_CONFIG_YAML_FILE = Path(__file__).parent / "superset_config.yml"
-logger.debug(f"Using superset config from '{SUPERSET_CONFIG_YAML_FILE}'")
 with open(SUPERSET_CONFIG_YAML_FILE) as fp:
     SUPERSET_CONFIG = yaml.safe_load(fp)
-
 #####
 
 
-class AuthLocalAndLDAPView(AuthLDAPView):
-    """Implements an auth view that first uses LDAP to authorise
-    a user and falls back to the internal database if necessary.
-
-    This ensures we can have a local admin user should LDAP be
-    unavailable.
-    """
-
-    @expose("/login/", methods=["GET", "POST"])
-    def login(self):
-        if g.user is not None and g.user.is_authenticated:
-            return redirect(self.appbuilder.get_url_for_index)
-        form = LoginForm_db()
-        if form.validate_on_submit():
-            user = self.appbuilder.sm.auth_user_ldap(
-                form.username.data, form.password.data
-            )
-            if not user:
-                user = self.appbuilder.sm.auth_user_db(
-                    form.username.data, form.password.data
-                )
-            if user:
-                login_user(user, remember=False)
-                return redirect(self.appbuilder.get_url_for_index)
-            else:
-                flash(as_unicode(self.invalid_login_message), "warning")
-                return redirect(self.appbuilder.get_url_for_login)
-        return self.render_template(
-            self.login_template, title=self.title, form=form, appbuilder=self.appbuilder
-        )
-
-
 class InternallyManagedAdminRoleSecurityManager(SupersetSecurityManager):
-    authldapview = AuthLocalAndLDAPView
-
     # Override base method to consult our own list of mappings.
 
     @property
@@ -86,12 +57,15 @@ class InternallyManagedAdminRoleSecurityManager(SupersetSecurityManager):
     def _ldap_calculate_user_roles(
         self, user_attributes: Dict[str, List[bytes]]
     ) -> List[Role]:
+        logger.debug(
+            f"Calculating role(s) for user with attributes '{user_attributes}'"
+        )
         try:
             mail = user_attributes["mail"][0].decode("utf-8")
-        except (IndexError, KeyError):
+        except (IndexError, KeyError) as exc:
+            logger.debug(f"Error retrieving mail attribute: {str(exc)}")
             mail = ""
 
-        logger.debug(f"Calculating role(s) for user with mail='{mail}'")
         return (
             [self.find_role("Admin")]
             if mail in self._admin_users
@@ -190,6 +164,14 @@ WEBDRIVER_BASEURL_USER_FRIENDLY = (
 )
 
 #####
+# Theming.
+# Workaround missing brand logo: https://github.com/apache/superset/pull/34935. Once merged this can
+# be removed.
+THEME_DEFAULT = {
+    "token": {
+        "brandLogoUrl": f"{os.environ.get('SUPERSET_APP_ROOT', '')}/static/assets/images/superset-logo-horiz.png",
+    }
+}
 
 #####
 # Misc features
