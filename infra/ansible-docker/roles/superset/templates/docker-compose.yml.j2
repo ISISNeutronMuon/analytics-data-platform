@@ -7,28 +7,28 @@ x-superset-env: &superset-env
   - path: docker/.env # default
     required: true
 x-superset-volumes: &superset-volumes
-  - {{ superset_config_path }}/docker/docker-init.sh:/app/docker/docker-init.sh:ro
-  - {{ superset_config_path }}/docker/pythonpath:/app/docker/pythonpath:ro
+  - {{ superset_work_dir }}/docker/docker-init.sh:/app/docker/docker-init.sh:ro
+  - {{ superset_work_dir }}/docker/pythonpath:/app/docker/pythonpath:ro
   - superset_home:/app/superset_home
-  - {{ superset_config_path }}/certs:/certs:ro
+  - {{ superset_work_dir }}/certs:/certs:ro
 x-networks: &superset-networks
   - {{ superset_instance_name }}
 
 
 services:
   redis:
+    container_name: {{ superset_instance_name }}_cache
     env_file: *superset-env
     image: redis:7
-    container_name: superset_cache
     restart: unless-stopped
     volumes:
       - redis:/data
     networks: *superset-networks
 
   superset:
+    container_name: {{ superset_instance_name }}_app
     env_file: *superset-env
     image: *superset-image
-    container_name: superset_app
     command: [ "/app/docker/docker-bootstrap.sh", "app-gunicorn" ]
     user: *superset-user
     restart: unless-stopped
@@ -42,9 +42,9 @@ services:
     networks: *superset-networks
 
   superset-init:
+    container_name: {{ superset_instance_name }}_init
     env_file: *superset-env
     image: *superset-image
-    container_name: superset_init
     command: [ "/app/docker/docker-init.sh" ]
     depends_on: *superset-depends-on
     user: *superset-user
@@ -54,9 +54,9 @@ services:
     networks: *superset-networks
 
   superset-worker:
+    container_name: {{ superset_instance_name }}_worker
     env_file: *superset-env
     image: *superset-image
-    container_name: superset_worker
     command: [ "/app/docker/docker-bootstrap.sh", "worker" ]
     restart: unless-stopped
     depends_on:
@@ -74,9 +74,9 @@ services:
         ]
 
   superset-worker-beat:
+    container_name: {{ superset_instance_name }}_worker_beat
     env_file: *superset-env
     image: *superset-image
-    container_name: superset_worker_beat
     command: [ "/app/docker/docker-bootstrap.sh", "beat" ]
     restart: unless-stopped
     depends_on:

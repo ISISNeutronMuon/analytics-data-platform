@@ -82,6 +82,6 @@
   become: true
   community.docker.docker_compose_v2:
     project_src: "{{ superset_work_dir }}"
-    build: always
+    pull: always
     recreate: always
     state: present
