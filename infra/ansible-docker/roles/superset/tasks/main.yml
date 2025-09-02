@@ -40,6 +40,11 @@
     mode: "{{ superset_template.mode|default('u=rw,g=r,o=r') }}"
   loop:
     - { src: docker-compose.yml.j2, dest: docker-compose.yml }
+    - {
+        src: superset-cli.sh.j2,
+        dest: superset-cli.sh,
+        mode: "u=rwx,g=rx,o=rx",
+      }
     - { src: docker/dotenv.j2, dest: docker/.env }
     - {
         src: docker/docker-init.sh.j2,
