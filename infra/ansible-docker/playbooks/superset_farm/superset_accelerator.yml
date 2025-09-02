@@ -1,4 +1,7 @@
 ---
+# image
+superset_container_image: ghcr.io/martyngigg/adp-superset-forked:901412e
+
 # network
 superset_http_port: 8088
 

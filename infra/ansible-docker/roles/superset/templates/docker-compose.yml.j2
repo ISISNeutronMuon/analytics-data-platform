@@ -1,4 +1,4 @@
-x-superset-image: &superset-image ghcr.io/martyngigg/adp-superset:6.0.0rc1-py311
+x-superset-image: &superset-image {{ superset_container_image }}
 x-superset-user: &superset-user root
 x-superset-depends-on: &superset-depends-on
   redis:
