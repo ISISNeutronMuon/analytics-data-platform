@@ -4,14 +4,9 @@ from pathlib import Path
 from typing import Dict, List
 
 from celery.schedules import crontab
-from flask import g, redirect, flash
-from flask_appbuilder._compat import as_unicode
-from flask_appbuilder.security.forms import LoginForm_db
 from flask_appbuilder.security.manager import AUTH_LDAP
 from flask_appbuilder.security.sqla.models import Role
-from flask_appbuilder.security.views import AuthLDAPView, expose
 from flask_caching.backends.rediscache import RedisCache
-from flask_login import login_user
 from superset.security import SupersetSecurityManager
 import yaml
 
@@ -85,7 +80,8 @@ AUTH_LDAP_TLS_DEMAND = True
 AUTH_LDAP_TLS_CACERTFILE = os.getenv("LDAP_CACERTFILE")
 AUTH_API_LOGIN_ALLOW_MULTIPLE_PROVIDERS = True
 
-# registration configs
+# Registration needs to be enabled so that the flask_appbuilder LDAP auth
+# registers a new Superset user when it finds one in LDAP.
 AUTH_USER_REGISTRATION = True
 RECAPTCHA_PUBLIC_KEY = ""
 RECAPTCHA_PRIVATE_KEY = ""
