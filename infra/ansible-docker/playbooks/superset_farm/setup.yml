@@ -10,7 +10,7 @@
 - name: Configure Superset instances
   hosts: superset_farm
   vars:
-    superset_instances_all:
+    superset_farm_instances:
       - superset_accelerator
       - superset_management
   tasks:
@@ -20,6 +20,6 @@
         apply:
           vars:
             superset_instance_name: "{{ instance_name }}"
-      with_items: "{{ superset_only_instance | default(superset_instances_all) }}"
+      with_items: "{{ superset_only_instance | default(superset_farm_instances) }}"
       loop_control:
         loop_var: instance_name
