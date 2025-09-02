@@ -77,7 +77,7 @@ class InternallyManagedAdminRoleSecurityManager(SupersetSecurityManager):
 
 
 # LDAP authentication
-SILENCE_FAB = False
+SILENCE_FAB = True
 AUTH_TYPE = AUTH_LDAP
 AUTH_LDAP_SERVER = os.getenv("LDAP_SERVER")
 AUTH_LDAP_USE_TLS = False
