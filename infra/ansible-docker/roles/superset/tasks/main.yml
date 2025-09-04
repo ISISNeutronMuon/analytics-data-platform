@@ -1,20 +1,4 @@
 ---
-- name: "Verify required variables are defined"
-  ansible.builtin.assert:
-    that:
-      - var_name is defined
-      - var_name | length > 0
-    fail_msg: "{{ var_name }} needs to be set for the role to work"
-    success_msg: "Required variable {{ var_name }} is defined"
-  loop_control:
-    loop_var: var_name
-  with_items:
-    - superset_instance_name
-
-- name: "Include instance-specific variables ({{ superset_instance_name }})"
-  ansible.builtin.include_vars:
-    file: "{{ playbook_dir }}/{{ superset_instance_name }}.yml"
-
 - name: Ensure working directory exists
   become: true
   ansible.builtin.file:

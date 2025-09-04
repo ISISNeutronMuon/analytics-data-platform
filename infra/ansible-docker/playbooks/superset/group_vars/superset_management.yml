@@ -6,6 +6,7 @@ superset_container_image: ghcr.io/martyngigg/adp-superset-forked:901412e
 superset_http_port: 8089
 
 # superset app
+superset_instance_name: superset_management
 superset_metadb_host: "{{ vault_db_host }}"
 superset_metadb_port: "{{ vault_db_port }}"
 superset_metadb_name: "{{ vault_superset_management_metadb_name }}"

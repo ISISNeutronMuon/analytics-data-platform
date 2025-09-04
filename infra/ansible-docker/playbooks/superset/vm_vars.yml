@@ -1,6 +1,9 @@
 ---
-# superset_farm node
-openstack_security_group_name: superset_farm
+# Specialized variables for the Superset VM. See ../../vars/openstack.yml for shared values
+
+# We run multiple instances of Apache Superset on a single node to maximise resource usage.
+openstack_server_name: superset_farm
+openstack_security_group_name: superset
 openstack_security_group_description: Ingress to superset ports
 openstack_security_group_rules:
   - direction: ingress
@@ -10,5 +13,4 @@ openstack_security_group_rules:
     port_range_max: 8089
 openstack_flavor: l3.tiny
 openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
-inventory_group: superset_farm
-docker_configure_container_network_external: false
+inventory_group: superset
