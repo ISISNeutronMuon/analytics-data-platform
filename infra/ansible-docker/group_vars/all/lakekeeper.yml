@@ -1,19 +1,23 @@
 ---
-lakekeeper_image: quay.io/lakekeeper/catalog:v0.9.3
-lakekeeper_container_network: lakekeeper
 lakekeeper_http_port: 8181
 lakekeeper_base_path: /iceberg
 lakekeeper_url: "https://{{ top_level_domain }}{{ lakekeeper_base_path }}"
 
-lakekeeper_catalog:
-  name: isis
-  uri: "{{ lakekeeper_url }}/catalog"
-  storage:
-    bucket_name: isis-dataarchitecture-prototypes-lakehouse
-    key_prefix: ""
+# lakekeeper_catalog:
+#   name: isis
+#   uri: "{{ lakekeeper_url }}/catalog"
+#   storage:
+#     bucket_name: isis-dataarchitecture-prototypes-lakehouse
+#     key_prefix: ""
 
-lakekeeper_store_port: 5432
-lakekeeper_store_dbname: lakekeeperdb
-lakekeeper_store_user: lakekeeper
-lakekeeper_store_passwd: "{{ vault_lakekeeper_store_passwd }}"
-lakekeeper_store_encryption_key: "{{ vault_lakekeeper_store_encryption_key }}"
+lakekeeper_catalogs:
+  - name: accelerator
+    uri: "{{ lakekeeper_url }}/catalog"
+    storage:
+      bucket_name: isis-dataarchitecture-prototypes-warehouse-accelerator
+      key_prefix: ""
+  - name: management
+    uri: "{{ lakekeeper_url }}/catalog"
+    storage:
+      bucket_name: isis-dataarchitecture-prototypes-warehouse-management
+      key_prefix: ""

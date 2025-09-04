@@ -8,11 +8,11 @@
   gather_facts: false
   tasks:
     - ansible.builtin.include_vars:
-        file: "../../group_vars/all/openstack.yml"
+        dir: "../../group_vars/all"
     - ansible.builtin.include_vars:
         file: "{{ vm_config_file }}"
 
-- name: Provision VM for Apache Superset
+- name: Provision VM
   hosts: localhost
   gather_facts: false
   roles:

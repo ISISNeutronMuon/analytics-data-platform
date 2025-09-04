@@ -2,7 +2,5 @@
 - name: Configure Lakekeeper to act as an Iceberg catalog
   hosts: lakekeeper
   roles:
-    - role: cephfs_mount
     - role: docker_configure
-    - role: postgres
     - role: lakekeeper

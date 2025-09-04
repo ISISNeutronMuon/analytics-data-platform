@@ -1,5 +1,5 @@
 {
-  "warehouse-name": "{{ lakekeeper_catalog.name }}",
+  "warehouse-name": "{{ catalog.name }}",
   "storage-credential": {
     "type": "s3",
     "aws-access-key-id": "{{ s3_access_key_id }}",
@@ -8,8 +8,8 @@
   },
   "storage-profile": {
     "type": "s3",
-    "bucket": "{{ lakekeeper_catalog.storage.bucket_name }}",
-    "key-prefix": "{{ lakekeeper_catalog.storage.key_prefix }}",
+    "bucket": "{{ catalog.storage.bucket_name }}",
+    "key-prefix": "{{ catalog.storage.key_prefix }}",
     "endpoint": "{{ s3_endpoint }}",
     "region": "local-01",
     "path-style-access": true,

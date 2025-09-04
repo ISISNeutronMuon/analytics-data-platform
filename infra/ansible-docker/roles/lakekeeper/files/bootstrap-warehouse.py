@@ -21,6 +21,7 @@ import json
 from pathlib import Path
 import logging
 import os
+import sys
 from typing import Any, Dict, Callable
 
 import requests
@@ -41,7 +42,6 @@ class EnvParser:
 
     # Lakekeeper
     lakekeeper_url: str
-    warehouse_json_file: str
 
     def __init__(self, env_prefix: str):
         """Parse environment variables prefixed with env_prefix into class variables"""
@@ -138,6 +138,8 @@ def main():
         filename=this_file_dir / LOGGER_FILENAME, level=logging.INFO, filemode="w"
     )
     env_vars = EnvParser(LAKEKEEPER_BOOTSTRAP_PREFIX)
+    warehouses_json = sys.argv[1:]
+
     server = Server(
         env_vars.lakekeeper_url,
         request_access_token(
@@ -148,8 +150,11 @@ def main():
         ),
     )
     server.bootstrap()
-    with open(env_vars.warehouse_json_file) as fp:
-        server.create_warehouse(json.load(fp))
+    if warehouses_json:
+        LOGGER.debug(f"Creating warehouses using files: {warehouses_json}")
+        for warehouse_json_file in warehouses_json:
+            with open(warehouse_json_file) as fp:
+                server.create_warehouse(json.load(fp))
 
 
 if __name__ == "__main__":
