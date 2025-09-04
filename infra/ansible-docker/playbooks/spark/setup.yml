@@ -1,9 +1,0 @@
----
-- name: Configure Spark processing engine with Iceberg support
-  hosts: spark
-  roles:
-    - role: cephfs_mount
-    - role: geerlingguy.pip
-      become: true
-    - role: docker_configure
-    - role: spark

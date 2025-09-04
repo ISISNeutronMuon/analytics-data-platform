@@ -1,9 +1,0 @@
----
-- name: Configure minio
-  hosts: minio
-  roles:
-    - role: cephfs_mount
-    - role: geerlingguy.pip
-      become: true
-    - role: docker_configure
-    - role: minio

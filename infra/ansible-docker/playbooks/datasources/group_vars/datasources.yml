@@ -1,0 +1,17 @@
+---
+datasources_influxdb_port: 8086
+datasources_influxdb_container_name: influxdb
+datasources_influxdb_data_dir: "{{ cephfs_mount_mount_path }}/staging/influx/influxdbv2/data"
+
+openstack_server_name: datasources
+openstack_flavor: l3.small
+openstack_security_group_name: datasources
+openstack_security_group_description: Ingress to datasources ports
+openstack_security_group_rules:
+  - direction: ingress
+    ether_type: IPv4
+    protocol: tcp
+    port_range_min: "{{ datasources_influxdb_port }}"
+    port_range_max: "{{ datasources_influxdb_port }}"
+openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
+inventory_group: datasources

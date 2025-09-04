@@ -1,6 +1,5 @@
 ---
-# Choose MinIO or S3 echo by switching out the variables for the appropriate minio_(minio.yml)/ceph_(ceph-s3.yml) ones
-s3_endpoint: "{{ ceph_s3_endpoint }}"
-s3_region: "{{ ceph_s3_region }}"
-s3_access_key_id: "{{ ceph_s3_access_key_id }}"
-s3_access_secret: "{{ ceph_s3_access_secret }}"
+s3_endpoint: https://s3.echo.stfc.ac.uk
+s3_region: echo-01 # not used but can be required by apis
+s3_access_key_id: "{{ vault_echo_access_id }}"
+s3_access_secret: "{{ vault_echo_access_secret }}"
