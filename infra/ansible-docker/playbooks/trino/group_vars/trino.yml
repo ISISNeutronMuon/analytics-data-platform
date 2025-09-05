@@ -1,0 +1,27 @@
+---
+# VM configuration
+openstack_server_name: "{{ trino_server_name }}"
+openstack_security_group_name: trino
+openstack_security_group_description: Ingress to Trino ports
+openstack_security_group_rules:
+  - direction: ingress
+    ether_type: IPv4
+    protocol: tcp
+    port_range_min: "{{ trino_http_port }}"
+    port_range_max: "{{ trino_http_port }}"
+openstack_flavor: l3.xsmall
+openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
+inventory_group: trino
+
+# Trino configuration
+trino_data_path: "{{ cephfs_mount_mount_path }}/live/trino/data"
+trino_jvm_xmx: 48G
+trino_shared_secret: "{{ vault_trino_shared_secret }}"
+
+trino_superset_username: superset
+trino_ingestion_username: ingestion
+trino_users:
+  - username: "{{ trino_superset_username }}"
+    password: "{{ vault_trino_superset_passwd }}"
+  - username: "{{ trino_ingestion_username }}"
+    password: "{{ vault_trino_ingestion_passwd }}"

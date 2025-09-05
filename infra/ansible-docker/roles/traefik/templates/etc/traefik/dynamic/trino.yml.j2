@@ -1,6 +1,5 @@
 http:
   routers:
-    # TLS
     trino:
       entryPoints: trino_tls
       rule: Host(`{{ top_level_domain }}`) && PathPrefix(`/`)
@@ -11,4 +10,4 @@ http:
     trino:
       loadBalancer:
         servers:
-          - url: "{{ trino_coordinator_url }}"
+          - url: "http://{{ trino_server_name }}:{{ trino_http_port }}"

@@ -19,6 +19,5 @@ superset_env_name: production
 superset_config_yaml: "{{ vault_superset_accelerator_config_yaml }}"
 
 superset_analytic_dbs:
-  # this needs to be replaced with what will be called accelerator once the lakekeeper DB is migrated
-  - database_name: isis
-    uri: "trino://{{ trino_superset_username }}:{{ vault_trino_superset_passwd }}@{{ top_level_domain }}:{{ trino_https_port }}/isis"
+  - database_name: accelerator
+    uri: "trino://{{ trino_superset_username }}:{{ vault_trino_superset_passwd }}@{{ top_level_domain }}:{{ trino_https_port }}/accelerator"

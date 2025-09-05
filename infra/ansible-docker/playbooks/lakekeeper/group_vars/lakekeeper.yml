@@ -1,6 +1,6 @@
 ---
 # VM configuration
-openstack_server_name: lakekeeper
+openstack_server_name: "{{ lakekeeper_server_name }}"
 openstack_flavor: l3.xsmall
 openstack_security_group_name: lakekeeper
 openstack_security_group_description: Ingress to catalog ports

@@ -18,4 +18,4 @@ http:
     lakekeeper:
       loadBalancer:
         servers:
-          - url: "http://lakekeeper:{{ lakekeeper_http_port }}"
+          - url: "http://{{ lakekeeper_seerver_name }}:{{ lakekeeper_http_port }}"

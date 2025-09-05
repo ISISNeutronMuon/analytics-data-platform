@@ -1,4 +1,5 @@
 ---
+lakekeeper_server_name: "{{ deploy_prefix }}lakekeeper"
 lakekeeper_http_port: 8181
 lakekeeper_base_path: /iceberg
 lakekeeper_url: "https://{{ top_level_domain }}{{ lakekeeper_base_path }}"

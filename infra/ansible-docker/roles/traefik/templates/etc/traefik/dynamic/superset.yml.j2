@@ -1,14 +1,25 @@
 http:
   routers:
-    # TLS
-    superset:
+    superset_accelerator:
       entryPoints: websecure
-      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ superset_app_root }}`)
-      service: superset
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`/workspace/accelerator`)
+      service: superset_accelerator
+      tls: {}
+    superset_management:
+      entryPoints: websecure
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`/workspace/management`)
+      service: superset_management
       tls: {}
 
   services:
-    superset:
+    # this is still the old single-node deployment
+    superset_accelerator:
       loadBalancer:
         servers:
-          - url: "http://superset:{{ superset_http_port }}"
+          - url: "http://superset:8088"
+    # new "farm" multiple instance node
+    # how not to duplicate the ports etc
+    superset_management:
+      loadBalancer:
+        servers:
+          - url: "http://superset_farm:8089"
