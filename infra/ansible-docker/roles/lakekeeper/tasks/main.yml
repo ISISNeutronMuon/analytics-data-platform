@@ -1,4 +1,15 @@
 ---
+- name: Ensure S3 buckets exist
+  amazon.aws.s3_bucket:
+    name: "{{ catalog.storage.bucket_name }}"
+    endpoint_url: "{{ s3_endpoint }}"
+    access_key: "{{ s3_access_key_id }}"
+    secret_key: "{{ s3_access_secret }}"
+    ceph: true
+  with_items: "{{ lakekeeper_catalogs }}"
+  loop_control:
+    loop_var: catalog
+
 - name: Get info on lakekeeper container
   community.docker.docker_container_info:
     name: "{{ lakekeeper_container_name }}"
@@ -104,7 +115,6 @@
       LAKEKEEPER_BOOTSTRAP__CLIENT_ID=ansible
       LAKEKEEPER_BOOTSTRAP__CLIENT_SECRET="{{ vault_keycloak_client_secret_ansible }}"
       LAKEKEEPER_BOOTSTRAP__SCOPE=lakekeeper
-      LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL="{{ lakekeeper_url }}"
       LAKEKEEPER_BOOTSTRAP__WAREHOUSE_JSON_FILE=/opt/work/bootstrap-warehouse.json
     networks:
       - name: "{{ lakekeeper_container_network }}"

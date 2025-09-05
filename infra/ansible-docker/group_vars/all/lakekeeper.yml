@@ -3,13 +3,6 @@ lakekeeper_http_port: 8181
 lakekeeper_base_path: /iceberg
 lakekeeper_url: "https://{{ top_level_domain }}{{ lakekeeper_base_path }}"
 
-# lakekeeper_catalog:
-#   name: isis
-#   uri: "{{ lakekeeper_url }}/catalog"
-#   storage:
-#     bucket_name: isis-dataarchitecture-prototypes-lakehouse
-#     key_prefix: ""
-
 lakekeeper_catalogs:
   - name: accelerator
     uri: "{{ lakekeeper_url }}/catalog"
