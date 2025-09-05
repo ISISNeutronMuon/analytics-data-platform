@@ -96,12 +96,22 @@
   with_items: "{{ lakekeeper_catalogs }}"
   loop_control:
     loop_var: catalog
+  register: warehouse_json_files
+
+- debug:
+    msg: "{{ warehouse_json_files.results | map(attribute='dest') | list }}"
 
 - name: Ensure Lakekeeper is bootstrapped
   community.docker.docker_container:
     name: "{{ lakekeeper_container_name }}_bootstrap"
     image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
-    command: ["uv", "run", "/opt/work/bootstrap-warehouse.py"]
+    command:
+      [
+        "uv",
+        "run",
+        "/opt/work/bootstrap-warehouse.py",
+        "{{ warehouse_json_file | replace(lakekeeper_working_dir, '/opt/work') }}",
+      ]
     state: started
     cleanup: true
     detach: false
@@ -111,12 +121,16 @@
       #
       UV_LINK_MODE=copy
       UV_PROJECT_ENVIRONMENT=/opt/uv-venv
+      LAKEKEEPER_BOOTSTRAP__LOG_LEVEL="{{ lakekeeper_bootstrap_log_level }}"
       LAKEKEEPER_BOOTSTRAP__TOKEN_ENDPOINT_URL="{{ keycloak_token_endpoint_url_isis }}"
       LAKEKEEPER_BOOTSTRAP__CLIENT_ID=ansible
       LAKEKEEPER_BOOTSTRAP__CLIENT_SECRET="{{ vault_keycloak_client_secret_ansible }}"
       LAKEKEEPER_BOOTSTRAP__SCOPE=lakekeeper
-      LAKEKEEPER_BOOTSTRAP__WAREHOUSE_JSON_FILE=/opt/work/bootstrap-warehouse.json
+      LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL="{{ lakekeeper_url }}"
     networks:
       - name: "{{ lakekeeper_container_network }}"
     volumes:
       - "{{ lakekeeper_working_dir }}:/opt/work"
+  with_items: "{{ warehouse_json_files.results | map(attribute='dest') | list }}"
+  loop_control:
+    loop_var: warehouse_json_file

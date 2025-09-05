@@ -30,10 +30,14 @@ import requests
 LAKEKEEPER_BOOTSTRAP_PREFIX = "LAKEKEEPER_BOOTSTRAP__"
 LOGGER = logging.getLogger(__name__)
 LOGGER_FILENAME = f"{Path(__file__).name}.log"
+LOGGER_FORMAT = "%(asctime)s|%(message)s"
 
 
 @dataclasses.dataclass(init=False)
 class EnvParser:
+    # Logging
+    log_level: str = "INFO"
+
     # ID provider
     token_endpoint_url: str
     client_id: str
@@ -83,6 +87,7 @@ class Server:
 
     def warehouse_exists(self, warehouse_name: str) -> bool:
         response = self._request(requests.get, self.management_url + "/warehouse")
+        LOGGER.debug(f"'/warehouse' response: {response.json()}")
         for warehouse in response.json()["warehouses"]:
             if warehouse["name"] == warehouse_name:
                 return True
@@ -133,11 +138,15 @@ def request_access_token(token_endpoint, client_id, client_secret, scope) -> str
 
 
 def main():
+    env_vars = EnvParser(LAKEKEEPER_BOOTSTRAP_PREFIX)
+
     this_file_dir = Path(__file__).parent
     logging.basicConfig(
-        filename=this_file_dir / LOGGER_FILENAME, level=logging.INFO, filemode="w"
+        filename=this_file_dir / LOGGER_FILENAME,
+        format=LOGGER_FORMAT,
+        level=getattr(logging, env_vars.log_level),
+        filemode="a",
     )
-    env_vars = EnvParser(LAKEKEEPER_BOOTSTRAP_PREFIX)
     warehouses_json = sys.argv[1:]
 
     server = Server(
