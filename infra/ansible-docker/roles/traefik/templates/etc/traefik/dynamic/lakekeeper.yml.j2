@@ -1,21 +1,35 @@
+{%- set base_paths = {lakekeeper_base_path: lakekeeper_server_name} -%}
+{%- if lakekeeper_preview_server_name is defined -%}
+{%- set _ = base_paths.update({lakekeeper_base_path + '-preview': lakekeeper_preview_server_name}) -%}
+{%- endif-%}
+
 http:
   routers:
-    lakekeeper:
+    {% for base_path, server_name in base_paths.items() %}
+    {%- set santized_name = base_path.replace('/', '_') -%}
+    {{ santized_name }}:
       entryPoints: websecure
-      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ lakekeeper_base_path }}`)
-      service: lakekeeper
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ base_path }}`)
+      service: {{ santized_name }}
       middlewares:
-        - lakekeeper-strip-prefix
+        - {{ santized_name }}-strip-prefix
       tls: {}
+    {% endfor %}
 
   middlewares:
-    lakekeeper-strip-prefix:
+    {% for base_path, server_name in base_paths.items() %}
+    {%- set santized_name = base_path.replace('/', '_') -%}
+    {{ santized_name }}-strip-prefix:
       stripPrefix:
         prefixes:
-          - "{{ lakekeeper_base_path }}"
+          - "{{ base_path }}"
+    {% endfor %}
 
   services:
-    lakekeeper:
+    {% for base_path, server_name in base_paths.items() %}
+    {%- set santized_name = base_path.replace('/', '_') -%}
+    {{ santized_name }}:
       loadBalancer:
         servers:
-          - url: "http://{{ lakekeeper_seerver_name }}:{{ lakekeeper_http_port }}"
+          - url: "http://{{ server_name }}:{{ lakekeeper_http_port }}"
+    {% endfor %}
