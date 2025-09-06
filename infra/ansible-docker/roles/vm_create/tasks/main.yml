@@ -1,10 +1,10 @@
 ---
 - name: Ensure cloud server is present
   openstack.cloud.server:
+    name: "{{ openstack_server_name }}{{ openstack_server_name_suffix | default('') }}"
     cloud: "{{ openstack_cloud_name }}"
     flavor: "{{ openstack_flavor }}"
     image: "{{ openstack_image }}"
-    name: "{{ openstack_server_name }}"
     key_name: "{{ openstack_key_name }}"
     network: "{{ openstack_virtual_network.name | default('Internal') }}"
     auto_floating_ip: false

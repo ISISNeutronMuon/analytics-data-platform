@@ -2,7 +2,7 @@
 # Specialized variables for the Superset VM. See ../../vars/openstack.yml for shared values
 
 # We run multiple instances of Apache Superset on a single node to maximise resource usage.
-openstack_server_name: "{{ deploy_prefix }}superset_farm"
+openstack_server_name: superset_farm
 openstack_security_group_name: superset
 openstack_security_group_description: Ingress to superset ports
 openstack_security_group_rules:
