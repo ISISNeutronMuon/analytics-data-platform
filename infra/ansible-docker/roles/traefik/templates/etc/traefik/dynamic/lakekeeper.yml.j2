@@ -1,7 +1,5 @@
-{%- set base_paths = {lakekeeper_base_path: lakekeeper_server_name} -%}
-{%- if lakekeeper_preview_server_name is defined -%}
-{%- set _ = base_paths.update({lakekeeper_base_path + '-preview': lakekeeper_preview_server_name}) -%}
-{%- endif-%}
+{%- set base_paths = {lakekeeper_base_path: lakekeeper_server_name,
+    lakekeeper_base_path + '-preview': lakekeeper_server_name + '-preview'} -%}
 
 http:
   routers:

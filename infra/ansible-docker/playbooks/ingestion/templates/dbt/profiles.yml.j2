@@ -1,4 +1,4 @@
-isis_catalog:
+accelerator_catalog:
   target: trino
   outputs:
     trino:
@@ -9,6 +9,6 @@ isis_catalog:
       host: {{ top_level_domain }}
       port: {{ trino_https_port }}
       http_scheme: https
-      database: {{ lakekeeper_catalog.name }}
+      database: accelerator
       schema: analytics
       threads: 16

@@ -4,14 +4,14 @@ lakekeeper_http_port: 8181
 lakekeeper_base_path: /iceberg
 lakekeeper_url: "https://{{ top_level_domain }}{{ lakekeeper_base_path }}"
 
-lakekeeper_catalogs:
-  - name: accelerator
-    uri: "{{ lakekeeper_url }}/catalog"
-    storage:
-      bucket_name: isis-dataarchitecture-prototypes-warehouse-accelerator
-      key_prefix: ""
-  - name: management
-    uri: "{{ lakekeeper_url }}/catalog"
-    storage:
-      bucket_name: isis-dataarchitecture-prototypes-warehouse-management
-      key_prefix: ""
+lakekeeper_catalog:
+  uri: "{{ lakekeeper_url }}/catalog"
+  warehouses:
+    - name: accelerator
+      storage:
+        bucket_name: isis-dataarchitecture-prototypes-warehouse-accelerator
+        key_prefix: ""
+    - name: management
+      storage:
+        bucket_name: isis-dataarchitecture-prototypes-warehouse-management
+        key_prefix: ""

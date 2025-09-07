@@ -1,7 +1,7 @@
 name: isis
 version: "1.0.0"
 
-profile: "isis_catalog"
+profile: "accelerator_catalog"
 
 flags:
   require_certificate_validation: True

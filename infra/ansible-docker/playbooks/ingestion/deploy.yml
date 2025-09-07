@@ -98,6 +98,8 @@
       ansible.builtin.template:
         src: dlt/secrets.toml.j2
         dest: "{{ ansible_env['HOME'] }}/.dlt/secrets.toml"
+      vars:
+        lakekeeper_warehouse: lakekeeper_catalog.warehouses[0]
 
     # ---------- dbt profiles ----------
     - name: Ensure dbt profiles directory exists

@@ -1,14 +1,14 @@
 ---
 - name: Ensure S3 buckets exist
   amazon.aws.s3_bucket:
-    name: "{{ catalog.storage.bucket_name }}"
+    name: "{{ warehouse.storage.bucket_name }}"
     endpoint_url: "{{ s3_endpoint }}"
     access_key: "{{ s3_access_key_id }}"
     secret_key: "{{ s3_access_secret }}"
     ceph: true
-  with_items: "{{ lakekeeper_catalogs }}"
+  with_items: "{{ lakekeeper_catalog.warehouses }}"
   loop_control:
-    loop_var: catalog
+    loop_var: warehouse
 
 - name: Get info on lakekeeper container
   community.docker.docker_container_info:
@@ -91,11 +91,11 @@
   become: true
   ansible.builtin.template:
     src: bootstrap-warehouse.json.j2
-    dest: "{{ lakekeeper_working_dir }}/bootstrap-warehouse-{{ catalog.name }}.json"
+    dest: "{{ lakekeeper_working_dir }}/bootstrap-warehouse-{{ warehouse.name }}.json"
     mode: "0644"
-  with_items: "{{ lakekeeper_catalogs }}"
+  with_items: "{{ lakekeeper_catalog.warehouses }}"
   loop_control:
-    loop_var: catalog
+    loop_var: warehouse
   register: warehouse_json_files
 
 - debug:
