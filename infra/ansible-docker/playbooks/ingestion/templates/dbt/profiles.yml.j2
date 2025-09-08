@@ -9,6 +9,6 @@ accelerator_catalog:
       host: {{ top_level_domain }}
       port: {{ trino_https_port }}
       http_scheme: https
-      database: accelerator
+      database: {{ ingestion_warehouse }}
       schema: analytics
       threads: 16

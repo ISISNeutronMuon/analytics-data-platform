@@ -6,12 +6,14 @@
     uv_python_version: "3.13"
     ingestion_elt_git_url: https://github.com/ISISNeutronMuon/analytics-data-platform.git
     ingestion_elt_git_dest: "{{ ansible_env['HOME'] }}/var/elt_sources"
+    ingestion_elt_extract_root: "warehouses/accelerator/extract_load"
+    ingestion_elt_dbt_root: "warehouses/accelerator/transform/accelerator"
     ingestion_elt_cron_scripts_dir: "{{ ansible_env['HOME'] }}/etc/cron"
     ingestion_elt_cron_log_dir: "{{ ansible_env['HOME'] }}/var/log/elt-pipelines/cron"
     ingestion_elt_statusdisplay_log_dir: "{{ ingestion_elt_cron_log_dir }}/statusdisplay"
     ingestion_elt_opralogweb_log_dir: "{{ ingestion_elt_cron_log_dir }}/opralogweb"
     ingestion_elt_electricity_sharepoint_log_dir: "{{ ingestion_elt_cron_log_dir }}/electricity_sharepoint"
-    ingestion_spark_conf_dir: "{{ ansible_env['HOME'] }}/etc/spark/conf"
+    ingestion_warehouse: accelerator
     logrotate_frequency: weekly
     logrotate_keep: 14
     logrotate_compress: true
@@ -23,11 +25,6 @@
       - name: electricity_sharepoint
         path: "{{ ingestion_elt_electricity_sharepoint_log_dir }}/*.log"
   roles:
-    - role: geerlingguy.java
-      become: true
-      vars:
-        java_packages:
-          - openjdk-11-jre
     - role: robertdebock.logrotate
       become: true
   tasks:
@@ -98,8 +95,6 @@
       ansible.builtin.template:
         src: dlt/secrets.toml.j2
         dest: "{{ ansible_env['HOME'] }}/.dlt/secrets.toml"
-      vars:
-        lakekeeper_warehouse: lakekeeper_catalog.warehouses[0]
 
     # ---------- dbt profiles ----------
     - name: Ensure dbt profiles directory exists
@@ -143,7 +138,11 @@
         state: "{{ ingestion_cron_state | default('present') }}"
         minute: "15"
         hour: "0"
-        job: "{{ ingestion_elt_cron_scripts_dir }}/elt_task.sh pipelines/ingest/accelerator/statusdisplay pipelines/modelling/isis --select '+models/facility' > {{ ingestion_elt_statusdisplay_log_dir }}/elt-$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log 2>&1"
+        job: >
+          {{ ingestion_elt_cron_scripts_dir }}/elt_task.sh
+            {{ ingestion_elt_extract_root }}/statusdisplay"
+            {{ ingestion_elt_dbt_root }} --select 'staging/statusdisplay+' >
+            {{ ingestion_elt_statusdisplay_log_dir }}/elt-$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log 2>&1"
 
     # ---------- Opralog ----------
     - name: Ensure Opralog cron logs directory exists
@@ -162,7 +161,11 @@
         state: "{{ ingestion_cron_state | default('present') }}"
         minute: "10"
         hour: "2"
-        job: "{{ ingestion_elt_cron_scripts_dir }}/elt_task.sh pipelines/ingest/accelerator/opralogweb pipelines/modelling/isis --select '+models/accelerator' > {{ ingestion_elt_opralogweb_log_dir }}/elt-$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log 2>&1"
+        job: >
+          {{ ingestion_elt_cron_scripts_dir }}/elt_task.sh
+            {{ ingestion_elt_extract_root }}/opralogweb
+            {{ ingestion_elt_dbt_root }} --select 'staging/opralogweb+' >
+            {{ ingestion_elt_opralogweb_log_dir }}/elt-$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log 2>&1"
 
     # ---------- Electricity ----------
     - name: Ensure Electricity SharePoint cron logs directory exists
@@ -181,4 +184,8 @@
         state: "{{ ingestion_cron_state | default('present') }}"
         minute: "05"
         hour: "*"
-        job: "{{ ingestion_elt_cron_scripts_dir }}/elt_task.sh pipelines/ingest/facility/electricity_sharepoint pipelines/modelling/isis --select '+models/facility/power_consumption.sql' > {{ ingestion_elt_electricity_sharepoint_log_dir }}/elt-$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log 2>&1"
+        job: >
+          {{ ingestion_elt_cron_scripts_dir }}/elt_task.sh
+            {{ ingestion_elt_extract_root }}/electricity_sharepoint
+            {{ ingestion_elt_dbt_root }} --select 'staging/electricity_sharepoint+' >
+            {{ ingestion_elt_electricity_sharepoint_log_dir }}/elt-$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log 2>&1

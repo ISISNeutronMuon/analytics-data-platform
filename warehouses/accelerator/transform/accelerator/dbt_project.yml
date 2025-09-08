@@ -1,4 +1,4 @@
-name: isis
+name: accelerator
 version: "1.0.0"
 
 profile: "accelerator_catalog"
@@ -24,7 +24,7 @@ vars:
 models:
   +file_format: parquet
   +materialized: table
-  isis:
+  accelerator:
     # The full schema name of the final tables is "{target_schema}_"{custom_schema}"
     #   - 'target_schema' is defined in profiles.yml
     #   - 'custom_schema' is defined for each collection of models below
@@ -32,7 +32,5 @@ models:
     staging:
       +schema: staging
       +materialized: view
-    facility:
-      +schema: facility
-    accelerator:
-      +schema: accelerator
+    operations:
+      +schema: operations

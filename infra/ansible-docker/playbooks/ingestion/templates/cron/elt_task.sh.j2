@@ -9,7 +9,6 @@ EXTRACT_AND_LOAD_SCRIPT=extract_and_load.py
 LOG_LEVEL=DEBUG
 ON_PIPELINE_FAILURE=log_and_continue
 REQUIREMENTS_TXT=requirements.txt
-SPARK_CONF_DIR={{ ingestion_spark_conf_dir }}
 
 function ensure_elt_sources_exist() {
   export GIT_TERMINAL_PROMPT=0
@@ -54,7 +53,6 @@ if [ -n "$dbt_project_dir" ]; then
   cd $ELT_GIT_DEST/$dbt_project_dir
   uv venv
   uv pip install -r requirements/$REQUIREMENTS_TXT
-  export SPARK_CONF_DIR
   uv run dbt deps
   uv run dbt run $*
 fi

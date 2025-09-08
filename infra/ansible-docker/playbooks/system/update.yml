@@ -1,5 +1,4 @@
-- name: Apply package updates to all hosts (except management_vm)
-  # Skip management_vm as it's the jump host so we don't want it restarting
+- name: Apply package updates to all hosts
   hosts: all:!localhost
   roles:
     - role: packages_update
