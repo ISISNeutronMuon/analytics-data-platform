@@ -1,4 +1,4 @@
--e ../../pipelines-common
+-e ../../../elt-common
 
 # AWS SDK implmented checksum validation that is not supported by 3rd-party services
 # Minimum version of botocore required to pass relevant options to s3transfer

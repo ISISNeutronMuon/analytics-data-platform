@@ -10,10 +10,10 @@ from dlt.pipeline.exceptions import PipelineStepFailed
 
 import pytest
 
-from pipelines_common.dlt_destinations.pyiceberg.catalog import (
+from elt_common.dlt_destinations.pyiceberg.catalog import (
     namespace_exists as catalog_namespace_exists,
 )
-from pipelines_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
+from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
     pyiceberg_adapter,
 )
 

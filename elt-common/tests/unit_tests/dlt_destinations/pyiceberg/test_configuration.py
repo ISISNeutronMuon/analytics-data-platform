@@ -5,7 +5,7 @@ from dlt.common.configuration import resolve
 from dlt.common.destination.exceptions import DestinationTerminalException
 import pytest
 
-from pipelines_common.dlt_destinations.pyiceberg.configuration import (
+from elt_common.dlt_destinations.pyiceberg.configuration import (
     IcebergClientConfiguration,
 )
 

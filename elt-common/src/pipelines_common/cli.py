@@ -93,7 +93,7 @@ def cli_main(
     ).parse_args()
     # TODO: Make the log filtering more configurable
     logging_utils.configure_logging(
-        args.log_level, keep_records_from=["dlt", "pipelines_common", "__main__"]
+        args.log_level, keep_records_from=["dlt", "elt_common", "__main__"]
     )
 
     pipeline = dlt.pipeline(

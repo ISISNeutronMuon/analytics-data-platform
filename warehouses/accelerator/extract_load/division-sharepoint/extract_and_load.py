@@ -3,11 +3,11 @@
 # dependencies = [
 #     "openpyxl>=3.1.5,<3.2",
 #     "pandas>=2.2.3,<2.3.0",
-#     "pipelines-common",
+#     "elt-common",
 # ]
 #
 # [tool.uv.sources]
-# pipelines-common = { path = "../../../pipelines-common" }
+# elt-common = { path = "../../../../elt-common" }
 # ///
 import io
 from typing import Any, Iterator
@@ -15,8 +15,8 @@ from typing import Any, Iterator
 import dlt
 from dlt.sources import TDataItems
 from dlt.common.storages.fsspec_filesystem import FileItemDict
-from pipelines_common.cli import cli_main
-from pipelines_common.dlt_sources.m365 import sharepoint
+from elt_common.cli import cli_main
+from elt_common.dlt_sources.m365 import sharepoint
 
 SITE_URL = "https://stfc365.sharepoint.com/sites/ISIS-AcceleratorDivision"
 
@@ -61,7 +61,7 @@ def equipment_downtime_records_archive():
 if __name__ == "__main__":
     cli_main(
         pipeline_name="accelerator_sharepoint",
-        default_destination="pipelines_common.dlt_destinations.pyiceberg",
+        default_destination="elt_common.dlt_destinations.pyiceberg",
         data_generator=equipment_downtime_records_archive(),
         dataset_name_suffix="accelerator_sharepoint",
         default_write_disposition="replace",

@@ -22,7 +22,7 @@ from pyiceberg.table.sorting import (
 from pyiceberg.transforms import parse_transform
 from pyiceberg.schema import Schema as PyIcebergSchema
 
-from pipelines_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
+from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
     PARTITION_HINT,
     SORT_ORDER_HINT,
 )

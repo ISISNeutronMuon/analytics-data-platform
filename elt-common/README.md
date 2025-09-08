@@ -1,4 +1,4 @@
-# pipelines-common
+# elt-common
 
 A thin package around [`dlt`](https://dlthub.com) to provide functionality common
 to each pipeline.
@@ -12,7 +12,7 @@ Development requires the following tools:
 
 ### Setting up a Python virtual environment
 
-Once `uv` is installed, create an environment and install the `pipelines-common`
+Once `uv` is installed, create an environment and install the `elt-common`
 package in editable mode using the following command:
 
 ```bash

@@ -5,12 +5,12 @@
 #     "dlt[sql-database]",
 #     "html2text==2025.4.15",
 #     "pandas~=2.3.1",
-#     "pipelines-common",
+#     "elt-common",
 #     "pymssql~=2.3.4",
 # ]
 #
 # [tool.uv.sources]
-# pipelines-common = { path = "../../../pipelines-common" }
+# elt-common = { path = "../../../../elt-common" }
 # ///
 from collections.abc import Generator, Iterator, Sequence
 
@@ -20,7 +20,7 @@ from dlt.sources.sql_database import sql_database
 from html2text import html2text
 import pyarrow as pa
 
-import pipelines_common.cli as cli_utils
+import elt_common.cli as cli_utils
 
 
 @dlt.transformer()
@@ -73,7 +73,7 @@ def opralogwebdb() -> Generator[DltResource]:
 if __name__ == "__main__":
     cli_utils.cli_main(
         pipeline_name="opralogweb",
-        default_destination="pipelines_common.dlt_destinations.pyiceberg",
+        default_destination="elt_common.dlt_destinations.pyiceberg",
         data_generator=opralogwebdb,
         dataset_name_suffix="opralogweb",
         default_write_disposition="append",

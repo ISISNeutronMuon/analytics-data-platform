@@ -758,7 +758,7 @@ wheels = [
 ]
 
 [[package]]
-name = "pipelines-common"
+name = "elt-common"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

@@ -1,16 +1,16 @@
-name: Unit tests for pipelines-common package
+name: Unit tests for elt-common package
 on:
   push:
     branches:
       - "main"
     paths:
-      - ".github/workflows/pipelines-common_unit_tests.yml"
-      - "pipelines/pipelines-common/**"
+      - ".github/workflows/elt-common_unit_tests.yml"
+      - "pipelines/elt-common/**"
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - ".github/workflows/pipelines-common_unit_tests.yml"
-      - "pipelines/pipelines-common/**"
+      - ".github/workflows/elt-common_unit_tests.yml"
+      - "pipelines/elt-common/**"
   workflow_dispatch:
     inputs:
       ref:
@@ -43,12 +43,12 @@ jobs:
         with:
           # Install a specific version of uv.
           version: "0.7.3"
-          cache-dependency-glob: "pipelines/pipelines-common/pyproject.toml"
+          cache-dependency-glob: "pipelines/elt-common/pyproject.toml"
 
       - name: Install the project
         run: uv sync --locked --all-extras --dev
-        working-directory: pipelines/pipelines-common
+        working-directory: pipelines/elt-common
 
       - name: Run tests
         run: uv run pytest --durations-min=0.5 --exitfirst tests/unit_tests --cache-clear
-        working-directory: pipelines/pipelines-common
+        working-directory: pipelines/elt-common

@@ -1,4 +1,4 @@
-from pipelines_common.constants import SOURCE_DATASET_NAME_PREFIX
+from elt_common.constants import SOURCE_DATASET_NAME_PREFIX
 
 
 def dataset_name(suffix: str) -> str:

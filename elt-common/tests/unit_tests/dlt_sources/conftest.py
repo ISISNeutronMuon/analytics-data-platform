@@ -7,7 +7,7 @@ import dlt
 import pytest
 from pytest_httpx import HTTPXMock
 
-from pipelines_common.dlt_sources.m365 import M365CredentialsResource
+from elt_common.dlt_sources.m365 import M365CredentialsResource
 
 
 class SharePointTestSettings:

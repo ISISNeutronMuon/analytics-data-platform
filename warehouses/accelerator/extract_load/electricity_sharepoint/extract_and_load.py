@@ -2,12 +2,12 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "pandas~=2.3.1",
-#     "pipelines-common",
+#     "elt-common",
 #     "python-calamine~=0.4.0",
 # ]
 #
 # [tool.uv.sources]
-# pipelines-common = { path = "../../../pipelines-common" }
+# elt-common = { path = "../../../../elt-common" }
 # ///
 import concurrent.futures
 import io
@@ -18,13 +18,13 @@ import dlt
 from dlt.sources import TDataItems
 import pendulum
 import pandas as pd
-from pipelines_common.cli import cli_main
-from pipelines_common.logging import logging
-from pipelines_common.dlt_sources.m365 import (
+from elt_common.cli import cli_main
+from elt_common.logging import logging
+from elt_common.dlt_sources.m365 import (
     sharepoint,
     M365DriveItem,
 )
-from pipelines_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
+from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
     pyiceberg_adapter,
     pyiceberg_partition,
 )
@@ -148,7 +148,7 @@ def rdm_data(
 
 cli_main(
     pipeline_name=PIPELINE_NAME,
-    default_destination="pipelines_common.dlt_destinations.pyiceberg",
+    default_destination="elt_common.dlt_destinations.pyiceberg",
     data_generator=pyiceberg_adapter(
         rdm_data, partition=pyiceberg_partition.year("date_time")
     ),

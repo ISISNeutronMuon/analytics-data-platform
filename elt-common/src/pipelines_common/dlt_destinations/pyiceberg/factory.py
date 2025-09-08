@@ -2,14 +2,14 @@ import typing as t
 
 from dlt.common.destination import Destination, DestinationCapabilitiesContext
 
-from pipelines_common.dlt_destinations.pyiceberg.configuration import (
+from elt_common.dlt_destinations.pyiceberg.configuration import (
     IcebergClientConfiguration,
     PyIcebergCatalogCredentials,
 )
-from pipelines_common.dlt_destinations.pyiceberg.pyiceberg import (
+from elt_common.dlt_destinations.pyiceberg.pyiceberg import (
     PyIcebergClient,
 )
-from pipelines_common.dlt_destinations.pyiceberg.schema import PyIcebergTypeMapper
+from elt_common.dlt_destinations.pyiceberg.schema import PyIcebergTypeMapper
 
 
 class pyiceberg(Destination[IcebergClientConfiguration, "PyIcebergClient"]):

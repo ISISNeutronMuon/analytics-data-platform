@@ -21,10 +21,10 @@ from pyiceberg.transforms import (
     HourTransform,
 )
 
-from pipelines_common.dlt_destinations.pyiceberg.pyiceberg import (
+from elt_common.dlt_destinations.pyiceberg.pyiceberg import (
     PyIcebergClient,
 )
-from pipelines_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
+from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
     pyiceberg_partition,
     pyiceberg_sortorder,
     PartitionTransformation,
@@ -38,7 +38,7 @@ from e2e_tests.conftest import Warehouse
 class PyIcebergDestinationTestConfiguration:
     """Class for defining test setup for pyiceberg destination."""
 
-    destination: TDestinationReferenceArg = "pipelines_common.dlt_destinations.pyiceberg"
+    destination: TDestinationReferenceArg = "elt_common.dlt_destinations.pyiceberg"
 
     def setup(self, warehouse: Warehouse) -> None:
         """Sets up environment variables for this destination configuration"""

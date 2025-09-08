@@ -13,7 +13,7 @@ resolution-markers = [
 [manifest]
 requirements = [
     { name = "pandas", specifier = "~=2.3.1" },
-    { name = "pipelines-common", directory = "../../../pipelines-common" },
+    { name = "elt-common", directory = "../../../../elt-common" },
     { name = "python-calamine", specifier = "~=0.4.0" },
 ]
 
@@ -799,9 +799,9 @@ wheels = [
 ]
 
 [[package]]
-name = "pipelines-common"
+name = "elt-common"
 version = "0.1.0"
-source = { directory = "../../../pipelines-common" }
+source = { directory = "../../../../elt-common" }
 dependencies = [
     { name = "authlib" },
     { name = "dlt", extra = ["parquet", "s3"] },

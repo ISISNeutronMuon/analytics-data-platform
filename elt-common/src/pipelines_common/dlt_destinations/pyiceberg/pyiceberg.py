@@ -28,17 +28,17 @@ import pyarrow.parquet as pq
 from pyiceberg.expressions import AlwaysTrue, And, EqualTo
 from pyiceberg.table import Table as PyIcebergTable
 
-from pipelines_common.dlt_destinations.pyiceberg.configuration import (
+from elt_common.dlt_destinations.pyiceberg.configuration import (
     IcebergClientConfiguration,
 )
-from pipelines_common.dlt_destinations.pyiceberg.catalog import (
+from elt_common.dlt_destinations.pyiceberg.catalog import (
     create_catalog,
     namespace_exists,
     Identifier,
     PyIcebergCatalog,
 )
-from pipelines_common.dlt_destinations.pyiceberg.exceptions import pyiceberg_error
-from pipelines_common.dlt_destinations.pyiceberg.schema import (
+from elt_common.dlt_destinations.pyiceberg.exceptions import pyiceberg_error
+from elt_common.dlt_destinations.pyiceberg.schema import (
     PyIcebergTypeMapper,
 )
 

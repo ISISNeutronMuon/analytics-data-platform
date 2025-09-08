@@ -17,12 +17,12 @@ import pandas as pd
 import pendulum
 import requests
 
-import pipelines_common.cli as cli_utils
-import pipelines_common.logging as logging_utils
-import pipelines_common.pipeline as pipeline_utils
+import elt_common.cli as cli_utils
+import elt_common.logging as logging_utils
+import elt_common.pipeline as pipeline_utils
 
 
-from pipelines_common.constants import (
+from elt_common.constants import (
     MICROSECONDS_STR,
     MICROSECONDS_STR_INFLUX,
     MICROSECONDS_PER_SEC,
@@ -166,10 +166,8 @@ def machinestate_source_factory(
     influx: InfluxQuery,
     backfill_range: Tuple[pendulum.DateTime, Optional[pendulum.DateTime]],
 ):
-
     @dlt.source(name=schema_name, parallelized=True, max_table_nesting=0)
     def machinestate() -> Generator[DltResource]:
-
         time_end_value = backfill_range[1] if backfill_range[1] is not None else None
         for channel_name in channels:
             initial_time_value = backfill_range[0]
@@ -179,9 +177,11 @@ def machinestate_source_factory(
                 )
             }
             table_name = channel_name
-            yield influxdb_get_measurement(influx, channel_name, **time_args).with_name(
-                table_name
-            ).apply_hints(table_name=table_name)
+            yield (
+                influxdb_get_measurement(influx, channel_name, **time_args)
+                .with_name(table_name)
+                .apply_hints(table_name=table_name)
+            )
 
     return machinestate()
 
@@ -259,9 +259,8 @@ def run_pipeline(
     elt_ended_at = pendulum.now()
     LOGGER.info(
         f"ELT for schema {schema_name} completed in {
-        humanize.precisedelta(
-            elt_ended_at - elt_started_at
-        )}"
+            humanize.precisedelta(elt_ended_at - elt_started_at)
+        }"
     )
 
     return pipeline
@@ -374,7 +373,7 @@ def main():
             channels_to_load.items()
         ):
             LOGGER.info(
-                f"Starting subprocess for schema {schema_index+1}/{schemas_total_count}"
+                f"Starting subprocess for schema {schema_index + 1}/{schemas_total_count}"
             )
             cmd = [sys.executable, __file__]
             # Pass all arguments from parent to child with exception of the channels list that we want to be smaller
@@ -388,14 +387,15 @@ def main():
             cmd.extend(channels)
             LOGGER.debug(f"Executing '{cmd}'")
             subp.run(cmd, check=(args.on_pipeline_step_failure == "raise"))
-            LOGGER.info(f"Completed subprocess {schema_index+1}/{schemas_total_count}")
+            LOGGER.info(
+                f"Completed subprocess {schema_index + 1}/{schemas_total_count}"
+            )
 
         complete_elt_ended_at = pendulum.now()
         LOGGER.info(
             f"Complete ELT completed in {
-            humanize.precisedelta(
-                complete_elt_ended_at - complete_elt_started_at
-            )}"
+                humanize.precisedelta(complete_elt_ended_at - complete_elt_started_at)
+            }"
         )
 
 

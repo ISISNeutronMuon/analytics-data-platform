@@ -8,7 +8,7 @@ from dlt.common.storages.fsspec_filesystem import FileItemDict
 from dlt.pipeline.exceptions import PipelineStepFailed
 import pendulum
 
-from pipelines_common.dlt_sources.m365 import sharepoint, M365CredentialsResource
+from elt_common.dlt_sources.m365 import sharepoint, M365CredentialsResource
 
 import pytest
 from pytest_httpx import HTTPXMock
