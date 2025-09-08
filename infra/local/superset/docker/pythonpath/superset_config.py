@@ -8,6 +8,13 @@ from flask_caching.backends.rediscache import RedisCache
 logger = logging.getLogger()
 
 #####
+# Logging configuration used in Superset initialization
+# The above logger object cannot be used to log at module level as logging as not been
+# configured when this file is read. It can be used inside class methods of classes defined here
+log_level_text = os.getenv("SUPERSET_LOG_LEVEL", "INFO")
+LOG_LEVEL = getattr(logging, log_level_text.upper(), logging.INFO)
+
+#####
 # Supersets own database details
 SUPERSET_DB_DIALECT = os.getenv("SUPERSET_DB_DIALECT")
 SUPERSET_DB_USER = os.getenv("SUPERSET_DB_USER")

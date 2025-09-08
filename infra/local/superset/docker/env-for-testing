@@ -25,6 +25,7 @@ SUPERSET_ADMIN_PASSWORD=adppassword
 PYTHONPATH=/app/docker/pythonpath
 SCARF_ANALYTICS=false
 FLASK_DEBUG=True
+SUPERSET_LOG_LEVEL=INFO
 SUPERSET_ENV=development
 SUPERSET_PORT=8088
 # Needs to match traefik rule.
