@@ -16,7 +16,7 @@ staging_logbook_chapter as ( select * from {{ ref('stg_opralogweb__logbook_chapt
 staging_logbooks as ( select * from {{ ref('stg_opralogweb__logbooks') }} ),
 staging_more_entry_columns as ( select * from {{ ref('stg_opralogweb__more_entry_columns') }} ),
 staging_additional_columns as ( select * from {{ ref('stg_opralogweb__additional_columns') }} ),
-staging_equipment_downtime_data_pre_opralog as (select * from {{ ref('stg_accelerator-sharepoint__equipment_downtime_data_pre_opralog') }} ),
+staging_equipment_downtime_data_pre_opralog as (select * from {{ ref('stg_accelerator_sharepoint__equipment_downtime_data_pre_opralog') }} ),
 
 denormalized as (
   select
