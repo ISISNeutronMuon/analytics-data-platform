@@ -104,12 +104,13 @@
         hour: "{{ warehouse.sources[0].hour }}"
         minute: "{{ warehouse.sources[0].minute }}"
         job: >
-          ELT_GIT_REF=multiple-warehouses {{ elt_cron_root_dir }}/elt_task.sh
+          ELT_GIT_REF=multiple-warehouses ELT_SECRETS={{ elt_secrets_root_dir }}/{{ warehouse.name }}/envvars
+          {{ elt_cron_root_dir }}/elt_task.sh
           https://github.com/{{ warehouse.github_org }}/{{ warehouse.github_repo }}.git
           {{ elt_git_clone_dir }}/{{ warehouse.github_org }}/{{ warehouse.github_repo }}
           {{ warehouse.sub_dir }}/extract_load/statusdisplay
           {{ warehouse.sub_dir }}/transform/{{ warehouse.name }}
-          --select 'staging/statusdisplay+'
+          {{ warehouse.sources[0].dbt_args }}
       with_items: "{{ elt_warehouses }}"
       loop_control:
         loop_var: warehouse

@@ -19,6 +19,7 @@ elt_warehouses:
       - name: statusdisplay
         hour: 0
         minute: 15
+        dbt_args: "--select 'staging/statusdisplay+'"
 
 elt_threads: 16
 # elt_elt_extract_root: "warehouses/accelerator/extract_load"
