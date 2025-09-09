@@ -8,6 +8,7 @@ openstack_security_groups: [default]
 elt_uv_python_version: "3.13"
 elt_git_clone_dir: "{{ ansible_env['HOME'] }}/var/git"
 elt_cron_root_dir: "{{ ansible_env['HOME'] }}/var/cron"
+elt_cron_logs_root_dir: "{{ ansible_env['HOME'] }}/var/cron/logs"
 elt_secrets_root_dir: /secrets/warehouses
 
 elt_warehouses:
@@ -22,12 +23,6 @@ elt_warehouses:
         dbt_args: "--select 'staging/statusdisplay+'"
 
 elt_threads: 16
-# elt_elt_extract_root: "warehouses/accelerator/extract_load"
-# elt_elt_dbt_root: "warehouses/accelerator/transform/accelerator"
-# elt_elt_statusdisplay_log_dir: "{{ elt_elt_cron_log_dir }}/statusdisplay"
-# elt_elt_opralogweb_log_dir: "{{ elt_elt_cron_log_dir }}/opralogweb"
-# elt_elt_electricity_sharepoint_log_dir: "{{ elt_elt_cron_log_dir }}/electricity_sharepoint"
-
 # logrotate_frequency: weekly
 # logrotate_keep: 14
 # logrotate_compress: true

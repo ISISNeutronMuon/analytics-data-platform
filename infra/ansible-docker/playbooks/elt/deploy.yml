@@ -97,6 +97,15 @@
         dest: "{{ elt_cron_root_dir }}/elt_task.sh"
         mode: "u=rwx,g=rx,o=rx"
 
+    - name: Ensure cron logs directory exists
+      ansible.builtin.file:
+        path: "{{ elt_cron_logs_root_dir }}/{{ warehouse.name }}"
+        state: directory
+        mode: "u=rwx,g=rx,o=rx"
+      with_items: "{{ elt_warehouses }}"
+      loop_control:
+        loop_var: warehouse
+
     - name: Ensure cron jobs exist
       ansible.builtin.cron:
         name: "{{ warehouse.sources[0].name }}"
@@ -108,9 +117,10 @@
           {{ elt_cron_root_dir }}/elt_task.sh
           https://github.com/{{ warehouse.github_org }}/{{ warehouse.github_repo }}.git
           {{ elt_git_clone_dir }}/{{ warehouse.github_org }}/{{ warehouse.github_repo }}
-          {{ warehouse.sub_dir }}/extract_load/statusdisplay
+          {{ warehouse.sub_dir }}/extract_load/{{ warehouse.sources[0].name }}
           {{ warehouse.sub_dir }}/transform/{{ warehouse.name }}
           {{ warehouse.sources[0].dbt_args }}
+          > {{ elt_cron_logs_root_dir }}/{{ warehouse.name }}/{{ warehouse.sources[0].name }}-$(date +\%Y\%m\%d_\%H\%M\%S).log 2>&1
       with_items: "{{ elt_warehouses }}"
       loop_control:
         loop_var: warehouse
