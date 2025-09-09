@@ -17,11 +17,3 @@ inventory_group: trino
 trino_data_path: "{{ cephfs_mount_mount_path }}/live/trino/data"
 trino_jvm_xmx: 48G
 trino_shared_secret: "{{ vault_trino_shared_secret }}"
-
-trino_superset_username: superset
-trino_ingestion_username: ingestion
-trino_users:
-  - username: "{{ trino_superset_username }}"
-    password: "{{ vault_trino_superset_passwd }}"
-  - username: "{{ trino_ingestion_username }}"
-    password: "{{ vault_trino_ingestion_passwd }}"
