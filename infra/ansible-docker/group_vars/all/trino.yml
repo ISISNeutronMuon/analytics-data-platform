@@ -1,5 +1,4 @@
 ---
-trino_server_name: trino
 trino_http_port: 8060
 trino_https_port: 8444
 

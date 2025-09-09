@@ -10,4 +10,4 @@ http:
     trino:
       loadBalancer:
         servers:
-          - url: "http://{{ trino_server_name }}:{{ trino_http_port }}"
+          - url: "http://{{ hostvars[groups['trino'][0]]['ansible_host'] }}:{{ trino_http_port }}"

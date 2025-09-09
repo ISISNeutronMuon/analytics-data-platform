@@ -1,5 +1,7 @@
-{%- set base_paths = {lakekeeper_base_path: lakekeeper_server_name,
-    lakekeeper_base_path + '-preview': lakekeeper_server_name + '-preview'} -%}
+{%- set base_paths = {lakekeeper_base_path:  hostvars[groups['lakekeeper'][0]]['ansible_host']} %}
+{% if 'lakekeeper_preview' in groups %}
+{%- set _ = base_paths.update({lakekeeper_base_path + '-preview': hostvars[groups['lakekeeper_preview'][0]]['ansible_host']}) -%}
+{% endif %}
 
 http:
   routers:
@@ -24,10 +26,10 @@ http:
     {% endfor %}
 
   services:
-    {% for base_path, server_name in base_paths.items() %}
+    {% for base_path, ip_addr in base_paths.items() %}
     {%- set santized_name = base_path.replace('/', '_') -%}
     {{ santized_name }}:
       loadBalancer:
         servers:
-          - url: "http://{{ server_name }}:{{ lakekeeper_http_port }}"
+          - url: "http://{{ ip_addr }}:{{ lakekeeper_http_port }}"
     {% endfor %}

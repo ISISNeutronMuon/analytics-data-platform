@@ -1,6 +1,6 @@
 ---
 # VM configuration
-openstack_server_name: "{{ trino_server_name }}"
+openstack_server_name: trino
 openstack_security_group_name: trino
 openstack_security_group_description: Ingress to Trino ports
 openstack_security_group_rules:
