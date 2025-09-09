@@ -1,15 +1,6 @@
 ---
-keycloak_image: quay.io/keycloak/keycloak:26.1.4
 keycloak_http_port: 8080
 keycloak_http_management_port: 9000
 keycloak_base_path: /auth
 keycloak_realm_url_isis: "https://{{ top_level_domain }}{{ keycloak_base_path }}/realms/isis"
 keycloak_token_endpoint_url_isis: "{{ keycloak_realm_url_isis }}/protocol/openid-connect/token"
-
-keycloak_bootstrap_admin_passwd: "{{ vault_keycloak_bootstrap_admin_passwd }}"
-
-keycloak_db_port: 5432
-keycloak_db_dbname: keycloak
-keycloak_db_user: keycloak
-keycloak_db_passwd: "{{ vault_keycloak_db_passwd }}"
-keycloak_java_keystore_passwd: "{{ vault_keycloak_java_keystore_passwd }}"
