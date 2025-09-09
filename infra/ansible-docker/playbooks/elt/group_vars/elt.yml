@@ -1,0 +1,39 @@
+---
+# VM config
+openstack_server_name: ingestion
+openstack_flavor: l3.xsmall
+openstack_security_groups: [default]
+
+# Deployment config
+elt_uv_python_version: "3.13"
+elt_git_clone_dir: "{{ ansible_env['HOME'] }}/var/git"
+elt_cron_root_dir: "{{ ansible_env['HOME'] }}/var/cron"
+elt_secrets_root_dir: /secrets/warehouses
+
+elt_warehouses:
+  - name: accelerator
+    github_org: ISISNeutronMuon
+    github_repo: analytics-data-platform
+    sub_dir: warehouses/accelerator
+    sources:
+      - name: statusdisplay
+        hour: 0
+        minute: 15
+
+elt_threads: 16
+# elt_elt_extract_root: "warehouses/accelerator/extract_load"
+# elt_elt_dbt_root: "warehouses/accelerator/transform/accelerator"
+# elt_elt_statusdisplay_log_dir: "{{ elt_elt_cron_log_dir }}/statusdisplay"
+# elt_elt_opralogweb_log_dir: "{{ elt_elt_cron_log_dir }}/opralogweb"
+# elt_elt_electricity_sharepoint_log_dir: "{{ elt_elt_cron_log_dir }}/electricity_sharepoint"
+
+# logrotate_frequency: weekly
+# logrotate_keep: 14
+# logrotate_compress: true
+# logrotate_entries:
+#   - name: statusdisplay
+#     path: "{{ elt_elt_statusdisplay_log_dir }}/*.log"
+#   - name: opralogweb
+#     path: "{{ elt_elt_opralogweb_log_dir }}/*.log"
+#   - name: electricity_sharepoint
+#     path: "{{ elt_elt_electricity_sharepoint_log_dir }}/*.log"
