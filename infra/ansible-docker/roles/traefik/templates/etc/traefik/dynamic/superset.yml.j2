@@ -1,25 +1,17 @@
 http:
   routers:
-    superset_accelerator:
+  {% for instance_name, props in superset_instances.items() %}
+  {{ instance_name }}:
       entryPoints: websecure
-      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`/workspace/accelerator`)
-      service: superset_accelerator
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ props.app_root }}`)
+      service: {{ instance_name }}
       tls: {}
-    superset_management:
-      entryPoints: websecure
-      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`/workspace/management`)
-      service: superset_management
-      tls: {}
+  {% endfor %}
 
   services:
-    # this is still the old single-node deployment
-    superset_accelerator:
+  {% for instance_name, props in superset_instances.items() %}
+  {{ instance_name }}:
       loadBalancer:
         servers:
-          - url: "http://superset:8088"
-    # new "farm" multiple instance node
-    # how not to duplicate the ports etc
-    superset_management:
-      loadBalancer:
-        servers:
-          - url: "http://superset_farm:8089"
+          - url: "http://{{ hostvars[groups[instance_name][0]]['ansible_host'] }}:{{ props.http_port }}"
+  {% endfor %}

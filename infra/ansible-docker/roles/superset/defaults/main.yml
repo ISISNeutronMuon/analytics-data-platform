@@ -1,5 +1,5 @@
 ---
-superset_work_dir: "/var/{{ superset_instance_name }}"
+superset_working_dir: "/var/{{ superset_instance_name }}"
 
 # app
 superset_flask_debug: true

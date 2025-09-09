@@ -11,6 +11,6 @@ openstack_security_group_rules:
     protocol: tcp
     port_range_min: 8088 # how can we not duplicate this...
     port_range_max: 8089
-openstack_flavor: l3.tiny
+openstack_flavor: l3.xsmall
 openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
 inventory_group: superset

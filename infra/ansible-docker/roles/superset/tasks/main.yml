@@ -2,7 +2,7 @@
 - name: Ensure working directory exists
   become: true
   ansible.builtin.file:
-    path: "{{ superset_work_dir }}"
+    path: "{{ superset_working_dir }}"
     state: directory
     mode: "u=rwx,g=rx,o=rx"
 
@@ -11,7 +11,7 @@
   ansible.posix.synchronize:
     use_ssh_args: true
     src: ./
-    dest: "{{ superset_work_dir }}/"
+    dest: "{{ superset_working_dir }}/"
     archive: false
     recursive: true
     delete: true
@@ -20,7 +20,7 @@
   become: true
   ansible.builtin.template:
     src: "{{ superset_template.src }}"
-    dest: "{{ superset_work_dir }}/{{ superset_template.dest }}"
+    dest: "{{ superset_working_dir }}/{{ superset_template.dest }}"
     mode: "{{ superset_template.mode|default('u=rw,g=r,o=r') }}"
   loop:
     - { src: docker-compose.yml.j2, dest: docker-compose.yml }
@@ -42,14 +42,14 @@
   become: true
   no_log: true
   ansible.builtin.copy:
-    dest: "{{ superset_work_dir }}/docker/pythonpath/superset_config.yml"
+    dest: "{{ superset_working_dir }}/docker/pythonpath/superset_config.yml"
     content: "{{ superset_config_yaml | to_nice_yaml }}"
     mode: "u=rw,g=r,o=r"
 
 - name: Ensure certificates directory exists
   become: true
   ansible.builtin.file:
-    path: "{{ superset_work_dir }}/certs"
+    path: "{{ superset_working_dir }}/certs"
     state: directory
     mode: "u=rwx,g=rx,o=rx"
 
@@ -57,7 +57,7 @@
   become: true
   no_log: true
   ansible.builtin.copy:
-    dest: "{{ superset_work_dir }}/certs/{{ certificate.filename }}"
+    dest: "{{ superset_working_dir }}/certs/{{ certificate.filename }}"
     content: "{{ certificate.content }}"
     owner: root
     group: root
@@ -70,7 +70,7 @@
 - name: Run Superset services
   become: true
   community.docker.docker_compose_v2:
-    project_src: "{{ superset_work_dir }}"
+    project_src: "{{ superset_working_dir }}"
     pull: always
     recreate: always
     state: present

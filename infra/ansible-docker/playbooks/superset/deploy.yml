@@ -11,7 +11,7 @@
     - role: docker_configure
 
 - name: Configure Superset
-  hosts: supersets
+  hosts: superset_farm
   serial: 1
   roles:
     - role: superset
