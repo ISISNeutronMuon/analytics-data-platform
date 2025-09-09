@@ -21,15 +21,12 @@ elt_warehouses:
         hour: 0
         minute: 15
         dbt_args: "--select 'staging/statusdisplay+'"
-
 elt_threads: 16
-# logrotate_frequency: weekly
-# logrotate_keep: 14
-# logrotate_compress: true
-# logrotate_entries:
-#   - name: statusdisplay
-#     path: "{{ elt_elt_statusdisplay_log_dir }}/*.log"
-#   - name: opralogweb
-#     path: "{{ elt_elt_opralogweb_log_dir }}/*.log"
-#   - name: electricity_sharepoint
-#     path: "{{ elt_elt_electricity_sharepoint_log_dir }}/*.log"
+
+logrotate_frequency: weekly
+logrotate_keep: 30
+logrotate_compress: true
+# TODO: How can we avoid duplicating this...
+logrotate_entries:
+  - name: accelerator
+    path: "{{ elt_cron_logs_root_dir }}/accelerator/*.log"

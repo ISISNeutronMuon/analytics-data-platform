@@ -2,9 +2,9 @@
 # This instance supports running ELT scripts
 - name: Configure Ingestion instance
   hosts: elt
-  # roles:
-  #   - role: robertdebock.logrotate
-  #     become: true
+  roles:
+    - role: robertdebock.logrotate
+      become: true
   tasks:
     # ---------- UV & Python ----------
     - name: Check if uv exists
@@ -124,77 +124,3 @@
       with_items: "{{ elt_warehouses }}"
       loop_control:
         loop_var: warehouse
-
-        # job: >
-        #   {{ elt_cron_root_dir }}/elt_task.sh
-        #     https://github.com/{{ warehouse.github_org }}/{{ warehouse.github_repo }}
-        #     {{ elt_git_clone_dir }}/{{ warehouse.github_org }}/{{ warehouse.github_repo }}
-        #     {{ warehouse.sub_dir }}/extract_load/statusdisplay
-    # # ---------- statusdisplay ----------
-    # - name: Ensure statusdisplay cron logs directory exists
-    #   become: true
-    #   ansible.builtin.file:
-    #     path: "{{ elt_elt_statusdisplay_log_dir }}"
-    #     state: directory
-    #     recurse: true
-    #     mode: "u=rwx,g=rx,o=rx"
-    #     owner: 1000
-    #     group: 1000
-
-    # - name: Ensure daily statusdisplay ingest job exists
-    #   ansible.builtin.cron:
-    #     name: "Statusdisplay ingest"
-    #     state: "{{ elt_cron_state | default('present') }}"
-    #     minute: "15"
-    #     hour: "0"
-    #     job: >
-    #       {{ elt_elt_cron_scripts_dir }}/elt_task.sh
-    #         {{ elt_elt_extract_root }}/statusdisplay"
-    #         {{ elt_elt_dbt_root }} --select 'staging/statusdisplay+' >
-    #         {{ elt_elt_statusdisplay_log_dir }}/elt-$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log 2>&1"
-
-    # # ---------- Opralog ----------
-    # - name: Ensure Opralog cron logs directory exists
-    #   become: true
-    #   ansible.builtin.file:
-    #     path: "{{ elt_elt_opralogweb_log_dir }}"
-    #     state: directory
-    #     recurse: true
-    #     mode: "u=rwx,g=rx,o=rx"
-    #     owner: 1000
-    #     group: 1000
-
-    # - name: Ensure daily Opralog ingest job exists
-    #   ansible.builtin.cron:
-    #     name: "Opralog ingest"
-    #     state: "{{ elt_cron_state | default('present') }}"
-    #     minute: "10"
-    #     hour: "2"
-    #     job: >
-    #       {{ elt_elt_cron_scripts_dir }}/elt_task.sh
-    #         {{ elt_elt_extract_root }}/opralogweb
-    #         {{ elt_elt_dbt_root }} --select 'staging/opralogweb+' >
-    #         {{ elt_elt_opralogweb_log_dir }}/elt-$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log 2>&1"
-
-    # # ---------- Electricity ----------
-    # - name: Ensure Electricity SharePoint cron logs directory exists
-    #   become: true
-    #   ansible.builtin.file:
-    #     path: "{{ elt_elt_electricity_sharepoint_log_dir }}"
-    #     state: directory
-    #     recurse: true
-    #     mode: "u=rwx,g=rx,o=rx"
-    #     owner: 1000
-    #     group: 1000
-
-    # - name: Ensure Electricity SharePoint ingest job exists
-    #   ansible.builtin.cron:
-    #     name: "Electricity SharePoint ingest"
-    #     state: "{{ elt_cron_state | default('present') }}"
-    #     minute: "05"
-    #     hour: "*"
-    #     job: >
-    #       {{ elt_elt_cron_scripts_dir }}/elt_task.sh
-    #         {{ elt_elt_extract_root }}/electricity_sharepoint
-    #         {{ elt_elt_dbt_root }} --select 'staging/electricity_sharepoint+' >
-    #         {{ elt_elt_electricity_sharepoint_log_dir }}/elt-$(date +\\%Y\\%m\\%d_\\%H\\%M\\%S).log 2>&1
