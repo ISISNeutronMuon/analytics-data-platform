@@ -1,8 +1,5 @@
 superset_url_prefix: /workspace
 superset_instances:
-  superset_old:
-    app_root: "{{ superset_url_prefix }}/accelerator"
-    http_port: 8088
   superset_accelerator:
-    app_root: "{{ superset_url_prefix }}/accelerator-preview"
+    app_root: "{{ superset_url_prefix }}/accelerator"
     http_port: 8088
