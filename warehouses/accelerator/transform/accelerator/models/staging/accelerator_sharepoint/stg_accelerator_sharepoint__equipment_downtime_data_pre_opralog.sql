@@ -32,7 +32,7 @@ renamed as (
         downtime_minutesx as downtime_mins,
         date(fault_date_str) as fault_date,
         -- fault_time is just a time before the opralog_epoch but a full timestamp after
-        {{ parse_utc_timestamp(fault_date_str, 'yyyy-MM-dd', fault_time_str) }} as fault_occurred_at,
+        {{ parse_utc_timestamp('fault_date_str', 'yyyy-MM-dd', 'fault_time_str') }} as fault_occurred_at,
         {{ identifier('group') }},
         fault_description,
         managerscomments as managers_comments
