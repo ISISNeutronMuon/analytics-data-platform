@@ -1,6 +1,5 @@
 ---
-# Specialized variables for the Superset VM. See ../../vars/openstack.yml for shared values
-
+# Specialized variables for the Superset VM.
 # We run multiple instances of Apache Superset on a single node to maximise resource usage.
 openstack_server_name: superset_farm
 openstack_security_group_name: superset
