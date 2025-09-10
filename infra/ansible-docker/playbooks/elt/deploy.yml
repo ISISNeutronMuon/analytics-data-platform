@@ -120,21 +120,7 @@
       loop_control:
         loop_var: warehouse
 
-    - name: Ensure cron jobs exist
-      ansible.builtin.cron:
-        name: "{{ warehouse.sources[0].name }}"
-        state: "{{ warehouse.sources[0].state | default('present') }}"
-        hour: "{{ warehouse.sources[0].hour }}"
-        minute: "{{ warehouse.sources[0].minute }}"
-        job: >
-          ELT_GIT_REF=multiple-warehouses ELT_SECRETS={{ elt_secrets_root_dir }}/{{ warehouse.name }}/envvars
-          {{ elt_cron_root_dir }}/elt_task.sh
-          https://github.com/{{ warehouse.github_org }}/{{ warehouse.github_repo }}.git
-          {{ elt_git_clone_dir }}/{{ warehouse.github_org }}/{{ warehouse.github_repo }}
-          {{ warehouse.sub_dir }}/extract_load/{{ warehouse.sources[0].name }}
-          {{ warehouse.sub_dir }}/transform/{{ warehouse.name }}
-          {{ warehouse.sources[0].dbt_args }}
-          > {{ elt_cron_logs_root_dir }}/{{ warehouse.name }}/{{ warehouse.sources[0].name }}-$(date +\%Y\%m\%d_\%H\%M\%S).log 2>&1
+    - ansible.builtin.include_tasks: elt_cron_tasks.yml
       loop: "{{ elt_warehouses }}"
       loop_control:
         loop_var: warehouse

@@ -20,7 +20,11 @@ elt_warehouses:
       - name: statusdisplay
         hour: 0
         minute: 15
-        dbt_args: "--select 'staging/statusdisplay+'"
+        dbt_args: "--select '+models/staging/statusdisplay'"
+      - name: opralogweb
+        hour: 2
+        minute: 10
+        dbt_args: "--select '+models/operations/mcr_equipment_downtime_records.sql'"
 elt_threads: 16
 
 logrotate_frequency: weekly
