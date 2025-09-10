@@ -22,7 +22,9 @@ function ensure_elt_sources_exist() {
     popd
   else
     git clone $git_url $git_clone_dir
-    git checkout "$git_url"
+    pushd $git_clone_dir
+    git checkout "$ELT_GIT_REF"
+    popd
   fi
 }
 
@@ -49,7 +51,7 @@ set -o allexport; source $ELT_SECRETS; set +o allexport
 # Extraction
 ensure_elt_sources_exist $git_url $git_clone_dir
 cd $git_clone_dir/$extract_and_load_dir
-echo uv run \
+uv run \
   --reinstall \
   --script $EXTRACT_AND_LOAD_SCRIPT \
   --log-level $LOG_LEVEL \
@@ -57,9 +59,9 @@ echo uv run \
 
 # Transform
 if [ -n "$dbt_project_dir" ]; then
-  echo cd $git_clone_dir/$dbt_project_dir
-  echo uv venv
-  echo uv pip install -r requirements/$DBT_REQUIREMENTS_TXT
-  echo uv run dbt deps
-  echo uv run dbt run $*
+  cd $git_clone_dir/$dbt_project_dir
+  uv venv
+  uv pip install -r requirements/$DBT_REQUIREMENTS_TXT
+  uv run dbt deps
+  uv run dbt run $*
 fi
