@@ -5,5 +5,5 @@
 
 
 {%- macro trino__parse_utc_timestamp(date_col, date_format, time_col, time_format) -%}
-  cast(parse_datetime({{ date_col }} || ' ' || {{ time_col }}, '{{ date_format ~ ' ' ~ time_format }}') as timestamp(6)) at time zone 'UTC'
+  cast(parse_datetime({{ adapter.quote(date_col) }} || ' ' || {{ adapter.quote(time_col) }}, '{{ date_format ~ ' ' ~ time_format }}') as timestamp(6)) at time zone 'UTC'
 {%- endmacro -%}
