@@ -1,6 +1,20 @@
 ---
-# This instance supports running ELT scripts
-- name: Configure Ingestion instance
+- name: Create logrotate_entries variable
+  hosts: elt
+  tasks:
+    - set_fact:
+        elt_cron_log_dirs: >
+          {{ lakekeeper_catalog.warehouses.keys() |
+             map('regex_replace', '^(.*)$', elt_cron_logs_root_dir + '/\1') |
+             list
+          }}
+      loop: "{{ lakekeeper_catalog.warehouses.keys() }}"
+    - set_fact:
+        logrotate_entries: >
+          {{ logrotate_entries | default([]) + [{'name': item.0, 'path': elt_cron_logs_root_dir ~ item.1}] }}
+      loop: "{{ lakekeeper_catalog.warehouses.keys() | zip(elt_cron_log_dirs) | list }}"
+
+- name: Configure ELT instance
   hosts: elt
   roles:
     - role: robertdebock.logrotate
@@ -69,7 +83,7 @@
         path: "{{ elt_secrets_root_dir }}/{{ warehouse.name }}"
         state: directory
         mode: "u=rwx,g=rx,o=rx"
-      with_items: "{{ elt_warehouses }}"
+      loop: "{{ elt_warehouses }}"
       loop_control:
         loop_var: warehouse
 
@@ -80,11 +94,11 @@
         src: ./secrets/envvars.j2
         dest: "{{ elt_secrets_root_dir }}/{{ warehouse.name }}/envvars"
         mode: "u=rwx,g=r,o=r"
-      with_items: "{{ elt_warehouses }}"
+      loop: "{{ elt_warehouses }}"
       loop_control:
         loop_var: warehouse
 
-    # # ---------- Cron tasks ----------
+    # ---------- Cron tasks ----------
     - name: Ensure cron scripts directory exists
       ansible.builtin.file:
         path: "{{ elt_cron_root_dir }}"
@@ -102,7 +116,7 @@
         path: "{{ elt_cron_logs_root_dir }}/{{ warehouse.name }}"
         state: directory
         mode: "u=rwx,g=rx,o=rx"
-      with_items: "{{ elt_warehouses }}"
+      loop: "{{ elt_warehouses }}"
       loop_control:
         loop_var: warehouse
 
@@ -121,6 +135,6 @@
           {{ warehouse.sub_dir }}/transform/{{ warehouse.name }}
           {{ warehouse.sources[0].dbt_args }}
           > {{ elt_cron_logs_root_dir }}/{{ warehouse.name }}/{{ warehouse.sources[0].name }}-$(date +\%Y\%m\%d_\%H\%M\%S).log 2>&1
-      with_items: "{{ elt_warehouses }}"
+      loop: "{{ elt_warehouses }}"
       loop_control:
         loop_var: warehouse

@@ -1,6 +1,6 @@
 ---
 # VM config
-openstack_server_name: ingestion
+openstack_server_name: elt
 openstack_flavor: l3.xsmall
 openstack_security_groups: [default]
 
@@ -26,7 +26,3 @@ elt_threads: 16
 logrotate_frequency: weekly
 logrotate_keep: 30
 logrotate_compress: true
-# TODO: How can we avoid duplicating this...
-logrotate_entries:
-  - name: accelerator
-    path: "{{ elt_cron_logs_root_dir }}/accelerator/*.log"
