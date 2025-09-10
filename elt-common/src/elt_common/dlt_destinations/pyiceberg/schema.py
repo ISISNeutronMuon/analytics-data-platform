@@ -4,6 +4,7 @@ from dlt.common.destination.typing import PreparedTableSchema
 from dlt.common.exceptions import TerminalValueError
 from dlt.common.libs.pyarrow import pyarrow as pa
 from dlt.common.schema.typing import TColumnSchema, TColumnType
+from dlt.common.schema.utils import is_nullable_column
 from dlt.destinations.type_mapping import TypeMapperImpl
 
 from pyiceberg.io.pyarrow import pyarrow_to_schema
@@ -152,7 +153,7 @@ class PyIcebergTypeMapper(TypeMapperImpl):
                 pa.field(
                     column["name"],
                     self.to_destination_type(column, table),  # type: ignore
-                    nullable=column["nullable"],
+                    nullable=is_nullable_column(column),
                 )
                 for column in columns
             ]
