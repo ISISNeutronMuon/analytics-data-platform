@@ -13,4 +13,3 @@ openstack_security_group_rules:
     port_range_max: 8089
 openstack_flavor: l3.xsmall
 openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
-inventory_group: superset

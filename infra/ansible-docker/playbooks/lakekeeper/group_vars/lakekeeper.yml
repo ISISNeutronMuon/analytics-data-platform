@@ -11,7 +11,6 @@ openstack_security_group_rules:
     port_range_min: "{{ lakekeeper_http_port }}"
     port_range_max: "{{ lakekeeper_http_port }}"
 openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
-inventory_group: lakekeeper
 
 # Deployment configuration
 lakekeeper_image: quay.io/lakekeeper/catalog:v0.9.3

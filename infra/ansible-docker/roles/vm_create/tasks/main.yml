@@ -43,13 +43,6 @@
     timeout: 300
   delegate_to: "{{ vm_ip_address }}"
 
-- name: Ensure instance is associated with a group
-  ansible.builtin.add_host:
-    name: "{{ vm_ip_address }}"
-    groups: "{{ inventory_group }}"
-    ansible_user: "{{ openstack_vm_user }}"
-    ansible_python_interpreter: "{{ openstack_python_interpreter }}"
-
 - name: Ensuring VM is configured
   include_role:
     name: system_configure

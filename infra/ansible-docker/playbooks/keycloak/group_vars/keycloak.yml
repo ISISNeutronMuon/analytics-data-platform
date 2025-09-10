@@ -16,7 +16,6 @@ openstack_security_group_rules:
     port_range_min: "{{ keycloak_http_management_port }}"
     port_range_max: "{{ keycloak_http_management_port }}"
 openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
-inventory_group: keycloak
 
 # Local DB config
 # postgres

@@ -11,7 +11,6 @@ openstack_security_group_rules:
     port_range_max: "{{ trino_http_port }}"
 openstack_flavor: l3.xsmall
 openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
-inventory_group: trino
 
 # Trino configuration
 trino_data_path: "{{ cephfs_mount_mount_path }}/live/trino/data"

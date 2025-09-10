@@ -10,4 +10,3 @@ openstack_security_group_rules:
     port_range_min: "{{ trino_https_port }}"
     port_range_max: "{{ trino_https_port }}"
 openstack_security_groups: [default, "traefik", "HTTP", "HTTPS"]
-inventory_group: traefik

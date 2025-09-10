@@ -14,4 +14,3 @@ openstack_security_group_rules:
     port_range_min: "{{ datasources_influxdb_port }}"
     port_range_max: "{{ datasources_influxdb_port }}"
 openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
-inventory_group: datasources
