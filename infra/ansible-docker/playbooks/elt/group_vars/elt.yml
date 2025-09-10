@@ -21,10 +21,18 @@ elt_warehouses:
         hour: 0
         minute: 15
         dbt_args: "--select '+models/staging/statusdisplay'"
+      - name: accelerator_sharepoint
+        hour: 2
+        minute: 2
+        dbt_args: "--select '+models/staging/accelerator_sharepoint'"
       - name: opralogweb
         hour: 2
-        minute: 10
+        minute: 11
         dbt_args: "--select '+models/operations/mcr_equipment_downtime_records.sql'"
+      - name: electricity_sharepoint
+        hour: 0
+        minute: 5
+        dbt_args: "--select '+models/operations/power_consumption.sql'"
 elt_threads: 16
 
 logrotate_frequency: weekly
