@@ -30,7 +30,7 @@ elt_warehouses:
         minute: 11
         dbt_args: "--select '+models/operations/mcr_equipment_downtime_records.sql'"
       - name: electricity_sharepoint
-        hour: 0
+        hour: "*"
         minute: 5
         dbt_args: "--select '+models/operations/power_consumption.sql'"
 elt_threads: 16
