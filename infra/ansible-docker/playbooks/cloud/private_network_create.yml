@@ -18,7 +18,7 @@
         cidr: "{{ subnet.cidr }}"
         gateway_ip: "{{ subnet.gateway_ip }}"
         state: present
-      with_items: "{{ openstack_virtual_network.subnets }}"
+      loop: "{{ openstack_virtual_network.subnets }}"
       loop_control:
         loop_var: subnet
     - name: Attach to External router

@@ -1,12 +1,12 @@
 ---
 - name: Ensure S3 buckets exist
   amazon.aws.s3_bucket:
-    name: "{{ warehouse.storage.bucket_name }}"
+    name: "{{ warehouse.value.storage.bucket_name }}"
     endpoint_url: "{{ s3_endpoint }}"
     access_key: "{{ s3_access_key_id }}"
     secret_key: "{{ s3_access_secret }}"
     ceph: true
-  with_items: "{{ lakekeeper_catalog.warehouses }}"
+  loop: "{{ lakekeeper_catalog.warehouses | dict2items }}"
   loop_control:
     loop_var: warehouse
 
@@ -93,13 +93,10 @@
     src: bootstrap-warehouse.json.j2
     dest: "{{ lakekeeper_working_dir }}/bootstrap-warehouse-{{ warehouse.name }}.json"
     mode: "0644"
-  with_items: "{{ lakekeeper_catalog.warehouses }}"
+  loop: "{{ lakekeeper_catalog.warehouses | dict2items(key_name='name') }}"
   loop_control:
     loop_var: warehouse
   register: warehouse_json_files
-
-- debug:
-    msg: "{{ warehouse_json_files.results | map(attribute='dest') | list }}"
 
 - name: Ensure Lakekeeper is bootstrapped
   community.docker.docker_container:
@@ -131,6 +128,6 @@
       - name: "{{ lakekeeper_container_network }}"
     volumes:
       - "{{ lakekeeper_working_dir }}:/opt/work"
-  with_items: "{{ warehouse_json_files.results | map(attribute='dest') | list }}"
+  loop: "{{ warehouse_json_files.results | map(attribute='dest') | list }}"
   loop_control:
     loop_var: warehouse_json_file

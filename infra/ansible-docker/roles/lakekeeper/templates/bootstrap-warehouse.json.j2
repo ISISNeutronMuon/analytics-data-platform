@@ -8,8 +8,8 @@
   },
   "storage-profile": {
     "type": "s3",
-    "bucket": "{{ warehouse.storage.bucket_name }}",
-    "key-prefix": "{{ warehouse.storage.key_prefix }}",
+    "bucket": "{{ warehouse.value.storage.bucket_name }}",
+    "key-prefix": "{{ warehouse.value.storage.key_prefix }}",
     "endpoint": "{{ s3_endpoint }}",
     "region": "local-01",
     "path-style-access": true,
