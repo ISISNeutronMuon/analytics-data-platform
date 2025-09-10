@@ -4,11 +4,17 @@ from pathlib import Path
 from typing import Dict, List
 
 from celery.schedules import crontab
+from flask import g, redirect, flash
+from flask_appbuilder._compat import as_unicode
+from flask_appbuilder.security.forms import LoginForm_db
 from flask_appbuilder.security.manager import AUTH_LDAP
 from flask_appbuilder.security.sqla.models import Role
+from flask_appbuilder.security.views import AuthLDAPView, expose
 from flask_caching.backends.rediscache import RedisCache
+from flask_login import login_user
 from superset.security import SupersetSecurityManager
 import yaml
+
 
 logger = logging.getLogger("superset_config")
 
@@ -42,8 +48,41 @@ with open(SUPERSET_CONFIG_YAML_FILE) as fp:
 #####
 
 
+class AuthLocalAndLDAPView(AuthLDAPView):
+    """Implements an auth view that first uses LDAP to authorise
+    a user and falls back to the internal database if necessary.
+
+    This ensures we can have a local admin user should LDAP be
+    unavailable.
+    """
+
+    @expose("/login/", methods=["GET", "POST"])
+    def login(self):
+        if g.user is not None and g.user.is_authenticated:
+            return redirect(self.appbuilder.get_url_for_index)
+        form = LoginForm_db()
+        if form.validate_on_submit():
+            user = self.appbuilder.sm.auth_user_ldap(
+                form.username.data, form.password.data
+            )
+            if not user:
+                user = self.appbuilder.sm.auth_user_db(
+                    form.username.data, form.password.data
+                )
+            if user:
+                login_user(user, remember=False)
+                return redirect(self.appbuilder.get_url_for_index)
+            else:
+                flash(as_unicode(self.invalid_login_message), "warning")
+                return redirect(self.appbuilder.get_url_for_login)
+        return self.render_template(
+            self.login_template, title=self.title, form=form, appbuilder=self.appbuilder
+        )
+
+
 class InternallyManagedAdminRoleSecurityManager(SupersetSecurityManager):
     # Override base method to consult our own list of mappings.
+    authldapview = AuthLocalAndLDAPView
 
     @property
     def _admin_users(self) -> List[str]:
