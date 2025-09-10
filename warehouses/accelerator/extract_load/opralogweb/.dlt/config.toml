@@ -3,9 +3,6 @@ log_level = "WARNING" # the system log level of dlt
 # use the dlthub_telemetry setting to enable/disable anonymous usage data reporting, see https://dlthub.com/docs/reference/telemetry
 dlthub_telemetry = false
 
-[sources.sql_database.credentials]
-drivername = "mssql+pymssql"
-
 [sources.sql_database]
 schema = "dbo"
 
