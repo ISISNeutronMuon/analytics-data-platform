@@ -5,7 +5,7 @@ http:
     #############################################
     superset:
       entryPoints: web
-      rule: Host(`analytics.localhost`) && PathPrefix(`/workspace/example`)
+      rule: Host(`analytics.localhost`) && PathPrefix(`/workspace/{{ env "SUPERSET_APP_ROOT" }}`)
       service: superset
 
     #############################################
