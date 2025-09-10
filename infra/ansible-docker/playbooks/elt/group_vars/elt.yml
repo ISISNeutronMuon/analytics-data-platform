@@ -18,13 +18,13 @@ elt_warehouses:
     sub_dir: warehouses/accelerator
     sources:
       - name: statusdisplay
-        hour: 0
-        minute: 15
-        dbt_args: "--select '+models/staging/statusdisplay'"
+        hour: 1
+        minute: 45
+        dbt_args: "--select 'models/staging/statusdisplay'"
       - name: accelerator_sharepoint
         hour: 2
         minute: 2
-        dbt_args: "--select '+models/staging/accelerator_sharepoint'"
+        dbt_args: "--select 'models/staging/accelerator_sharepoint'"
       - name: opralogweb
         hour: 2
         minute: 11
