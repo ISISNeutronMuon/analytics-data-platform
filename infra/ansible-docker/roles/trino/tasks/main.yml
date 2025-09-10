@@ -31,9 +31,20 @@
   loop:
     - etc/config.properties.j2
     - etc/jvm.config.j2
+  loop_control:
+    loop_var: trino_template
+
+- name: Ensure isis catalog is enabled
+  become: true
+  ansible.builtin.template:
+    src: "{{ trino_template }}"
+    dest: "{{ trino_working_dir }}/{{ trino_template | trim('.j2') }}"
+    mode: "u=rw,g=r,o=r"
+  loop:
     - etc/catalog/isis.properties.j2
   loop_control:
     loop_var: trino_template
+  when: trino_enable_isis_catalog | default(False)
 
 - name: Generate Trino catalog property files
   become: true
@@ -42,7 +53,7 @@
       connector.name=iceberg
       iceberg.catalog.type=rest
       iceberg.rest-catalog.uri={{ lakekeeper_catalog.uri }}
-      iceberg.rest-catalog.warehouse={{ lakekeeper_warehouse.name }}
+      iceberg.rest-catalog.warehouse={{ warehouse_name }}
       iceberg.rest-catalog.vended-credentials-enabled=false
       iceberg.rest-catalog.security=OAUTH2
       iceberg.rest-catalog.oauth2.server-uri={{ keycloak_token_endpoint_url_isis }}
@@ -56,11 +67,11 @@
       s3.path-style-access=true
       s3.aws-access-key={{ s3_access_key_id }}
       s3.aws-secret-key={{ s3_access_secret }}
-    dest: "{{ trino_working_dir }}/etc/catalog/{{ lakekeeper_warehouse.name }}.properties"
+    dest: "{{ trino_working_dir }}/etc/catalog/{{ warehouse_name }}.properties"
     mode: "u=rw,g=r,o=r"
-  loop: "{{ lakekeeper_catalog.warehouses }}"
+  loop: "{{ lakekeeper_catalog.warehouses.keys() }}"
   loop_control:
-    loop_var: lakekeeper_warehouse
+    loop_var: warehouse_name
 
 - name: Ensure credentials directory exists
   become: true
