@@ -1,0 +1,17 @@
+---
+# This playbook is designed assuming that there are many superset instances on the same machine.
+# The inventory defines groups named "superset_<custom_suffix>" to use. We pick an arbitrary one
+# to configure the prerequisites.
+# TODO: Is there a way to pick up all of the unique hosts (by ip address)?
+- name: Configure prerequisites
+  hosts: superset_accelerator
+  roles:
+    - role: geerlingguy.pip
+      become: true
+    - role: docker_configure
+
+- name: Configure Superset
+  hosts: superset_farm
+  serial: 1
+  roles:
+    - role: superset

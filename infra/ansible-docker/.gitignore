@@ -3,3 +3,4 @@ condaenv/
 .venv/
 galaxy_roles
 *.ini
+/*.yml

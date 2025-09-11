@@ -1,4 +1,15 @@
 ---
+- name: Ensure S3 buckets exist
+  amazon.aws.s3_bucket:
+    name: "{{ warehouse.value.storage.bucket_name }}"
+    endpoint_url: "{{ s3_endpoint }}"
+    access_key: "{{ s3_access_key_id }}"
+    secret_key: "{{ s3_access_secret }}"
+    ceph: true
+  loop: "{{ lakekeeper_catalog.warehouses | dict2items }}"
+  loop_control:
+    loop_var: warehouse
+
 - name: Get info on lakekeeper container
   community.docker.docker_container_info:
     name: "{{ lakekeeper_container_name }}"
@@ -21,9 +32,9 @@
     recreate: true
     env:
       #
-      LAKEKEEPER__PG_ENCRYPTION_KEY="{{ lakekeeper_store_encryption_key }}"
-      LAKEKEEPER__PG_DATABASE_URL_READ="postgresql://{{ lakekeeper_store_user }}:{{ lakekeeper_store_passwd }}@postgres:5432/{{ lakekeeper_store_dbname }}"
-      LAKEKEEPER__PG_DATABASE_URL_WRITE="postgresql://{{ lakekeeper_store_user }}:{{ lakekeeper_store_passwd }}@postgres:5432/{{ lakekeeper_store_dbname }}"
+      LAKEKEEPER__PG_ENCRYPTION_KEY="{{ lakekeeper_metadb_encryption_key }}"
+      LAKEKEEPER__PG_DATABASE_URL_READ="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
+      LAKEKEEPER__PG_DATABASE_URL_WRITE="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
       LAKEKEEPER__OPENID_PROVIDER_URI="http://{{ top_level_domain }}/auth/realms/isis"
       LAKEKEEPER__OPENID_AUDIENCE="lakekeeper"
       LAKEKEEPER__UI__OPENID_CLIENT_ID="lakekeeper"
@@ -48,9 +59,9 @@
       - "{{ lakekeeper_http_port }}:8181"
     env:
       #
-      LAKEKEEPER__PG_ENCRYPTION_KEY="{{ lakekeeper_store_encryption_key }}"
-      LAKEKEEPER__PG_DATABASE_URL_READ="postgresql://{{ lakekeeper_store_user }}:{{ lakekeeper_store_passwd }}@postgres:5432/{{ lakekeeper_store_dbname }}"
-      LAKEKEEPER__PG_DATABASE_URL_WRITE="postgresql://{{ lakekeeper_store_user }}:{{ lakekeeper_store_passwd }}@postgres:5432/{{ lakekeeper_store_dbname }}"
+      LAKEKEEPER__PG_ENCRYPTION_KEY="{{ lakekeeper_metadb_encryption_key }}"
+      LAKEKEEPER__PG_DATABASE_URL_READ="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
+      LAKEKEEPER__PG_DATABASE_URL_WRITE="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
       LAKEKEEPER__OPENID_PROVIDER_URI="http://{{ top_level_domain }}/auth/realms/isis"
       LAKEKEEPER__OPENID_AUDIENCE="lakekeeper"
       LAKEKEEPER__UI__OPENID_CLIENT_ID="lakekeeper"
@@ -76,18 +87,28 @@
     dest: "{{ lakekeeper_working_dir }}/bootstrap-warehouse.py"
     mode: "0755"
 
-- name: Generate create warehouse template
+- name: Generate warehouse template(s)
   become: true
   ansible.builtin.template:
     src: bootstrap-warehouse.json.j2
-    dest: "{{ lakekeeper_working_dir }}/bootstrap-warehouse.json"
+    dest: "{{ lakekeeper_working_dir }}/bootstrap-warehouse-{{ warehouse.name }}.json"
     mode: "0644"
+  loop: "{{ lakekeeper_catalog.warehouses | dict2items(key_name='name') }}"
+  loop_control:
+    loop_var: warehouse
+  register: warehouse_json_files
 
 - name: Ensure Lakekeeper is bootstrapped
   community.docker.docker_container:
     name: "{{ lakekeeper_container_name }}_bootstrap"
     image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
-    command: ["uv", "run", "/opt/work/bootstrap-warehouse.py"]
+    command:
+      [
+        "uv",
+        "run",
+        "/opt/work/bootstrap-warehouse.py",
+        "{{ warehouse_json_file | replace(lakekeeper_working_dir, '/opt/work') }}",
+      ]
     state: started
     cleanup: true
     detach: false
@@ -97,13 +118,16 @@
       #
       UV_LINK_MODE=copy
       UV_PROJECT_ENVIRONMENT=/opt/uv-venv
+      LAKEKEEPER_BOOTSTRAP__LOG_LEVEL="{{ lakekeeper_bootstrap_log_level }}"
       LAKEKEEPER_BOOTSTRAP__TOKEN_ENDPOINT_URL="{{ keycloak_token_endpoint_url_isis }}"
       LAKEKEEPER_BOOTSTRAP__CLIENT_ID=ansible
       LAKEKEEPER_BOOTSTRAP__CLIENT_SECRET="{{ vault_keycloak_client_secret_ansible }}"
       LAKEKEEPER_BOOTSTRAP__SCOPE=lakekeeper
       LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL="{{ lakekeeper_url }}"
-      LAKEKEEPER_BOOTSTRAP__WAREHOUSE_JSON_FILE=/opt/work/bootstrap-warehouse.json
     networks:
       - name: "{{ lakekeeper_container_network }}"
     volumes:
       - "{{ lakekeeper_working_dir }}:/opt/work"
+  loop: "{{ warehouse_json_files.results | map(attribute='dest') | list }}"
+  loop_control:
+    loop_var: warehouse_json_file

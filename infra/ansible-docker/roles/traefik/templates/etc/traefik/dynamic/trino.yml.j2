@@ -1,6 +1,5 @@
 http:
   routers:
-    # TLS
     trino:
       entryPoints: trino_tls
       rule: Host(`{{ top_level_domain }}`) && PathPrefix(`/`)
@@ -11,4 +10,4 @@ http:
     trino:
       loadBalancer:
         servers:
-          - url: "{{ trino_coordinator_url }}"
+          - url: "http://{{ hostvars[groups['trino'][0]]['ansible_host'] }}:{{ trino_http_port }}"

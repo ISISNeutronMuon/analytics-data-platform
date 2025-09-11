@@ -2,10 +2,17 @@ import logging
 import os
 
 from celery.schedules import crontab
-from flask_caching.backends.filesystemcache import FileSystemCache
+from flask_caching.backends.rediscache import RedisCache
 
 
 logger = logging.getLogger()
+
+#####
+# Logging configuration used in Superset initialization
+# The above logger object cannot be used to log at module level as logging as not been
+# configured when this file is read. It can be used inside class methods of classes defined here
+log_level_text = os.getenv("SUPERSET_LOG_LEVEL", "INFO")
+LOG_LEVEL = getattr(logging, log_level_text.upper(), logging.INFO)
 
 #####
 # Supersets own database details
@@ -15,12 +22,15 @@ SUPERSET_DB_PASSWORD = os.getenv("SUPERSET_DB_PASSWORD")
 SUPERSET_DB_HOST = os.getenv("SUPERSET_DB_HOST")
 SUPERSET_DB_PORT = os.getenv("SUPERSET_DB_PORT")
 SUPERSET_DB_NAME = os.getenv("SUPERSET_DB_NAME")
+SUPERSET_DB_SCHEMA_NAME = os.getenv("SUPERSET_DB_SCHEMA_NAME")
 # The SQLAlchemy connection string.
 SQLALCHEMY_DATABASE_URI = (
     f"{SUPERSET_DB_DIALECT}://"
     f"{SUPERSET_DB_USER}:{SUPERSET_DB_PASSWORD}@"
     f"{SUPERSET_DB_HOST}:{SUPERSET_DB_PORT}/{SUPERSET_DB_NAME}"
 )
+if SUPERSET_DB_SCHEMA_NAME:
+    SQLALCHEMY_DATABASE_URI += f"?options=-c%20search_path={SUPERSET_DB_SCHEMA_NAME}"
 #####
 
 # disable recaptcha as we don't allow self registration
@@ -34,33 +44,37 @@ RECAPTCHA_PRIVATE_KEY = ""
 # Caching layer
 REDIS_HOST = os.getenv("REDIS_HOST", "redis")
 REDIS_PORT = os.getenv("REDIS_PORT", "6379")
-REDIS_CELERY_DB = os.getenv("REDIS_CELERY_DB", "0")
-REDIS_RESULTS_DB = os.getenv("REDIS_RESULTS_DB", "1")
 
 CACHE_CONFIG = {
     "CACHE_TYPE": "RedisCache",
     "CACHE_DEFAULT_TIMEOUT": 300,
-    "CACHE_KEY_PREFIX": "superset_",
+    "CACHE_KEY_PREFIX": "superset_metadata_cache",
     "CACHE_REDIS_HOST": REDIS_HOST,
     "CACHE_REDIS_PORT": REDIS_PORT,
-    "CACHE_REDIS_DB": REDIS_RESULTS_DB,
 }
-DATA_CACHE_CONFIG = CACHE_CONFIG
+DATA_CACHE_CONFIG = {
+    "CACHE_TYPE": "RedisCache",
+    "CACHE_DEFAULT_TIMEOUT": 300,
+    "CACHE_KEY_PREFIX": "superset_charting_data_cache",
+    "CACHE_REDIS_HOST": REDIS_HOST,
+    "CACHE_REDIS_PORT": REDIS_PORT,
+}
 #####
 
 #####
 # SQL Lab
-RESULTS_BACKEND = FileSystemCache("/app/superset_home/sqllab")
+RESULTS_BACKEND = RedisCache(
+    host=REDIS_HOST, port=REDIS_PORT, key_prefix="superset_results_backend"
+)
 SQLLAB_CTAS_NO_LIMIT = True
-#####
 
 
 #####
 # Celery
 class CeleryConfig:
-    broker_url = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_CELERY_DB}"
+    broker_url = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
     imports = ("superset.sql_lab",)
-    result_backend = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_RESULTS_DB}"
+    result_backend = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
     worker_prefetch_multiplier = 1
     task_acks_late = False
     beat_schedule = {
@@ -83,6 +97,17 @@ WEBDRIVER_BASEURL_USER_FRIENDLY = (
 )
 
 #####
+
+#####
+# Theming.
+# Workaround missing brand logo: https://github.com/apache/superset/pull/34935. Once merged this can
+# be removed.
+THEME_DEFAULT = {
+    "token": {
+        "brandLogoUrl": f"{os.environ.get('SUPERSET_APP_ROOT', '')}/static/assets/images/superset-logo-horiz.png",
+    }
+}
+
 
 #####
 # Misc features

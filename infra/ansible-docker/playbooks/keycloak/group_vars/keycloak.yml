@@ -1,0 +1,37 @@
+---
+# VM config
+openstack_server_name: keycloak
+openstack_flavor: l3.micro
+openstack_security_group_name: keycloak
+openstack_security_group_description: Ingress to keycloak ports
+openstack_security_group_rules:
+  - direction: ingress
+    ether_type: IPv4
+    protocol: tcp
+    port_range_min: "{{ keycloak_http_port }}"
+    port_range_max: "{{ keycloak_http_port }}"
+  - direction: ingress
+    ether_type: IPv4
+    protocol: tcp
+    port_range_min: "{{ keycloak_http_management_port }}"
+    port_range_max: "{{ keycloak_http_management_port }}"
+openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
+
+# Local DB config
+# postgres
+postgres_db_data_path: "{{ cephfs_mount_mount_path }}/live/keycloak/data"
+postgres_port: "{{ keycloak_db_port }}"
+postgres_db_user: "{{ keycloak_db_user }}"
+postgres_db_passwd: "{{ keycloak_db_passwd }}"
+postgres_db_names:
+  - keycloak
+
+# App config
+docker_configure_container_network: "{{ keycloak_container_network }}"
+keycloak_image: quay.io/keycloak/keycloak:26.1.4
+keycloak_db_port: 5432
+keycloak_db_dbname: postgres_db_names[0]
+keycloak_db_user: keycloak
+keycloak_db_passwd: "{{ vault_keycloak_db_passwd }}"
+keycloak_bootstrap_admin_passwd: "{{ vault_keycloak_bootstrap_admin_passwd }}"
+keycloak_java_keystore_passwd: "{{ vault_keycloak_java_keystore_passwd }}"

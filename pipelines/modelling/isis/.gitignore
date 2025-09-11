@@ -1,9 +1,0 @@
-profiles.yml
-
-logs/
-target/
-dbt_packages/
-spark-warehouse/
-metastore_db/
-
-derby.log

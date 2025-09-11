@@ -1,0 +1,27 @@
+---
+# VM configuration
+openstack_server_name: lakekeeper
+openstack_flavor: l3.xsmall
+openstack_security_group_name: lakekeeper
+openstack_security_group_description: Ingress to catalog ports
+openstack_security_group_rules:
+  - direction: ingress
+    ether_type: IPv4
+    protocol: tcp
+    port_range_min: "{{ lakekeeper_http_port }}"
+    port_range_max: "{{ lakekeeper_http_port }}"
+openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
+
+# Deployment configuration
+lakekeeper_image: quay.io/lakekeeper/catalog:v0.9.3
+lakekeeper_container_network: lakekeeper
+
+lakekeeper_metadb_host: "{{ vault_db_host }}"
+lakekeeper_metadb_port: "{{ vault_db_port }}"
+lakekeeper_metadb_name: "{{ vault_lakekeeper_metadb_name }}"
+lakekeeper_metadb_user: "{{ vault_lakekeeper_metadb_user }}"
+lakekeeper_metadb_passwd: "{{ vault_lakekeeper_metadb_passwd }}"
+lakekeeper_metadb_encryption_key: "{{ vault_lakekeeper_metadb_encryption_key }}"
+
+# pass to docker_configure
+docker_configure_container_network: "{{ lakekeeper_container_network }}"

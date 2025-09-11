@@ -1,14 +1,17 @@
 http:
   routers:
-    # TLS
-    superset:
+  {% for instance_name, props in superset_instances.items() %}
+  {{ instance_name }}:
       entryPoints: websecure
-      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ superset_app_root }}`)
-      service: superset
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ props.app_root }}`)
+      service: {{ instance_name }}
       tls: {}
+  {% endfor %}
 
   services:
-    superset:
+  {% for instance_name, props in superset_instances.items() %}
+  {{ instance_name }}:
       loadBalancer:
         servers:
-          - url: "http://superset:{{ superset_http_port }}"
+          - url: "http://{{ hostvars[groups[instance_name][0]]['ansible_host'] }}:{{ props.http_port }}"
+  {% endfor %}

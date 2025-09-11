@@ -1,0 +1,14 @@
+trino_catalog:
+  target: trino
+  outputs:
+    trino:
+      type: trino
+      method: ldap
+      user: "{{ env_var('DBT_TRINO_USER') }}"
+      password: "{{ env_var('DBT_TRINO_PASSWORD') }}"
+      http_scheme: https
+      host: "{{ env_var('DBT_TRINO_HOST') }}"
+      port: "{{ env_var('DBT_TRINO_PORT') | int }}"
+      database: accelerator
+      schema: analytics
+      threads: "{{ env_var('DBT_TRINO_THREADS', '8') | int }}"

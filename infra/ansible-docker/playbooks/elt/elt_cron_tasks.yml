@@ -1,0 +1,19 @@
+---
+- name: Ensure cron jobs exist for warehouse {{ warehouse.name }}
+  ansible.builtin.cron:
+    name: "{{ source.name }}"
+    state: "{{ source.state | default('present') }}"
+    hour: "{{ source.hour }}"
+    minute: "{{ source.minute }}"
+    job: >
+      ELT_GIT_REF=multiple-warehouses ELT_SECRETS={{ elt_secrets_root_dir }}/{{ warehouse.name }}/envvars
+      {{ elt_cron_root_dir }}/elt_task.sh
+      https://github.com/{{ warehouse.github_org }}/{{ warehouse.github_repo }}.git
+      {{ elt_git_clone_dir }}/{{ warehouse.github_org }}/{{ warehouse.github_repo }}
+      {{ warehouse.sub_dir }}/extract_load/{{ source.name }}
+      {{ warehouse.sub_dir }}/transform/{{ warehouse.name }}
+      {{ source.dbt_args }}
+      > {{ elt_cron_logs_root_dir }}/{{ warehouse.name }}/{{ source.name }}-$(date +\%Y\%m\%d_\%H\%M\%S).log 2>&1
+  loop: "{{ warehouse.sources }}"
+  loop_control:
+    loop_var: source

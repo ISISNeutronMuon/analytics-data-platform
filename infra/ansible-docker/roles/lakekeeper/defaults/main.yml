@@ -1,2 +1,5 @@
 ---
+lakekeeper_bootstrap_log_level: INFO
+lakekeeper_container_name: lakekeeper
 lakekeeper_http_port: 8181
+lakekeeper_working_dir: /var/lakekeeper

@@ -21,6 +21,7 @@ import json
 from pathlib import Path
 import logging
 import os
+import sys
 from typing import Any, Dict, Callable
 
 import requests
@@ -29,10 +30,14 @@ import requests
 LAKEKEEPER_BOOTSTRAP_PREFIX = "LAKEKEEPER_BOOTSTRAP__"
 LOGGER = logging.getLogger(__name__)
 LOGGER_FILENAME = f"{Path(__file__).name}.log"
+LOGGER_FORMAT = "%(asctime)s|%(message)s"
 
 
 @dataclasses.dataclass(init=False)
 class EnvParser:
+    # Logging
+    log_level: str = "INFO"
+
     # ID provider
     token_endpoint_url: str
     client_id: str
@@ -41,7 +46,6 @@ class EnvParser:
 
     # Lakekeeper
     lakekeeper_url: str
-    warehouse_json_file: str
 
     def __init__(self, env_prefix: str):
         """Parse environment variables prefixed with env_prefix into class variables"""
@@ -83,6 +87,7 @@ class Server:
 
     def warehouse_exists(self, warehouse_name: str) -> bool:
         response = self._request(requests.get, self.management_url + "/warehouse")
+        LOGGER.debug(f"'/warehouse' response: {response.json()}")
         for warehouse in response.json()["warehouses"]:
             if warehouse["name"] == warehouse_name:
                 return True
@@ -133,11 +138,17 @@ def request_access_token(token_endpoint, client_id, client_secret, scope) -> str
 
 
 def main():
+    env_vars = EnvParser(LAKEKEEPER_BOOTSTRAP_PREFIX)
+
     this_file_dir = Path(__file__).parent
     logging.basicConfig(
-        filename=this_file_dir / LOGGER_FILENAME, level=logging.INFO, filemode="w"
+        filename=this_file_dir / LOGGER_FILENAME,
+        format=LOGGER_FORMAT,
+        level=getattr(logging, env_vars.log_level),
+        filemode="a",
     )
-    env_vars = EnvParser(LAKEKEEPER_BOOTSTRAP_PREFIX)
+    warehouses_json = sys.argv[1:]
+
     server = Server(
         env_vars.lakekeeper_url,
         request_access_token(
@@ -148,8 +159,11 @@ def main():
         ),
     )
     server.bootstrap()
-    with open(env_vars.warehouse_json_file) as fp:
-        server.create_warehouse(json.load(fp))
+    if warehouses_json:
+        LOGGER.debug(f"Creating warehouses using files: {warehouses_json}")
+        for warehouse_json_file in warehouses_json:
+            with open(warehouse_json_file) as fp:
+                server.create_warehouse(json.load(fp))
 
 
 if __name__ == "__main__":

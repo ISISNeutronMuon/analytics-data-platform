@@ -22,20 +22,12 @@ entryPoints:
         entryPoint:
           to: websecure
           scheme: https
-  sparkcontroller:
-    address: ":7077"
 
   # TLS entrypoints
   websecure:
     address: ":443"
-{% if 'minio' in groups %}
-  minio_tls:
-    address: ":{{ minio_console_https_port }}"
-{% endif %}
   trino_tls:
     address: ":{{ trino_https_port }}"
-  sparkcontrollerui_tls:
-    address: ":{{ spark_controller_ui_https_port }}"
 
 providers:
   file:

@@ -1,10 +1,10 @@
 ---
 - name: Ensure cloud server is present
   openstack.cloud.server:
+    name: "{{ openstack_server_name }}{{ openstack_server_name_suffix | default('') }}"
     cloud: "{{ openstack_cloud_name }}"
     flavor: "{{ openstack_flavor }}"
     image: "{{ openstack_image }}"
-    name: "{{ openstack_server_name }}"
     key_name: "{{ openstack_key_name }}"
     network: "{{ openstack_virtual_network.name | default('Internal') }}"
     auto_floating_ip: false
@@ -42,22 +42,9 @@
   ansible.builtin.wait_for_connection:
     timeout: 300
   delegate_to: "{{ vm_ip_address }}"
-  vars:
-    ansible_ssh_common_args: '-o ProxyCommand="ssh -q -W %h:%p {{ openstack_vm_user }}@{{ openstack_jump_host }}"'
-    ansible_user: "{{ openstack_vm_user }}"
-
-- name: Ensure instance is associated with a group
-  ansible.builtin.add_host:
-    name: "{{ vm_ip_address }}"
-    groups: "{{ inventory_group }}"
-    ansible_user: "{{ openstack_vm_user }}"
-    ansible_python_interpreter: "{{ openstack_python_interpreter }}"
 
 - name: Ensuring VM is configured
   include_role:
     name: system_configure
     apply:
       delegate_to: "{{ vm_ip_address }}"
-  vars:
-    ansible_ssh_common_args: '-o ProxyCommand="ssh -q -W %h:%p {{ openstack_vm_user }}@{{ openstack_jump_host }}"'
-    ansible_user: "{{ openstack_vm_user }}"

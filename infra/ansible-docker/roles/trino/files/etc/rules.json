@@ -1,0 +1,14 @@
+{
+  "catalogs": [
+    {
+      "user": "ingestion",
+      "catalog": "(isis|accelerator|management)",
+      "allow": "all"
+    },
+    {
+      "user": "superset",
+      "catalog": "(isis|accelerator|management)",
+      "allow": "read-only"
+    }
+  ]
+}

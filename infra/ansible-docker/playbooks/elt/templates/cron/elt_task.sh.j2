@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Constants
+ELT_SECRETS=${ELT_SECRETS:?}
+ELT_GIT_REF=${ELT_GIT_REF:-main}
+EXTRACT_AND_LOAD_SCRIPT=extract_and_load.py
+LOG_LEVEL=DEBUG
+ON_PIPELINE_FAILURE=log_and_continue
+DBT_REQUIREMENTS_TXT=requirements.txt
+
+function ensure_elt_sources_exist() {
+  export GIT_TERMINAL_PROMPT=0
+  local git_url=$1
+  local git_clone_dir=$2
+  if [ -d "$git_clone_dir" ]; then
+    pushd $git_clone_dir
+    git clean -d -x --force
+    git reset --hard
+    git checkout "$ELT_GIT_REF"
+    git pull
+    popd
+  else
+    git clone $git_url $git_clone_dir
+    pushd $git_clone_dir
+    git checkout "$ELT_GIT_REF"
+    popd
+  fi
+}
+
+# Script arguments - directories are relative to ELT_GIT_DEST
+# As many dbt project directories can be passed as required
+if [ $# -eq 0  ]; then
+  echo "Usage $0 <git_url> <git_clone_dir> <extract_and_load_dir> [dbt_project_dir] [dbt_run_args...]"
+  exit 1
+fi
+
+git_url=$1
+git_clone_dir=$2
+extract_and_load_dir=$3
+dbt_project_dir=${4:-}
+if [ -n "$dbt_project_dir" ]; then
+  shift 4
+else
+  shift 3
+fi
+
+# Read secrets
+set -o allexport; source $ELT_SECRETS; set +o allexport
+
+# Extraction
+ensure_elt_sources_exist $git_url $git_clone_dir
+cd $git_clone_dir/$extract_and_load_dir
+uv run \
+  --reinstall \
+  --script $EXTRACT_AND_LOAD_SCRIPT \
+  --log-level $LOG_LEVEL \
+  --on-pipeline-step-failure $ON_PIPELINE_FAILURE
+
+# Transform
+if [ -n "$dbt_project_dir" ]; then
+  cd $git_clone_dir/$dbt_project_dir
+  uv venv
+  uv pip install -r requirements/$DBT_REQUIREMENTS_TXT
+  uv run dbt deps
+  uv run dbt run $*
+fi

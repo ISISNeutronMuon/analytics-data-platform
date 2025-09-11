@@ -1,12 +1,6 @@
 ---
-trino_vm_flavor: l3.xsmall
-trino_jvm_xmx: 48G
-trino_data_path: "{{ cephfs_mount_mount_path }}/live/trino/data"
 trino_http_port: 8060
 trino_https_port: 8444
-trino_coordinator_url: "http://trino:{{ trino_http_port }}"
-
-trino_shared_secret: "{{ vault_trino_shared_secret }}"
 
 trino_superset_username: superset
 trino_ingestion_username: ingestion

@@ -1,6 +1,0 @@
----
-- name: Configure JupyterHub instance
-  hosts: jupyterhub
-  roles:
-    - role: cephfs_mount
-    - role: jupyterhub

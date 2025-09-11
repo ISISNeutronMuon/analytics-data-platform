@@ -1,7 +1,7 @@
 <!---
 Please write the PR title following the conventions at https://www.conventionalcommits.org/en/v1.0.0/
 Example:
-fix(pipelines-common): Fix bug in package
+fix(elt-common): Fix bug in package
 -->
 
 ### Summary

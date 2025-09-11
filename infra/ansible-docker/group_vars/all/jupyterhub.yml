@@ -1,4 +1,0 @@
----
-jupyterhub_home_root_path: "{{ cephfs_mount_mount_path }}/live/jupyterhub/home"
-jupyterhub_base_path: /jupyterhub
-jupyterhub_http_port: 80

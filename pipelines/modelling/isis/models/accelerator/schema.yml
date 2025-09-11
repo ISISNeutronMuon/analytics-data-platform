@@ -1,5 +1,0 @@
-version: 2
-
-models:
-  - name: mcr_equipment_downtime_records
-    description: "Downtime and associated metadata related to equipment faults for equipment managed by the MCR"

@@ -1,0 +1,4 @@
+version: 2
+
+models:
+  - name: stg_accelerator_sharepoint__equipment_downtime_data_pre_opralog

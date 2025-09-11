@@ -1,0 +1,16 @@
+---
+# db - needs to be manually in the database
+superset_metadb_schema_name: "{{ vault_superset_accelerator_metadb_schema_name }}"
+
+# app
+superset_instance_name: superset_accelerator
+superset_http_port: "{{ superset_instances[superset_instance_name].http_port }}"
+superset_app_root: "{{ superset_instances[superset_instance_name].app_root }}"
+superset_secret_key: "{{ vault_superset_accelerator_secret_key }}"
+superset_flask_debug: false
+superset_env_name: production
+superset_config_yaml: "{{ vault_superset_accelerator_config_yaml }}"
+
+superset_analytic_dbs:
+  - database_name: accelerator
+    uri: "trino://{{ trino_superset_username }}:{{ vault_trino_superset_passwd }}@{{ top_level_domain }}:{{ trino_https_port }}/accelerator"

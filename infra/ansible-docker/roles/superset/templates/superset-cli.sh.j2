@@ -1,0 +1,12 @@
+#!/bin/bash
+# Thin wrapper around superset command
+CONTAINER_IMAGE={{ superset_container_image }}
+SUPERSET_CONFIG_MOUNT={{ superset_working_dir }}/docker/pythonpath
+ENV_FILE={{ superset_working_dir }}/docker/.env
+
+docker run \
+  --rm \
+  --env-file $ENV_FILE \
+  --volume ${SUPERSET_CONFIG_MOUNT}:/app/docker/pythonpath:ro \
+  ${CONTAINER_IMAGE} \
+  superset $*
