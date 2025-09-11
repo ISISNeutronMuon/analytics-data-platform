@@ -6,13 +6,13 @@ on:
     paths:
       - ".github/workflows/elt-common_e2e_tests.yml"
       - "infra/local/**"
-      - "pipelines/elt-common/**"
+      - "elt-common/**"
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
       - ".github/workflows/elt-common_e2e_tests.yml"
       - "infra/local/**"
-      - "pipelines/elt-common/**"
+      - "elt-common/**"
   workflow_dispatch:
     inputs:
       ref:
@@ -43,7 +43,7 @@ jobs:
       - name: Bring up Lakekeeper & dependent services
         uses: hoverkraft-tech/compose-action@v2.0.1
         with:
-          compose-file: "pipelines/elt-common/tests/docker-compose.yml"
+          compose-file: "elt-common/tests/docker-compose.yml"
 
       - name: Run pipeline-common end-to-end tests
         run: >
@@ -53,4 +53,4 @@ jobs:
           --env CI=1
           python-uv
           uv run pytest --durations-min=0.5 --exitfirst tests/e2e_tests --cache-clear
-        working-directory: ./pipelines/elt-common
+        working-directory: ./elt-common
