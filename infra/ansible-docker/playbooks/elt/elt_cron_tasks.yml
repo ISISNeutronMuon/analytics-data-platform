@@ -6,7 +6,7 @@
     hour: "{{ source.hour }}"
     minute: "{{ source.minute }}"
     job: >
-      ELT_GIT_REF=multiple-warehouses ELT_SECRETS={{ elt_secrets_root_dir }}/{{ warehouse.name }}/envvars
+      ELT_SECRETS={{ elt_secrets_root_dir }}/{{ warehouse.name }}/envvars
       {{ elt_cron_root_dir }}/elt_task.sh
       https://github.com/{{ warehouse.github_org }}/{{ warehouse.github_repo }}.git
       {{ elt_git_clone_dir }}/{{ warehouse.github_org }}/{{ warehouse.github_repo }}
