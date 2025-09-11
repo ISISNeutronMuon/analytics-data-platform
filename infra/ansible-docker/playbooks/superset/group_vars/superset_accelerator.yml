@@ -1,5 +1,5 @@
 ---
-# db
+# db - needs to be manually in the database
 superset_metadb_schema_name: "{{ vault_superset_accelerator_metadb_schema_name }}"
 
 # app
