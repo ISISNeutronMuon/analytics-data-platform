@@ -1,16 +1,11 @@
 ---
-# image
-superset_container_image: ghcr.io/martyngigg/adp-superset-forked:901412e
+# db
+superset_metadb_schema_name: "{{ vault_superset_accelerator_metadb_schema_name }}"
 
 # app
 superset_instance_name: superset_accelerator
 superset_http_port: "{{ superset_instances[superset_instance_name].http_port }}"
 superset_app_root: "{{ superset_instances[superset_instance_name].app_root }}"
-superset_metadb_host: "{{ vault_db_host }}"
-superset_metadb_port: "{{ vault_db_port }}"
-superset_metadb_name: "{{ vault_superset_accelerator_metadb_name }}"
-superset_metadb_user: "{{ vault_superset_accelerator_metadb_user }}"
-superset_metadb_passwd: "{{ vault_superset_accelerator_metadb_passwd }}"
 superset_secret_key: "{{ vault_superset_accelerator_secret_key }}"
 superset_flask_debug: false
 superset_env_name: production

@@ -28,8 +28,9 @@ SQLALCHEMY_DATABASE_URI = (
     f"{SUPERSET_DB_DIALECT}://"
     f"{SUPERSET_DB_USER}:{SUPERSET_DB_PASSWORD}@"
     f"{SUPERSET_DB_HOST}:{SUPERSET_DB_PORT}/{SUPERSET_DB_NAME}"
-    f"?options=-c%20search_path={SUPERSET_DB_SCHEMA_NAME}"
 )
+if SUPERSET_DB_SCHEMA_NAME:
+    SQLALCHEMY_DATABASE_URI += f"?options=-c%20search_path={SUPERSET_DB_SCHEMA_NAME}"
 #####
 
 # disable recaptcha as we don't allow self registration
