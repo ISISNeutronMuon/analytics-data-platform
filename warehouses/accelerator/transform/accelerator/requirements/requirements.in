@@ -1,5 +1,2 @@
 dbt-core>=1.9.4,<2.0.0
-dbt-spark[session]>=1.9.2,<2.0.0
 dbt-trino>=1.9.1,<2.0.0
-# must match the version of spark deployed on the cluster
-pyspark==3.5.2
