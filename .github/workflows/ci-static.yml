@@ -1,4 +1,4 @@
-name: pre-commit
+name: Static checks
 
 on:
   push:
@@ -13,4 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
-      - uses: pre-commit/action@v3.0.1
+      - name: "Install prek"
+        run: >
+          python -m pip install prek
+      - name: "Run prek"
+        run: >
+          prek --all-files --verbose
