@@ -1,9 +1,11 @@
 version: 2
 
 models:
-  - name: cycles
-    description: "The ISIS cycle dates, including pre and post user-cycle phases."
   - name: mcr_equipment_downtime_records
     description: "Downtime and associated metadata related to equipment faults for equipment managed by the MCR"
+    columns:
+      - name: cycle_name
+        data_tests:
+          - not_null
   - name: power_consumption
     description: "The total power consumption for ISIS over time"

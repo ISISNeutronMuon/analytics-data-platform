@@ -10,6 +10,7 @@ cropped as (
 
     select
         equipment,
+        user_run,
         downtime_minutesx,
         -- fault_date column has a full timestamp after the Opralog epoch a mix of timestamp
         -- with date and 00:00:00 portion or just the date. Chop the date out
@@ -21,7 +22,6 @@ cropped as (
         managerscomments
 
     from source
-    where date(substring(fault_date, 1, 10)) < date('{{ var("opralog_epoch_date") }}')
 
 ),
 
@@ -29,6 +29,13 @@ renamed as (
 
     select
         equipment,
+
+        -- Reformat into cycle name including four-digit year
+        case
+            when user_run like '.%' then replace(user_run, '.', '19')
+            else concat('20', user_run)
+        end as cycle_name,
+
         downtime_minutesx as downtime_mins,
         date(fault_date_str) as fault_date,
         -- fault_time is just a time before the opralog_epoch but a full timestamp after

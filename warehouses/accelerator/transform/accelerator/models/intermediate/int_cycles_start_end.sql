@@ -6,7 +6,7 @@ with cycle_start_end as (
     min(started_at) as started_at,
     max(ended_at) as ended_at
 
-  from {{ ref('cycles') }}
+  from {{ ref('int_cycles') }}
   group by {{ adapter.quote('name') }}
 
 )
