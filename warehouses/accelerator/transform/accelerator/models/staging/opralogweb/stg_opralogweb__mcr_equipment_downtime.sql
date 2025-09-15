@@ -1,13 +1,19 @@
-{% set MCR_LOGBOOK = dbt.string_literal("MCR Running Log") %}
+{%- set OPRALOG_EPOCH = dbt.string_literal("2017-04-25") -%}
+{%- set MCR_LOGBOOK = dbt.string_literal("MCR Running Log") -%}
 
 with
 
-staging_entries as ( select * from {{ ref('stg_opralogweb__user_entries') }} ),
-staging_chapter_entry as ( select * from {{ ref('stg_opralogweb__chapter_entry') }} ),
-staging_logbook_chapter as ( select * from {{ ref('stg_opralogweb__logbook_chapter') }} ),
-staging_logbooks as ( select * from {{ ref('stg_opralogweb__logbooks') }} ),
-staging_more_entry_columns as ( select * from {{ ref('stg_opralogweb__more_entry_columns') }} ),
-staging_additional_columns as ( select * from {{ ref('stg_opralogweb__additional_columns') }} ),
+staging_entries as ( select * from {{ ref('base_opralogweb__user_entries') }} ),
+
+staging_chapter_entry as ( select * from {{ ref('base_opralogweb__chapter_entry') }} ),
+
+staging_logbook_chapter as ( select * from {{ ref('base_opralogweb__logbook_chapter') }} ),
+
+staging_logbooks as ( select * from {{ ref('base_opralogweb__logbooks') }} ),
+
+staging_more_entry_columns as ( select * from {{ ref('base_opralogweb__more_entry_columns') }} ),
+
+staging_additional_columns as ( select * from {{ ref('base_opralogweb__additional_columns') }} ),
 
 denormalized as (
   select
@@ -37,9 +43,10 @@ denormalized as (
       staging_more_entry_columns.string_data is not null
       or staging_more_entry_columns.number_data is not null
     )
+    and staging_entries.fault_date >= from_iso8601_date({{ OPRALOG_EPOCH }})
 ),
 
-downtime_records as (
+mcr_equipment_downtime as (
   select
     *
   from
@@ -84,24 +91,6 @@ downtime_records as (
     equipment is not null
     and downtime_mins is not null
     and {{ adapter.quote('group') }} is not null
-),
-
-downtime_records_with_cycle as (
-
-  select
-    d.equipment,
-    d.fault_date,
-    c.name as cycle_name,
-    c.phase as cycle_phase,
-    d.downtime_mins,
-    d.fault_occurred_at,
-    d.{{ adapter.quote('group') }},
-    d.fault_description,
-    d.managers_comments
-  from
-
-    downtime_records d
-    left join {{ ref("int_cycles") }} c on d.fault_occurred_at between c.started_at and c.ended_at
 )
 
-select * from downtime_records_with_cycle
+select * from mcr_equipment_downtime

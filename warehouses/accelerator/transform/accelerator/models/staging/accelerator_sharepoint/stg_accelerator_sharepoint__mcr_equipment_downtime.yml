@@ -1,0 +1,5 @@
+models:
+  - name: stg_accelerator_sharepoint__mcr_equipment_downtime
+    description: >
+      This dataset contains equipment downtime records from 1996 until 2024 and includes records
+      also captured by Opralog.

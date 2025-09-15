@@ -15,13 +15,14 @@ staged as (
 staged_discard_target as (
 
   select
-    name,
+
+    {{ adapter.quote('name') }},
     started_at,
     ended_at,
     phase
 
   from staged
-  group by name, started_at, ended_at, phase
+  group by {{ adapter.quote('name') }}, started_at, ended_at, phase
 
 )
 

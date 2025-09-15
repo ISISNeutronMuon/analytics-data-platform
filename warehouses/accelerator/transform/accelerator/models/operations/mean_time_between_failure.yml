@@ -1,0 +1,5 @@
+models:
+  - name: mean_time_between_failure
+    description: >
+      [Mean time between failures](https://en.wikipedia.org/wiki/Mean_time_between_failures)
+      by cycle and equipment.

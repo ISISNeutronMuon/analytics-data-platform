@@ -1,9 +1,0 @@
-version: 2
-
-models:
-  - name: stg_opralogweb__additional_columns
-  - name: stg_opralogweb__chapter_entry
-  - name: stg_opralogweb__user_entries
-  - name: stg_opralogweb__logbook_chapter
-  - name: stg_opralogweb__logbooks
-  - name: stg_opralogweb__more_entry_columns
