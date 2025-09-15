@@ -1,5 +1,3 @@
--- This dataset contains equipment downtime records from 1996 until 2024 and includes records
--- also captured by Opralog. The Opralog epoch is defined as a project variable.
 with source as (
 
     select * from {{ source('src_accelerator_sharepoint', 'equipment_downtime_data_11_08_24') }}
@@ -10,6 +8,7 @@ cropped as (
 
     select
         equipment,
+        user_run,
         downtime_minutesx,
         -- fault_date column has a full timestamp after the Opralog epoch a mix of timestamp
         -- with date and 00:00:00 portion or just the date. Chop the date out
@@ -21,7 +20,6 @@ cropped as (
         managerscomments
 
     from source
-    where date(substring(fault_date, 1, 10)) < date('{{ var("opralog_epoch_date") }}')
 
 ),
 
@@ -29,10 +27,19 @@ renamed as (
 
     select
         equipment,
+
+        -- Reformat into four-digit year
+        case
+            when user_run like '.%' then replace(user_run, '.', '19')
+            else concat('20', user_run)
+        end as cycle_name,
+
         downtime_minutesx as downtime_mins,
         date(fault_date_str) as fault_date,
-        -- fault_time is just a time before the opralog_epoch but a full timestamp after
-        {{ parse_utc_timestamp('fault_date_str', 'yyyy-MM-dd', 'fault_time_str') }} as fault_occurred_at,
+
+        -- Desktop Opralog used local time rather than UTC. Convert to UTC here.
+        {{ parse_utc_timestamp('fault_date_str', 'yyyy-MM-dd', 'fault_time_str', src_timezone='Europe/London') }} as fault_occurred_at,
+
         {{ adapter.quote('group') }},
         fault_description,
         managerscomments as managers_comments

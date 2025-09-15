@@ -1,0 +1,6 @@
+models:
+  - name: stg_opralogweb__mcr_equipment_downtime
+    description: >
+      Equipment downtime records for the MCR assembled from the relational database of the
+      web-based Opralog application.
+      Entries before cycle 17/01 are discarded as Opralog was in testing mode before this.

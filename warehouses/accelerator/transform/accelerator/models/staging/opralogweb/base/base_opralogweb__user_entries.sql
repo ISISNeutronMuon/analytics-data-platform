@@ -16,7 +16,6 @@ renamed as (
       trim(additional_comment) as fault_description
 
   from source
-  where entry_timestamp >= from_iso8601_timestamp('{{ var("opralog_epoch_date") }}')
 
 )
 

@@ -11,7 +11,12 @@ with
 
 staged as (
 
-  select * from {{ ref('stg_electricity_sharepoint_rdm_data') }}
+  select
+
+    date_time as power_measured_at,
+    total_isis_power_mw
+
+  from {{ ref('stg_electricity_sharepoint_rdm_data') }}
 
 )
 

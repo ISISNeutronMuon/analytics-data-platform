@@ -1,0 +1,7 @@
+models:
+  - name: base_opralogweb__chapter_entry
+    description: Opralogweb chapter_entry table with basic cleaning
+    columns:
+      - name: entry_id
+        tests:
+          - not_null

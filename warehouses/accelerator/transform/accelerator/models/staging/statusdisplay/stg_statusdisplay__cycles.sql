@@ -20,11 +20,12 @@ base_cycles__phases as (
 join_cycle_labels_and_phases as (
 
   select
-    name,
+
+    {{ adapter.quote('name') }},
     started_at,
     ended_at,
     phase,
-    target
+    {{ adapter.quote('target') }}
 
   from base_cycles
   join base_cycles__phases on base_cycles.dlt_id = base_cycles__phases.dlt_cycles_id
@@ -32,4 +33,3 @@ join_cycle_labels_and_phases as (
 )
 
 select * from join_cycle_labels_and_phases
-order by started_at asc
