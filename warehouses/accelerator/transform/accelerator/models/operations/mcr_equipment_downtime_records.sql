@@ -11,6 +11,7 @@ with
 
 records_sharepoint as ( select * from {{ ref('stg_accelerator_sharepoint__mcr_equipment_downtime') }} ),
 records_opralogweb as ( select * from {{ ref('stg_opralogweb__mcr_equipment_downtime') }} ),
+cycles_start_end as ( select * from {{ ref('int_cycles_start_end') }} ),
 
 records_sharepoint_with_cycle_phase_col as (
 
@@ -51,13 +52,58 @@ records_opralogweb_after_sharepoint_joined_with_cycles as (
   where fault_occurred_at > (select max(fault_occurred_at) from records_sharepoint_with_cycle_phase_col)
 ),
 
-unioned as (
+all_records as (
 
   select * from  records_sharepoint_with_cycle_phase_col
   union
   select * from records_opralogweb_after_sharepoint_joined_with_cycles
 
+),
+
+equipment_up_at_col as (
+
+  select
+
+    equipment,
+    fault_date,
+    cycle_name,
+    cycle_phase,
+    downtime_mins,
+    fault_occurred_at,
+    fault_occurred_at + (interval '1' minute * downtime_mins) as equipment_up_at,
+    {{ adapter.quote('group') }},
+    fault_description,
+    managers_comments
+
+  from
+
+    all_records d
+),
+
+uptime_col as (
+
+  select
+
+    equipment,
+    fault_date,
+    cycle_name,
+    cycle_phase,
+    downtime_mins,
+    fault_occurred_at,
+    equipment_up_at,
+    date_diff('minute',
+      lag(equipment_up_at, 1,
+          (select started_at from cycles_start_end where {{ adapter.quote('name') }} = cycle_name)
+          )
+          over
+          (partition by cycle_name, equipment order by fault_occurred_at), fault_occurred_at
+    ) as uptime_mins,
+    {{ adapter.quote('group') }},
+    fault_description,
+    managers_comments
+
+  from equipment_up_at_col
 )
 
 -- add order by clause for iceberg table sorting crterion
-select * from unioned order by fault_occurred_at asc
+select * from uptime_col order by fault_occurred_at asc
