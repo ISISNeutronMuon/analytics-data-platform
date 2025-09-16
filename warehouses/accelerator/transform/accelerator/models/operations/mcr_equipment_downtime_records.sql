@@ -9,7 +9,7 @@
 
 with
 
-records_sharepoint as ( select * from {{ ref('stg_accelerator_sharepoint__mcr_equipment_downtime') }} ),
+records_sharepoint as ( select * from {{ ref('stg_accelerator_sharepoint__equipment_downtime_data_11_08_24') }} ),
 records_opralogweb as ( select * from {{ ref('stg_opralogweb__mcr_equipment_downtime') }} ),
 cycles_start_end as ( select * from {{ ref('int_cycles_start_end') }} ),
 

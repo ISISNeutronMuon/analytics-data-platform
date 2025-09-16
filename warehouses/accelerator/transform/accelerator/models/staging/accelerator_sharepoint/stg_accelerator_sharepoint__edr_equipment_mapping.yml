@@ -1,0 +1,4 @@
+models:
+  - name: stg_accelerator_sharepoint__edr_equipment_mapping
+    description: >
+      Staged table containing equipment name remappings
