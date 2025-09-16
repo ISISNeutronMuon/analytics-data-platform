@@ -10,7 +10,11 @@
 with
 
 records_sharepoint as ( select * from {{ ref('stg_accelerator_sharepoint__equipment_downtime_data_11_08_24') }} ),
+
 records_opralogweb as ( select * from {{ ref('stg_opralogweb__mcr_equipment_downtime') }} ),
+
+equipment_name_mappings as ( select * from {{ ref('stg_accelerator_sharepoint__edr_equipment_mapping') }} ),
+
 cycles_start_end as ( select * from {{ ref('int_cycles_start_end') }} ),
 
 records_sharepoint_with_cycle_phase_col as (
@@ -103,7 +107,32 @@ uptime_col as (
     managers_comments
 
   from equipment_up_at_col
+),
+
+equipment_name_cleaned as (
+
+  select
+
+    case
+      when exists
+        (select equipment_name_src from equipment_name_mappings where equipment_name_src = equipment)
+          then (select equipment_name_clean from equipment_name_mappings where equipment_name_src = equipment)
+      else equipment
+    end as equipment,
+    fault_date,
+    cycle_name,
+    cycle_phase,
+    downtime_mins,
+    fault_occurred_at,
+    equipment_up_at,
+    uptime_mins,
+    {{ adapter.quote('group') }},
+    fault_description,
+    managers_comments
+
+  from uptime_col
+
 )
 
 -- add order by clause for iceberg table sorting crterion
-select * from uptime_col order by fault_occurred_at asc
+select * from equipment_name_cleaned order by fault_occurred_at asc
