@@ -50,7 +50,7 @@ mean_time_between_failures as (
 
     any_value(cycle_name) as cycle_name,
     equipment,
-    sum(uptime_mins)/count(fault_occurred_at)/60. as mtbf_hours
+    sum(uptime_mins)/count(fault_occurred_at) as mtbf_mins
 
   from uptime_col
   where cycle_name is not null
