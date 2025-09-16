@@ -76,6 +76,20 @@
           aws_secret_access_key = {{ s3_access_secret }}
         mode: "u=rw,o=r,g=r"
 
+    # ---------- dlt ----------
+    - name: Ensure dlt configuration directory exists
+      ansible.builtin.file:
+        path: "{{ ansible_env['HOME'] }}/.dlt"
+        state: directory
+        mode: "u=rwx,g=rx,o=rx"
+
+    - name: Generate .dlt/config.toml
+      #      no_log: true
+      ansible.builtin.template:
+        src: dlt/config.toml.j2
+        dest: "{{ ansible_env['HOME'] }}/.dlt/config.toml"
+        mode: "u=rwx,g=r,o=r"
+
     # ---------- secrets ----------
     - name: Ensure secrets directories exist
       become: true

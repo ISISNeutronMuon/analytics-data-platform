@@ -16,7 +16,7 @@ import dlt
 from dlt.common.storages.fsspec_filesystem import FileItemDict
 from elt_common.cli import cli_main
 from elt_common.dlt_sources.m365 import sharepoint
-from dlt.extract import DltResource, DltSource
+from dlt.extract import DltResource
 from dlt.sources import TDataItems
 
 SITE_URL = "https://stfc365.sharepoint.com/sites/ISIS-AcceleratorDivision"
@@ -76,8 +76,7 @@ def edr_equipment_mapping() -> DltResource:
 
 # We need to set the section in order for dlt to find our named secret.
 # We cannot run this in parallel as pyiceberg fails with
-# 'DataInvalid: DataInvalid => Requirement failed: Branch or tag `main` already exists. The package is aborted and cannot be retried.'
-@dlt.source(section="m365", parallelized=False)
+@dlt.source(section="m365")
 def resources():
     for resource_func in (equipment_downtime_records_archive, edr_equipment_mapping):
         yield resource_func()
