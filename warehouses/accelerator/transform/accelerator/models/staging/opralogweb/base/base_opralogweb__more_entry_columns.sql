@@ -9,7 +9,7 @@ renamed as (
   select
 
     entry_id,
-    trim(col_data) as string_data,
+    {{ normalize_whitespace('col_data') }} as string_data,
     number_value as number_data,
     additional_column_id
 

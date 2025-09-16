@@ -8,8 +8,8 @@ renamed as (
 
     select
 
-        trim(equipment_name_src) as equipment_name_src,
-        trim(equipment_name_clean) as equipment_name_clean
+      {{ normalize_whitespace('equipment_name') }} as equipment_name,
+      {{ normalize_whitespace('equipment_category') }} as equipment_category
 
     from source
 

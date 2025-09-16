@@ -69,8 +69,7 @@ def edr_equipment_mapping() -> DltResource:
         extract_content=True,
     )
     return (
-        files
-        | read_excel(header=None, names=["equipment_name_src", "equipment_name_clean"])
+        files | read_excel(header=None, names=["equipment_name", "equipment_category"])
     ).with_name("edr_equipment_mapping")
 
 

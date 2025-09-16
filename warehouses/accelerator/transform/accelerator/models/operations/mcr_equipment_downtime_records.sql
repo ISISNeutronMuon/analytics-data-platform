@@ -109,16 +109,17 @@ uptime_col as (
   from equipment_up_at_col
 ),
 
-equipment_name_cleaned as (
+equipment_category_col as (
 
   select
 
+    equipment,
     case
       when exists
-        (select equipment_name_src from equipment_name_mappings where equipment_name_src = equipment)
-          then (select equipment_name_clean from equipment_name_mappings where equipment_name_src = equipment)
-      else equipment
-    end as equipment,
+        (select equipment_name from equipment_name_mappings where equipment_name = equipment)
+          then (select equipment_category from equipment_name_mappings where equipment_name = equipment)
+      else null
+    end as equipment_category,
     fault_date,
     cycle_name,
     cycle_phase,
@@ -135,4 +136,4 @@ equipment_name_cleaned as (
 )
 
 -- add order by clause for iceberg table sorting crterion
-select * from equipment_name_cleaned order by fault_occurred_at asc
+select * from equipment_category_col order by fault_occurred_at asc
