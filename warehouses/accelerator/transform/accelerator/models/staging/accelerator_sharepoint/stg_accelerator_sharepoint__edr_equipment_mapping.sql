@@ -8,8 +8,8 @@ renamed as (
 
     select
 
-        equipment_name_src,
-        equipment_name_clean
+        trim(equipment_name_src),
+        trim(equipment_name_clean)
 
     from source
 
