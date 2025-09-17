@@ -1,0 +1,5 @@
+model:
+  - name: mcr_equipment_downtime_uncategorized_equipment
+    description: >
+      Lists the equipment names for which no category has been found in the
+      EDR equipment mapping table.
