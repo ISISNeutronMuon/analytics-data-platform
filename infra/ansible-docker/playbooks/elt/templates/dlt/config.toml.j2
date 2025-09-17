@@ -1,0 +1,7 @@
+[runtime]
+log_level = "{{ elt_dlt_log_level | default('INFO') }}"
+
+# Force extract workers to 1 to avoid Iceberg concurrency failures.
+# Error 'DataInvalid: DataInvalid => Requirement failed: Branch or tag `main` already exists. The package is aborted and cannot be retried.'
+[sources.extract]
+workers = 1

@@ -4,3 +4,4 @@ sources:
   - name: src_accelerator_sharepoint
     tables:
       - name: equipment_downtime_data_11_08_24
+      - name: edr_equipment_mapping
