@@ -114,12 +114,9 @@ equipment_category_col as (
   select
 
     equipment,
-    case
-      when exists
-        (select equipment_name from equipment_name_mappings where equipment_name = equipment)
-          then (select equipment_category from equipment_name_mappings where equipment_name = equipment)
-      else null
-    end as equipment_category,
+    coalesce(
+      (select equipment_name from equipment_name_mappings where lower(equipment_name) = lower(equipment)),
+       null) as equipment_category,
     fault_date,
     cycle_name,
     cycle_phase,
