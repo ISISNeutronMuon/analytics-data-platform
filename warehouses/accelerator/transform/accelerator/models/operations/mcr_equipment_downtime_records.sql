@@ -115,7 +115,7 @@ equipment_category_col as (
 
     equipment,
     coalesce(
-      (select equipment_name from equipment_name_mappings where lower(equipment_name) = lower(equipment)),
+      (select equipment_category from equipment_name_mappings where lower(equipment_name) = lower(equipment)),
        null) as equipment_category,
     fault_date,
     cycle_name,
