@@ -4,5 +4,5 @@
 {% endmacro %}
 
 {%- macro default__normalize_whitespace(text_col) -%}
-  regexp_replace(trim({{ adapter.quote(text_col) }}), '\s+', ' ')
+  regexp_replace(trim({{ text_col }}), '\s+', ' ')
 {%- endmacro -%}

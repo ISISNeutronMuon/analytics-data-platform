@@ -4,17 +4,17 @@ with source as (
 
 ),
 
-renamed_and_deduped as (
+equipment_lowercased_and_deduped as (
 
     select
 
-      -- After normalize there may be duplicate entries. Deduplicate by equipment_name
-      any_value({{ normalize_whitespace('equipment_name') }}) as equipment_name,
-      any_value({{ normalize_whitespace('equipment_category') }}) as equipment_category
+      -- After normalize there may be duplicate entries. Deduplicate by lower case equipment
+      {{ create_equipment_category_key('equipment_name') }} as equipment,
+      any_value(equipment_category) as equipment_category
 
     from source
-    group by equipment_name
+    group by {{ create_equipment_category_key('equipment_name') }}
 
 )
 
-select * from renamed_and_deduped
+select * from equipment_lowercased_and_deduped

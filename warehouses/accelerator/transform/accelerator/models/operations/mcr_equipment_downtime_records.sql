@@ -113,10 +113,8 @@ equipment_category_col as (
 
   select
 
-    equipment,
-    coalesce(
-      (select equipment_category from equipment_name_mappings where lower(equipment_name) = lower(equipment)),
-       null) as equipment_category,
+    {{ normalize_whitespace('u.equipment') }} as equipment,
+    m.equipment_category as equipment_category,
     fault_date,
     cycle_name,
     cycle_phase,
@@ -128,7 +126,8 @@ equipment_category_col as (
     fault_description,
     managers_comments
 
-  from uptime_col
+  from uptime_col u
+  left join equipment_name_mappings m on {{ create_equipment_category_key('u.equipment') }} = m.equipment
 
 )
 
