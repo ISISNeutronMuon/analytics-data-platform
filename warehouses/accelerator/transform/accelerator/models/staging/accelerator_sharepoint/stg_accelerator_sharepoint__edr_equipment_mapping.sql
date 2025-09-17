@@ -4,15 +4,17 @@ with source as (
 
 ),
 
-renamed as (
+renamed_and_deduped as (
 
     select
 
-      {{ normalize_whitespace('equipment_name') }} as equipment_name,
-      {{ normalize_whitespace('equipment_category') }} as equipment_category
+      -- After normalize there may be duplicate entries. Deduplicate by equipment_name
+      any_value({{ normalize_whitespace('equipment_name') }}) as equipment_name,
+      any_value({{ normalize_whitespace('equipment_category') }}) as equipment_category
 
     from source
+    group by equipment_name
 
 )
 
-select * from renamed
+select * from renamed_and_deduped
