@@ -11,6 +11,16 @@ PGPASSWORD=$POSTGRES_PASSWORD
 POSTGRES_DATABASE=unused
 
 ###############################################################################
+# Iceberg catalog
+###############################################################################
+ELT_COMMON__ICEBERG_MAINT_TRINO__HTTP_SCHEME=http
+ELT_COMMON__ICEBERG_MAINT_TRINO__HOST=analytics.localhost
+ELT_COMMON__ICEBERG_MAINT_TRINO__PORT=58088
+ELT_COMMON__ICEBERG_MAINT_TRINO__USER=trino
+ELT_COMMON__ICEBERG_MAINT_TRINO__PASSWORD=
+ELT_COMMON__ICEBERG_MAINT_TRINO__CATALOG=local_lakehouse
+
+###############################################################################
 # Superset
 ###############################################################################
 # Metadata DB
