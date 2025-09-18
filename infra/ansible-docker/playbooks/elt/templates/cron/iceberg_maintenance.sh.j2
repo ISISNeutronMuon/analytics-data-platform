@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Constants
+ELT_SECRETS=${ELT_SECRETS:?}
+ELT_COMMON_GIT_URL=${ELT_COMMON_GIT_URL:-https://github.com/ISISNeutronMuon/analytics-data-platform.git}
+UV_GIT_REF="git+${ELT_COMMON_GIT_URL}#subdirectory=elt-common"
+
+uvx \
+  --with "${UV_GIT_REF}[iceberg-maintenance]" \
+  python -m elt_common.iceberg.maintenance --help
