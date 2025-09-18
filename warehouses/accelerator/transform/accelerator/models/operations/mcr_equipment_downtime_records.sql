@@ -96,12 +96,9 @@ uptime_col as (
     fault_occurred_at,
     equipment_up_at,
     date_diff('minute',
-      lag(equipment_up_at, 1,
-          (select started_at from cycles_start_end where {{ adapter.quote('name') }} = cycle_name)
-          )
-          over
+      lag(equipment_up_at, 1, null) over
           (partition by cycle_name, equipment order by fault_occurred_at), fault_occurred_at
-    ) as uptime_mins,
+    ) as uptime_before_fault_mins,
     {{ adapter.quote('group') }},
     fault_description,
     managers_comments
@@ -121,7 +118,7 @@ equipment_category_col as (
     downtime_mins,
     fault_occurred_at,
     equipment_up_at,
-    uptime_mins,
+    uptime_before_fault_mins,
     {{ adapter.quote('group') }},
     fault_description,
     managers_comments
