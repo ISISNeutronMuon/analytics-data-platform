@@ -18,6 +18,7 @@ x-env-file: &env-file
   - path: ./env-for-testing
     required: true
 
+# named network as the default form the directory name is not good
 x-networks: &local-networks
   - local-lakehouse_net
 
@@ -37,9 +38,6 @@ services:
   # Ingress
   #########################################################
   traefik:
-    profiles:
-      - lakehouse
-      - superset
     container_name: local-lakehouse-traefik
     image: *traefik-image
     ports:
@@ -55,9 +53,6 @@ services:
   # Database shared by all services
   #########################################################
   shared-database:
-    profiles:
-      - lakehouse
-      - superset
     container_name: local-lakehouse-shared-database
     image: *postgres-image
     env_file: *env-file
@@ -72,9 +67,6 @@ services:
     networks: *local-networks
 
   shared-database-createdatabases:
-    profiles:
-      - lakehouse
-      - superset
     container_name: local-lakehouse-shared-database-createdatabases
     image: *postgres-image
     env_file: *env-file
@@ -104,9 +96,6 @@ services:
   # Keycloak identity provider
   #########################################################
   keycloak:
-    profiles:
-      - lakehouse
-      - superset
     container_name: local-lakehouse-keycloak
     image: *keycloak-image
     env_file: *env-file
@@ -139,9 +128,6 @@ services:
   # in SCD. This does not exist in production
   #########################################################
   minio:
-    profiles:
-      - lakehouse
-      - superset
     container_name: local-lakehouse-minio
     image: *minio-image
     env_file: *env-file
@@ -156,9 +142,6 @@ services:
     networks: *local-networks
 
   minio-createbucket:
-    profiles:
-      - lakehouse
-      - superset
     container_name: local-lakehouse-minio-create-bucket
     depends_on:
       minio:
@@ -182,9 +165,6 @@ services:
   # Lakekeeper - Iceberg REST catalog
   #########################################################
   lakekeeper:
-    profiles:
-      - lakehouse
-      - superset
     container_name: local-lakehouse-lakekeeper
     image: *lakekeeper-image
     env_file: *env-file
@@ -207,9 +187,6 @@ services:
       - "analytics.localhost:host-gateway"
 
   lakekeeper-migrate:
-    profiles:
-      - lakehouse
-      - superset
     container_name: local-lakehouse-lakekeeper-migrate
     image: *lakekeeper-image
     env_file: *env-file
@@ -221,9 +198,6 @@ services:
     networks: *local-networks
 
   lakekeeper-createwarehouse:
-    profiles:
-      - lakehouse
-      - superset
     container_name: local-lakehouse-lakekeeper-createwarehouse
     image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
     environment:
@@ -253,9 +227,6 @@ services:
   # Trino query engine
   #########################################################
   trino:
-    profiles:
-      - lakehouse
-      - superset
     container_name: local-lakehouse-trino
     image: *trino-image
     volumes:
