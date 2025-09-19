@@ -9,5 +9,14 @@ The JSON-file, [realm-iceberg.json](./realm-iceberg.json), provides a basic conf
 of the local docker-composed based setup. The file was created in Keycloak and exported using the
 following steps (the working directory should be the parent directory of this file):
 
-- Run `docker compose up traefik keycloak -d`
+- Run `docker compose up traefik keycloak -d
 - Visit http://analytics.localhost:58080/auth and enter `adpuser`/`adppassword` as the credentials.
+  If you see "Bad Gateway" then wait a few seconds and refresh the page (it can be slow to start).
+- Click "Manage realms" -> "Create realm", enter "iceberg" as the realm name and click "Create".
+- Now follow the instructions in the [Keycloak section](https://docs.lakekeeper.io/docs/nightly/authentication/#keycloak)
+  of the Lakekeeper authentication guide to create two clients:
+
+  - Public client for interactive, browser-based authentication
+  - Machine client for non-interactive machine users.
+
+- Once these steps are complete export the realm to JSON in the "Manage realms" menu.
