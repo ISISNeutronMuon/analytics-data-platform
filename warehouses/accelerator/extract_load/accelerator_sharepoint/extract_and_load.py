@@ -3,7 +3,7 @@
 # dependencies = [
 #     "openpyxl>=3.1.5,<3.2",
 #     "pandas>=2.2.3,<2.3.0",
-#     "elt-common",
+#     "elt-common[m365]",
 # ]
 #
 # [tool.uv.sources]

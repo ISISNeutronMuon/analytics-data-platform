@@ -2,7 +2,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "pandas~=2.3.1",
-#     "elt-common",
+#     "elt-common[m365]",
 #     "python-calamine~=0.4.0",
 # ]
 #
