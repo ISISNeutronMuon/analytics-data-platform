@@ -74,17 +74,23 @@ class TrinoQueryEngine:
         return results
 
     def list_iceberg_tables(
-        self, ignore_namespaces: Sequence[str] = ("information_schema", "system")
+        self,
+        ignore_empty: bool = True,
+        ignore_namespaces: Sequence[str] = ("information_schema", "system"),
     ) -> Sequence[str]:
         """List all iceberg tables in the catalog. Names are returned fully qualified with the namespace name."""
 
         def _is_iceberg_table(namespace: str, table_name: str) -> bool:
-            # A '{table_id}$properties' table must exist if it is an iceberg table. If not it is probably a view
+            # A '{table_id}$properties' table must exist if it is an iceberg table. If not it is probably a view.
             try:
                 self.execute(f'describe {namespace}."{table_name}$properties"', conn)
             except SqlProgrammingError:
                 LOGGER.debug(f"{namespace}.{table_name} is not an iceberg table.")
                 return False
+
+            if ignore_empty:
+                rows = self.execute(f"select count(*) from {namespace}.{table_name}", conn)
+                return rows[0][0] > 0
 
             return True
 
