@@ -12,7 +12,7 @@ from sqlalchemy.sql.expression import text
 from sqlalchemy.exc import ProgrammingError as SqlProgrammingError
 from trino.auth import BasicAuthentication
 
-ENV_PREFIX = "ELT_COMMON__ICEBERG_MAINT_TRINO__"
+ENV_PREFIX = "ELT_COMMON_ICEBERG_MAINT_TRINO_"
 LOG_FORMAT = "%(asctime)s:%(module)s:%(levelname)s:%(message)s"
 LOG_FORMAT_DATE = "%Y-%m-%dT%H:%M:%S"
 
