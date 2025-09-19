@@ -26,6 +26,8 @@ x-superset-user: &superset-user root
 x-superset-depends-on: &superset-depends-on
   superset-redis:
     condition: service_started
+  shared-database-createdatabases:
+    condition: service_completed_successfully
 x-superset-volumes: &superset-volumes
   - ./superset/docker/docker-init.sh:/app/docker/docker-init.sh:ro
   - ./superset/docker/pythonpath:/app/docker/pythonpath:ro
