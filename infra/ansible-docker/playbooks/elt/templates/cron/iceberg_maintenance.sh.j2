@@ -6,6 +6,10 @@ ELT_SECRETS=${ELT_SECRETS:?}
 ELT_COMMON_GIT_URL=${ELT_COMMON_GIT_URL:-https://github.com/ISISNeutronMuon/analytics-data-platform.git}
 UV_GIT_REF="git+${ELT_COMMON_GIT_URL}#subdirectory=elt-common"
 
+# Read secrets
+set -o allexport; source $ELT_SECRETS; set +o allexport
+
+# Run maintenance tasks on all tables
 uvx \
   --with "${UV_GIT_REF}[iceberg-maintenance]" \
-  python -m elt_common.iceberg.maintenance --help
+  python -m elt_common.iceberg.maintenance
