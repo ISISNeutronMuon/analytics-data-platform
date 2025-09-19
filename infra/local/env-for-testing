@@ -1,6 +1,10 @@
 ###############################################################################
 # WARNING: DO NOT USE THIS FILE FOR PRODUCTION
 ###############################################################################
+LOCALHOST_NAME=analytics.localhost
+LOCALHOST_WEB_PORT=58080
+LOCALHOST_WEB_URL=http://$LOCALHOST_NAME:$LOCALHOST_WEB_PORT
+LOCALHOST_TRINO_PORT=58088
 
 ###############################################################################
 # Postgres image
@@ -15,24 +19,33 @@ POSTGRES_DATABASE=unused
 ###############################################################################
 KC_BOOTSTRAP_ADMIN_USERNAME=$POSTGRES_USER
 KC_BOOTSTRAP_ADMIN_PASSWORD=$POSTGRES_PASSWORD
+KEYCLOAK_HOSTNAME=$LOCALHOST_WEB_URL/auth
 
 ###############################################################################
 # MinIO
 ###############################################################################
-MINIO_ROOT_USER=adpuser
-MINIO_ROOT_PASSWORD=adppassword
+MINIO_ROOT_USER=$POSTGRES_USER
+MINIO_ROOT_PASSWORD=$POSTGRES_PASSWORD
 MINIO_API_PORT_NUMBER=9000
 MINIO_CONSOLE_PORT_NUMBER=9001
 MINIO_SCHEME=http
 # This needs to match the route in traefik/traefik-dynamic.yml
-MINIO_BROWSER_REDIRECT_URL=http://analytics.localhost:58080/minio/console
+MINIO_BROWSER_REDIRECT_URL=$LOCALHOST_WEB_URL/minio/console
 
 ###############################################################################
 # Iceberg catalog
 ###############################################################################
+LAKEKEEPER__PG_ENCRYPTION_KEY=This-is-NOT-Secure!
+LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@shared-database:5432/lakekeeper
+LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@shared-database:5432/lakekeeper
+RUST_LOG=info,lakekeeper=info,lakekeeper_bin=info,iceberg_ext=info
+
+###############################################################################
+# ELT
+###############################################################################
 ELT_COMMON_ICEBERG_MAINT_TRINO_HTTP_SCHEME=http
-ELT_COMMON_ICEBERG_MAINT_TRINO_HOST=analytics.localhost
-ELT_COMMON_ICEBERG_MAINT_TRINO_PORT=58088
+ELT_COMMON_ICEBERG_MAINT_TRINO_HOST=$LOCALHOST_NAME
+ELT_COMMON_ICEBERG_MAINT_TRINO_PORT=$LOCALHOST_TRINO_PORT
 ELT_COMMON_ICEBERG_MAINT_TRINO_USER=trino
 ELT_COMMON_ICEBERG_MAINT_TRINO_PASSWORD=
 ELT_COMMON_ICEBERG_MAINT_TRINO_CATALOG=local_lakehouse
