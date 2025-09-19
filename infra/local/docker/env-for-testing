@@ -13,12 +13,12 @@ POSTGRES_DATABASE=unused
 ###############################################################################
 # Iceberg catalog
 ###############################################################################
-ELT_COMMON__ICEBERG_MAINT_TRINO__HTTP_SCHEME=http
-ELT_COMMON__ICEBERG_MAINT_TRINO__HOST=analytics.localhost
-ELT_COMMON__ICEBERG_MAINT_TRINO__PORT=58088
-ELT_COMMON__ICEBERG_MAINT_TRINO__USER=trino
-ELT_COMMON__ICEBERG_MAINT_TRINO__PASSWORD=
-ELT_COMMON__ICEBERG_MAINT_TRINO__CATALOG=local_lakehouse
+ELT_COMMON_ICEBERG_MAINT_TRINO_HTTP_SCHEME=http
+ELT_COMMON_ICEBERG_MAINT_TRINO_HOST=analytics.localhost
+ELT_COMMON_ICEBERG_MAINT_TRINO_PORT=58088
+ELT_COMMON_ICEBERG_MAINT_TRINO_USER=trino
+ELT_COMMON_ICEBERG_MAINT_TRINO_PASSWORD=
+ELT_COMMON_ICEBERG_MAINT_TRINO_CATALOG=local_lakehouse
 
 ###############################################################################
 # Superset
