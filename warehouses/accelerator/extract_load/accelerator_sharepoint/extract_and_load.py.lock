@@ -12,7 +12,7 @@ resolution-markers = [
 
 [manifest]
 requirements = [
-    { name = "elt-common", directory = "../../../../elt-common" },
+    { name = "elt-common", extras = ["m365"], directory = "../../../../elt-common" },
     { name = "openpyxl", specifier = ">=3.1.5,<3.2" },
     { name = "pandas", specifier = ">=2.2.3,<2.3.0" },
 ]
@@ -334,27 +334,33 @@ name = "elt-common"
 version = "0.1.0"
 source = { directory = "../../../../elt-common" }
 dependencies = [
-    { name = "authlib" },
     { name = "dlt", extra = ["parquet", "s3"] },
-    { name = "httpx" },
-    { name = "lock" },
     { name = "pyiceberg" },
+]
+
+[package.optional-dependencies]
+m365 = [
+    { name = "authlib" },
+    { name = "httpx" },
     { name = "retry" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "authlib", specifier = "~=1.6.1" },
+    { name = "authlib", marker = "extra == 'm365'", specifier = "~=1.6.1" },
+    { name = "click", marker = "extra == 'iceberg-maintenance'", specifier = "~=8.2.1" },
     { name = "dlt", extras = ["parquet", "s3"], specifier = "~=1.15.0" },
-    { name = "httpx", specifier = "~=0.28.1" },
-    { name = "lock", specifier = ">=2018.3.25.2110" },
+    { name = "httpx", marker = "extra == 'm365'", specifier = "~=0.28.1" },
     { name = "pyiceberg", specifier = "~=0.9.1" },
-    { name = "retry", specifier = "~=0.9.2" },
+    { name = "retry", marker = "extra == 'm365'", specifier = "~=0.9.2" },
+    { name = "sqlalchemy", marker = "extra == 'iceberg-maintenance'", specifier = "~=2.0.43" },
+    { name = "trino", marker = "extra == 'iceberg-maintenance'", specifier = "~=0.336.0" },
 ]
+provides-extras = ["iceberg-maintenance", "m365"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "pre-commit", specifier = ">=4.2.0" },
+    { name = "prek", specifier = ">=0.1.6" },
     { name = "pydantic-settings", specifier = "~=2.10.1" },
     { name = "pytest", specifier = "~=8.3.5" },
     { name = "pytest-httpx", specifier = "~=0.35.0" },
@@ -542,12 +548,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/6d/86/08646239a313f8951
 wheels = [
     { url = "https://files.pythonhosted.org/packages/35/5a/73ecb3d82f8615f32ccdadeb9356726d6cae3a4bbc840b437ceb95708063/jsonpath_ng-1.7.0-py3-none-any.whl", hash = "sha256:f3d7f9e848cba1b6da28c55b1c26ff915dc9e0b1ba7e752a53d6da8d5cbd00b6", size = 30105, upload-time = "2024-11-20T17:58:30.418Z" },
 ]
-
-[[package]]
-name = "lock"
-version = "2018.3.25.2110"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ea/ee/4c7e9740d397abd62b48bfe82f77f57a8984da4f5ba0a3b64930b44ccd8f/lock-2018.3.25.2110.tar.gz", hash = "sha256:cc5ac770930493eed7a8cfd0cf2568a125faf112eb8aa6b6149b3e581523d0c7", size = 3049, upload-time = "2018-03-25T21:12:37.084Z" }
 
 [[package]]
 name = "markdown-it-py"

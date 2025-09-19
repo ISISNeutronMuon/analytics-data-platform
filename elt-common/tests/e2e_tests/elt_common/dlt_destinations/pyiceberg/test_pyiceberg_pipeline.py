@@ -18,7 +18,7 @@ from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
 )
 
 from e2e_tests.conftest import Warehouse
-from e2e_tests.pipelines.destinations.pyiceberg.utils import (
+from e2e_tests.elt_common.dlt_destinations.pyiceberg.utils import (
     assert_table_has_shape,
     assert_table_has_data,
     iceberg_catalog,

@@ -5,12 +5,12 @@ on:
       - "main"
     paths:
       - ".github/workflows/elt-common_unit_tests.yml"
-      - "pipelines/elt-common/**"
+      - "elt-common/**"
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
       - ".github/workflows/elt-common_unit_tests.yml"
-      - "pipelines/elt-common/**"
+      - "elt-common/**"
   workflow_dispatch:
     inputs:
       ref:

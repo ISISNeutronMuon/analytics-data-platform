@@ -33,6 +33,8 @@ elt_warehouses:
         hour: "*"
         minute: 5
         dbt_args: "--select '+models/operations/power_consumption.sql'"
+    maintenance:
+      state: present
 elt_threads: 16
 
 logrotate_frequency: weekly
