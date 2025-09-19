@@ -3,7 +3,7 @@ from tempfile import TemporaryDirectory
 import pytest
 
 
-from e2e_tests.pipelines.destinations.pyiceberg.utils import (
+from e2e_tests.elt_common.dlt_destinations.pyiceberg.utils import (
     PyIcebergDestinationTestConfiguration,
 )
 
