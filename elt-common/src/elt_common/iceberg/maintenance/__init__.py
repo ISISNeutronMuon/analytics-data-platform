@@ -73,41 +73,47 @@ class TrinoQueryEngine:
         LOGGER.debug(f"Returned {results}")
         return results
 
-    def list_iceberg_tables(
+    def list_iceberg_tables_for_maintenance(
         self,
-        ignore_empty: bool = True,
         ignore_namespaces: Sequence[str] = ("information_schema", "system"),
     ) -> Sequence[str]:
         """List all iceberg tables in the catalog. Names are returned fully qualified with the namespace name."""
 
-        def _is_iceberg_table(namespace: str, table_name: str) -> bool:
-            # A '{table_id}$properties' table must exist if it is an iceberg table. If not it is probably a view.
+        def _is_iceberg_needing_maintenance(namespace: str, table_name: str) -> bool:
+            # An Iceberg table requiring maintenance must have a '{table_id}$properties' and have a valid
+            # current snapshot
+            props_table = f'{namespace}."{table_name}$properties"'
             try:
-                self.execute(f'describe {namespace}."{table_name}$properties"', conn)
+                self.execute(f"describe {props_table}", conn)
             except SqlProgrammingError:
-                LOGGER.debug(f"{namespace}.{table_name} is not an iceberg table.")
+                LOGGER.debug(
+                    f"{props_table} does not exist. Assuming {namespace}.{table_name} is not an iceberg table."
+                )
                 return False
 
-            if ignore_empty:
-                rows = self.execute(f"select count(*) from {namespace}.{table_name}", conn)
-                return rows[0][0] > 0
+            rows = self.execute(
+                f"select value from {props_table} where key = 'current-snapshot-id'", conn
+            )
+            return rows[0][0] != "none"
 
-            return True
-
+        LOGGER.info("Querying catalog for Iceberg tables")
         with self.engine.connect() as conn:
-            namespaces = [
-                row[0]
-                for row in self.execute("show schemas", conn)
-                if row[0] not in ignore_namespaces
-            ]
+            namespaces = map(
+                lambda row: row[0],
+                filter(
+                    lambda row: row[0] not in ignore_namespaces, self.execute("show schemas", conn)
+                ),
+            )
             table_identifiers = []
             for ns in namespaces:
                 table_identifiers.extend(
-                    [
-                        f"{ns}.{row[0]}"
-                        for row in self.execute(f"show tables in {ns}", conn)
-                        if _is_iceberg_table(ns, row[0])
-                    ]
+                    map(
+                        lambda row: f"{ns}.{row[0]}",
+                        filter(
+                            lambda row: _is_iceberg_needing_maintenance(ns, row[0]),
+                            self.execute(f"show tables in {ns}", conn),
+                        ),
+                    )
                 )
 
         return table_identifiers
@@ -144,6 +150,7 @@ class IcebergTableMaintenaceSql:
         """
         commands = ("expire_snapshots", "optimize_manifests", "optimize", "remove_orphan_files")
         for table_id in table_identifiers:
+            LOGGER.info(f"Running iceberg maintenance on '{table_id}'")
             self._run_alter_table_execute(table_id, commands)
 
     def _run_alter_table_execute(self, table_identifier: str, commands: Sequence[str]):
@@ -171,5 +178,5 @@ def cli(table: Sequence[str], log_level: str):
     trino = TrinoQueryEngine(TrinoCredentials.from_env())
     iceberg_maintenance = IcebergTableMaintenaceSql(trino)
     if not table:
-        table = trino.list_iceberg_tables()
+        table = trino.list_iceberg_tables_for_maintenance()
     iceberg_maintenance.run(table)
