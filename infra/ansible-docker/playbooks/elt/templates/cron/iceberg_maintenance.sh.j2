@@ -12,4 +12,4 @@ set -o allexport; source $ELT_SECRETS; set +o allexport
 # Run maintenance tasks on all tables
 uvx \
   --with "${UV_GIT_REF}[iceberg-maintenance]" \
-  python -m elt_common.iceberg.maintenance
+  python -m elt_common.iceberg.maintenance $*
