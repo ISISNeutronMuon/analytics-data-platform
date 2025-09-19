@@ -18,16 +18,23 @@ http:
       middlewares:
         - traefik-strip-prefix
 
+    keycloak:
+      entryPoints: web
+      rule: Host(`analytics.localhost`) && PathPrefix(`/auth`)
+      middlewares:
+        - keycloak-strip-prefix
+      service: keycloak
+
     lakekeeper:
       entryPoints: web
-      rule: Host(`analytics.localhost`) && PathPrefix(`/internal/iceberg-rest`)
+      rule: Host(`analytics.localhost`) && PathPrefix(`/iceberg`)
       middlewares:
         - lakekeeper-strip-prefix
       service: lakekeeper
 
     minio-console:
       entryPoints: web
-      rule: Host(`analytics.localhost`) && PathPrefix(`/internal/minio/console`)
+      rule: Host(`analytics.localhost`) && PathPrefix(`/minio/console`)
       middlewares:
         - minio-console-strip-prefix
       service: minio-console
@@ -47,16 +54,24 @@ http:
       stripPrefix:
         prefixes:
           - "/internal/traefik"
+    keycloak-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/auth"
     minio-console-strip-prefix:
       stripPrefix:
         prefixes:
-          - "/internal/minio/console"
+          - "/minio/console"
     lakekeeper-strip-prefix:
       stripPrefix:
         prefixes:
-          - "/internal/iceberg-rest"
+          - "/iceberg"
 
   services:
+    keycloak:
+      loadBalancer:
+        servers:
+          - url: "http://keycloak:8080"
     minio-console:
       loadBalancer:
         servers:

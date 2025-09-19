@@ -11,6 +11,23 @@ PGPASSWORD=$POSTGRES_PASSWORD
 POSTGRES_DATABASE=unused
 
 ###############################################################################
+# Keycloak
+###############################################################################
+KC_BOOTSTRAP_ADMIN_USERNAME=$POSTGRES_USER
+KC_BOOTSTRAP_ADMIN_PASSWORD=$POSTGRES_PASSWORD
+
+###############################################################################
+# MinIO
+###############################################################################
+MINIO_ROOT_USER=adpuser
+MINIO_ROOT_PASSWORD=adppassword
+MINIO_API_PORT_NUMBER=9000
+MINIO_CONSOLE_PORT_NUMBER=9001
+MINIO_SCHEME=http
+# This needs to match the route in traefik/traefik-dynamic.yml
+MINIO_BROWSER_REDIRECT_URL=http://analytics.localhost:58080/minio/console
+
+###############################################################################
 # Iceberg catalog
 ###############################################################################
 ELT_COMMON_ICEBERG_MAINT_TRINO_HTTP_SCHEME=http

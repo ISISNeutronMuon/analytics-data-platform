@@ -5,6 +5,7 @@
 # The base address of all services is "http://analytics.localhost:58080"
 
 # image versions
+x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
 x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.9.5
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-06-13T11-33-47Z
 x-postgres-image: &postgres-image postgres:16.9-bookworm
@@ -93,20 +94,44 @@ services:
     networks: *lakehouse-networks
 
   #########################################################
+  # Keycloak identity provider
+  #########################################################
+  keycloak:
+    container_name: local-lakehouse-keycloak
+    image: *keycloak-image
+    env_file: *env-file
+    volumes:
+      - ./keycloak/realm-iceberg.json:/opt/keycloak/data/import/realm.json
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'exec 3<>/dev/tcp/127.0.0.1/8080;echo -e "GET /realms/master/.well-known/openid-configuration HTTP/1.1\r\nhost: 127.0.0.1:8080\r\nConnection: close\r\n\r\n" >&3;grep "jwks_uri"  <&3',
+        ]
+      interval: 10s
+      timeout: 80s
+      retries: 5
+      start_period: 10s
+    command:
+      [
+        "start-dev",
+        "--metrics-enabled=true",
+        "--health-enabled=true",
+        "--hostname=http://analytics.localhost:58080/auth",
+        "--proxy-headers=xforwarded",
+        "--proxy-trusted-addresses=127.0.0.0/8",
+        "--import-realm",
+      ]
+    networks: *lakehouse-networks
+
+  #########################################################
   # MinIO - Object store emulating the Ceph object store
   # in SCD. This does not exist in production
   #########################################################
   minio:
     container_name: local-lakehouse-minio
     image: *minio-image
-    environment:
-      MINIO_ROOT_USER: adpuser
-      MINIO_ROOT_PASSWORD: adppassword
-      MINIO_API_PORT_NUMBER: 9000
-      MINIO_CONSOLE_PORT_NUMBER: 9001
-      MINIO_SCHEME: http
-      # This needs to match the route in traefik/traefik-dynamic.yml
-      MINIO_BROWSER_REDIRECT_URL: http://analytics.localhost:58080/internal/minio/console
+    env_file: *env-file
     command: ["server", "/data", "--console-address", ":9001"]
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
