@@ -20,6 +20,9 @@ dependencies = [
 [project.optional-dependencies]
 iceberg-maintenance = ["click~=8.2.1", "sqlalchemy~=2.0.43", "trino~=0.336.0"]
 
+[project.scripts]
+iceberg-maintenance = "elt_common.iceberg.maintenance:cli"
+
 [dependency-groups]
 dev = [
     "prek>=0.1.6",
