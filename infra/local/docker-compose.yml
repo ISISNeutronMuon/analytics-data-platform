@@ -44,6 +44,7 @@ services:
       - "58080:80"
       - "58088:8088" # Trino won't allow itself to be deployed on a prefix path
       - "59000:9000" # MinIO. Lakekeeper won't allow a path on the storage/endpoint value
+      - "59001:9001" # MinIO UI won't load on a not-root path
     volumes:
       - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
       - "./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
@@ -168,6 +169,8 @@ services:
     container_name: local-lakehouse-lakekeeper
     image: *lakekeeper-image
     env_file: *env-file
+    environment:
+      - RUST_LOG=trace,lakekeeper=trace,lakekeeper_bin=trace,iceberg_ext=trace
     command: ["serve"]
     healthcheck:
       test: ["CMD", "/home/nonroot/lakekeeper", "healthcheck"]
@@ -200,25 +203,24 @@ services:
   lakekeeper-createwarehouse:
     container_name: local-lakehouse-lakekeeper-createwarehouse
     image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
-    environment:
-      UV_LINK_MODE: copy
-      UV_PROJECT_ENVIRONMENT: /opt/uv-venv
-      LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL: http://lakekeeper:8181
-      LAKEKEEPER_BOOTSTRAP__WAREHOUSE_JSON_FILE: /opt/work/bootstrap-warehouse.json
-      LAKEKEEPER_BOOTSTRAP__TOKEN_ENDPOINT_URL: http://analytics.localhost:58080/auth/realms/iceberg/protocol/openid-connect/token
-      LAKEKEEPER_BOOTSTRAP__CLIENT_ID: lakekeeper
-      LAKEKEEPER_BOOTSTRAP__CLIENT_SECRET: s3cr3t
-      LAKEKEEPER_BOOTSTRAP__SCOPE: lakekeeper
-    command: ["uv", "run", "/opt/work/bootstrap-warehouse.py"]
+    env_file: *env-file
+    command:
+      [
+        "uv",
+        "run",
+        "/opt/work/bootstrap-warehouse.py",
+        "/opt/work/bootstrap-warehouse.json",
+      ]
     depends_on:
+      keycloak:
+        condition: service_healthy
       lakekeeper:
         condition: service_healthy
       minio-createbucket:
         condition: service_completed_successfully
     volumes:
-      - "../ansible-docker/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse-with-auth.py"
-      - "./lakekeeper/bootstrap-warehouse-no-auth.py:/opt/work/bootstrap-warehouse.py"
-      - "./lakekeeper/bootstrap-warehouse.json:/opt/work/bootstrap-warehouse.json"
+      - "../ansible-docker/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py"
+      - "./lakekeeper/bootstrap-warehouse.json:/opt/work/bootstrap-warehouse.json:ro"
     networks: *local-networks
     extra_hosts:
       - "analytics.localhost:host-gateway"

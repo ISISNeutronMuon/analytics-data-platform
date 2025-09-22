@@ -6,12 +6,14 @@ on:
     paths:
       - ".github/workflows/elt-common_e2e_tests.yml"
       - "infra/local/**"
+      - "ansible-docker/roles/lakekeeper/files/bootstrap-warehouse.py"
       - "elt-common/**"
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
       - ".github/workflows/elt-common_e2e_tests.yml"
       - "infra/local/**"
+      - "ansible-docker/roles/lakekeeper/files/bootstrap-warehouse.py"
       - "elt-common/**"
   workflow_dispatch:
     inputs:

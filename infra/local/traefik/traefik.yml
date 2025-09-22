@@ -16,6 +16,8 @@ entryPoints:
     address: :8088
   minioapi:
     address: :9000
+  minioconsole:
+    address: :9001
 
 # file configuration backend
 providers:

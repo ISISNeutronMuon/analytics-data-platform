@@ -16,7 +16,17 @@ following steps (the working directory should be the parent directory of this fi
 - Now follow the instructions in the [Keycloak section](https://docs.lakekeeper.io/docs/nightly/authentication/#keycloak)
   of the Lakekeeper authentication guide to create two clients:
 
-  - Public client for interactive, browser-based authentication
-  - Machine client for non-interactive machine users.
+  - "Keycloak Client 1: Lakekeeper" -  Public client for interactive, browser-based authentication. `client_id = lakekeeper`
+  - "Keycloak Client 2: Machine User" - Machine client for non-interactive machine users. `client_id=localinfra`
 
-- Once these steps are complete export the realm to JSON in the "Manage realms" menu.
+Once these steps are complete export the realm to JSON:
+
+- Click "Realm settings" in the left-hand and then click "Action" -> Partial export" in the top right.
+- On the "Partial export" screen ensure "Include clients" is checked then click "Export".
+  A file called "realm-export.json" will be downloaded.
+- Move the downloaded file to the same directory as this file and rename it to `realm-iceberg.json`.
+- Open the file and search for the string `"clientId": "localinfra"`. In the same JSON dict find the
+  key named `secret`; it's value should currently be `\*\*\*\*\*\*\*\*\*\*`.
+  Change the value to `s3cr3t`.**DO NOT DO THIS IN PRODUCTION!**
+
+Once the file is created and secret value changed run `docker compose down` to stop the services.

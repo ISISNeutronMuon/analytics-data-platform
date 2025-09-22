@@ -147,6 +147,7 @@ def main():
         level=getattr(logging, env_vars.log_level),
         filemode="a",
     )
+    logging.getLogger().addHandler(logging.StreamHandler())
     warehouses_json = sys.argv[1:]
 
     server = Server(
