@@ -101,7 +101,8 @@ services:
     image: *keycloak-image
     env_file: *env-file
     volumes:
-      - ./keycloak/realm-iceberg.json:/opt/keycloak/data/import/realm.json
+      - keycloak_data:/opt/keycloak/data
+      - ./keycloak/iceberg-realm.json:/opt/keycloak/data/import/iceberg-realm.json:ro
     healthcheck:
       test:
         [
@@ -334,9 +335,11 @@ networks:
     name: local-lakehouse-network
 
 volumes:
-  shared_database_data:
-    name: local-lakehouse_shared_database_data
+  keycloak_data:
+    name: local-lakehouse_keycloak_data
   minio_data:
     name: local-lakehouse_minio_data
+  shared_database_data:
+    name: local-lakehouse_shared_database_data
   shared_redis_data:
     name: local-lakehouse_shared_redis_data
