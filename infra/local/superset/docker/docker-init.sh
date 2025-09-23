@@ -61,6 +61,6 @@ echo_step "3" "Complete" "Setting up roles and perms"
 # Create a database connection
 echo_step "4" "Starting" "Setting up Iceberg catalog connection"
 superset set-database-uri \
-  --database_name local_lakehouse \
-  --uri "trino://trino@trino:8080/local_lakehouse"
+  --database_name $SUPERSET_DB_SCHEMA_NAME \
+  --uri "trino://trino@localhost:58088/$SUPERSET_DB_SCHEMA_NAME"
 echo_step "4" "Complete" "Setting up data source database connection"

@@ -1,7 +1,7 @@
 ###############################################################################
 # WARNING=DO NOT USE THIS FILE FOR PRODUCTION
 ###############################################################################
-LOCALHOST_NAME=analytics.localhost
+LOCALHOST_NAME=localhost
 LOCALHOST_WEB_PORT=58080
 LOCALHOST_WEB_URL=http://$LOCALHOST_NAME:$LOCALHOST_WEB_PORT
 LOCALHOST_TRINO_PORT=58088
@@ -39,7 +39,7 @@ MINIO_BUCKET_NAME=playground
 LAKEKEEPER__PG_ENCRYPTION_KEY=This-is-NOT-Secure!
 LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@shared-database:5432/lakekeeper
 LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@shared-database:5432/lakekeeper
-LAKEKEEPER__OPENID_PROVIDER_URI=http://analytics.localhost:58080/auth/realms/iceberg/
+LAKEKEEPER__OPENID_PROVIDER_URI=http://localhost:58080/auth/realms/iceberg/
 LAKEKEEPER__OPENID_AUDIENCE=lakekeeper
 LAKEKEEPER__UI__OPENID_PROVIDER_URI=$LAKEKEEPER__OPENID_PROVIDER_URI
 LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
@@ -47,9 +47,9 @@ LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
 UV_LINK_MODE=copy
 UV_PROJECT_ENVIRONMENT=/opt/uv-venv
 LAKEKEEPER_BOOTSTRAP__LOG_LEVEL=DEBUG
-LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL=http://lakekeeper:8181
+LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL=http://localhost:58080/iceberg
 LAKEKEEPER_BOOTSTRAP__WAREHOUSE_JSON_FILE=/opt/work/bootstrap-warehouse.json
-LAKEKEEPER_BOOTSTRAP__TOKEN_ENDPOINT_URL=http://analytics.localhost:58080/auth/realms/iceberg/protocol/openid-connect/token
+LAKEKEEPER_BOOTSTRAP__TOKEN_ENDPOINT_URL=http://localhost:58080/auth/realms/iceberg/protocol/openid-connect/token
 LAKEKEEPER_BOOTSTRAP__CLIENT_ID=localinfra
 LAKEKEEPER_BOOTSTRAP__CLIENT_SECRET=s3cr3t
 LAKEKEEPER_BOOTSTRAP__SCOPE=lakekeeper
@@ -91,7 +91,7 @@ SUPERSET_ADMIN_PASSWORD=adppassword
 PYTHONPATH=/app/docker/pythonpath
 SCARF_ANALYTICS=false
 FLASK_DEBUG=True
-SUPERSET_LOG_LEVEL=trace
+SUPERSET_LOG_LEVEL=info
 SUPERSET_ENV=development
 SUPERSET_PORT=8088
 # Needs to match traefik rule in traefik-dynamic.yml

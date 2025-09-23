@@ -19,6 +19,7 @@ iceberg-maintenance = "elt_common.iceberg.maintenance:cli"
 
 [dependency-groups]
 dev = [
+    "minio~=7.2.16",
     "prek>=0.1.6",
     "pydantic-settings~=2.10.1",
     "pytest~=8.3.5",

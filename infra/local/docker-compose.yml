@@ -2,7 +2,7 @@
 #
 # See README.md for configuration required before running "compose up".
 #
-# The base address of all services is "http://analytics.localhost:58080"
+# The base address of all services is "http://localhost:58080"
 
 # image versions
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
@@ -118,7 +118,7 @@ services:
         "start-dev",
         "--metrics-enabled=true",
         "--health-enabled=true",
-        "--hostname=http://analytics.localhost:58080/auth",
+        "--hostname=http://localhost:58080/auth",
         "--proxy-headers=xforwarded",
         "--proxy-trusted-addresses=127.0.0.0/8",
         "--import-realm",
@@ -171,7 +171,7 @@ services:
     image: *lakekeeper-image
     env_file: *env-file
     environment:
-      - RUST_LOG=trace,lakekeeper=trace,lakekeeper_bin=trace,iceberg_ext=trace
+      - RUST_LOG=info,lakekeeper=info,lakekeeper_bin=trace,iceberg_ext=info
     command: ["serve"]
     healthcheck:
       test: ["CMD", "/home/nonroot/lakekeeper", "healthcheck"]
@@ -188,7 +188,7 @@ services:
         condition: service_completed_successfully
     networks: *local-networks
     extra_hosts:
-      - "analytics.localhost:host-gateway"
+      - "localhost:host-gateway"
 
   lakekeeper-migrate:
     container_name: local-lakehouse-lakekeeper-migrate
@@ -224,7 +224,7 @@ services:
       - "./lakekeeper/bootstrap-warehouse.json:/opt/work/bootstrap-warehouse.json:ro"
     networks: *local-networks
     extra_hosts:
-      - "analytics.localhost:host-gateway"
+      - "localhost:host-gateway"
 
   #########################################################
   # Trino query engine
@@ -241,6 +241,8 @@ services:
       retries: 2
       start_period: 10s
     networks: *local-networks
+    extra_hosts:
+      - "localhost:host-gateway"
 
   #########################################################
   # Superset BI tool
