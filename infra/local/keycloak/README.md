@@ -22,8 +22,14 @@ following steps (the working directory should be the parent directory of this fi
 - Create a new user in the iceberg realm:
 
   - Click "Users -> Add user"
-  - Set Username to `iceberguser-1` and click "Create"
-  - Click the "Credentials" tab and set the password to `icebergpassword`, disabling the "Temporary" toggle.
+  - Set
+
+    - Username: `iceberguser-1`
+    - Email: `iceberguser-1@domain`
+    - First name: `Iceberguser`
+    - Last name: `1`
+
+  - Click "Create" and then select the "Credentials" tab and set the password to `icebergpassword`, disabling the "Temporary" toggle.
 
 Once these steps are complete export the realm to JSON. Use the command line in order to preserve
 the users.
