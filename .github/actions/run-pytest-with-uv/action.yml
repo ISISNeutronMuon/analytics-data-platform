@@ -2,6 +2,9 @@ name: Run pytest
 description: Run pytest using uv for dependencies management
 
 inputs:
+  compose-file-path:
+    description: If supplied, brings up the services defined in the given docker compose file.
+    default: ""
   pyproject-directory:
     description: Path to the directory containing pyproject.toml
     required: true
@@ -22,6 +25,12 @@ runs:
       with:
         cache-dependency-glob: ${{ inputs.uv-cache-dependency-glob }}
         version: ${{ inputs.uv-version }}
+
+    - name: Bring up Lakekeeper & dependent services
+      if: inputs.compose-file-path != ''
+      uses: hoverkraft-tech/compose-action@v2.3.0
+      with:
+        compose-file: ${{ inputs.compose-file-path }}
 
     - name: Install the project
       shell: bash -l {0}
