@@ -28,5 +28,5 @@ jobs:
         uses: ./.github/actions/run-pytest-with-uv
         with:
           pyproject-directory: elt-common
-          pytest_file_or_dir: tests/unit_tests
+          pytest-file-or-dir: tests/unit_tests
           uv-cache-dependency-glob: elt-common/pyproject.toml

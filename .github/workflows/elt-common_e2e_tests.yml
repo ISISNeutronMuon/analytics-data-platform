@@ -33,5 +33,5 @@ jobs:
         with:
           compose-file-path: infra/local/docker-compose.yml
           pyproject-directory: elt-common
-          pytest_file_or_dir: tests/unit_tests
+          pytest-file-or-dir: tests/e2e_tests
           uv-cache-dependency-glob: elt-common/pyproject.toml
