@@ -17,7 +17,7 @@ Create and add the following to `$HOME/.dlt/secrets.toml`:
 bucket_url = "s3://playground"
 
 [destination.pyiceberg.credentials]
-uri = "http://localhost:58080/internal/iceberg/catalog"
+uri = "http://localhost:58080/iceberg/catalog"
 warehouse = "playground"
 ```
 

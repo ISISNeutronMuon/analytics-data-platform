@@ -1,8 +1,6 @@
 # A development stack to emulate the Lakehouse. This is intended for local development.
 #
 # See README.md for configuration required before running "compose up".
-#
-# The base address of all services is "http://localhost:58080"
 
 # image versions
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
@@ -173,7 +171,7 @@ services:
     image: *lakekeeper-image
     env_file: *env-file
     environment:
-      - RUST_LOG=info,lakekeeper=info,lakekeeper_bin=trace,iceberg_ext=info
+      - RUST_LOG=info,lakekeeper=info,lakekeeper_bin=info,iceberg_ext=info
     command: ["serve"]
     healthcheck:
       test: ["CMD", "/home/nonroot/lakekeeper", "healthcheck"]
@@ -191,8 +189,6 @@ services:
       minio-createbucket:
         condition: service_completed_successfully
     networks: *local-networks
-    extra_hosts:
-      - "localhost:host-gateway"
 
   lakekeeper-migrate:
     container_name: local-lakehouse-lakekeeper-migrate
@@ -227,8 +223,6 @@ services:
       - "../ansible-docker/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py"
       - "./lakekeeper/bootstrap-warehouse.json:/opt/work/bootstrap-warehouse.json:ro"
     networks: *local-networks
-    extra_hosts:
-      - "localhost:host-gateway"
 
   #########################################################
   # Trino query engine
@@ -236,8 +230,12 @@ services:
   trino:
     container_name: local-lakehouse-trino
     image: *trino-image
+    env_file: *env-file
     volumes:
       - "./trino/etc:/etc/trino:ro"
+    depends_on:
+      lakekeeper-createwarehouse:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-I", "http://localhost:8080/v1/status"]
       interval: 30s
@@ -245,8 +243,6 @@ services:
       retries: 2
       start_period: 10s
     networks: *local-networks
-    extra_hosts:
-      - "localhost:host-gateway"
 
   #########################################################
   # Superset BI tool

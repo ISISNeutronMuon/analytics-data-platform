@@ -1,10 +1,9 @@
 ###############################################################################
 # WARNING=DO NOT USE THIS FILE FOR PRODUCTION
 ###############################################################################
-LOCALHOST_NAME=localhost
-LOCALHOST_WEB_PORT=58080
-LOCALHOST_WEB_URL=http://$LOCALHOST_NAME:$LOCALHOST_WEB_PORT
-LOCALHOST_TRINO_PORT=58088
+LB_HOSTNAME=traefik
+LB_WEB_PORT=80
+LB_TRINO_PORT=58088
 
 ###############################################################################
 # Postgres image
@@ -30,7 +29,7 @@ MINIO_API_PORT_NUMBER=9000
 MINIO_CONSOLE_PORT_NUMBER=9001
 MINIO_SCHEME=http
 # This needs to match the route in traefik/traefik-dynamic.yml
-MINIO_BROWSER_REDIRECT_URL=http://$LOCALHOST_NAME:59001
+MINIO_BROWSER_REDIRECT_URL=http://traefik:59001
 MINIO_BUCKET_NAME=playground
 
 ###############################################################################
@@ -39,7 +38,7 @@ MINIO_BUCKET_NAME=playground
 LAKEKEEPER__PG_ENCRYPTION_KEY=This-is-NOT-Secure!
 LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@shared-database:5432/lakekeeper
 LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@shared-database:5432/lakekeeper
-LAKEKEEPER__OPENID_PROVIDER_URI=http://localhost:58080/auth/realms/iceberg/
+LAKEKEEPER__OPENID_PROVIDER_URI=http://traefik$KC_HTTP_RELATIVE_PATH/realms/iceberg/
 LAKEKEEPER__OPENID_AUDIENCE=lakekeeper
 LAKEKEEPER__UI__OPENID_PROVIDER_URI=$LAKEKEEPER__OPENID_PROVIDER_URI
 LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
@@ -47,9 +46,9 @@ LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
 UV_LINK_MODE=copy
 UV_PROJECT_ENVIRONMENT=/opt/uv-venv
 LAKEKEEPER_BOOTSTRAP__LOG_LEVEL=DEBUG
-LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL=http://localhost:58080/iceberg
+LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL=http://traefik/iceberg
 LAKEKEEPER_BOOTSTRAP__WAREHOUSE_JSON_FILE=/opt/work/bootstrap-warehouse.json
-LAKEKEEPER_BOOTSTRAP__TOKEN_ENDPOINT_URL=http://localhost:58080/auth/realms/iceberg/protocol/openid-connect/token
+LAKEKEEPER_BOOTSTRAP__TOKEN_ENDPOINT_URL=http://traefik$KC_HTTP_RELATIVE_PATH/realms/iceberg/protocol/openid-connect/token
 LAKEKEEPER_BOOTSTRAP__CLIENT_ID=localinfra
 LAKEKEEPER_BOOTSTRAP__CLIENT_SECRET=s3cr3t
 LAKEKEEPER_BOOTSTRAP__SCOPE=lakekeeper
@@ -58,8 +57,8 @@ LAKEKEEPER_BOOTSTRAP__SCOPE=lakekeeper
 # ELT
 ###############################################################################
 ELT_COMMON_ICEBERG_MAINT_TRINO_HTTP_SCHEME=http
-ELT_COMMON_ICEBERG_MAINT_TRINO_HOST=$LOCALHOST_NAME
-ELT_COMMON_ICEBERG_MAINT_TRINO_PORT=$LOCALHOST_TRINO_PORT
+ELT_COMMON_ICEBERG_MAINT_TRINO_HOST=$LB_HOSTNAME
+ELT_COMMON_ICEBERG_MAINT_TRINO_PORT=$LB_TRINO_PORT
 ELT_COMMON_ICEBERG_MAINT_TRINO_USER=trino
 ELT_COMMON_ICEBERG_MAINT_TRINO_PASSWORD=
 ELT_COMMON_ICEBERG_MAINT_TRINO_CATALOG=playground
