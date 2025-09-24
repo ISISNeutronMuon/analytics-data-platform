@@ -25,6 +25,16 @@ from retry.api import retry_call
 def initial_providers(self) -> List[ConfigProvider]:
     # do not read the global config
     # find the .dlt in the same directory as this file
+    """
+    Return a list of local configuration providers that read settings from a `.dlt` directory next to this file instead of the global configuration.
+    
+    The returned providers are, in order:
+    - environment variables (EnvironProvider)
+    - Secrets.toml from the local `.dlt` directory
+    - Config.toml from the local `.dlt` directory
+    
+    This function is intended to override global config discovery so configuration is loaded only from the local `.dlt` folder.
+    """
     thisdir = Path(__file__).parent
     return [
         EnvironProvider(),
@@ -64,6 +74,19 @@ class Settings(BaseSettings):
         return f"{self.lakekeeper_url}/management"
 
     def storage_config(self) -> Dict[str, Any]:
+        """
+        Build and return a storage configuration dict for creating a warehouse.
+        
+        Returns a dictionary describing the warehouse storage, credentials, and deletion profile.
+        The structure follows the storage API expected by the management service and includes:
+        - "warehouse-name": the configured warehouse name.
+        - "storage-credential": S3 access-key credential with `aws-access-key-id` and `aws-secret-access-key`.
+        - "storage-profile": S3-compatible storage settings (bucket, endpoint, region, path-style access, etc.).
+        - "delete-profile": deletion behavior (hard delete).
+        
+        Returns:
+            Dict[str, Any]: Storage configuration ready to be sent to the warehouse creation endpoint.
+        """
         return {
             "warehouse-name": self.warehouse_name,
             "storage-credential": {
@@ -96,6 +119,23 @@ class Server:
     openid_scope: str
 
     def __init__(self, **kwargs):
+        """
+        Initialize the Server with OpenID and management endpoint settings and ensure the remote server is bootstrapped.
+        
+        Stores the following attributes from keyword arguments: access_token, server_url (lakekeeper_url), openid_provider_uri, openid_client_id, openid_client_secret, and openid_scope. After setting attributes, queries the server management /info endpoint; if the server is not yet bootstrapped, sends a POST to /bootstrap to accept terms of use and bootstrap the server.
+        
+        Parameters:
+            **kwargs: Keyword arguments providing initialization values. Required keys:
+                - access_token: OAuth2 access token used for management API authorization.
+                - lakekeeper_url: Base URL of the lakekeeper server (used as management/catalog base).
+                - openid_provider_uri: OpenID provider discovery URI.
+                - openid_client_id: OpenID client identifier.
+                - openid_client_secret: OpenID client secret.
+                - openid_scope: OpenID scopes to request.
+        
+        Raises:
+            requests.HTTPError: If any management API call (/info or /bootstrap) returns an HTTP error status.
+        """
         self.access_token = kwargs["access_token"]
         self.server_url = kwargs["lakekeeper_url"]
         self.openid_provider_uri = kwargs["openid_provider_uri"]
@@ -120,24 +160,70 @@ class Server:
 
     @property
     def catalog_url(self):
+        """
+        Return the base catalog API URL for this server.
+        
+        Returns:
+            str: Full URL to the server's catalog endpoint (server_url + "/catalog").
+        """
         return self.server_url + "/catalog"
 
     @property
     def management_api_url(self):
+        """
+        Return the base URL for the server's management API.
+        
+        Constructs and returns the management API root by appending "/management/v1" to the
+        instance's `server_url`.
+        
+        Returns:
+            str: Full management API base URL.
+        """
         return self.server_url + "/management/v1"
 
     @property
     def token_endpoint(self):
+        """
+        Return the OpenID Connect token endpoint URL.
+        
+        Constructs the token endpoint by appending the standard OIDC token path to the server's configured OpenID provider URI and returns it as a string.
+        
+        Returns:
+            str: Full token endpoint URL (e.g., "<openid_provider_uri>/protocol/openid-connect/token").
+        """
         return self.openid_provider_uri + "/protocol/openid-connect/token"
 
     @property
     def warehouse_url(self):
+        """
+        Return the base warehouse API URL for this server.
+        
+        Appends "/warehouse" to the server's management API URL.
+        
+        Returns:
+            str: Full warehouse endpoint base URL.
+        """
         return self.management_api_url + "/warehouse"
 
     def create_warehouse(
         self, name: str, project_id: uuid.UUID, storage_config: dict
     ) -> "Warehouse":
-        """Create a warehouse in this server"""
+        """
+        Create a warehouse on this server.
+        
+        Sends a POST request to the server's warehouse management endpoint to create a warehouse for the given project using the provided storage configuration.
+        
+        Parameters:
+            name: The warehouse name.
+            project_id: UUID of the project that will own the warehouse.
+            storage_config: Storage configuration dictionary passed through to the server; must include a 'storage-profile' with a 'bucket' entry used to construct the returned warehouse's S3 URL.
+        
+        Returns:
+            Warehouse: A dataclass representing the created warehouse (contains server reference, name, project_id, and bucket_url).
+        
+        Raises:
+            ValueError: If the server responds with a non-success HTTP status code.
+        """
 
         payload = {
             "project-id": str(project_id),
@@ -168,6 +254,18 @@ class Server:
         )
 
     def delete_warehouse(self, warehouse_id: uuid.UUID) -> None:
+        """
+        Delete a warehouse by its UUID on the server's management API.
+        
+        Sends an authenticated DELETE request to the server's warehouse endpoint to remove
+        the specified warehouse.
+        
+        Parameters:
+            warehouse_id (uuid.UUID): Identifier of the warehouse to delete.
+        
+        Raises:
+            requests.HTTPError: If the HTTP response has a non-success status.
+        """
         response = requests.delete(
             self.warehouse_url + f"/{str(warehouse_id)}",
             headers={"Authorization": f"Bearer {self.access_token}"},
@@ -188,6 +286,18 @@ settings = Settings()
 
 @pytest.fixture(scope="session")
 def token_endpoint() -> str:
+    """
+    Return the OpenID Connect token endpoint URL discovered from the configured provider.
+    
+    Queries the provider's discovery document at "<openid_provider_uri>/.well-known/openid-configuration"
+    and returns the value of the "token_endpoint" field.
+    
+    Returns:
+        str: The token endpoint URL.
+    
+    Raises:
+        ValueError: If `settings.openid_provider_uri` is empty.
+    """
     if not settings.openid_provider_uri:
         raise ValueError("Empty 'openid_provider_uri' is not allowed.")
 
@@ -213,6 +323,15 @@ def access_token(token_endpoint: str) -> str:
 
 @pytest.fixture(scope="session")
 def server(access_token: str) -> Server:
+    """
+    Create a Server configured from the module-level Settings and the provided access token.
+    
+    Parameters:
+        access_token (str): OAuth2 access token used for authenticated requests.
+    
+    Returns:
+        Server: An initialized Server instance populated from the module settings and the given access token.
+    """
     return Server(access_token=access_token, **settings.model_dump())
 
 
@@ -223,6 +342,24 @@ def project() -> uuid.UUID:
 
 @pytest.fixture(scope="session")
 def warehouse(server: Server, project: uuid.UUID) -> Generator:
+    """
+    Create a test warehouse and ensure its backing S3 bucket exists, yielding the created Warehouse for use in tests.
+    
+    This fixture:
+    - Validates that a non-empty warehouse name is configured; raises ValueError if not.
+    - Ensures the S3 bucket from settings.storage_config() exists (creates it if missing).
+    - Calls the server to create a warehouse and yields the resulting Warehouse object.
+    - On teardown, attempts to delete the warehouse and remove the bucket using retry/backoff; if cleanup fails, emits warnings with details.
+    
+    Parameters:
+        project (uuid.UUID): ID of the project under which the warehouse is created.
+    
+    Yields:
+        Warehouse: The created warehouse object.
+    
+    Raises:
+        ValueError: If settings.warehouse_name is empty.
+    """
     if not settings.warehouse_name:
         raise ValueError("Empty 'warehouse_name' is not allowed.")
 

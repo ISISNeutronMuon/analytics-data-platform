@@ -138,6 +138,23 @@ def request_access_token(token_endpoint, client_id, client_secret, scope) -> str
 
 
 def main():
+    """
+    Bootstrap Lakekeeper and optionally create warehouses from JSON files specified on the command line.
+    
+    This function:
+    - Reads required configuration from environment variables using EnvParser.
+    - Configures file and console logging according to environment settings.
+    - Obtains an access token from the identity provider and constructs a Server client.
+    - Ensures Lakekeeper is bootstrapped by calling Server.bootstrap().
+    - For each file path provided as a command-line argument, loads the JSON and calls Server.create_warehouse().
+    
+    Side effects:
+    - Configures the root logger (file and stream handlers).
+    - Performs network requests (token acquisition, management API calls).
+    - Reads files passed as command-line arguments.
+    
+    No return value.
+    """
     env_vars = EnvParser(LAKEKEEPER_BOOTSTRAP_PREFIX)
 
     this_file_dir = Path(__file__).parent

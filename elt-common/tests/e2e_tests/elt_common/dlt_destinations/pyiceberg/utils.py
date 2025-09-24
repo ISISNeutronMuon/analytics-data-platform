@@ -41,7 +41,19 @@ class PyIcebergDestinationTestConfiguration:
     destination: TDestinationReferenceArg = "elt_common.dlt_destinations.pyiceberg"
 
     def setup(self, warehouse: Warehouse) -> None:
-        """Sets up environment variables for this destination configuration"""
+        """
+        Configure environment variables required for the PyIceberg destination using values from the provided Warehouse.
+        
+        This sets process environment variables used by the PyIceberg destination (credentials URI, warehouse name,
+        OAuth2 endpoints and client credentials, scope, bucket URL, and default table location layout). The
+        credentials URI is taken from warehouse.server.catalog_url. Intended for test setup; it modifies os.environ
+        and does not return a value.
+        
+        Parameters:
+            warehouse (Warehouse): Source of configuration values (expects attributes like `name`, `bucket_url`,
+                and `server` with `catalog_url`, `token_endpoint`, `openid_client_id`, `openid_client_secret`,
+                and `openid_scope`).
+        """
         os.environ["DESTINATION__PYICEBERG__CREDENTIALS__URI"] = warehouse.server.catalog_url
         os.environ.setdefault("DESTINATION__PYICEBERG__CREDENTIALS__WAREHOUSE", warehouse.name)
         os.environ.setdefault(
