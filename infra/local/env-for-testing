@@ -19,7 +19,6 @@ POSTGRES_DATABASE=unused
 ###############################################################################
 KC_BOOTSTRAP_ADMIN_USERNAME=$POSTGRES_USER
 KC_BOOTSTRAP_ADMIN_PASSWORD=$POSTGRES_PASSWORD
-KEYCLOAK_HOSTNAME=$LOCALHOST_WEB_URL/auth
 
 ###############################################################################
 # MinIO
@@ -62,7 +61,7 @@ ELT_COMMON_ICEBERG_MAINT_TRINO_HOST=$LOCALHOST_NAME
 ELT_COMMON_ICEBERG_MAINT_TRINO_PORT=$LOCALHOST_TRINO_PORT
 ELT_COMMON_ICEBERG_MAINT_TRINO_USER=trino
 ELT_COMMON_ICEBERG_MAINT_TRINO_PASSWORD=
-ELT_COMMON_ICEBERG_MAINT_TRINO_CATALOG=local_lakehouse
+ELT_COMMON_ICEBERG_MAINT_TRINO_CATALOG=playground
 
 ###############################################################################
 # Superset

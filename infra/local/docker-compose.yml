@@ -120,7 +120,7 @@ services:
         "--health-enabled=true",
         "--hostname=http://localhost:58080/auth",
         "--proxy-headers=xforwarded",
-        "--proxy-trusted-addresses=127.0.0.0/8",
+        "--proxy-trusted-addresses=0.0.0.0/8",
         "--import-realm",
       ]
     networks: *local-networks
