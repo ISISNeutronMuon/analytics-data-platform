@@ -180,6 +180,8 @@ services:
       retries: 3
       start_period: 3s
     depends_on:
+      keycloak:
+        condition: service_healthy
       lakekeeper-migrate:
         condition: service_completed_successfully
       shared-database:
