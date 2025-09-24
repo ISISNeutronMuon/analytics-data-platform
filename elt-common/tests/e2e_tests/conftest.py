@@ -247,7 +247,8 @@ def warehouse(server: Server, project: uuid.UUID) -> Generator:
     finally:
         try:
             retry_args = {
-                "tries": 5,
+                "delay": 2,
+                "tries": 100,
                 "backoff": 1.7,
                 "max_delay": 15,
             }
@@ -255,7 +256,7 @@ def warehouse(server: Server, project: uuid.UUID) -> Generator:
             retry_call(
                 minio_client.remove_bucket, fargs=(bucket_name,), exceptions=S3Error, **retry_args
             )
-        except ValueError as exc:
+        except Exception as exc:
             warnings.warn(
                 f"Error deleting test warehouse '{str(warehouse.project_id)}'. It may need to be removed manually."
             )
