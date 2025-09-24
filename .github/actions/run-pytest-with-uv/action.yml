@@ -26,11 +26,12 @@ runs:
         cache-dependency-glob: ${{ inputs.uv-cache-dependency-glob }}
         version: ${{ inputs.uv-version }}
 
-    - name: Bring up Lakekeeper & dependent services
+    - name: Bring up Docker Compose services
       if: inputs.compose-file-path != ''
       uses: hoverkraft-tech/compose-action@v2.3.0
       with:
         compose-file: ${{ inputs.compose-file-path }}
+        up-flags: --quiet-pull --wait --wait-timeout 240
 
     - name: Install the project
       shell: bash -l {0}

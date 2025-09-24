@@ -6,7 +6,7 @@ to manage sets of users for authentication. By default a `master` realm is creat
 access to all Keycloak configuration, including creating new realms.
 
 The JSON-file, [iceberg-realm.json](./iceberg-realm.json), provides a basic configuration for the purposes
-of the local docker-composed based setup. The file was created in Keycloak and exported using the
+of the local docker-compose-based setup. The file was created in Keycloak and exported using the
 following steps (the working directory should be the parent directory of this file):
 
 - Run `docker compose up traefik keycloak -d

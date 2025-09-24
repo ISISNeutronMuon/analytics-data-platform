@@ -63,7 +63,7 @@ class Server:
         return self.url + "/management/v1"
 
     def is_bootstrapped(self) -> bool:
-        response = self._request(requests.get, self.management_url + "/info")
+        response = self._request_with_auth(requests.get, self.management_url + "/info")
         return response.json()["bootstrapped"]
 
     def bootstrap(self):
@@ -75,7 +75,7 @@ class Server:
             return
 
         LOGGER.info("Bootstrapping server.")
-        self._request(
+        self._request_with_auth(
             requests.post,
             url=self.management_url + "/bootstrap",
             json={
@@ -86,7 +86,9 @@ class Server:
         LOGGER.info("Server bootstrapped successfully.")
 
     def warehouse_exists(self, warehouse_name: str) -> bool:
-        response = self._request(requests.get, self.management_url + "/warehouse")
+        response = self._request_with_auth(
+            requests.get, self.management_url + "/warehouse"
+        )
         LOGGER.debug(f"'/warehouse' response: {response.json()}")
         for warehouse in response.json()["warehouses"]:
             if warehouse["name"] == warehouse_name:
@@ -104,17 +106,22 @@ class Server:
             return
 
         LOGGER.info(f"Creating warehouse '{warehouse_name}'")
-        self._request(
+        self._request_with_auth(
             requests.post, self.management_url + "/warehouse", json=warehouse_config
         )
         LOGGER.info(f"Warehouse '{warehouse_name}' created successfully.")
 
-    def _request(self, method: Callable, url: str, *, json=None) -> requests.Response:
+    def _request_with_auth(
+        self, method: Callable, url: str, *, json=None, timeout: float = 10.0
+    ) -> requests.Response:
         """Make an authenticated request to the given url.
 
         A non-success response raises a requests.RequestException"""
         response = method(
-            url, headers={"Authorization": f"Bearer {self.access_token}"}, json=json
+            url,
+            headers={"Authorization": f"Bearer {self.access_token}"},
+            json=json,
+            timeout=timeout,
         )
         response.raise_for_status()
         return response
@@ -132,6 +139,7 @@ def request_access_token(token_endpoint, client_id, client_secret, scope) -> str
             "scope": scope,
         },
         headers={"Content-type": "application/x-www-form-urlencoded"},
+        timeout=10.0,
     )
     response.raise_for_status()
     return response.json()["access_token"]
@@ -146,9 +154,12 @@ def main():
         format=LOGGER_FORMAT,
         level=getattr(logging, env_vars.log_level),
         filemode="a",
+        encoding="utf-8",
+        force=True,
     )
-    logging.getLogger().addHandler(logging.StreamHandler())
-    warehouses_json = sys.argv[1:]
+    stream_handler = logging.StreamHandler()
+    logging.getLogger().addHandler(stream_handler)
+    stream_handler.setFormatter(logging.Formatter(LOGGER_FORMAT))
 
     server = Server(
         env_vars.lakekeeper_url,
@@ -160,6 +171,8 @@ def main():
         ),
     )
     server.bootstrap()
+
+    warehouses_json = sys.argv[1:]
     if warehouses_json:
         LOGGER.debug(f"Creating warehouses using files: {warehouses_json}")
         for warehouse_json_file in warehouses_json:

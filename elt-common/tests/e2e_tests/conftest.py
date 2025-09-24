@@ -97,7 +97,7 @@ class Server:
 
     def __init__(self, **kwargs):
         self.access_token = kwargs["access_token"]
-        self.server_url = kwargs["lakekeeper_url"]
+        self.lakekeeper_url = kwargs["lakekeeper_url"]
         self.openid_provider_uri = kwargs["openid_provider_uri"]
         self.openid_client_id = kwargs["openid_client_id"]
         self.openid_client_secret = kwargs["openid_client_secret"]
@@ -106,7 +106,9 @@ class Server:
         # Bootstrap server once
         access_token = kwargs["access_token"]
         server_info = requests.get(
-            self.management_api_url + "/info", headers={"Authorization": f"Bearer {access_token}"}
+            self.management_api_url + "/info",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10.0,
         )
         server_info.raise_for_status()
         server_info = server_info.json()
@@ -115,16 +117,17 @@ class Server:
                 self.management_api_url + "/bootstrap",
                 headers={"Authorization": f"Bearer {access_token}"},
                 json={"accept-terms-of-use": True},
+                timeout=10.0,
             )
             response.raise_for_status()
 
     @property
     def catalog_url(self):
-        return self.server_url + "/catalog"
+        return self.lakekeeper_url + "/catalog"
 
     @property
     def management_api_url(self):
-        return self.server_url + "/management/v1"
+        return self.lakekeeper_url + "/management/v1"
 
     @property
     def token_endpoint(self):
@@ -191,9 +194,9 @@ def token_endpoint() -> str:
     if not settings.openid_provider_uri:
         raise ValueError("Empty 'openid_provider_uri' is not allowed.")
 
-    return requests.get(settings.openid_provider_uri + "/.well-known/openid-configuration").json()[
-        "token_endpoint"
-    ]
+    response = requests.get(settings.openid_provider_uri + "/.well-known/openid-configuration")
+    response.raise_for_status()
+    return response.json()["token_endpoint"]
 
 
 @pytest.fixture(scope="session")
