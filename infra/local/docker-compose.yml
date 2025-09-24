@@ -40,6 +40,7 @@ services:
   traefik:
     container_name: local-lakehouse-traefik
     image: *traefik-image
+    env_file: *env-file
     ports:
       - "58080:80"
       - "58088:8088" # Trino won't allow itself to be deployed on a prefix path
@@ -107,7 +108,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          'exec 3<>/dev/tcp/127.0.0.1/8080;echo -e "GET /realms/master/.well-known/openid-configuration HTTP/1.1\r\nhost: 127.0.0.1:8080\r\nConnection: close\r\n\r\n" >&3;grep "jwks_uri"  <&3',
+          'exec 3<>/dev/tcp/127.0.0.1/8080;echo -e "GET $$KC_HTTP_RELATIVE_PATH/realms/master/.well-known/openid-configuration HTTP/1.1\r\nhost: 127.0.0.1:8080\r\nConnection: close\r\n\r\n" >&3;grep "jwks_uri"  <&3',
         ]
       interval: 10s
       timeout: 80s
@@ -118,7 +119,8 @@ services:
         "start-dev",
         "--metrics-enabled=true",
         "--health-enabled=true",
-        "--hostname=http://localhost:58080/auth",
+        "--hostname-strict=false",
+        "--hostname-debug=true",
         "--proxy-headers=xforwarded",
         "--proxy-trusted-addresses=0.0.0.0/8",
         "--import-realm",

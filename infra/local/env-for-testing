@@ -19,6 +19,7 @@ POSTGRES_DATABASE=unused
 ###############################################################################
 KC_BOOTSTRAP_ADMIN_USERNAME=$POSTGRES_USER
 KC_BOOTSTRAP_ADMIN_PASSWORD=$POSTGRES_PASSWORD
+KC_HTTP_RELATIVE_PATH=/auth
 
 ###############################################################################
 # MinIO

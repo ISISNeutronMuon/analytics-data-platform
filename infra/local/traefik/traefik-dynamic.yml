@@ -5,7 +5,7 @@ http:
     #############################################
     superset:
       entryPoints: web
-      rule: Host(`localhost`) && PathPrefix(`{{ env "SUPERSET_APP_ROOT" }}`)
+      rule: PathPrefix(`{{ env "SUPERSET_APP_ROOT" }}`)
       service: superset
 
     #############################################
@@ -13,38 +13,36 @@ http:
     #############################################
     traefik:
       entryPoints: web
-      rule: Host(`localhost`) && (PathPrefix(`/internal/traefik`) || HeaderRegexp(`Referer`, `/internal/traefik`))
+      rule: PathPrefix(`/internal/traefik`) || HeaderRegexp(`Referer`, `/internal/traefik`)
       service: api@internal
       middlewares:
         - traefik-strip-prefix
 
     keycloak:
       entryPoints: web
-      rule: Host(`localhost`) && PathPrefix(`/auth`)
-      middlewares:
-        - keycloak-strip-prefix
+      rule: PathPrefix(`{{ env "KC_HTTP_RELATIVE_PATH" }}`)
       service: keycloak
 
     lakekeeper:
       entryPoints: web
-      rule: Host(`localhost`) && PathPrefix(`/iceberg`)
+      rule: PathPrefix(`/iceberg`)
       middlewares:
         - lakekeeper-strip-prefix
       service: lakekeeper
 
     minio-console:
       entryPoints: minioconsole
-      rule: Host(`localhost`)
+      rule: PathPrefix(`/`)
       service: minio-console
 
     minio-api:
       entryPoints: minioapi
-      rule: Host(`localhost`)
+      rule: PathPrefix(`/`)
       service: minio-api
 
     trino:
       entryPoints: trino
-      rule: Host(`localhost`)
+      rule: PathPrefix(`/`)
       service: trino
 
   middlewares:
@@ -52,10 +50,6 @@ http:
       stripPrefix:
         prefixes:
           - "/internal/traefik"
-    keycloak-strip-prefix:
-      stripPrefix:
-        prefixes:
-          - "/auth"
     lakekeeper-strip-prefix:
       stripPrefix:
         prefixes:
