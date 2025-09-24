@@ -11,12 +11,6 @@ on:
     paths:
       - ".github/workflows/elt-common_unit_tests.yml"
       - "elt-common/**"
-  workflow_dispatch:
-    inputs:
-      ref:
-        description: "The branch or tag to checkout"
-        required: false
-        default: ""
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
@@ -27,6 +21,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Run unit tests
         uses: ./.github/actions/run-pytest-with-uv
         with:
