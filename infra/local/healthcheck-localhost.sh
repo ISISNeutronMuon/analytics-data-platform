@@ -4,6 +4,7 @@
 # the given endpoint.
 set -eu
 
+# arg processing
 if [ $# -lt 2 ]; then
   echo "Usage: $0 port endpoint [grep_success_pattern]"
   echo
@@ -12,11 +13,9 @@ if [ $# -lt 2 ]; then
   echo "  grep_success_pattern: specifies the pattern that the output must contain to be considered a success (default: 200 OK)"
   exit 1
 fi
-
 grep_success_pattern=${3:-200 OK}
-echo $grep_success_pattern
-exit 0
 
+# run GET
 exec 3<>/dev/tcp/127.0.0.1/"$1"
 echo -e "GET $2 HTTP/1.1
 host: 127.0.0.1:$1
