@@ -140,9 +140,10 @@ services:
       - keycloak_data:/opt/keycloak/data
       - ./keycloak/iceberg-realm.json:/opt/keycloak/data/import/iceberg-realm.json:ro
     healthcheck:
-      test: ["CMD", "healthcheck-localhost.sh", "8080", "$$KC_HTTP_RELATIVE_PATH/realms/master/.well-known/openid-configuration", "jwks_uri"]
-      start_period: 15s
-      interval: 10s
+      test: ["CMD-SHELL", "healthcheck-localhost.sh 8080 $$KC_HTTP_RELATIVE_PATH/realms/master/.well-known/openid-configuration 'jwks_uri'"]
+      start_period: 20s
+      start_interval: 1s
+      interval: 30s
       timeout: 30s
       retries: 5
     command:
@@ -171,7 +172,7 @@ services:
     # Match ports on host & container to use the same address inside and outside the container network
     command: ["server", "/data", "--address", ":59000", "--console-address", ":59001"]
     healthcheck:
-      test: ["CMD", "healthcheck-localhost.sh", "59000", "/minio/health/live"]
+      test: ["CMD-SHELL", "healthcheck-localhost.sh 59000 /minio/health/live"]
       start_period: 10s
       interval: 30s
       timeout: 30s
