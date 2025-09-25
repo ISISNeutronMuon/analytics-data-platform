@@ -15,7 +15,7 @@ inputs:
     description: Cache dependencies based on the supplied glob
   uv-version:
     description: The version of uv to install e.g., `0.5.0` Defaults to the version in pyproject.toml or 'latest'.
-    default: ""
+    default: "latest"
 
 runs:
   using: composite
