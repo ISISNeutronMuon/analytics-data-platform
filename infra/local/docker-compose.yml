@@ -142,7 +142,7 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "healthcheck-localhost.sh 8080 $$KC_HTTP_RELATIVE_PATH/realms/master/.well-known/openid-configuration 'jwks_uri'"]
       start_period: 20s
-      start_interval: 1s
+      start_interval: 2s
       interval: 30s
       timeout: 30s
       retries: 5
@@ -151,11 +151,13 @@ services:
         "start-dev",
         "--metrics-enabled=true",
         "--health-enabled=true",
-        "--hostname-strict=false",
+        "--features=token-exchange",
         "--hostname-debug=true",
         "--proxy-headers=xforwarded",
         "--proxy-trusted-addresses=0.0.0.0/8",
         "--import-realm",
+        "--verbose",
+        "--log-level=INFO"
       ]
     networks: *local-networks
 
