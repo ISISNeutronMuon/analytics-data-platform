@@ -144,7 +144,6 @@ class Server:
 
         payload = {
             "project-id": str(project_id),
-            "warehouse-name": name,
             **storage_config,
         }
 
