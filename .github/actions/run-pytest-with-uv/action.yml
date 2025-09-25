@@ -31,7 +31,8 @@ runs:
       uses: hoverkraft-tech/compose-action@v2.3.0
       with:
         compose-file: ${{ inputs.compose-file-path }}
-        up-flags: --quiet-pull --wait --wait-timeout 240
+        up-flags: --quiet-pull --wait --wait-timeout 300
+        down-flags: --volumes --remove-orphans
 
     - name: Install the project
       shell: bash -l {0}
@@ -40,5 +41,5 @@ runs:
 
     - name: Run tests
       shell: bash -l {0}
-      run: uv run pytest --durations-min=0.5 --exitfirst ${{ inputs.pytest-file-or-dir }} --cache-clear
+      run: uv run pytest --durations-min=0.5 --exitfirst "${{ inputs.pytest-file-or-dir }}" --cache-clear
       working-directory: ${{ inputs.pyproject-directory }}
