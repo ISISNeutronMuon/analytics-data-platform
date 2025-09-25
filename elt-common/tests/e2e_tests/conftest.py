@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     s3_access_key: Optional[str] = "adpuser"
     s3_secret_key: Optional[str] = "adppassword"
     s3_bucket: Optional[str] = "e2e-tests-warehouse"
-    s3_endpoint: Optional[str] = "http://localhost:59000"
+    s3_endpoint: Optional[str] = "http://minio:59000"
     s3_region: Optional[str] = "local-01"
     s3_path_style_access: Optional[bool] = True
     openid_provider_uri: Optional[str] = "http://localhost:58080/auth/realms/iceberg"
