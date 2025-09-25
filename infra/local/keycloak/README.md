@@ -46,7 +46,7 @@ docker run --rm \
   /opt/keycloak/bin/kc.sh export --dir /export --users realm_file --realm iceberg
 ```
 
-- A `iceberg-realm.json` files should have been created in the keycloak directory.
+- An `iceberg-realm.json` files should have been created in the keycloak directory.
 - Open the file and search for the string `"clientId": "localinfra"`.
-  In the same JSON dict find the key named `secret`; its value should currently be `\*\*\*\*\*\*\*\*\*\*`.
-  Change the value to `s3cr3t`.**DO NOT DO THIS IN PRODUCTION!**
+  In the same JSON dict find the key named `secret`; its value should currently be `**********`.
+  Change the value to `s3cr3t`. **DO NOT DO THIS IN PRODUCTION!**

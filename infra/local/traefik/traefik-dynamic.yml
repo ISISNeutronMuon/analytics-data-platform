@@ -30,16 +30,6 @@ http:
         - lakekeeper-strip-prefix
       service: lakekeeper
 
-    minio-console:
-      entryPoints: minioconsole
-      rule: PathPrefix(`/`)
-      service: minio-console
-
-    minio-api:
-      entryPoints: minioapi
-      rule: PathPrefix(`/`)
-      service: minio-api
-
     trino:
       entryPoints: trino
       rule: PathPrefix(`/`)

@@ -1,11 +1,43 @@
-# A development stack to emulate the Lakehouse. This is intended for local development.
+# A development stack to emulate the Lakehouse. This is intended for local development only.
 #
-# See README.md for configuration required before running "compose up".
+# Most services are exposed through a Traefik reverse proxy on port 58080 with the exception
+# of MinIO (S3 storage). Service routes:
+#
+#  - Keycloak identity provider: http://localhost:58080/auth
+#  - Lakekeeper iceberg catalog UI: http://localhost:58080/iceberg/ui. Log in with the credentials listed in keycloak/README
+#  - Trino query engine: http://localhost:58088
+#  - Superset BI tool: http://localhost:58080/workspace/playground. Log in with the credentials defined in env-for-testing
+#
+# Running scripts on the host
+# ---------------------------
+#
+# Tools such as pyiceberg connect to Lakekeeper, retrieve the address of the S3 storage endpoint
+# and communicate directly with it via the 'storage-profile.endpoint' defined in
+# infra/local/lakekeeper/bootstrap-warehouse.json. To this end MinIO runs on port 59000 in both
+# the container and also on the host.
+#
+# To run scripts on the host, e.g. the Python e2e tests, the host /etc/hosts files needs an extra
+# entry to be able to contact the minio service directly:
+#
+# 127.0.0.1       minio
+#
+#
+# To test ELT scripts based on the Python package `dlt`, create and add the following to
+# `$HOME/.dlt/secrets.toml`:
+#
+# [destination.pyiceberg]
+# bucket_url = "s3://playground"
+#
+# [destination.pyiceberg.credentials]
+# uri = "http://localhost:58080/iceberg/catalog"
+# warehouse = "playground"
+#
 
 # image versions
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
 x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.9.5
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-06-13T11-33-47Z
+x-minio-mc-image: &minio-mc-image quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
 x-postgres-image: &postgres-image postgres:16.9-bookworm
 x-superset-image: &superset-image ghcr.io/martyngigg/adp-superset:6.0.0rc1-py311
 x-traefik-image: &traefik-image traefik:v3.4.4
@@ -39,11 +71,15 @@ services:
     container_name: local-lakehouse-traefik
     image: *traefik-image
     env_file: *env-file
+    healthcheck:
+      test: ["CMD-SHELL", "traefik healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
     ports:
       - "58080:80"
       - "58088:8088" # Trino won't allow itself to be deployed on a prefix path
-      - "59000:9000" # MinIO. Lakekeeper won't allow a path on the storage/endpoint value
-      - "59001:9001" # MinIO UI won't load on a not-root path
     volumes:
       - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
       - "./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
@@ -100,18 +136,15 @@ services:
     image: *keycloak-image
     env_file: *env-file
     volumes:
+      - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
       - keycloak_data:/opt/keycloak/data
       - ./keycloak/iceberg-realm.json:/opt/keycloak/data/import/iceberg-realm.json:ro
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          'exec 3<>/dev/tcp/127.0.0.1/8080;echo -e "GET $$KC_HTTP_RELATIVE_PATH/realms/master/.well-known/openid-configuration HTTP/1.1\r\nhost: 127.0.0.1:8080\r\nConnection: close\r\n\r\n" >&3;grep "jwks_uri"  <&3',
-        ]
+      test: ["CMD", "healthcheck-localhost.sh", "8080", "$$KC_HTTP_RELATIVE_PATH/realms/master/.well-known/openid-configuration", "jwks_uri"]
+      start_period: 15s
       interval: 10s
-      timeout: 80s
+      timeout: 30s
       retries: 5
-      start_period: 10s
     command:
       [
         "start-dev",
@@ -127,19 +160,27 @@ services:
 
   #########################################################
   # MinIO - Object store emulating the Ceph object store
-  # in SCD. This does not exist in production
+  # in SCD. This is exposed directly rather than through traefik
+  # as the service needs to be accessible for clients such as
+  # PyIcberg.
   #########################################################
   minio:
     container_name: local-lakehouse-minio
     image: *minio-image
     env_file: *env-file
-    command: ["server", "/data", "--console-address", ":9001"]
+    # Match ports on host & container to use the same address inside and outside the container network
+    command: ["server", "/data", "--address", ":59000", "--console-address", ":59001"]
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD", "healthcheck-localhost.sh", "59000", "/minio/health/live"]
+      start_period: 10s
       interval: 30s
-      timeout: 20s
+      timeout: 30s
       retries: 3
+    ports:
+      - "59000:59000"
+      - "59001:59001"
     volumes:
+      - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
       - "minio_data:/data"
     networks: *local-networks
 
@@ -148,11 +189,11 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-    image: quay.io/minio/mc:RELEASE.2025-05-21T01-59-54Z
+    image: *minio-mc-image
     env_file: *env-file
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set minio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+      /usr/bin/mc alias set minio http://minio:59000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
       if ! /usr/bin/mc ls minio/$${MINIO_BUCKET_NAME}; then
         echo \"Bucket '$${MINIO_BUCKET_NAME}' not found, creating...\"
         /usr/bin/mc mb minio/$${MINIO_BUCKET_NAME};
@@ -175,19 +216,21 @@ services:
     command: ["serve"]
     healthcheck:
       test: ["CMD", "/home/nonroot/lakekeeper", "healthcheck"]
+      start_period: 5s
       interval: 30s
-      timeout: 10s
+      timeout: 30s
       retries: 3
-      start_period: 3s
     depends_on:
       keycloak:
         condition: service_healthy
       lakekeeper-migrate:
         condition: service_completed_successfully
-      shared-database:
-        condition: service_healthy
       minio-createbucket:
         condition: service_completed_successfully
+      shared-database:
+        condition: service_healthy
+      traefik:
+        condition: service_healthy
     networks: *local-networks
 
   lakekeeper-migrate:
@@ -213,12 +256,8 @@ services:
         "/opt/work/bootstrap-warehouse.json",
       ]
     depends_on:
-      keycloak:
-        condition: service_healthy
       lakekeeper:
         condition: service_healthy
-      minio-createbucket:
-        condition: service_completed_successfully
     volumes:
       - "../ansible-docker/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py"
       - "./lakekeeper/bootstrap-warehouse.json:/opt/work/bootstrap-warehouse.json:ro"
@@ -238,10 +277,10 @@ services:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-I", "http://localhost:8080/v1/status"]
-      interval: 30s
-      timeout: 10s
-      retries: 2
       start_period: 10s
+      interval: 30s
+      timeout: 30s
+      retries: 2
     networks: *local-networks
 
   #########################################################

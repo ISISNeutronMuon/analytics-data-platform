@@ -31,6 +31,7 @@ LAKEKEEPER_BOOTSTRAP_PREFIX = "LAKEKEEPER_BOOTSTRAP__"
 LOGGER = logging.getLogger(__name__)
 LOGGER_FILENAME = f"{Path(__file__).name}.log"
 LOGGER_FORMAT = "%(asctime)s|%(message)s"
+REQUESTS_TIMEOUT_DEFAULT = 60.0
 
 
 @dataclasses.dataclass(init=False)
@@ -112,7 +113,12 @@ class Server:
         LOGGER.info(f"Warehouse '{warehouse_name}' created successfully.")
 
     def _request_with_auth(
-        self, method: Callable, url: str, *, json=None, timeout: float = 10.0
+        self,
+        method: Callable,
+        url: str,
+        *,
+        json=None,
+        timeout: float = REQUESTS_TIMEOUT_DEFAULT,
     ) -> requests.Response:
         """Make an authenticated request to the given url.
 
@@ -139,7 +145,7 @@ def request_access_token(token_endpoint, client_id, client_secret, scope) -> str
             "scope": scope,
         },
         headers={"Content-type": "application/x-www-form-urlencoded"},
-        timeout=10.0,
+        timeout=REQUESTS_TIMEOUT_DEFAULT,
     )
     response.raise_for_status()
     return response.json()["access_token"]
