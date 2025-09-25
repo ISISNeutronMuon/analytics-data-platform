@@ -43,3 +43,10 @@ runs:
       shell: bash -l {0}
       run: uv run pytest --durations-min=0.5 --exitfirst "${{ inputs.pytest-file-or-dir }}" --cache-clear
       working-directory: ${{ inputs.pyproject-directory }}
+
+    - name: Dump Docker Compose logs on failure
+      if: failure() && inputs.compose-file-path != ''
+      shell: bash -l {0}
+      run: |
+        docker compose -f "${{ inputs.compose-file-path }}" ps
+        docker compose -f "${{ inputs.compose-file-path }}" logs --no-color --tail=200
