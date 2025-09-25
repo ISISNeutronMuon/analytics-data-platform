@@ -54,7 +54,7 @@ runs:
       if: inputs.compose-file-path != ''
       shell: bash -l {0}
       run: |
-        sed -i "" -e '/minio/d' /etc/hosts
+        sudo sed -i -e '/minio/d' /etc/hosts
 
     - name: Dump Docker Compose logs on failure
       if: failure() && inputs.compose-file-path != ''
