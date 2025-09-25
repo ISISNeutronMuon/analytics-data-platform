@@ -154,7 +154,7 @@ services:
         "--features=token-exchange",
         "--hostname-debug=true",
         "--proxy-headers=xforwarded",
-        "--proxy-trusted-addresses=0.0.0.0/8",
+        "--proxy-trusted-addresses=0.0.0.0/0",
         "--import-realm",
         "--verbose",
         "--log-level=INFO"
