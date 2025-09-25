@@ -1,0 +1,65 @@
+name: Run pytest
+description: Run pytest using uv for dependencies management
+
+inputs:
+  compose-file-path:
+    description: If supplied, brings up the services defined in the given docker compose file.
+    default: ""
+  pyproject-directory:
+    description: Path to the directory containing pyproject.toml
+    required: true
+  pytest-file-or-dir:
+    description: Path to a file or directory for pytest execution
+    required: true
+  uv-cache-dependency-glob:
+    description: Cache dependencies based on the supplied glob
+  uv-version:
+    description: The version of uv to install e.g., `0.5.0` Defaults to the version in pyproject.toml or 'latest'.
+    default: "latest"
+
+runs:
+  using: composite
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        cache-dependency-glob: ${{ inputs.uv-cache-dependency-glob }}
+        version: ${{ inputs.uv-version }}
+
+    - name: Bring up Docker Compose services
+      if: inputs.compose-file-path != ''
+      uses: hoverkraft-tech/compose-action@v2.3.0
+      with:
+        compose-file: ${{ inputs.compose-file-path }}
+        up-flags: --quiet-pull --wait --wait-timeout 300
+        down-flags: --volumes --remove-orphans
+
+    - name: Install the project
+      shell: bash -l {0}
+      run: uv sync --locked --all-extras --dev
+      working-directory: ${{ inputs.pyproject-directory }}
+
+    - name: Add minio to /etc/hosts
+      if: inputs.compose-file-path != ''
+      shell: bash -l {0}
+      run: |
+        echo "127.0.0.1 minio" | sudo tee -a /etc/hosts
+
+    - name: Run tests
+      shell: bash -l {0}
+      run: uv run pytest --durations-min=0.5 --exitfirst "${{ inputs.pytest-file-or-dir }}" --cache-clear
+      working-directory: ${{ inputs.pyproject-directory }}
+
+    - name: Remove minio from /etc/hosts
+      if: inputs.compose-file-path != ''
+      shell: bash -l {0}
+      run: |
+        sudo sed -i -e '/minio/d' /etc/hosts
+
+    - name: Dump Docker Compose logs on failure
+      if: failure() && inputs.compose-file-path != ''
+      shell: bash -l {0}
+      run: |
+        docker inspect --format "{{json .State.Health }}" local-lakehouse-keycloak | jq
+        docker compose -f "${{ inputs.compose-file-path }}" ps
+        docker compose -f "${{ inputs.compose-file-path }}" logs --no-color --tail=200

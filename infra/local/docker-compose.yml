@@ -1,12 +1,43 @@
-# A development stack to emulate the Lakehouse. This is intended for local development.
+# A development stack to emulate the Lakehouse. This is intended for local development only.
 #
-# See README.md for configuration required before running "compose up".
+# Most services are exposed through a Traefik reverse proxy on port 58080 with the exception
+# of MinIO (S3 storage). Service routes:
 #
-# The base address of all services is "http://analytics.localhost:58080"
+#  - Keycloak identity provider: http://localhost:58080/auth
+#  - Lakekeeper iceberg catalog UI: http://localhost:58080/iceberg/ui. Log in with the credentials listed in keycloak/README
+#  - Trino query engine: http://localhost:58088
+#  - Superset BI tool: http://localhost:58080/workspace/playground. Log in with the credentials defined in env-for-testing
+#
+# Running scripts on the host
+# ---------------------------
+#
+# Tools such as pyiceberg connect to Lakekeeper, retrieve the address of the S3 storage endpoint
+# and communicate directly with it via the 'storage-profile.endpoint' defined in
+# infra/local/lakekeeper/bootstrap-warehouse.json. To this end MinIO runs on port 59000 in both
+# the container and also on the host.
+#
+# To run scripts on the host, e.g. the Python e2e tests, the host /etc/hosts files needs an extra
+# entry to be able to contact the minio service directly:
+#
+# 127.0.0.1       minio
+#
+#
+# To test ELT scripts based on the Python package `dlt`, create and add the following to
+# `$HOME/.dlt/secrets.toml`:
+#
+# [destination.pyiceberg]
+# bucket_url = "s3://playground"
+#
+# [destination.pyiceberg.credentials]
+# uri = "http://localhost:58080/iceberg/catalog"
+# warehouse = "playground"
+#
 
 # image versions
+x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
 x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.9.5
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-06-13T11-33-47Z
+x-minio-mc-image: &minio-mc-image quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
 x-postgres-image: &postgres-image postgres:16.9-bookworm
 x-superset-image: &superset-image ghcr.io/martyngigg/adp-superset:6.0.0rc1-py311
 x-traefik-image: &traefik-image traefik:v3.4.4
@@ -14,12 +45,12 @@ x-trino-image: &trino-image trinodb/trino:475
 
 # environment
 x-env-file: &env-file
-  - path: docker/env-for-testing
+  - path: ./env-for-testing
     required: true
 
-# networks
-x-lakehouse-networks: &lakehouse-networks
-  - local-lakehouse-net
+# named network as the default form the directory name is not good
+x-networks: &local-networks
+  - local-lakehouse_net
 
 # superset options
 x-superset-user: &superset-user root
@@ -39,15 +70,20 @@ services:
   traefik:
     container_name: local-lakehouse-traefik
     image: *traefik-image
+    env_file: *env-file
+    healthcheck:
+      test: ["CMD-SHELL", "traefik healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
     ports:
       - "58080:80"
       - "58088:8088" # Trino won't allow itself to be deployed on a prefix path
-      - "59000:9000" # MinIO. Lakekeeper won't allow a path on the storage/endpoint value
     volumes:
       - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
       - "./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
-      - "./certs:/certs"
-    networks: *lakehouse-networks
+    networks: *local-networks
 
   #########################################################
   # Database shared by all services
@@ -62,9 +98,9 @@ services:
       timeout: 10s
       retries: 2
       start_period: 10s
-    networks: *lakehouse-networks
     volumes:
       - "shared_database_data:/var/lib/postgresql/data"
+    networks: *local-networks
 
   shared-database-createdatabases:
     container_name: local-lakehouse-shared-database-createdatabases
@@ -90,55 +126,86 @@ services:
       create_db_if_not_exists $$SUPERSET_DB_NAME
       rename_schema $$SUPERSET_DB_NAME public $$SUPERSET_DB_SCHEMA_NAME
       "
-    networks: *lakehouse-networks
+    networks: *local-networks
+
+  #########################################################
+  # Keycloak identity provider
+  #########################################################
+  keycloak:
+    container_name: local-lakehouse-keycloak
+    image: *keycloak-image
+    env_file: *env-file
+    volumes:
+      - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
+      - keycloak_data:/opt/keycloak/data
+      - ./keycloak/iceberg-realm.json:/opt/keycloak/data/import/iceberg-realm.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "healthcheck-localhost.sh 8080 $$KC_HTTP_RELATIVE_PATH/realms/master/.well-known/openid-configuration jwks_uri"]
+      start_period: 20s
+      start_interval: 2s
+      interval: 30s
+      timeout: 30s
+      retries: 5
+    command:
+      [
+        "start-dev",
+        "--metrics-enabled=true",
+        "--health-enabled=true",
+        "--features=token-exchange",
+        "--hostname-debug=true",
+        "--proxy-headers=xforwarded",
+        "--proxy-trusted-addresses=0.0.0.0/0",
+        "--import-realm",
+        "--verbose",
+        "--log-level=INFO"
+      ]
+    networks: *local-networks
 
   #########################################################
   # MinIO - Object store emulating the Ceph object store
-  # in SCD. This does not exist in production
+  # in SCD. This is exposed directly rather than through traefik
+  # as the service needs to be accessible for clients such as
+  # PyIcberg.
   #########################################################
   minio:
     container_name: local-lakehouse-minio
     image: *minio-image
-    environment:
-      MINIO_ROOT_USER: adpuser
-      MINIO_ROOT_PASSWORD: adppassword
-      MINIO_API_PORT_NUMBER: 9000
-      MINIO_CONSOLE_PORT_NUMBER: 9001
-      MINIO_SCHEME: http
-      # This needs to match the route in traefik/traefik-dynamic.yml
-      MINIO_BROWSER_REDIRECT_URL: http://analytics.localhost:58080/internal/minio/console
-    command: ["server", "/data", "--console-address", ":9001"]
+    env_file: *env-file
+    # Match ports on host & container to use the same address inside and outside the container network
+    command: ["server", "/data", "--address", ":59000", "--console-address", ":59001"]
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD-SHELL", "healthcheck-localhost.sh 59000 /minio/health/live"]
+      start_period: 10s
       interval: 30s
-      timeout: 20s
+      timeout: 30s
       retries: 3
-    networks: *lakehouse-networks
+    ports:
+      - "59000:59000"
+      - "59001:59001"
     volumes:
+      - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
       - "minio_data:/data"
+    networks: *local-networks
 
   minio-createbucket:
     container_name: local-lakehouse-minio-create-bucket
     depends_on:
       minio:
         condition: service_healthy
-    image: quay.io/minio/mc:RELEASE.2025-05-21T01-59-54Z
-    environment:
-      MINIO_ROOT_USER: adpuser
-      MINIO_ROOT_PASSWORD: adppassword
-      MINIO_BUCKET_NAME: local-lakehouse
-    entrypoint: |
+    image: *minio-mc-image
+    env_file: *env-file
+    entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set minio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} \
-      if ! /usr/bin/mc ls minio/$${MINIO_BUCKET_NAME}; then \
-        echo \"Bucket '$${MINIO_BUCKET_NAME}' not found, creating...\" \
-        /usr/bin/mc mb minio/$${MINIO_BUCKET_NAME}; \
-        echo \"Bucket '$${MINIO_BUCKET_NAME}' created.\" \
-      else \
-        echo \"Found bucket '$${MINIO_BUCKET_NAME}'\" \
-      fi \
+      /usr/bin/mc alias set minio http://minio:59000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+      if ! /usr/bin/mc ls minio/$${MINIO_BUCKET_NAME}; then
+        echo \"Bucket '$${MINIO_BUCKET_NAME}' not found, creating...\"
+        /usr/bin/mc mb minio/$${MINIO_BUCKET_NAME};
+        echo \"Bucket '$${MINIO_BUCKET_NAME}' created.\"
+      else
+        echo \"Found bucket '$${MINIO_BUCKET_NAME}'\"
+      fi
       "
-    networks: *lakehouse-networks
+    networks: *local-networks
 
   #########################################################
   # Lakekeeper - Iceberg REST catalog
@@ -146,62 +213,58 @@ services:
   lakekeeper:
     container_name: local-lakehouse-lakekeeper
     image: *lakekeeper-image
+    env_file: *env-file
     environment:
-      - LAKEKEEPER__PG_ENCRYPTION_KEY=This-is-NOT-Secure!
-      - LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://adpuser:adppassword@shared-database:5432/lakekeeper
-      - LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://adpuser:adppassword@shared-database:5432/lakekeeper
       - RUST_LOG=info,lakekeeper=info,lakekeeper_bin=info,iceberg_ext=info
     command: ["serve"]
     healthcheck:
       test: ["CMD", "/home/nonroot/lakekeeper", "healthcheck"]
+      start_period: 5s
       interval: 30s
-      timeout: 10s
+      timeout: 30s
       retries: 3
-      start_period: 3s
     depends_on:
+      keycloak:
+        condition: service_healthy
       lakekeeper-migrate:
+        condition: service_completed_successfully
+      minio-createbucket:
         condition: service_completed_successfully
       shared-database:
         condition: service_healthy
-      minio-createbucket:
-        condition: service_completed_successfully
-    networks: *lakehouse-networks
-    extra_hosts:
-      - "analytics.localhost:host-gateway"
+      traefik:
+        condition: service_healthy
+    networks: *local-networks
 
   lakekeeper-migrate:
     container_name: local-lakehouse-lakekeeper-migrate
     image: *lakekeeper-image
-    environment:
-      LAKEKEEPER__PG_ENCRYPTION_KEY: This-is-NOT-Secure!
-      LAKEKEEPER__PG_DATABASE_URL_READ: postgresql://adpuser:adppassword@shared-database:5432/lakekeeper
-      LAKEKEEPER__PG_DATABASE_URL_WRITE: postgresql://adpuser:adppassword@shared-database:5432/lakekeeper
-      RUST_LOG: info
+    env_file: *env-file
     restart: "no"
     command: ["migrate"]
     depends_on:
       shared-database-createdatabases:
         condition: service_completed_successfully
-    networks: *lakehouse-networks
+    networks: *local-networks
 
   lakekeeper-createwarehouse:
     container_name: local-lakehouse-lakekeeper-createwarehouse
     image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
-    environment:
-      UV_LINK_MODE: copy
-      UV_PROJECT_ENVIRONMENT: /opt/uv-venv
-      LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL: http://lakekeeper:8181
-      LAKEKEEPER_BOOTSTRAP__WAREHOUSE_JSON_FILE: /opt/work/bootstrap-warehouse.json
-    command: ["uv", "run", "/opt/work/bootstrap-warehouse.py"]
+    env_file: *env-file
+    command:
+      [
+        "uv",
+        "run",
+        "/opt/work/bootstrap-warehouse.py",
+        "/opt/work/bootstrap-warehouse.json",
+      ]
     depends_on:
       lakekeeper:
         condition: service_healthy
-      minio-createbucket:
-        condition: service_completed_successfully
     volumes:
-      - "./lakekeeper/bootstrap-warehouse-no-auth.py:/opt/work/bootstrap-warehouse.py"
-      - "./lakekeeper/bootstrap-warehouse.json:/opt/work/bootstrap-warehouse.json"
-    networks: *lakehouse-networks
+      - "../ansible-docker/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py"
+      - "./lakekeeper/bootstrap-warehouse.json:/opt/work/bootstrap-warehouse.json:ro"
+    networks: *local-networks
 
   #########################################################
   # Trino query engine
@@ -209,30 +272,38 @@ services:
   trino:
     container_name: local-lakehouse-trino
     image: *trino-image
+    env_file: *env-file
     volumes:
       - "./trino/etc:/etc/trino:ro"
+    depends_on:
+      lakekeeper-createwarehouse:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-I", "http://localhost:8080/v1/status"]
-      interval: 30s
-      timeout: 10s
-      retries: 2
       start_period: 10s
-    networks: *lakehouse-networks
+      interval: 30s
+      timeout: 30s
+      retries: 2
+    networks: *local-networks
 
   #########################################################
   # Superset BI tool
   #########################################################
 
   superset-redis:
+    profiles:
+      - superset
     container_name: local-lakehouse-superset-redis
     env_file: *env-file
     image: redis:8
     restart: unless-stopped
     volumes:
       - shared_redis_data:/data
-    networks: *lakehouse-networks
+    networks: *local-networks
 
   superset-app:
+    profiles:
+      - superset
     container_name: local-lakehouse-superset-app
     env_file: *env-file
     image: *superset-image
@@ -244,9 +315,11 @@ services:
       superset-init:
         condition: service_completed_successfully
     volumes: *superset-volumes
-    networks: *lakehouse-networks
+    networks: *local-networks
 
   superset-init:
+    profiles:
+      - superset
     container_name: local-lakehouse-superset-init
     env_file: *env-file
     image: *superset-image
@@ -257,11 +330,13 @@ services:
         condition: service_healthy
     user: *superset-user
     volumes: *superset-volumes
+    networks: *local-networks
     healthcheck:
       disable: true
-    networks: *lakehouse-networks
 
   superset-worker:
+    profiles:
+      - superset
     container_name: local-lakehouse-superset-worker
     env_file: *env-file
     image: *superset-image
@@ -273,7 +348,7 @@ services:
         condition: service_healthy
     user: *superset-user
     volumes: *superset-volumes
-    networks: *lakehouse-networks
+    networks: *local-networks
     healthcheck:
       test:
         [
@@ -282,6 +357,8 @@ services:
         ]
 
   superset-worker-beat:
+    profiles:
+      - superset
     container_name: local-lakehouse-superset-worker-beat
     env_file: *env-file
     image: *superset-image
@@ -293,18 +370,20 @@ services:
         condition: service_healthy
     user: *superset-user
     volumes: *superset-volumes
-    networks: *lakehouse-networks
+    networks: *local-networks
     healthcheck:
       disable: true
 
 networks:
-  local-lakehouse-net:
-    name: local-lakehouse-net
+  local-lakehouse_net:
+    name: local-lakehouse-network
 
 volumes:
-  shared_database_data:
-    name: local-lakehouse_shared_database_data
+  keycloak_data:
+    name: local-lakehouse_keycloak_data
   minio_data:
     name: local-lakehouse_minio_data
+  shared_database_data:
+    name: local-lakehouse_shared_database_data
   shared_redis_data:
     name: local-lakehouse_shared_redis_data

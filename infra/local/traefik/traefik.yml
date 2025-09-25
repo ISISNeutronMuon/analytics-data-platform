@@ -5,6 +5,8 @@ global:
 api:
   dashboard: true
 
+ping: {}
+
 log:
   level: DEBUG
   noColor: true
@@ -14,8 +16,6 @@ entryPoints:
     address: :80
   trino:
     address: :8088
-  minioapi:
-    address: :9000
 
 # file configuration backend
 providers:

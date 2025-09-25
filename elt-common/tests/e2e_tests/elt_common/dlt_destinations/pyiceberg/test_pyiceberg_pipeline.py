@@ -4,9 +4,9 @@ from types import FrameType
 from typing import Any, Dict, List
 
 import dlt
-from dlt.common.pendulum import pendulum
 from dlt.common.schema.utils import loads_table, pipeline_state_table, version_table
 from dlt.pipeline.exceptions import PipelineStepFailed
+import pendulum
 
 import pytest
 

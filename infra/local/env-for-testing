@@ -1,0 +1,86 @@
+###############################################################################
+# WARNING=DO NOT USE THIS FILE FOR PRODUCTION
+###############################################################################
+
+###############################################################################
+# Postgres image
+###############################################################################
+POSTGRES_USER=adpuser
+POSTGRES_PASSWORD=adppassword
+PGPASSWORD=$POSTGRES_PASSWORD
+POSTGRES_DATABASE=unused
+
+###############################################################################
+# Keycloak
+###############################################################################
+KC_BOOTSTRAP_ADMIN_USERNAME=$POSTGRES_USER
+KC_BOOTSTRAP_ADMIN_PASSWORD=$POSTGRES_PASSWORD
+KC_HTTP_RELATIVE_PATH=/auth
+
+###############################################################################
+# MinIO
+###############################################################################
+MINIO_ROOT_USER=$POSTGRES_USER
+MINIO_ROOT_PASSWORD=$POSTGRES_PASSWORD
+MINIO_SCHEME=http
+# This needs to match the route in traefik/traefik-dynamic.yml
+MINIO_BROWSER_REDIRECT_URL=http://localhost:59001
+MINIO_BUCKET_NAME=playground
+
+###############################################################################
+# Iceberg catalog
+###############################################################################
+LAKEKEEPER__PG_ENCRYPTION_KEY=This-is-NOT-Secure!
+LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@shared-database:5432/lakekeeper
+LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@shared-database:5432/lakekeeper
+LAKEKEEPER__OPENID_PROVIDER_URI=http://traefik$KC_HTTP_RELATIVE_PATH/realms/iceberg
+LAKEKEEPER__OPENID_ADDITIONAL_ISSUERS=http://localhost:58080$KC_HTTP_RELATIVE_PATH/realms/iceberg
+LAKEKEEPER__OPENID_AUDIENCE=lakekeeper
+# Use host-accessible URI for browser-based UI
+LAKEKEEPER__UI__OPENID_PROVIDER_URI=http://localhost:58080$KC_HTTP_RELATIVE_PATH/realms/iceberg
+LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
+
+UV_LINK_MODE=copy
+UV_PROJECT_ENVIRONMENT=/opt/uv-venv
+LAKEKEEPER_BOOTSTRAP__LOG_LEVEL=DEBUG
+LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL=http://traefik/iceberg
+LAKEKEEPER_BOOTSTRAP__TOKEN_ENDPOINT_URL=http://traefik$KC_HTTP_RELATIVE_PATH/realms/iceberg/protocol/openid-connect/token
+LAKEKEEPER_BOOTSTRAP__CLIENT_ID=localinfra
+LAKEKEEPER_BOOTSTRAP__CLIENT_SECRET=s3cr3t
+LAKEKEEPER_BOOTSTRAP__SCOPE=lakekeeper
+
+###############################################################################
+# Superset
+###############################################################################
+# Metadata DB
+SUPERSET_DB_HOST=shared-database
+SUPERSET_DB_USER=adpuser
+SUPERSET_DB_PASSWORD=adppassword
+SUPERSET_DB_NAME=superset
+SUPERSET_DB_SCHEMA_NAME=playground
+SUPERSET_DB_PORT=5432
+SUPERSET_DB_DIALECT=postgresql
+
+# Caching layer (match service name and port in compose file)
+REDIS_HOST=superset-redis
+REDIS_PORT=6379
+
+# Admin user
+SUPERSET_ADMIN_USER=adpuser
+SUPERSET_ADMIN_FIRSTNAME=Admin
+SUPERSET_ADMIN_LASTNAME=Admin
+SUPERSET_ADMIN_EMAIL=test@example.com
+SUPERSET_ADMIN_PASSWORD=adppassword
+
+# Environment/development settings
+PYTHONPATH=/app/docker/pythonpath
+SCARF_ANALYTICS=false
+FLASK_DEBUG=True
+SUPERSET_LOG_LEVEL=info
+SUPERSET_ENV=development
+SUPERSET_PORT=8088
+# Needs to match traefik rule in traefik-dynamic.yml
+SUPERSET_APP_ROOT=/workspace/$SUPERSET_DB_SCHEMA_NAME
+
+# Make sure you set this to a unique secure random value on production
+SUPERSET_SECRET_KEY=0123456789
