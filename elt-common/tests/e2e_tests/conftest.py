@@ -1,6 +1,7 @@
 import dataclasses
+import itertools
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Callable, Dict, Generator, List
 import urllib.parse
 import uuid
 import warnings
@@ -14,8 +15,11 @@ from dlt.common.configuration.providers import (
     ConfigTomlProvider,
 )
 from dlt.common.runtime.run_context import RunContext
-from minio import Minio, S3Error
 
+from elt_common.dlt_destinations.pyiceberg.catalog import create_catalog
+from elt_common.dlt_destinations.pyiceberg.configuration import PyIcebergCatalogCredentials
+from minio import Minio, S3Error
+from pyiceberg.catalog import Catalog as PyIcebergCatalog
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import pytest
 import requests
@@ -37,31 +41,34 @@ RunContext.initial_providers = initial_providers  # type: ignore[method-assign]
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="tests_")
+    model_config = SettingsConfigDict(
+        env_prefix="tests_",
+    )
 
     # The default values assume the docker-compose.yml in the infra/local has been used.
     # These are provided for the convenience of easily running a debugger without having
     # to set up remote debugging
-    lakekeeper_url: Optional[str] = "http://localhost:58080/iceberg"
-    s3_access_key: Optional[str] = "adpuser"
-    s3_secret_key: Optional[str] = "adppassword"
-    s3_bucket: Optional[str] = "e2e-tests-warehouse"
-    s3_endpoint: Optional[str] = "http://minio:59000"
-    s3_region: Optional[str] = "local-01"
-    s3_path_style_access: Optional[bool] = True
-    openid_provider_uri: Optional[str] = "http://localhost:58080/auth/realms/iceberg"
-    openid_client_id: Optional[str] = "localinfra"
-    openid_client_secret: Optional[str] = "s3cr3t"
-    openid_scope: Optional[str] = "lakekeeper"
-    warehouse_name: Optional[str] = "e2e_tests"
 
-    @property
-    def catalog_url(self) -> str:
-        return f"{self.lakekeeper_url}/catalog"
+    # iceberg catalog
+    lakekeeper_url: str = "http://localhost:58080/iceberg"
+    s3_access_key: str = "adpuser"
+    s3_secret_key: str = "adppassword"
+    s3_bucket: str = "e2e-tests-warehouse"
+    s3_endpoint: str = "http://minio:59000"
+    s3_region: str = "local-01"
+    s3_path_style_access: bool = True
+    openid_provider_uri: str = "http://localhost:58080/auth/realms/iceberg"
+    openid_client_id: str = "localinfra"
+    openid_client_secret: str = "s3cr3t"
+    openid_scope: str = "lakekeeper"
+    warehouse_name: str = "e2e_tests"
 
-    @property
-    def management_url(self) -> str:
-        return f"{self.lakekeeper_url}/management"
+    # trino
+    trino_http_scheme: str = "http"
+    trino_host: str = "localhost"
+    trino_port: str = "58088"
+    trino_user: str = "trino"
+    trino_password: str = ""
 
     def storage_config(self) -> Dict[str, Any]:
         return {
@@ -88,54 +95,44 @@ class Settings(BaseSettings):
 
 
 class Server:
-    access_token: str
-    lakekeeper_url: str
-    openid_provider_uri: str
-    openid_client_id: str
-    openid_client_secret: str
-    openid_scope: str
-
-    def __init__(self, **kwargs):
-        self.access_token = kwargs["access_token"]
-        self.lakekeeper_url = kwargs["lakekeeper_url"]
-        self.openid_provider_uri = kwargs["openid_provider_uri"]
-        self.openid_client_id = kwargs["openid_client_id"]
-        self.openid_client_secret = kwargs["openid_client_secret"]
-        self.openid_scope = kwargs["openid_scope"]
+    def __init__(self, access_token: str, settings: Settings):
+        self.access_token = access_token
+        self.settings = settings
 
         # Bootstrap server once
-        access_token = kwargs["access_token"]
-        server_info = requests.get(
-            self.management_api_url + "/info",
-            headers={"Authorization": f"Bearer {access_token}"},
-            timeout=10.0,
+        management_endpoint_v1 = self.management_endpoint(version=1)
+        server_info = self._request_with_auth(
+            requests.get,
+            url=management_endpoint_v1 + "/info",
         )
         server_info.raise_for_status()
         server_info = server_info.json()
         if not server_info["bootstrapped"]:
-            response = requests.post(
-                self.management_api_url + "/bootstrap",
-                headers={"Authorization": f"Bearer {access_token}"},
+            response = self._request_with_auth(
+                requests.post,
+                management_endpoint_v1 + "/bootstrap",
                 json={"accept-terms-of-use": True},
-                timeout=10.0,
             )
             response.raise_for_status()
 
     @property
-    def catalog_url(self):
-        return self.lakekeeper_url + "/catalog"
-
-    @property
-    def management_api_url(self):
-        return self.lakekeeper_url + "/management/v1"
-
-    @property
     def token_endpoint(self):
-        return self.openid_provider_uri + "/protocol/openid-connect/token"
+        return self.settings.openid_provider_uri + "/protocol/openid-connect/token"
 
-    @property
-    def warehouse_url(self):
-        return self.management_api_url + "/warehouse"
+    def catalog_endpoint(self, *, version: int | None = None):
+        endpoint = self.settings.lakekeeper_url + "/catalog"
+        if version:
+            endpoint += f"/v{version}"
+        return endpoint
+
+    def management_endpoint(self, *, version: int | None = None):
+        endpoint = self.settings.lakekeeper_url + "/management"
+        if version:
+            endpoint += f"/v{version}"
+        return endpoint
+
+    def warehouse_endpoint(self, *, version: int = 1):
+        return self.management_endpoint(version=version) + "/warehouse"
 
     def create_warehouse(
         self, name: str, project_id: uuid.UUID, storage_config: dict
@@ -147,10 +144,10 @@ class Server:
             **storage_config,
         }
 
-        response = requests.post(
-            self.warehouse_url,
+        response = self._request_with_auth(
+            requests.post,
+            self.warehouse_endpoint(),
             json=payload,
-            headers={"Authorization": f"Bearer {self.access_token}"},
         )
         try:
             response.raise_for_status()
@@ -169,12 +166,37 @@ class Server:
             f"s3://{storage_config['storage-profile']['bucket']}",
         )
 
-    def delete_warehouse(self, warehouse_id: uuid.UUID) -> None:
-        response = requests.delete(
-            self.warehouse_url + f"/{str(warehouse_id)}",
-            headers={"Authorization": f"Bearer {self.access_token}"},
+    def purge_warehouse(self, warehouse: "Warehouse") -> None:
+        """Purge all of the data in the given warehouse"""
+        catalog_warehouse_endpoint = (
+            self.catalog_endpoint(version=1) + f"/{str(warehouse.project_id)}"
+        )
+        response = self._request_with_auth(
+            requests.get,
+            catalog_warehouse_endpoint + "/namespaces",
+        )
+        namespaces = response.json()["namespaces"]
+        for ns in itertools.chain.from_iterable(namespaces):
+            response = self._request_with_auth(
+                requests.delete,
+                catalog_warehouse_endpoint + f"/namespaces/{ns}",
+                params={"force": "true", "recursive": "true", "purge": "true"},
+            )
+            response.raise_for_status()
+
+    def delete_warehouse(self, warehouse: "Warehouse") -> None:
+        """Purge all of the data in the given warehouse and delete it"""
+        response = self._request_with_auth(
+            requests.delete, self.warehouse_endpoint() + f"/{str(warehouse.project_id)}"
         )
         response.raise_for_status()
+
+    def _request_with_auth(self, requests_method: Callable, url: str, **kwargs):
+        """Make a request, adding in the auth token"""
+        headers = kwargs.setdefault("headers", {})
+        headers.update({"Authorization": f"Bearer {self.access_token}"})
+        kwargs.setdefault("timeout", 10.0)
+        return requests_method(url=url, **kwargs)
 
 
 @dataclasses.dataclass
@@ -183,6 +205,17 @@ class Warehouse:
     name: str
     project_id: uuid.UUID
     bucket_url: str
+
+    def connect(self) -> PyIcebergCatalog:
+        """Connect to the warehouse in the catalog"""
+        creds = PyIcebergCatalogCredentials()
+        creds.uri = self.server.catalog_endpoint()
+        creds.warehouse = self.name
+        creds.oauth2_server_uri = self.server.token_endpoint
+        creds.client_id = self.server.settings.openid_client_id
+        creds.client_secret = self.server.settings.openid_client_secret
+        creds.scope = self.server.settings.openid_scope
+        return create_catalog(name="default", **creds.as_dict())
 
 
 settings = Settings()
@@ -215,7 +248,7 @@ def access_token(token_endpoint: str) -> str:
 
 @pytest.fixture(scope="session")
 def server(access_token: str) -> Server:
-    return Server(access_token=access_token, **settings.model_dump())
+    return Server(access_token, settings)
 
 
 @pytest.fixture(scope="session")
@@ -250,11 +283,12 @@ def warehouse(server: Server, project: uuid.UUID) -> Generator:
         try:
             retry_args = {
                 "delay": 2,
-                "tries": 100,
+                "tries": 10,
                 "backoff": 1.7,
                 "max_delay": 15,
             }
-            retry_call(server.delete_warehouse, fargs=(warehouse.project_id,), **retry_args)
+            retry_call(server.purge_warehouse, fargs=(warehouse,), **retry_args)
+            retry_call(server.delete_warehouse, fargs=(warehouse,), **retry_args)
             retry_call(
                 minio_client.remove_bucket, fargs=(bucket_name,), exceptions=S3Error, **retry_args
             )

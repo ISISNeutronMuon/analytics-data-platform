@@ -42,23 +42,24 @@ class PyIcebergDestinationTestConfiguration:
 
     def setup(self, warehouse: Warehouse) -> None:
         """Sets up environment variables for this destination configuration"""
-        os.environ["DESTINATION__PYICEBERG__CREDENTIALS__URI"] = warehouse.server.catalog_url
+        server, server_settings = warehouse.server, warehouse.server.settings
+        os.environ["DESTINATION__PYICEBERG__CREDENTIALS__URI"] = warehouse.server.catalog_endpoint()
         os.environ.setdefault("DESTINATION__PYICEBERG__CREDENTIALS__WAREHOUSE", warehouse.name)
         os.environ.setdefault(
             "DESTINATION__PYICEBERG__CREDENTIALS__OAUTH2_SERVER_URI",
-            warehouse.server.token_endpoint,
+            server.token_endpoint,
         )
         os.environ.setdefault(
             "DESTINATION__PYICEBERG__CREDENTIALS__CLIENT_ID",
-            warehouse.server.openid_client_id,
+            server_settings.openid_client_id,
         )
         os.environ.setdefault(
             "DESTINATION__PYICEBERG__CREDENTIALS__CLIENT_SECRET",
-            warehouse.server.openid_client_secret,
+            server_settings.openid_client_secret,
         )
         os.environ.setdefault(
             "DESTINATION__PYICEBERG__CREDENTIALS__SCOPE",
-            warehouse.server.openid_scope,
+            server_settings.openid_scope,
         )
         os.environ.setdefault("DESTINATION__PYICEBERG__BUCKET_URL", warehouse.bucket_url)
         # Avoid collisons on table names when the same ones are created/deleted in quick
