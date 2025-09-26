@@ -59,6 +59,8 @@ x-superset-depends-on: &superset-depends-on
     condition: service_started
   shared-database-createdatabases:
     condition: service_completed_successfully
+  trino-createcatalog:
+    condition: service_completed_successfully
 x-superset-volumes: &superset-volumes
   - ./superset/docker/docker-init.sh:/app/docker/docker-init.sh:ro
   - ./superset/docker/pythonpath:/app/docker/pythonpath:ro
@@ -140,7 +142,11 @@ services:
       - keycloak_data:/opt/keycloak/data
       - ./keycloak/iceberg-realm.json:/opt/keycloak/data/import/iceberg-realm.json:ro
     healthcheck:
-      test: ["CMD-SHELL", "healthcheck-localhost.sh 8080 $$KC_HTTP_RELATIVE_PATH/realms/master/.well-known/openid-configuration jwks_uri"]
+      test:
+        [
+          "CMD-SHELL",
+          "healthcheck-localhost.sh 8080 $$KC_HTTP_RELATIVE_PATH/realms/master/.well-known/openid-configuration jwks_uri",
+        ]
       start_period: 20s
       start_interval: 2s
       interval: 30s
@@ -157,7 +163,7 @@ services:
         "--proxy-trusted-addresses=0.0.0.0/0",
         "--import-realm",
         "--verbose",
-        "--log-level=INFO"
+        "--log-level=INFO",
       ]
     networks: *local-networks
 
@@ -172,7 +178,8 @@ services:
     image: *minio-image
     env_file: *env-file
     # Match ports on host & container to use the same address inside and outside the container network
-    command: ["server", "/data", "--address", ":59000", "--console-address", ":59001"]
+    command:
+      ["server", "/data", "--address", ":59000", "--console-address", ":59001"]
     healthcheck:
       test: ["CMD-SHELL", "healthcheck-localhost.sh 59000 /minio/health/live"]
       start_period: 10s
@@ -284,6 +291,19 @@ services:
       interval: 30s
       timeout: 30s
       retries: 2
+    networks: *local-networks
+
+  trino-createcatalog:
+    container_name: local-lakehouse-trino-create-catalog
+    image: *trino-image
+    env_file: *env-file
+    volumes:
+      - "./trino/trino-create-catalog.sql:/docker/trino-create-catalog.sql"
+    entrypoint: >
+      /bin/sh -c "trino --file=/docker/trino-create-catalog.sql http://trino:8080"
+    depends_on:
+      trino:
+        condition: service_healthy
     networks: *local-networks
 
   #########################################################
