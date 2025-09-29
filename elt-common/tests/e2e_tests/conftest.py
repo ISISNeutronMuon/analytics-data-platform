@@ -18,12 +18,18 @@ from dlt.common.runtime.run_context import RunContext
 
 from elt_common.dlt_destinations.pyiceberg.catalog import create_catalog
 from elt_common.dlt_destinations.pyiceberg.configuration import PyIcebergCatalogCredentials
-from minio import Minio, S3Error
+from minio import Minio
 from pyiceberg.catalog import Catalog as PyIcebergCatalog
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import pytest
 import requests
-from retry.api import retry_call
+import tenacity
+
+_RETRY_ARGS = {
+    "wait": tenacity.wait_exponential(max=10),
+    "stop": tenacity.stop_after_attempt(10),
+    "reraise": True,
+}
 
 
 def initial_providers(self) -> List[ConfigProvider]:
@@ -166,6 +172,7 @@ class Server:
             f"s3://{storage_config['storage-profile']['bucket']}",
         )
 
+    @tenacity.retry(**_RETRY_ARGS)
     def purge_warehouse(self, warehouse: "Warehouse") -> None:
         """Purge all of the data in the given warehouse"""
         catalog_warehouse_endpoint = (
@@ -184,6 +191,7 @@ class Server:
             )
             response.raise_for_status()
 
+    @tenacity.retry(**_RETRY_ARGS)
     def delete_warehouse(self, warehouse: "Warehouse") -> None:
         """Purge all of the data in the given warehouse and delete it"""
         response = self._request_with_auth(
@@ -280,19 +288,17 @@ def warehouse(server: Server, project: uuid.UUID) -> Generator:
     try:
         yield warehouse
     finally:
+
+        @tenacity.retry(**_RETRY_ARGS)
+        def _remove_bucket(bucket_name):
+            minio_client.remove_bucket(bucket_name)
+
         try:
-            retry_args = {
-                "delay": 2,
-                "tries": 10,
-                "backoff": 1.7,
-                "max_delay": 15,
-            }
-            retry_call(server.purge_warehouse, fargs=(warehouse,), **retry_args)
-            retry_call(server.delete_warehouse, fargs=(warehouse,), **retry_args)
-            retry_call(
-                minio_client.remove_bucket, fargs=(bucket_name,), exceptions=S3Error, **retry_args
-            )
-        except Exception as exc:
+            server.purge_warehouse(warehouse)
+            server.delete_warehouse(warehouse)
+            _remove_bucket(bucket_name)
+
+        except RuntimeError as exc:
             warnings.warn(
                 f"Error deleting test warehouse '{str(warehouse.project_id)}'. It may need to be removed manually."
             )

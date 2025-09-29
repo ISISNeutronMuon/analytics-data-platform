@@ -1,3 +1,4 @@
+import datetime
 from typing import ClassVar, cast
 import urllib.parse as urlparser
 
@@ -6,7 +7,13 @@ from fsspec import AbstractFileSystem
 from dlt.common.configuration.specs import configspec
 from dlt.common.typing import TSecretStrValue
 from httpx import Response
-import datetime
+import tenacity
+
+_RETRY_ARGS = {
+    "wait": tenacity.wait_exponential(max=5),
+    "stop": tenacity.stop_after_attempt(10),
+    "reraise": True,
+}
 
 
 @configspec
@@ -48,7 +55,6 @@ class M365DriveFS(AbstractFileSystem):
 
     protocol = ("m365",)
     drives_api_url = f"{M365CredentialsResource.api_url}/drives"
-    http_retries = 5
 
     def __init__(self, credentials: M365CredentialsResource, site_url: str, **extra_kwargs):
         super_kwargs = extra_kwargs.copy()
@@ -217,14 +223,6 @@ class M365DriveFS(AbstractFileSystem):
     def _msgraph_get(self, url: str, **kwargs) -> Response:
         return self._msgraph_request("GET", url, **kwargs)
 
+    @tenacity.retry(**_RETRY_ARGS)
     def _msgraph_request(self, method: str, url: str, **kwargs) -> Response:
-        from retry.api import retry_call
-
-        return retry_call(
-            self.client.request,
-            fargs=(method, url),
-            fkwargs=kwargs,
-            tries=self.http_retries,
-            backoff=1.7,
-            max_delay=15,
-        )
+        return self.client.request(method, url, **kwargs)

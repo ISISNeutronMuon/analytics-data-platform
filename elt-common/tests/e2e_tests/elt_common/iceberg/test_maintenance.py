@@ -2,6 +2,7 @@ import dataclasses
 from pyiceberg.catalog import Catalog as PyIcebergCatalog
 import os
 import pyarrow as pa
+from tenacity import retry
 
 from e2e_tests.conftest import Warehouse
 
@@ -34,6 +35,7 @@ class EltMaintenanceEnviron:
 def populate_warehouse(warehouse: Warehouse) -> PyIcebergCatalog:
     """Create tables and additional snapshots of tables for maintenance testing"""
 
+    @retry
     def append_snapshot(table, id_start):
         """Append new data to the table to create another Iceberg snapshot"""
         rows_per_frame = 10
@@ -44,7 +46,6 @@ def populate_warehouse(warehouse: Warehouse) -> PyIcebergCatalog:
             }
         )
 
-        # NOTE: ADD RETRY as appending too fast can cause race conditions
         table.append(test_data)
         return id_start + rows_per_frame
 
