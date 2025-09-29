@@ -1,5 +1,4 @@
 import dataclasses
-import itertools
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, List
 import urllib.parse
@@ -46,6 +45,26 @@ def initial_providers(self) -> List[ConfigProvider]:
 RunContext.initial_providers = initial_providers  # type: ignore[method-assign]
 
 
+@dataclasses.dataclass
+class Endpoint:
+    raw_value: str
+    internal_netloc: str
+
+    def __add__(self, path: str) -> "Endpoint":
+        return Endpoint(self.raw_value + path, self.internal_netloc)
+
+    def __str__(self) -> str:
+        return self.raw_value
+
+    def value(self, *, use_internal_netloc: bool) -> str:
+        if use_internal_netloc:
+            fragments = list(urllib.parse.urlparse(self.raw_value))
+            fragments[1] = self.internal_netloc
+            return urllib.parse.urlunparse(fragments)
+        else:
+            return self.raw_value
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="tests_",
@@ -54,16 +73,20 @@ class Settings(BaseSettings):
     # The default values assume the docker-compose.yml in the infra/local has been used.
     # These are provided for the convenience of easily running a debugger without having
     # to set up remote debugging
+    host_netloc: str = "localhost:58080"
+    docker_netloc: str = "traefik"
 
     # iceberg catalog
-    lakekeeper_url: str = "http://localhost:58080/iceberg"
+    lakekeeper_url: Endpoint = Endpoint(f"http://{host_netloc}/iceberg", docker_netloc)
     s3_access_key: str = "adpuser"
     s3_secret_key: str = "adppassword"
     s3_bucket: str = "e2e-tests-warehouse"
     s3_endpoint: str = "http://minio:59000"
     s3_region: str = "local-01"
     s3_path_style_access: bool = True
-    openid_provider_uri: str = "http://localhost:58080/auth/realms/iceberg"
+    openid_provider_uri: Endpoint = Endpoint(
+        f"http://{host_netloc}/auth/realms/iceberg", docker_netloc
+    )
     openid_client_id: str = "localinfra"
     openid_client_secret: str = "s3cr3t"
     openid_scope: str = "lakekeeper"
@@ -122,22 +145,23 @@ class Server:
             response.raise_for_status()
 
     @property
-    def token_endpoint(self):
+    def token_endpoint(self) -> Endpoint:
         return self.settings.openid_provider_uri + "/protocol/openid-connect/token"
 
-    def catalog_endpoint(self, *, version: int | None = None):
+    def catalog_endpoint(self, *, version: int | None = None) -> Endpoint:
         endpoint = self.settings.lakekeeper_url + "/catalog"
         if version:
             endpoint += f"/v{version}"
+
         return endpoint
 
-    def management_endpoint(self, *, version: int | None = None):
+    def management_endpoint(self, *, version: int | None = None) -> Endpoint:
         endpoint = self.settings.lakekeeper_url + "/management"
         if version:
             endpoint += f"/v{version}"
         return endpoint
 
-    def warehouse_endpoint(self, *, version: int = 1):
+    def warehouse_endpoint(self, *, version: int = 1) -> Endpoint:
         return self.management_endpoint(version=version) + "/warehouse"
 
     def create_warehouse(
@@ -175,21 +199,13 @@ class Server:
     @tenacity.retry(**_RETRY_ARGS)
     def purge_warehouse(self, warehouse: "Warehouse") -> None:
         """Purge all of the data in the given warehouse"""
-        catalog_warehouse_endpoint = (
-            self.catalog_endpoint(version=1) + f"/{str(warehouse.project_id)}"
-        )
-        response = self._request_with_auth(
-            requests.get,
-            catalog_warehouse_endpoint + "/namespaces",
-        )
-        namespaces = response.json()["namespaces"]
-        for ns in itertools.chain.from_iterable(namespaces):
-            response = self._request_with_auth(
-                requests.delete,
-                catalog_warehouse_endpoint + f"/namespaces/{ns}",
-                params={"force": "true", "recursive": "true", "purge": "true"},
-            )
-            response.raise_for_status()
+        catalog = warehouse.connect()
+        for ns in catalog.list_namespaces():
+            for view_id in catalog.list_views(ns):
+                catalog.drop_view(view_id)
+            for table_id in catalog.list_tables(ns):
+                catalog.purge_table(table_id)
+            catalog.drop_namespace(ns)
 
     @tenacity.retry(**_RETRY_ARGS)
     def delete_warehouse(self, warehouse: "Warehouse") -> None:
@@ -199,12 +215,12 @@ class Server:
         )
         response.raise_for_status()
 
-    def _request_with_auth(self, requests_method: Callable, url: str, **kwargs):
+    def _request_with_auth(self, requests_method: Callable, url: Endpoint, **kwargs):
         """Make a request, adding in the auth token"""
         headers = kwargs.setdefault("headers", {})
         headers.update({"Authorization": f"Bearer {self.access_token}"})
         kwargs.setdefault("timeout", 10.0)
-        return requests_method(url=url, **kwargs)
+        return requests_method(url=str(url), **kwargs)
 
 
 @dataclasses.dataclass
@@ -217,9 +233,9 @@ class Warehouse:
     def connect(self) -> PyIcebergCatalog:
         """Connect to the warehouse in the catalog"""
         creds = PyIcebergCatalogCredentials()
-        creds.uri = self.server.catalog_endpoint()
+        creds.uri = str(self.server.catalog_endpoint())
         creds.warehouse = self.name
-        creds.oauth2_server_uri = self.server.token_endpoint
+        creds.oauth2_server_uri = str(self.server.token_endpoint)
         creds.client_id = self.server.settings.openid_client_id
         creds.client_secret = self.server.settings.openid_client_secret
         creds.scope = self.server.settings.openid_scope
@@ -234,7 +250,7 @@ def token_endpoint() -> str:
     if not settings.openid_provider_uri:
         raise ValueError("Empty 'openid_provider_uri' is not allowed.")
 
-    response = requests.get(settings.openid_provider_uri + "/.well-known/openid-configuration")
+    response = requests.get(str(settings.openid_provider_uri + "/.well-known/openid-configuration"))
     response.raise_for_status()
     return response.json()["token_endpoint"]
 

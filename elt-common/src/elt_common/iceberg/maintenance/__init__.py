@@ -61,5 +61,5 @@ def cli(table: Sequence[str], log_level: str):
     trino = TrinoQueryEngine(TrinoCredentials.from_env(ENV_PREFIX))
     iceberg_maintenance = IcebergTableMaintenaceSql(trino)
     if not table:
-        table = trino.list_iceberg_tables_for_maintenance()
+        table = trino.list_iceberg_tables()
     iceberg_maintenance.run(table)

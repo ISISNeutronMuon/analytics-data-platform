@@ -8,7 +8,6 @@ import humanize
 import pendulum
 from sqlalchemy import Connection, Engine, create_engine
 from sqlalchemy.sql.expression import text
-from sqlalchemy.exc import ProgrammingError as SqlProgrammingError
 from trino.auth import BasicAuthentication
 
 LOGGER = logging.getLogger(__name__)
@@ -69,50 +68,15 @@ class TrinoQueryEngine:
         LOGGER.debug(f"Returned {rows}")
         return rows
 
-    def list_iceberg_tables_for_maintenance(
-        self,
-        ignore_namespaces: Sequence[str] = ("information_schema", "system"),
-    ) -> Sequence[str]:
+    def list_iceberg_tables(self) -> Sequence[str]:
         """List all iceberg tables in the catalog. Names are returned fully qualified with the namespace name."""
-
-        def _is_iceberg_needing_maintenance(namespace: str, table_name: str) -> bool:
-            # An Iceberg table requiring maintenance must have a '{table_id}$properties' and have a valid
-            # current snapshot
-            props_table = f'{namespace}."{table_name}$properties"'
-            try:
-                self.execute(f"describe {props_table}", conn)
-            except SqlProgrammingError:
-                LOGGER.debug(
-                    f"{props_table} does not exist. Assuming {namespace}.{table_name} is not an iceberg table."
-                )
-                return False
-
-            rows = self.execute(
-                f"select value from {props_table} where key = 'current-snapshot-id'", conn
-            )
-            return rows[0][0] != "none"
-
         LOGGER.info("Querying catalog for Iceberg tables")
         with self.engine.connect() as conn:
-            namespaces = map(
-                lambda row: row[0],
-                filter(
-                    lambda row: row[0] not in ignore_namespaces, self.execute("show schemas", conn)
-                ),
-            )
-            table_identifiers = []
-            for ns in namespaces:
-                table_identifiers.extend(
-                    map(
-                        lambda row: f"{ns}.{row[0]}",
-                        filter(
-                            lambda row: _is_iceberg_needing_maintenance(ns, row[0]),
-                            self.execute(f"show tables in {ns}", conn),
-                        ),
-                    )
-                )
+            rows = self.execute("select * from system.iceberg_tables", connection=conn)
+        if not rows:
+            return []
 
-        return table_identifiers
+        return [f"{row[0]}.{row[1]}" for row in rows]
 
     # private
     def _create_engine(self, credentials: TrinoCredentials) -> Engine:
