@@ -72,23 +72,18 @@ class Settings(BaseSettings):
         env_prefix="tests_",
     )
 
+    # iceberg catalog
     # The default values assume the docker-compose.yml in the infra/local has been used.
     # These are provided for the convenience of easily running a debugger without having
     # to set up remote debugging
     host_netloc: str = "localhost:58080"
     docker_netloc: str = "traefik"
-
-    # iceberg catalog
-    lakekeeper_url: Endpoint = Endpoint(f"http://{host_netloc}/iceberg", docker_netloc)
     s3_access_key: str = "adpuser"
     s3_secret_key: str = "adppassword"
     s3_bucket: str = "e2e-tests-warehouse"
     s3_endpoint: str = "http://minio:59000"
     s3_region: str = "local-01"
     s3_path_style_access: bool = True
-    openid_provider_uri: Endpoint = Endpoint(
-        f"http://{host_netloc}/auth/realms/iceberg", docker_netloc
-    )
     openid_client_id: str = "localinfra"
     openid_client_secret: str = "s3cr3t"
     openid_scope: str = "lakekeeper"
@@ -100,6 +95,14 @@ class Settings(BaseSettings):
     trino_port: str = "58088"
     trino_user: str = "trino"
     trino_password: str = ""
+
+    @property
+    def lakekeeper_url(self) -> Endpoint:
+        return Endpoint(f"http://{self.host_netloc}/iceberg", self.docker_netloc)
+
+    @property
+    def openid_provider_uri(self) -> Endpoint:
+        return Endpoint(f"http://{self.host_netloc}/auth/realms/iceberg", self.docker_netloc)
 
     def storage_config(self) -> Dict[str, Any]:
         return {
@@ -297,9 +300,6 @@ settings = Settings()
 
 @pytest.fixture(scope="session")
 def token_endpoint() -> str:
-    if not settings.openid_provider_uri:
-        raise ValueError("Empty 'openid_provider_uri' is not allowed.")
-
     response = requests.get(str(settings.openid_provider_uri + "/.well-known/openid-configuration"))
     response.raise_for_status()
     return response.json()["token_endpoint"]
