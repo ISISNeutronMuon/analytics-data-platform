@@ -1,4 +1,4 @@
-create catalog playground using iceberg
+create catalog if not exists playground using iceberg
 with (
   "iceberg.catalog.type" = 'rest',
   "iceberg.rest-catalog.warehouse" = 'playground',
