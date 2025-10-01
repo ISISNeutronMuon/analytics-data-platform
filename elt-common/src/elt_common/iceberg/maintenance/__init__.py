@@ -2,7 +2,6 @@ import logging
 from typing import Sequence
 
 import click
-
 from elt_common.iceberg.trino import TrinoCredentials, TrinoQueryEngine
 
 ENV_PREFIX = "ELT_COMMON_ICEBERG_MAINT_TRINO_"
@@ -20,6 +19,7 @@ class IcebergTableMaintenaceSql:
 
     def expire_snapshots(self, table_identifier: str, retention_threshold: str):
         """Expire snapshots older than the given threshold"""
+        self._query_engine.validate_retention_threshold(retention_threshold)
         self._run_alter_table_execute(
             table_identifier, f"expire_snapshots(retention_threshold => '{retention_threshold}')"
         )
@@ -31,6 +31,7 @@ class IcebergTableMaintenaceSql:
         self._run_alter_table_execute(table_identifier, "optimize")
 
     def remove_orphan_files(self, table_identifier: str, retention_threshold: str):
+        self._query_engine.validate_retention_threshold(retention_threshold)
         self._run_alter_table_execute(
             table_identifier, f"remove_orphan_files(retention_threshold => '{retention_threshold}')"
         )
@@ -41,6 +42,7 @@ class IcebergTableMaintenaceSql:
         def _sql_stmt() -> str:
             return f"alter table {table_identifier} execute {cmd}"
 
+        self._query_engine.validate_table_identifier(table_identifier)
         with self._query_engine.engine.connect() as conn:
             self._query_engine.execute(_sql_stmt(), connection=conn)
 
@@ -52,18 +54,31 @@ class IcebergTableMaintenaceSql:
 def cli(table: Sequence[str], retention_threshold: str, log_level: str):
     """Launch the maintenance tasks from the command line.
     By default all namespaces and tables are examined."""
+    try:
+        TrinoQueryEngine.validate_retention_threshold(retention_threshold)
+    except ValueError as exc:
+        raise click.BadParameter(str(exc))
+
     logging.basicConfig(
         format=LOG_FORMAT,
         datefmt=LOG_FORMAT_DATE,
     )
     LOGGER.setLevel(log_level)
+
     trino = TrinoQueryEngine(TrinoCredentials.from_env(ENV_PREFIX))
     iceberg_maintenance = IcebergTableMaintenaceSql(trino)
+
     if not table:
         table = trino.list_iceberg_tables()
-
     for table_id in table:
-        iceberg_maintenance.optimize(table_id)
-        iceberg_maintenance.optimize_manifests(table_id)
-        iceberg_maintenance.expire_snapshots(table_id, retention_threshold=retention_threshold)
-        iceberg_maintenance.remove_orphan_files(table_id, retention_threshold=retention_threshold)
+        try:
+            iceberg_maintenance.optimize(table_id)
+            iceberg_maintenance.optimize_manifests(table_id)
+            iceberg_maintenance.expire_snapshots(table_id, retention_threshold=retention_threshold)
+            iceberg_maintenance.remove_orphan_files(
+                table_id, retention_threshold=retention_threshold
+            )
+        except Exception as exc:
+            LOGGER.error(
+                f"Failed to execute maintenance operation for table '{table_id}': {str(exc)}"
+            )

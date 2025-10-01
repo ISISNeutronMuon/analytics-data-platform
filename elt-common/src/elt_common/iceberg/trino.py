@@ -2,6 +2,7 @@ import contextlib
 import dataclasses
 import logging
 import os
+import re
 from typing import Sequence
 
 import humanize
@@ -82,6 +83,18 @@ class TrinoQueryEngine:
             return []
 
         return [f"{row[0]}.{row[1]}" for row in rows]
+
+    @classmethod
+    def validate_table_identifier(cls, table_identifier: str):
+        """Validate table_identifier format (schema.table)"""
+        if not re.match(r"^[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+$", table_identifier):
+            raise ValueError(f"Invalid table identifier: {table_identifier}")
+
+    @classmethod
+    def validate_retention_threshold(cls, retention_threshold: str):
+        """Validate retention_threshold format (e.g., 7d, 24h)"""
+        if not re.match(r"^\d+[dhms]$", retention_threshold):
+            raise ValueError(f"Invalid retention threshold format: {retention_threshold}")
 
     # private
     def _create_engine(self, credentials: TrinoCredentials) -> Engine:
