@@ -7,12 +7,22 @@ from fsspec import AbstractFileSystem
 from dlt.common.configuration.specs import configspec
 from dlt.common.typing import TSecretStrValue
 from httpx import Response
+from httpx import HTTPStatusError, NetworkError, TimeoutException
 import tenacity
 
 _RETRY_ARGS = {
     "wait": tenacity.wait_exponential(max=5),
     "stop": tenacity.stop_after_attempt(10),
     "reraise": True,
+    "retry": (
+        tenacity.retry_if_exception_type((NetworkError, TimeoutException))
+        | tenacity.retry_if_exception(
+            lambda e: isinstance(e, HTTPStatusError) and e.response.status_code >= 500
+        )
+        | tenacity.retry_if_exception(
+            lambda e: isinstance(e, HTTPStatusError) and e.response.status_code == 429
+        )
+    ),
 }
 
 
