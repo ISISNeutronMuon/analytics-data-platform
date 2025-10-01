@@ -304,6 +304,7 @@ services:
     depends_on:
       trino:
         condition: service_healthy
+    restart: "no"
     networks: *local-networks
 
   #########################################################
