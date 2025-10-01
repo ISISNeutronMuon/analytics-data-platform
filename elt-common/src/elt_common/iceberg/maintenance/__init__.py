@@ -16,6 +16,12 @@ class IcebergTableMaintenaceSql:
     def __init__(self, query_engine: TrinoQueryEngine):
         self._query_engine = query_engine
 
+    def expire_snapshots(self, table_identifier: str, *, retention_threshold: str):
+        """Expire snapshots older than the given threshold"""
+        self._run_alter_table_execute(
+            table_identifier, f"expire_snapshots(retention_threshold => '{retention_threshold}')"
+        )
+
     def run(self, table_identifiers: Sequence[str]):
         """Run Iceberg maintenance operations
 
@@ -31,20 +37,19 @@ class IcebergTableMaintenaceSql:
         :param table_identifiers: Run operations on this list of table identifiers
                                   ("namespace.tablename").
         """
-        commands = ("expire_snapshots", "optimize_manifests", "optimize", "remove_orphan_files")
-        for table_id in table_identifiers:
-            LOGGER.info(f"Running iceberg maintenance on '{table_id}'")
-            self._run_alter_table_execute(table_id, commands)
+        # commands = ("expire_snapshots()", "optimize_manifests", "optimize", "remove_orphan_files")
+        # for table_id in table_identifiers:
+        #     LOGGER.info(f"Running iceberg maintenance on '{table_id}'")
+        #     self._run_alter_table_execute(table_id, cmd=)
 
-    def _run_alter_table_execute(self, table_identifier: str, commands: Sequence[str]):
-        """Run a a list of 'alter table {} execute {}' statments on the given table"""
+    def _run_alter_table_execute(self, table_identifier: str, cmd: str):
+        """Run 'alter table {} execute {}' statments on the given table"""
 
-        def _sql_stmt(cmd: str) -> str:
+        def _sql_stmt() -> str:
             return f"alter table {table_identifier} execute {cmd}"
 
         with self._query_engine.engine.connect() as conn:
-            for cmd in commands:
-                self._query_engine.execute(_sql_stmt(cmd), connection=conn)
+            self._query_engine.execute(_sql_stmt(), connection=conn)
 
 
 @click.command()

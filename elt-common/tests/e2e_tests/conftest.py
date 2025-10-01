@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import dataclasses
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, List
@@ -18,6 +19,7 @@ from dlt.common.runtime.run_context import RunContext
 from elt_common.dlt_destinations.pyiceberg.catalog import create_catalog
 from elt_common.dlt_destinations.pyiceberg.configuration import PyIcebergCatalogCredentials
 from minio import Minio
+import pyarrow as pa
 from pyiceberg.catalog import Catalog as PyIcebergCatalog
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import pytest
@@ -199,13 +201,7 @@ class Server:
     @tenacity.retry(**_RETRY_ARGS)
     def purge_warehouse(self, warehouse: "Warehouse") -> None:
         """Purge all of the data in the given warehouse"""
-        catalog = warehouse.connect()
-        for ns in catalog.list_namespaces():
-            for view_id in catalog.list_views(ns):
-                catalog.drop_view(view_id)
-            for table_id in catalog.list_tables(ns):
-                catalog.purge_table(table_id)
-            catalog.drop_namespace(ns)
+        warehouse.purge()
 
     @tenacity.retry(**_RETRY_ARGS)
     def delete_warehouse(self, warehouse: "Warehouse") -> None:
@@ -240,6 +236,60 @@ class Warehouse:
         creds.client_secret = self.server.settings.openid_client_secret
         creds.scope = self.server.settings.openid_scope
         return create_catalog(name="default", **creds.as_dict())
+
+    @contextmanager
+    def create_test_tables(
+        self,
+        namespace_count: int,
+        table_count_per_ns: int,
+        namespace_prefix: str = "test_ns_",
+        table_prefix: str = "test_table_",
+        snapshot_count: int = 1,
+    ) -> Generator[PyIcebergCatalog]:
+        """Create tables and additional snapshots of tables for maintenance testing"""
+
+        def append_snapshot(table_id: str, id_start: int):
+            """Append new data to the table to create another Iceberg snapshot.
+            If the table does not exist it is created."""
+            rows_per_frame = 2
+            id_end = id_start + rows_per_frame - 1
+            test_data = pa.Table.from_pydict(
+                {
+                    "id": pa.array([id for id in range(id_start, id_end + 1)]),
+                    "value": pa.array([f"value-{id}" for id in range(id_start, id_end + 1)]),
+                }
+            )
+            if catalog.table_exists(table_id):
+                table = catalog.load_table(table_id)
+            else:
+                table = catalog.create_table(table_id, schema=test_data.schema)
+
+            table.append(test_data)
+            return id_start + rows_per_frame
+
+        catalog = self.connect()
+
+        for ns_index in range(namespace_count):
+            ns_name = f"{namespace_prefix}{ns_index}"
+            catalog.create_namespace(ns_name)
+            for table_index in range(table_count_per_ns):
+                id_start = 1
+                for _ in range(snapshot_count):
+                    id_start = append_snapshot(f"{ns_name}.{table_prefix}{table_index}", id_start)
+        try:
+            yield catalog
+        finally:
+            self.purge()
+
+    def purge(self):
+        """Purge all contents in warehouse"""
+        catalog = self.connect()
+        for ns in catalog.list_namespaces():
+            for view_id in catalog.list_views(ns):
+                catalog.drop_view(view_id)
+            for table_id in catalog.list_tables(ns):
+                catalog.purge_table(table_id)
+            catalog.drop_namespace(ns)
 
 
 settings = Settings()

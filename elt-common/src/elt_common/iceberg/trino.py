@@ -7,6 +7,7 @@ from typing import Sequence
 import humanize
 import pendulum
 from sqlalchemy import Connection, Engine, create_engine
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.sql.expression import text
 from trino.auth import BasicAuthentication
 
@@ -60,7 +61,11 @@ class TrinoQueryEngine:
             context_mgr = self.engine.connect()
 
         with context_mgr as conn:
-            result = conn.execute(text(stmt))
+            try:
+                result = conn.execute(text(stmt))
+            except ProgrammingError as exc:
+                raise ValueError(str(exc)) from exc
+
             rows = result.fetchall() if result.returns_rows else None
 
         finished_at = pendulum.now()
