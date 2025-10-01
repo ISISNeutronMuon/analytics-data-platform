@@ -300,7 +300,7 @@ services:
     volumes:
       - "./trino/trino-create-catalog.sql:/docker/trino-create-catalog.sql"
     entrypoint: >
-      /bin/sh -c "trino --file=/docker/trino-create-catalog.sql http://trino:8080"
+      /bin/sh -c "trino --file=/docker/trino-create-catalog.sql http://trino:8080 || exit 0"
     depends_on:
       trino:
         condition: service_healthy
