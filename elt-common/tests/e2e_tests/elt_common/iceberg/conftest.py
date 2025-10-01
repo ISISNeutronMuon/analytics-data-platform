@@ -8,7 +8,6 @@ from e2e_tests.conftest import Warehouse
 def trino_engine(warehouse: Warehouse):
     server = warehouse.server
     server_settings = server.settings
-    server_settings = warehouse.server.settings
     creds = TrinoCredentials(
         host=server_settings.trino_host,
         port=server_settings.trino_port,
