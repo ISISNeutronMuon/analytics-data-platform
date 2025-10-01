@@ -298,9 +298,9 @@ services:
     image: *trino-image
     env_file: *env-file
     volumes:
-      - "./trino/trino-create-catalog.sql:/docker/trino-create-catalog.sql"
+      - "./trino/trino-create-catalog.sql:/docker/trino-create-catalog.sql:ro"
     entrypoint: >
-      /bin/sh -c "trino --file=/docker/trino-create-catalog.sql http://trino:8080 || exit 0"
+      /bin/sh -c "trino --file=/docker/trino-create-catalog.sql --server=http://trino:8080 || exit 0"
     depends_on:
       trino:
         condition: service_healthy
