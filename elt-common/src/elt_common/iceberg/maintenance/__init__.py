@@ -1,16 +1,8 @@
-import contextlib
-import dataclasses
 import logging
-import os
 from typing import Sequence
 
 import click
-import humanize
-import pendulum
-from sqlalchemy import Connection, Engine, create_engine
-from sqlalchemy.sql.expression import text
-from sqlalchemy.exc import ProgrammingError as SqlProgrammingError
-from trino.auth import BasicAuthentication
+from elt_common.iceberg.trino import TrinoCredentials, TrinoQueryEngine
 
 ENV_PREFIX = "ELT_COMMON_ICEBERG_MAINT_TRINO_"
 LOG_FORMAT = "%(asctime)s:%(module)s:%(levelname)s:%(message)s"
@@ -19,164 +11,75 @@ LOG_FORMAT_DATE = "%Y-%m-%dT%H:%M:%S"
 LOGGER = logging.getLogger(__name__)
 
 
-@dataclasses.dataclass
-class TrinoCredentials:
-    host: str
-    port: str
-    catalog: str
-    user: str
-    password: str
-    http_scheme: str = "https"
-
-    @classmethod
-    def from_env(cls) -> "TrinoCredentials":
-        def _get_env_or_raise(field: str):
-            try:
-                return os.environ[f"{ENV_PREFIX}{field.upper()}"]
-            except KeyError as exc:
-                raise KeyError(f"Missing required environment variable: {str(exc)}") from exc
-
-        kwargs = {field.name: _get_env_or_raise(field.name) for field in dataclasses.fields(cls)}
-        return TrinoCredentials(**kwargs)
-
-
-class TrinoQueryEngine:
-    @property
-    def engine(self) -> Engine:
-        return self._engine
-
-    @property
-    def url(self) -> str:
-        return self._url
-
-    def __init__(self, credentials: TrinoCredentials):
-        """Initlialize an object and create an Engine"""
-        self._url = f"trino://{credentials.host}:{credentials.port}/{credentials.catalog}"
-        self._engine = self._create_engine(credentials)
-
-    def execute(self, stmt: str, connection: Connection | None = None):
-        """Execute a SQL statement and return the results.
-        Supply an optional connection to avoid one being created for multiple queries in quick succession"""
-        LOGGER.debug(f"Executing SQL '{stmt}'")
-        started_at = pendulum.now()
-
-        if connection:
-            context_mgr = contextlib.nullcontext(connection)
-        else:
-            context_mgr = self.engine.connect()
-
-        with context_mgr as conn:
-            results = conn.execute(text(stmt)).fetchall()
-
-        finished_at = pendulum.now()
-        LOGGER.debug(f"Completed in {humanize.precisedelta(finished_at - started_at)}")
-        LOGGER.debug(f"Returned {results}")
-        return results
-
-    def list_iceberg_tables_for_maintenance(
-        self,
-        ignore_namespaces: Sequence[str] = ("information_schema", "system"),
-    ) -> Sequence[str]:
-        """List all iceberg tables in the catalog. Names are returned fully qualified with the namespace name."""
-
-        def _is_iceberg_needing_maintenance(namespace: str, table_name: str) -> bool:
-            # An Iceberg table requiring maintenance must have a '{table_id}$properties' and have a valid
-            # current snapshot
-            props_table = f'{namespace}."{table_name}$properties"'
-            try:
-                self.execute(f"describe {props_table}", conn)
-            except SqlProgrammingError:
-                LOGGER.debug(
-                    f"{props_table} does not exist. Assuming {namespace}.{table_name} is not an iceberg table."
-                )
-                return False
-
-            rows = self.execute(
-                f"select value from {props_table} where key = 'current-snapshot-id'", conn
-            )
-            return rows[0][0] != "none"
-
-        LOGGER.info("Querying catalog for Iceberg tables")
-        with self.engine.connect() as conn:
-            namespaces = map(
-                lambda row: row[0],
-                filter(
-                    lambda row: row[0] not in ignore_namespaces, self.execute("show schemas", conn)
-                ),
-            )
-            table_identifiers = []
-            for ns in namespaces:
-                table_identifiers.extend(
-                    map(
-                        lambda row: f"{ns}.{row[0]}",
-                        filter(
-                            lambda row: _is_iceberg_needing_maintenance(ns, row[0]),
-                            self.execute(f"show tables in {ns}", conn),
-                        ),
-                    )
-                )
-
-        return table_identifiers
-
-    # private
-    def _create_engine(self, credentials: TrinoCredentials) -> Engine:
-        return create_engine(
-            self.url,
-            connect_args={
-                "auth": BasicAuthentication(credentials.user, credentials.password),
-                "http_scheme": credentials.http_scheme,
-            },
-        )
-
-
 class IcebergTableMaintenaceSql:
+    """See https://trino.io/docs/current/connector/iceberg.html#alter-table-execute"""
+
     def __init__(self, query_engine: TrinoQueryEngine):
         self._query_engine = query_engine
 
-    def run(self, table_identifiers: Sequence[str]):
-        """Run Iceberg maintenance operations
+    def expire_snapshots(self, table_identifier: str, retention_threshold: str):
+        """Expire snapshots older than the given threshold"""
+        self._query_engine.validate_retention_threshold(retention_threshold)
+        self._run_alter_table_execute(
+            table_identifier, f"expire_snapshots(retention_threshold => '{retention_threshold}')"
+        )
 
-        By default runs (sequentially):
+    def optimize_manifests(self, table_identifier: str):
+        self._run_alter_table_execute(table_identifier, "optimize_manifests")
 
-          - expire_snapshots
-          - optimize_manifests
-          - optimize
-          - remove_orphan_files
+    def optimize(self, table_identifier: str):
+        self._run_alter_table_execute(table_identifier, "optimize")
 
-        See https://trino.io/docs/current/connector/iceberg.html#alter-table-execute
+    def remove_orphan_files(self, table_identifier: str, retention_threshold: str):
+        self._query_engine.validate_retention_threshold(retention_threshold)
+        self._run_alter_table_execute(
+            table_identifier, f"remove_orphan_files(retention_threshold => '{retention_threshold}')"
+        )
 
-        :param table_identifiers: Run operations on this list of table identifiers
-                                  ("namespace.tablename").
-        """
-        commands = ("expire_snapshots", "optimize_manifests", "optimize", "remove_orphan_files")
-        for table_id in table_identifiers:
-            LOGGER.info(f"Running iceberg maintenance on '{table_id}'")
-            self._run_alter_table_execute(table_id, commands)
+    def _run_alter_table_execute(self, table_identifier: str, cmd: str):
+        """Run 'alter table {} execute {}' statments on the given table"""
 
-    def _run_alter_table_execute(self, table_identifier: str, commands: Sequence[str]):
-        """Run a a list of 'alter table {} execute {}' statments on the given table"""
-
-        def _sql_stmt(cmd: str) -> str:
+        def _sql_stmt() -> str:
             return f"alter table {table_identifier} execute {cmd}"
 
+        self._query_engine.validate_table_identifier(table_identifier)
+        LOGGER.info(f"Executing maintenance command '{cmd}' on table '{table_identifier}'.")
         with self._query_engine.engine.connect() as conn:
-            for cmd in commands:
-                self._query_engine.execute(_sql_stmt(cmd), connection=conn)
+            self._query_engine.execute(_sql_stmt(), connection=conn)
 
 
 @click.command()
 @click.option("-t", "--table", multiple=True)
+@click.option("-r", "--retention-threshold", default="7d")
 @click.option("-l", "--log-level", default="INFO")
-def cli(table: Sequence[str], log_level: str):
+def cli(table: Sequence[str], retention_threshold: str, log_level: str):
     """Launch the maintenance tasks from the command line.
     By default all namespaces and tables are examined."""
+    try:
+        TrinoQueryEngine.validate_retention_threshold(retention_threshold)
+    except ValueError as exc:
+        raise click.BadParameter(str(exc))
+
     logging.basicConfig(
         format=LOG_FORMAT,
         datefmt=LOG_FORMAT_DATE,
     )
     LOGGER.setLevel(log_level)
-    trino = TrinoQueryEngine(TrinoCredentials.from_env())
+
+    trino = TrinoQueryEngine(TrinoCredentials.from_env(ENV_PREFIX))
     iceberg_maintenance = IcebergTableMaintenaceSql(trino)
+
     if not table:
-        table = trino.list_iceberg_tables_for_maintenance()
-    iceberg_maintenance.run(table)
+        table = trino.list_iceberg_tables()
+    for table_id in table:
+        try:
+            iceberg_maintenance.optimize(table_id)
+            iceberg_maintenance.optimize_manifests(table_id)
+            iceberg_maintenance.expire_snapshots(table_id, retention_threshold=retention_threshold)
+            iceberg_maintenance.remove_orphan_files(
+                table_id, retention_threshold=retention_threshold
+            )
+        except Exception as exc:
+            LOGGER.error(
+                f"Failed to execute maintenance operation for table '{table_id}': {str(exc)}"
+            )
