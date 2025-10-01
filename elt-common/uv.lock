@@ -364,6 +364,7 @@ iceberg-maintenance = [
 m365 = [
     { name = "authlib" },
     { name = "httpx" },
+    { name = "tenacity" },
 ]
 
 [package.dev-dependencies]
@@ -387,6 +388,7 @@ requires-dist = [
     { name = "httpx", marker = "extra == 'm365'", specifier = "~=0.28.1" },
     { name = "pyiceberg", specifier = "~=0.9.1" },
     { name = "sqlalchemy", marker = "extra == 'iceberg-maintenance'", specifier = "~=2.0.43" },
+    { name = "tenacity", marker = "extra == 'm365'", specifier = "~=9.1.2" },
     { name = "trino", marker = "extra == 'iceberg-maintenance'", specifier = "~=0.336.0" },
 ]
 provides-extras = ["iceberg-maintenance", "m365"]
