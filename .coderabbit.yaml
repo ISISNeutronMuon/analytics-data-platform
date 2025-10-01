@@ -12,6 +12,7 @@ reviews:
     # - @coderabbitai full review # full review from scratch
     auto_incremental_review: false
     drafts: false
+  sequence_diagrams: false
   tools:
     ruff:
       enabled: true
