@@ -13,34 +13,27 @@ LOGGER = logging.getLogger(__name__)
 
 
 class IcebergTableMaintenaceSql:
+    """See https://trino.io/docs/current/connector/iceberg.html#alter-table-execute"""
+
     def __init__(self, query_engine: TrinoQueryEngine):
         self._query_engine = query_engine
 
-    def expire_snapshots(self, table_identifier: str, *, retention_threshold: str):
+    def expire_snapshots(self, table_identifier: str, retention_threshold: str):
         """Expire snapshots older than the given threshold"""
         self._run_alter_table_execute(
             table_identifier, f"expire_snapshots(retention_threshold => '{retention_threshold}')"
         )
 
-    def run(self, table_identifiers: Sequence[str]):
-        """Run Iceberg maintenance operations
+    def optimize_manifests(self, table_identifier: str):
+        self._run_alter_table_execute(table_identifier, "optimize_manifests")
 
-        By default runs (sequentially):
+    def optimize(self, table_identifier: str):
+        self._run_alter_table_execute(table_identifier, "optimize")
 
-          - expire_snapshots
-          - optimize_manifests
-          - optimize
-          - remove_orphan_files
-
-        See https://trino.io/docs/current/connector/iceberg.html#alter-table-execute
-
-        :param table_identifiers: Run operations on this list of table identifiers
-                                  ("namespace.tablename").
-        """
-        # commands = ("expire_snapshots()", "optimize_manifests", "optimize", "remove_orphan_files")
-        # for table_id in table_identifiers:
-        #     LOGGER.info(f"Running iceberg maintenance on '{table_id}'")
-        #     self._run_alter_table_execute(table_id, cmd=)
+    def remove_orphan_files(self, table_identifier: str, retention_threshold: str):
+        self._run_alter_table_execute(
+            table_identifier, f"remove_orphan_files(retention_threshold => '{retention_threshold}')"
+        )
 
     def _run_alter_table_execute(self, table_identifier: str, cmd: str):
         """Run 'alter table {} execute {}' statments on the given table"""
@@ -54,8 +47,9 @@ class IcebergTableMaintenaceSql:
 
 @click.command()
 @click.option("-t", "--table", multiple=True)
+@click.option("-r", "--retention-threshold", default="7d")
 @click.option("-l", "--log-level", default="INFO")
-def cli(table: Sequence[str], log_level: str):
+def cli(table: Sequence[str], retention_threshold: str, log_level: str):
     """Launch the maintenance tasks from the command line.
     By default all namespaces and tables are examined."""
     logging.basicConfig(
@@ -67,4 +61,9 @@ def cli(table: Sequence[str], log_level: str):
     iceberg_maintenance = IcebergTableMaintenaceSql(trino)
     if not table:
         table = trino.list_iceberg_tables()
-    iceberg_maintenance.run(table)
+
+    for table_id in table:
+        iceberg_maintenance.optimize(table_id)
+        iceberg_maintenance.optimize_manifests(table_id)
+        iceberg_maintenance.expire_snapshots(table_id, retention_threshold=retention_threshold)
+        iceberg_maintenance.remove_orphan_files(table_id, retention_threshold=retention_threshold)

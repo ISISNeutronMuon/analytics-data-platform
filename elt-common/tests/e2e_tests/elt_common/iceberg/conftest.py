@@ -30,6 +30,8 @@ with (
   "iceberg.rest-catalog.oauth2.server-uri" = '{server.token_endpoint.value(use_internal_netloc=True)}',
   "iceberg.rest-catalog.oauth2.credential" = '{server_settings.openid_client_id}:{server.settings.openid_client_secret}',
   "iceberg.rest-catalog.oauth2.scope" = 'lakekeeper offline_access',
+  "iceberg.expire-snapshots.min-retention" = '0d',
+  "iceberg.remove-orphan-files.min-retention" = '0d',
   "fs.native-s3.enabled" = 'true',
   "s3.endpoint" = '{server_settings.s3_endpoint}',
   "s3.region" = '{server_settings.s3_region}',
