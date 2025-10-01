@@ -43,6 +43,7 @@ class IcebergTableMaintenaceSql:
             return f"alter table {table_identifier} execute {cmd}"
 
         self._query_engine.validate_table_identifier(table_identifier)
+        LOGGER.info(f"Executing maintenance command '{cmd}' on table '{table_identifier}'.")
         with self._query_engine.engine.connect() as conn:
             self._query_engine.execute(_sql_stmt(), connection=conn)
 

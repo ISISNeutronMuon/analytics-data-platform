@@ -26,14 +26,20 @@ class TrinoCredentials:
 
     @classmethod
     def from_env(cls, env_prefix: str) -> "TrinoCredentials":
-        def _get_env_or_raise(field: str):
-            try:
-                return os.environ[f"{env_prefix}{field.upper()}"]
-            except KeyError as exc:
-                raise KeyError(f"Missing required environment variable: {str(exc)}") from exc
+        def _get_env(field: dataclasses.Field):
+            key = f"{env_prefix}{field.name.upper()}"
+            val = os.getenv(key)
+            if val is not None:
+                return val
+            elif field.default is not dataclasses.MISSING:
+                return field.default
+            elif getattr(field, "default_factory", dataclasses.MISSING) is not dataclasses.MISSING:
+                return field.default_factory()  # type: ignore
+            else:
+                raise KeyError(f"Missing required environment variable: {key}")
 
-        kwargs = {field.name: _get_env_or_raise(field.name) for field in dataclasses.fields(cls)}
-        return TrinoCredentials(**kwargs)
+        kwargs = {f.name: _get_env(f) for f in dataclasses.fields(cls)}
+        return cls(**kwargs)
 
 
 class TrinoQueryEngine:
@@ -53,7 +59,6 @@ class TrinoQueryEngine:
     def execute(self, stmt: str, connection: Connection | None = None):
         """Execute a SQL statement and return the results.
         Supply an optional connection to avoid one being created for multiple queries in quick succession"""
-        LOGGER.debug(f"Executing SQL '{stmt}'")
         started_at = pendulum.now()
 
         if connection:
@@ -70,8 +75,9 @@ class TrinoQueryEngine:
             rows = result.fetchall() if result.returns_rows else None
 
         finished_at = pendulum.now()
-        LOGGER.debug(f"Completed in {humanize.precisedelta(finished_at - started_at)}")
-        LOGGER.debug(f"Returned {rows}")
+        LOGGER.debug(
+            f"Completed in {humanize.precisedelta(finished_at - started_at)}; rows={len(rows) if rows else 0}"
+        )
         return rows
 
     def list_iceberg_tables(self) -> Sequence[str]:
