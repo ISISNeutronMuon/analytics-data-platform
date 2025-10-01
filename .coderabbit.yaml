@@ -14,8 +14,6 @@ reviews:
     drafts: false
   sequence_diagrams: false
   tools:
-    ruff:
-      enabled: true
     gitleaks:
       enabled: true
 chat:
