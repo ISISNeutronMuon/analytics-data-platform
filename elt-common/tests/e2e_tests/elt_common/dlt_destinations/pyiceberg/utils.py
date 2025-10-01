@@ -43,11 +43,13 @@ class PyIcebergDestinationTestConfiguration:
     def setup(self, warehouse: Warehouse) -> None:
         """Sets up environment variables for this destination configuration"""
         server, server_settings = warehouse.server, warehouse.server.settings
-        os.environ["DESTINATION__PYICEBERG__CREDENTIALS__URI"] = warehouse.server.catalog_endpoint()
+        os.environ["DESTINATION__PYICEBERG__CREDENTIALS__URI"] = str(
+            warehouse.server.catalog_endpoint()
+        )
         os.environ.setdefault("DESTINATION__PYICEBERG__CREDENTIALS__WAREHOUSE", warehouse.name)
         os.environ.setdefault(
             "DESTINATION__PYICEBERG__CREDENTIALS__OAUTH2_SERVER_URI",
-            server.token_endpoint,
+            str(server.token_endpoint),
         )
         os.environ.setdefault(
             "DESTINATION__PYICEBERG__CREDENTIALS__CLIENT_ID",
