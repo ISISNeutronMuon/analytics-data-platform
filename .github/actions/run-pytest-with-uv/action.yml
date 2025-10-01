@@ -60,6 +60,8 @@ runs:
       if: failure() && inputs.compose-file-path != ''
       shell: bash -l {0}
       run: |
-        docker inspect --format "{{json .State.Health }}" local-lakehouse-keycloak | jq
-        docker compose -f "${{ inputs.compose-file-path }}" ps
+        echo =====Compose services status =====
+        docker compose -f "${{ inputs.compose-file-path }}" ps -a
+        echo
+        echo ===== Compose logs =====
         docker compose -f "${{ inputs.compose-file-path }}" logs --no-color --tail=200
