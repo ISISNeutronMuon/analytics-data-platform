@@ -302,7 +302,32 @@ services:
     volumes:
       - "./trino/trino-create-catalog.sql:/docker/trino-create-catalog.sql:ro"
     command: >
-      /bin/bash -c "trino --file=/docker/trino-create-catalog.sql --server=http://trino:8080"
+      /bin/bash -c "
+        MAX_RETRIES=5
+        RETRY_COUNT=0
+        SLEEP_TIME=2
+        while [ $$RETRY_COUNT -lt $$MAX_RETRIES ]; do
+          echo \"Attempt $$((RETRY_COUNT + 1)) of $${MAX_RETRIES}\"
+          if ! trino --execute=\"show catalogs\" --server=http://trino:8080 2>/dev/null | grep -q 'playground'; then
+            echo \"Playground catalog not found, creating...\"
+            if trino --file=/docker/trino-create-catalog.sql --server=http://trino:8080; then
+              echo \"Successfully created catalog\"
+              exit 0
+            fi
+          else
+            echo \"Playground catalog already exists\"
+            exit 0
+          fi
+          RETRY_COUNT=$$((RETRY_COUNT + 1))
+          if [ $$RETRY_COUNT -lt $$MAX_RETRIES ]; then
+            echo \"Waiting $${SLEEP_TIME} seconds before next attempt...\"
+            sleep $${SLEEP_TIME}
+          fi
+        done
+
+        echo \"Failed to create catalog after $${MAX_RETRIES} attempts\"
+        exit 1
+      "
     depends_on:
       trino:
         condition: service_healthy
