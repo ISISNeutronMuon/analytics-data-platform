@@ -1,3 +1,8 @@
+tls:
+  certificates:
+    - certFile: /certs/analytics.local.pem
+      keyFile: /certs/analytics.local-key.pem
+
 http:
   routers:
     #############################################
@@ -19,9 +24,10 @@ http:
         - traefik-strip-prefix
 
     keycloak:
-      entryPoints: web
+      entryPoints: websecure
       rule: PathPrefix(`{{ env "KC_HTTP_RELATIVE_PATH" }}`)
       service: keycloak
+      tls: {}
 
     lakekeeper:
       entryPoints: web

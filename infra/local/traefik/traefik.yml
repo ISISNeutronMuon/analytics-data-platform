@@ -14,6 +14,8 @@ log:
 entryPoints:
   web:
     address: :80
+  websecure:
+    address: :443
   trino:
     address: :8088
 
