@@ -48,9 +48,11 @@ x-env-file: &env-file
   - path: ./env-for-testing
     required: true
 
-# named network as the default form the directory name is not good
+# network
 x-networks: &local-networks
   - local-lakehouse_net
+x-extra-hosts: &extra-hosts
+  - "analytics.local:host-gateway"
 
 # superset options
 x-superset-user: &superset-user root
@@ -63,6 +65,7 @@ x-superset-depends-on: &superset-depends-on
     condition: service_completed_successfully
 x-superset-volumes: &superset-volumes
   - ./superset/docker/docker-init.sh:/app/docker/docker-init.sh:ro
+  - ./superset/docker/requirements-local.txt:/app/docker/requirements-local.txt:ro
   - ./superset/docker/pythonpath:/app/docker/pythonpath:ro
 
 services:
@@ -80,12 +83,15 @@ services:
       retries: 5
       start_period: 5s
     ports:
+      - "50443:443"
       - "58080:80"
       - "58088:8088" # Trino won't allow itself to be deployed on a prefix path
     volumes:
       - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
       - "./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
+      - "./certs:/certs:ro"
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   #########################################################
   # Database shared by all services
@@ -103,6 +109,7 @@ services:
     volumes:
       - "shared_database_data:/var/lib/postgresql/data"
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   shared-database-createdatabases:
     container_name: local-lakehouse-shared-database-createdatabases
@@ -166,6 +173,7 @@ services:
         "--log-level=INFO",
       ]
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   #########################################################
   # MinIO - Object store emulating the Ceph object store
@@ -193,6 +201,7 @@ services:
       - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
       - "minio_data:/data"
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   minio-createbucket:
     container_name: local-lakehouse-minio-create-bucket
@@ -213,6 +222,7 @@ services:
       fi
       "
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   #########################################################
   # Lakekeeper - Iceberg REST catalog
@@ -242,6 +252,7 @@ services:
       traefik:
         condition: service_healthy
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   lakekeeper-migrate:
     container_name: local-lakehouse-lakekeeper-migrate
@@ -253,6 +264,7 @@ services:
       shared-database-createdatabases:
         condition: service_completed_successfully
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   lakekeeper-createwarehouse:
     container_name: local-lakehouse-lakekeeper-createwarehouse
@@ -272,6 +284,7 @@ services:
       - "../ansible-docker/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py"
       - "./lakekeeper/bootstrap-warehouse.json:/opt/work/bootstrap-warehouse.json:ro"
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   #########################################################
   # Trino query engine
@@ -292,6 +305,7 @@ services:
       timeout: 30s
       retries: 2
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   trino-createcatalog:
     profiles:
@@ -333,6 +347,7 @@ services:
         condition: service_healthy
     restart: "no"
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   #########################################################
   # Superset BI tool
@@ -348,6 +363,7 @@ services:
     volumes:
       - shared_redis_data:/data
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   superset-app:
     profiles:
@@ -364,6 +380,7 @@ services:
         condition: service_completed_successfully
     volumes: *superset-volumes
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   superset-init:
     profiles:
@@ -379,12 +396,13 @@ services:
     user: *superset-user
     volumes: *superset-volumes
     networks: *local-networks
+    extra_hosts: *extra-hosts
     healthcheck:
       disable: true
 
   superset-worker:
     profiles:
-      - superset
+      - superset-worker
     container_name: local-lakehouse-superset-worker
     env_file: *env-file
     image: *superset-image
@@ -397,6 +415,7 @@ services:
     user: *superset-user
     volumes: *superset-volumes
     networks: *local-networks
+    extra_hosts: *extra-hosts
     healthcheck:
       test:
         [
@@ -406,7 +425,7 @@ services:
 
   superset-worker-beat:
     profiles:
-      - superset
+      - superset-worker
     container_name: local-lakehouse-superset-worker-beat
     env_file: *env-file
     image: *superset-image
@@ -419,6 +438,7 @@ services:
     user: *superset-user
     volumes: *superset-volumes
     networks: *local-networks
+    extra_hosts: *extra-hosts
     healthcheck:
       disable: true
 

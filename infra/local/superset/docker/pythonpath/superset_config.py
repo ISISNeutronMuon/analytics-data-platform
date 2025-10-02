@@ -2,6 +2,7 @@ import logging
 import os
 
 from celery.schedules import crontab
+from flask_appbuilder.security.manager import AUTH_OAUTH
 from flask_caching.backends.rediscache import RedisCache
 
 
@@ -33,12 +34,35 @@ if SUPERSET_DB_SCHEMA_NAME:
     SQLALCHEMY_DATABASE_URI += f"?options=-c%20search_path={SUPERSET_DB_SCHEMA_NAME}"
 #####
 
+#####
+# Auth
 # disable recaptcha as we don't allow self registration
-AUTH_USER_REGISTRATION = False
-AUTH_ROLES_SYNC_AT_LOGIN = False
+AUTH_USER_REGISTRATION = True
 AUTH_API_LOGIN_ALLOW_MULTIPLE_PROVIDERS = False
 RECAPTCHA_PUBLIC_KEY = ""
 RECAPTCHA_PRIVATE_KEY = ""
+
+AUTH_TYPE = AUTH_OAUTH
+AUTH_USER_REGISTRATION_ROLE = "Gamma"
+AUTH_ROLES_SYNC_AT_LOGIN = True
+
+OAUTH_PROVIDERS = [
+    {
+        "name": "keycloak",
+        "icon": "fa-key",
+        "token_key": "access_token",
+        "remote_app": {
+            "client_id": "superset",
+            "api_base_url": "http://analytics.local:58080/auth/realms/iceberg/protocol/openid-connect",
+            "client_kwargs": {"scope": "openid email profile"},
+            "access_token_url": "http://analytics.local:58080/auth/realms/iceberg/protocol/openid-connect/token",
+            "authorize_url": "http://analytics.local:58080/auth/realms/iceberg/protocol/openid-connect/auth",
+            "server_metadata_url": "http://analytics.local:58080/auth/realms/iceberg/.well-known/openid-configuration",
+            "request_token_url": None,
+        },
+    }
+]
+
 
 #####
 # Caching layer
@@ -115,7 +139,8 @@ THEME_DEFAULT = {
 FEATURE_FLAGS = {
     "ALERT_REPORTS": True,
     "ENABLE_TEMPLATE_PROCESSING": True,
-    "TAGGING_SYSTEM": True
+    "TAGGING_SYSTEM": True,
+    "CACHE_IMPERSONATION": True
 }
 # fmt: on
 ALERT_REPORTS_NOTIFICATION_DRY_RUN = True
