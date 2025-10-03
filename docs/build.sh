@@ -22,13 +22,13 @@ DEFAULT_BUILD_ARGS="--clean"
 build_dir=$1
 shift 1
 project_root=$SCRIPT_DIR
-user_build_args=$*
+user_build_args=("$@")
 
 # Create and configure environment
-pushd $project_root
+pushd "$project_root"
 uv venv $VENV_DIR
 uv pip install -r requirements.txt
 
 # Build
-uv run mkdocs build $DEFAULT_BUILD_ARGS --site-dir $build_dir
+uv run mkdocs build $DEFAULT_BUILD_ARGS "${user_build_args[@]}" --site-dir "$build_dir"
 popd
