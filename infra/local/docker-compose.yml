@@ -35,13 +35,13 @@
 
 # image versions
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
-x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.9.5
-x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-06-13T11-33-47Z
+x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.10.0
+x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
 x-minio-mc-image: &minio-mc-image quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
 x-postgres-image: &postgres-image postgres:16.9-bookworm
-x-superset-image: &superset-image ghcr.io/martyngigg/adp-superset:6.0.0rc1-py311
-x-traefik-image: &traefik-image traefik:v3.4.4
-x-trino-image: &trino-image trinodb/trino:475
+x-superset-image: &superset-image ghcr.io/martyngigg/adp-superset-forked:901412e
+x-traefik-image: &traefik-image traefik:v3.5.3
+x-trino-image: &trino-image trinodb/trino:477
 
 # environment
 x-env-file: &env-file
