@@ -1,5 +1,5 @@
 - name: Prune docker caches (dangling)
-  hosts: all|elt
+  hosts: all:!elt
   tasks:
     - name: Prune everything
       community.docker.docker_prune:

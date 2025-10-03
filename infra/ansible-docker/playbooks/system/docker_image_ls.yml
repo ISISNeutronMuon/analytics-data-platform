@@ -1,0 +1,9 @@
+- name: List docker images
+  hosts: all:!elt
+  tasks:
+    - name: List docker images
+      ansible.builtin.command: docker image ls
+      register: docker_images
+    - name: Print image list
+      ansible.builtin.debug:
+        msg: "{{ docker_images.stdout_lines }}"
