@@ -3,13 +3,13 @@
 INVENTORY=inventory.yml
 
 function fail_with_message() {
-  echo $*
+  echo "$@"
   exit 1
 }
 
 function system_update() {
   local selection=$1
-  ansible-playbook -i $INVENTORY -l $selection playbooks/system/system_update.yml
+  ansible-playbook -i $INVENTORY -l "$selection" playbooks/system/system_update.yml
 }
 
 test -f $INVENTORY || fail_with_message "$INVENTORY must exist in current directory ($PWD)"
