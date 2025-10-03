@@ -1,2 +1,4 @@
 keycloak_container_network: keycloak
+keycloak_image: quay.io/keycloak/keycloak:26.3
+keycloak_image_optimized_name: keycloak_optimized
 keycloak_working_dir: /var/keycloak
