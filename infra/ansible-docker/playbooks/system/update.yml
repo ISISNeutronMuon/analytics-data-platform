@@ -1,4 +1,0 @@
-- name: Apply package updates to all hosts
-  hosts: all:!localhost
-  roles:
-    - role: packages_update
