@@ -8,7 +8,8 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  ci:
+  staticcheck:
+    name: static checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

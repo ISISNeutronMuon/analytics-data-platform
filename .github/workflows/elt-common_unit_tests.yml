@@ -18,6 +18,7 @@ concurrency:
 
 jobs:
   test:
+    name: elt-common unit tests
     runs-on: ubuntu-latest
 
     steps:
