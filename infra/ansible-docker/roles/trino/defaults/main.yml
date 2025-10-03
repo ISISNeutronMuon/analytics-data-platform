@@ -1,5 +1,5 @@
 ---
-trino_image: trinodb/trino:475
+trino_image: trinodb/trino:477
 trino_http_port: 8060
 trino_https_port: 8443
 trino_working_dir: /var/trino

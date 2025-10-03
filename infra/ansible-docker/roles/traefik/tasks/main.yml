@@ -60,7 +60,7 @@
   become: true
   community.docker.docker_container:
     name: traefik
-    image: traefik:v3.1
+    image: "{{ traefik_image }}"
     state: started
     cleanup: true
     detach: true

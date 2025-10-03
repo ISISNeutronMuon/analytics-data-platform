@@ -1,0 +1,4 @@
+- name: Apply system package updates and reboot nodes if required
+  hosts: all:!localhost
+  roles:
+    - role: packages_update

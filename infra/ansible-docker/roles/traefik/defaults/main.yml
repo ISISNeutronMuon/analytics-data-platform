@@ -2,4 +2,5 @@
 traefik_config_root: /var/traefik
 traefik_etc_path_relative: "etc/traefik"
 traefik_etc_dynamic_path_relative: "{{ traefik_etc_path_relative }}/dynamic"
+traefik_image: traefik:v3.5.3
 traefik_certs_root: /var/certs
