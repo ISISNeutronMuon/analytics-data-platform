@@ -320,14 +320,17 @@ services:
       - "./trino/trino-create-catalog.sql:/docker/trino-create-catalog.sql:ro"
     command: >
       /bin/bash -c "
+        function trinocli() {
+          trino --server=https://traefik:8443 --user $$TRINO_USER --password --insecure $@
+        }
         MAX_RETRIES=5
         RETRY_COUNT=0
         SLEEP_TIME=2
         while [ $$RETRY_COUNT -lt $$MAX_RETRIES ]; do
           echo \"Attempt $$((RETRY_COUNT + 1)) of $${MAX_RETRIES}\"
-          if ! trino --execute=\"show catalogs\" --server=http://trino:8080 2>/dev/null | grep -q 'playground'; then
+          if ! trinocli --execute=\"show catalogs\" 2>/dev/null | grep -q 'playground'; then
             echo \"Playground catalog not found, creating...\"
-            if trino --file=/docker/trino-create-catalog.sql --server=http://trino:8080; then
+            if trinocli --file=/docker/trino-create-catalog.sql; then
               echo \"Successfully created catalog\"
               exit 0
             fi
