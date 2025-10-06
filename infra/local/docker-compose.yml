@@ -54,6 +54,9 @@ x-networks: &local-networks
 x-extra-hosts: &extra-hosts
   - "analytics.local:host-gateway"
 
+# certs volume
+x-certs-volume: &certs-volume "./certs:/certs:ro"
+
 # superset options
 x-superset-user: &superset-user root
 x-superset-depends-on: &superset-depends-on
@@ -67,6 +70,7 @@ x-superset-volumes: &superset-volumes
   - ./superset/docker/docker-init.sh:/app/docker/docker-init.sh:ro
   - ./superset/docker/requirements-local.txt:/app/docker/requirements-local.txt:ro
   - ./superset/docker/pythonpath:/app/docker/pythonpath:ro
+  - *certs-volume
 
 services:
   #########################################################
@@ -83,13 +87,12 @@ services:
       retries: 5
       start_period: 5s
     ports:
-      - "50443:443"
       - "58080:80"
-      - "58088:8088" # Trino won't allow itself to be deployed on a prefix path
+      - "58443:8443" # TLS entrypoint for Trino (cannot run on non-root path prefix or without https with auth enabled)
     volumes:
       - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
       - "./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
-      - "./certs:/certs:ro"
+      - *certs-volume
     networks: *local-networks
     extra_hosts: *extra-hosts
 
@@ -145,9 +148,9 @@ services:
     image: *keycloak-image
     env_file: *env-file
     volumes:
-      - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
       - keycloak_data:/opt/keycloak/data
-      - ./keycloak/iceberg-realm.json:/opt/keycloak/data/import/iceberg-realm.json:ro
+      - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
+      - "./keycloak/iceberg-realm.json:/opt/keycloak/data/import/iceberg-realm.json:ro"
     healthcheck:
       test:
         [
@@ -295,9 +298,9 @@ services:
     env_file: *env-file
     volumes:
       - "./trino/etc:/etc/trino:ro"
-    depends_on:
-      lakekeeper-createwarehouse:
-        condition: service_completed_successfully
+    # depends_on:
+    #   lakekeeper-createwarehouse:
+    #     condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-I", "http://localhost:8080/v1/status"]
       start_period: 10s

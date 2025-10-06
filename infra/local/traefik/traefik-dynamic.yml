@@ -22,12 +22,12 @@ http:
       service: api@internal
       middlewares:
         - traefik-strip-prefix
+      tls: {}
 
     keycloak:
-      entryPoints: websecure
+      entryPoints: web
       rule: PathPrefix(`{{ env "KC_HTTP_RELATIVE_PATH" }}`)
       service: keycloak
-      tls: {}
 
     lakekeeper:
       entryPoints: web
@@ -37,9 +37,10 @@ http:
       service: lakekeeper
 
     trino:
-      entryPoints: trino
+      entryPoints: trinosecure
       rule: PathPrefix(`/`)
       service: trino
+      tls: {}
 
   middlewares:
     traefik-strip-prefix:

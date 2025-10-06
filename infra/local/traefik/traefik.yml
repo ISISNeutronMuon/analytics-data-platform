@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://www.schemastore.org/traefik-v3.json
 global:
   checkNewVersion: false
   sendAnonymousUsage: false
@@ -12,10 +13,10 @@ log:
   noColor: true
 
 entryPoints:
+  trinosecure:
+    address: :8443
   web:
     address: :80
-  websecure:
-    address: :443
   trino:
     address: :8088
 
