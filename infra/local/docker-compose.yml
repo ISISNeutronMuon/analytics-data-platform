@@ -11,24 +11,18 @@
 # docker network gateway IP. Combined with the Traefik proxy this enables contacting a service using
 # the same address regardless of whether it is accessed internally/externally from the compose network.
 #
+#  Service routes (you'll have to accept the self-signed certificate warning):
 #
-# The MinIO api (S3 storage). Service routes:
-#
-#  - Keycloak identity provider: http://analytics.localdev:58080/auth
-#  - Lakekeeper iceberg catalog UI: http://analytics.localdev:58080/iceberg/ui. Log in with the credentials listed in keycloak/README
-#  - Trino query engine: http://analytics.localdev:58088
-#  - Superset BI tool: http://analytics.localdev:58080/workspace/playground. Log in with the credentials defined in env-for-testing
+#  - Keycloak identity provider: https://analytics.localdev:50443/auth
+#  - Lakekeeper iceberg catalog UI: https://analytics.localdev:50443/iceberg/ui. Log in with the credentials listed in keycloak/README
+#  - Trino query engine: https://analytics.localdev:58443
+#  - Superset BI tool: https://analytics.localdev:50443/workspace/playground. Log in with the credentials defined in env-for-testing
 #
 #
 # Tools such as pyiceberg connect to Lakekeeper, retrieve the address of the S3 storage endpoint
 # and communicate directly with it via the 'storage-profile.endpoint' defined in
 # infra/local/lakekeeper/bootstrap-warehouse.json. To this end MinIO runs on port 59000 in both
 # the container and also on the host.
-#
-# To run scripts on the host, e.g. the Python e2e tests, the host /etc/hosts files needs an extra
-# entry to be able to contact the minio service directly:
-#
-# 127.0.0.1       analytics.localdev
 #
 #
 # To test ELT scripts based on the Python package `dlt`, create and add the following to
@@ -44,6 +38,7 @@
 
 # image versions
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
+x-openfga-image: &openfga-image openfga/openfga:v1.8
 x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.10.0
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
 x-minio-mc-image: &minio-mc-image quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
@@ -167,8 +162,9 @@ services:
           SELECT 'ALTER SCHEMA $2 RENAME TO $3' WHERE NOT EXISTS (select schema_name from information_schema.schemata WHERE schema_name = '$3')\\gexec
       EOSQL
       }
-      create_db_if_not_exists lakekeeper
-      create_db_if_not_exists $$SUPERSET_DB_NAME
+      create_db_if_not_exists $$SHARED_DB__OPENFGA_DB_NAME
+      create_db_if_not_exists $$SHARED_DB__LAKEKEEPER_DB_NAME
+      create_db_if_not_exists $$SHARED_DB__SUPERSET_DB_NAME
       rename_schema $$SUPERSET_DB_NAME public $$SUPERSET_DB_SCHEMA_NAME
       "
     networks: *local-networks
@@ -258,6 +254,35 @@ services:
     extra_hosts: *extra-hosts
 
   #########################################################
+  # OpenFGA - Permissioning
+  #########################################################
+  openfga-migrate:
+    container_name: local-lakehouse-openfga-migrate
+    image: *openfga-image
+    env_file: *env-file
+    command: migrate
+    networks: *local-networks
+    depends_on:
+      shared-database-createdatabases:
+        condition: service_completed_successfully
+
+  openfga:
+    container_name: local-lakehouse-openfga
+    image: *openfga-image
+    env_file: *env-file
+    command: run
+    depends_on:
+      openfga-migrate:
+        condition: service_completed_successfully
+    networks: *local-networks
+    extra_hosts: *extra-hosts
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/grpc_health_probe", "-addr=openfga:8081"]
+      interval: 10s
+      timeout: 30s
+      retries: 3
+
+  #########################################################
   # Lakekeeper - Iceberg REST catalog
   #########################################################
   lakekeeper:
@@ -266,7 +291,7 @@ services:
     env_file: *env-file
     environment:
       - SSL_CERT_FILE=/certs/rootCA.pem
-      - RUST_LOG=trace,lakekeeper=info,lakekeeper_bin=info,iceberg_ext=info
+      - RUST_LOG=info,lakekeeper=info,lakekeeper_bin=info,iceberg_ext=info
     command: ["serve"]
     healthcheck:
       test: ["CMD", "/home/nonroot/lakekeeper", "healthcheck"]
@@ -282,8 +307,8 @@ services:
         condition: service_completed_successfully
       minio-createbucket:
         condition: service_completed_successfully
-      shared-database:
-        condition: service_healthy
+      shared-database-createdatabases:
+        condition: service_completed_successfully
       traefik:
         condition: service_healthy
     volumes:
@@ -300,6 +325,8 @@ services:
     depends_on:
       shared-database-createdatabases:
         condition: service_completed_successfully
+      openfga:
+        condition: service_healthy
     networks: *local-networks
     extra_hosts: *extra-hosts
 
@@ -443,7 +470,7 @@ services:
 
   superset-worker:
     profiles:
-      - superset-worker
+      - superset
     container_name: local-lakehouse-superset-worker
     env_file: *env-file
     image: *superset-image
@@ -466,7 +493,7 @@ services:
 
   superset-worker-beat:
     profiles:
-      - superset-worker
+      - superset
     container_name: local-lakehouse-superset-worker-beat
     env_file: *env-file
     image: *superset-image
