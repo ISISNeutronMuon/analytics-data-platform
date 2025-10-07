@@ -1,15 +1,24 @@
 # A development stack to emulate the Lakehouse. This is intended for local development only.
 #
-# Most services are exposed through a Traefik reverse proxy on port 58080 with the exception
-# of MinIO (S3 storage). Service routes:
+# Hostname
+# --------
 #
-#  - Keycloak identity provider: http://localhost:58080/auth
-#  - Lakekeeper iceberg catalog UI: http://localhost:58080/iceberg/ui. Log in with the credentials listed in keycloak/README
-#  - Trino query engine: http://localhost:58088
-#  - Superset BI tool: http://localhost:58080/workspace/playground. Log in with the credentials defined in env-for-testing
+# An additional entry in host `/etc/hosts` is required:
 #
-# Running scripts on the host
-# ---------------------------
+# 127.0.0.1       analytics.localdev
+#
+# This name is also added as an additional hosts entry for each compose service and mapped to the
+# docker network gateway IP. Combined with the Traefik proxy this enables contacting a service using
+# the same address regardless of whether it is accessed internally/externally from the compose network.
+#
+#
+# The MinIO api (S3 storage). Service routes:
+#
+#  - Keycloak identity provider: http://analytics.localdev:58080/auth
+#  - Lakekeeper iceberg catalog UI: http://analytics.localdev:58080/iceberg/ui. Log in with the credentials listed in keycloak/README
+#  - Trino query engine: http://analytics.localdev:58088
+#  - Superset BI tool: http://analytics.localdev:58080/workspace/playground. Log in with the credentials defined in env-for-testing
+#
 #
 # Tools such as pyiceberg connect to Lakekeeper, retrieve the address of the S3 storage endpoint
 # and communicate directly with it via the 'storage-profile.endpoint' defined in
@@ -19,7 +28,7 @@
 # To run scripts on the host, e.g. the Python e2e tests, the host /etc/hosts files needs an extra
 # entry to be able to contact the minio service directly:
 #
-# 127.0.0.1       minio
+# 127.0.0.1       analytics.localdev
 #
 #
 # To test ELT scripts based on the Python package `dlt`, create and add the following to
@@ -52,7 +61,7 @@ x-env-file: &env-file
 x-networks: &local-networks
   - local-lakehouse_net
 x-extra-hosts: &extra-hosts
-  - "analytics.local:host-gateway"
+  - "analytics.localdev:host-gateway"
 
 # certs volume
 x-certs-volume: &certs-volume "./certs:/certs:ro"
@@ -89,6 +98,7 @@ services:
     ports:
       - "58080:80"
       - "58443:8443" # TLS entrypoint for Trino (cannot run on non-root path prefix or without https with auth enabled)
+      - "59000:9000" # API entrypoint for minio that cannot run on a non-root path
     volumes:
       - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
       - "./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
@@ -190,16 +200,13 @@ services:
     env_file: *env-file
     # Match ports on host & container to use the same address inside and outside the container network
     command:
-      ["server", "/data", "--address", ":59000", "--console-address", ":59001"]
+      ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
     healthcheck:
-      test: ["CMD-SHELL", "healthcheck-localhost.sh 59000 /minio/health/live"]
+      test: ["CMD-SHELL", "healthcheck-localhost.sh 9000 /minio/health/live"]
       start_period: 10s
       interval: 30s
       timeout: 30s
       retries: 3
-    ports:
-      - "59000:59000"
-      - "59001:59001"
     volumes:
       - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
       - "minio_data:/data"
@@ -215,7 +222,7 @@ services:
     env_file: *env-file
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set minio http://minio:59000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+      /usr/bin/mc alias set minio http://analytics.localdev:59000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
       if ! /usr/bin/mc ls minio/$${MINIO_BUCKET_NAME}; then
         echo \"Bucket '$${MINIO_BUCKET_NAME}' not found, creating...\"
         /usr/bin/mc mb minio/$${MINIO_BUCKET_NAME};

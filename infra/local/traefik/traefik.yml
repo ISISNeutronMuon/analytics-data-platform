@@ -9,7 +9,7 @@ api:
 ping: {}
 
 log:
-  level: DEBUG
+  level: ERROR
   noColor: true
 
 entryPoints:
@@ -17,8 +17,8 @@ entryPoints:
     address: :8443
   web:
     address: :80
-  trino:
-    address: :8088
+  minioapi:
+    address: :9000
 
 # file configuration backend
 providers:

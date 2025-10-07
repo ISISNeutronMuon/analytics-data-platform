@@ -24,7 +24,7 @@ MINIO_ROOT_USER=$POSTGRES_USER
 MINIO_ROOT_PASSWORD=$POSTGRES_PASSWORD
 MINIO_SCHEME=http
 # This needs to match the route in traefik/traefik-dynamic.yml
-MINIO_BROWSER_REDIRECT_URL=http://localhost:59001
+MINIO_BROWSER_REDIRECT_URL=http://analytics.localdev:58080/minio-console
 MINIO_BUCKET_NAME=playground
 
 ###############################################################################

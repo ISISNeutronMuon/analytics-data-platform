@@ -1,7 +1,7 @@
 tls:
   certificates:
-    - certFile: /certs/analytics.local.pem
-      keyFile: /certs/analytics.local-key.pem
+    - certFile: /certs/analytics.localdev.pem
+      keyFile: /certs/analytics.localdev-key.pem
 
 http:
   routers:
@@ -22,7 +22,20 @@ http:
       service: api@internal
       middlewares:
         - traefik-strip-prefix
-      tls: {}
+
+    minioapi:
+      entryPoints: minioapi
+      rule: PathPrefix(`/`)
+      service: minioapi
+      middlewares:
+        - traefik-strip-prefix
+
+    minioconsole:
+      entryPoints: web
+      rule: PathPrefix(`/minio-console`)
+      service: minioconsole
+      middlewares:
+        - minioconsole-strip-prefix
 
     keycloak:
       entryPoints: web
@@ -47,6 +60,10 @@ http:
       stripPrefix:
         prefixes:
           - "/internal/traefik"
+    minioconsole-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/minio-console"
     lakekeeper-strip-prefix:
       stripPrefix:
         prefixes:
@@ -57,14 +74,14 @@ http:
       loadBalancer:
         servers:
           - url: "http://keycloak:8080"
-    minio-console:
-      loadBalancer:
-        servers:
-          - url: "http://minio:9001"
-    minio-api:
+    minioapi:
       loadBalancer:
         servers:
           - url: "http://minio:9000"
+    minioconsole:
+      loadBalancer:
+        servers:
+          - url: "http://minio:9001"
     lakekeeper:
       loadBalancer:
         servers:
