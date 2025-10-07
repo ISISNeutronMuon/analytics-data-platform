@@ -64,7 +64,11 @@ x-extra-hosts: &extra-hosts
   - "analytics.localdev:host-gateway"
 
 # certs volume
-x-certs-volume: &certs-volume "./certs:/certs:ro"
+x-certs-volume: &certs-volume "mkcert_data:/certs"
+
+x-mkcert-depends: &mkcert-depends
+  mkcert:
+    condition: service_completed_successfully
 
 # superset options
 x-superset-user: &superset-user root
@@ -85,10 +89,27 @@ services:
   #########################################################
   # Ingress
   #########################################################
+  mkcert:
+    container_name: local-lakehouse-mkcert
+    image: alpine/mkcert
+    entrypoint: >
+      /bin/sh -c "
+        cd /certs && \\
+        mkcert \\
+          -cert-file analytics.localdev.pem \\
+          -key-file analytics.localdev-key.pem \\
+          analytics.localdev localhost 127.0.0.1 ::1 && \\
+        cp $(mkcert -CAROOT)/* .
+      "
+    restart: "no"
+    volumes:
+      - mkcert_data:/certs
+
   traefik:
     container_name: local-lakehouse-traefik
     image: *traefik-image
     env_file: *env-file
+    depends_on: *mkcert-depends
     healthcheck:
       test: ["CMD-SHELL", "traefik healthcheck"]
       interval: 30s
@@ -97,6 +118,7 @@ services:
       start_period: 5s
     ports:
       - "58080:80"
+      - "50443:443" # Standard TLS entrypoint
       - "58443:8443" # TLS entrypoint for Trino (cannot run on non-root path prefix or without https with auth enabled)
       - "59000:9000" # API entrypoint for minio that cannot run on a non-root path
     volumes:
@@ -242,7 +264,8 @@ services:
     image: *lakekeeper-image
     env_file: *env-file
     environment:
-      - RUST_LOG=info,lakekeeper=info,lakekeeper_bin=info,iceberg_ext=info
+      - SSL_CERT_FILE=/certs/rootCA.pem
+      - RUST_LOG=trace,lakekeeper=info,lakekeeper_bin=info,iceberg_ext=info
     command: ["serve"]
     healthcheck:
       test: ["CMD", "/home/nonroot/lakekeeper", "healthcheck"]
@@ -251,6 +274,7 @@ services:
       timeout: 30s
       retries: 3
     depends_on:
+      <<: *mkcert-depends
       keycloak:
         condition: service_healthy
       lakekeeper-migrate:
@@ -261,6 +285,8 @@ services:
         condition: service_healthy
       traefik:
         condition: service_healthy
+    volumes:
+      - *certs-volume
     networks: *local-networks
     extra_hosts: *extra-hosts
 
@@ -293,6 +319,7 @@ services:
     volumes:
       - "../ansible-docker/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py"
       - "./lakekeeper/bootstrap-warehouse.json:/opt/work/bootstrap-warehouse.json:ro"
+      - *certs-volume
     networks: *local-networks
     extra_hosts: *extra-hosts
 
@@ -460,6 +487,8 @@ networks:
     name: local-lakehouse-network
 
 volumes:
+  mkcert_data:
+    name: local-lakehouse_mkcert_data
   keycloak_data:
     name: local-lakehouse_keycloak_data
   minio_data:

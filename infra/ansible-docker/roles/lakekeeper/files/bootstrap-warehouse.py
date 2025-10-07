@@ -13,6 +13,10 @@ The following environment variables are required:
 - LAKEKEEPER_BOOTSTRAP__CLIENT_SECRET
 - LAKEKEEPER_BOOTSTRAP__SCOPE
 - LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL
+
+The following are optional:
+
+- LAKEKEEPER_BOOTSTRAP__REQUESTS_CA_BUNDLE
 """
 
 import dataclasses
@@ -31,6 +35,12 @@ LOGGER = logging.getLogger(__name__)
 LOGGER_FILENAME = f"{Path(__file__).name}.log"
 LOGGER_FORMAT = "%(asctime)s|%(message)s"
 REQUESTS_TIMEOUT_DEFAULT = 60.0
+REQUESTS_CA_BUNDLE = os.environ.get(f"{LAKEKEEPER_BOOTSTRAP_PREFIX}REQUESTS_CA_BUNDLE")
+REQUESTS_DEFAULT_KWARGS: Dict[str, Any] = {
+    "timeout": REQUESTS_TIMEOUT_DEFAULT,
+}
+if REQUESTS_CA_BUNDLE is not None:
+    REQUESTS_DEFAULT_KWARGS["verify"] = REQUESTS_CA_BUNDLE
 
 
 @dataclasses.dataclass(init=False)
@@ -126,7 +136,7 @@ class Server:
             url,
             headers={"Authorization": f"Bearer {self.access_token}"},
             json=json,
-            timeout=timeout,
+            **REQUESTS_DEFAULT_KWARGS,
         )
         response.raise_for_status()
         return response
@@ -144,7 +154,7 @@ def request_access_token(token_endpoint, client_id, client_secret, scope) -> str
             "scope": scope,
         },
         headers={"Content-type": "application/x-www-form-urlencoded"},
-        timeout=REQUESTS_TIMEOUT_DEFAULT,
+        **REQUESTS_DEFAULT_KWARGS,
     )
     response.raise_for_status()
     return response.json()["access_token"]

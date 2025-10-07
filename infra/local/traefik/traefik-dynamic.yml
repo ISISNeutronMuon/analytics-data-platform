@@ -17,11 +17,12 @@ http:
     # backend services
     #############################################
     traefik:
-      entryPoints: web
+      entryPoints: websecure
       rule: PathPrefix(`/internal/traefik`) || HeaderRegexp(`Referer`, `/internal/traefik`)
       service: api@internal
       middlewares:
         - traefik-strip-prefix
+      tls: {}
 
     minioapi:
       entryPoints: minioapi
@@ -31,23 +32,26 @@ http:
         - traefik-strip-prefix
 
     minioconsole:
-      entryPoints: web
+      entryPoints: websecure
       rule: PathPrefix(`/minio-console`)
       service: minioconsole
       middlewares:
         - minioconsole-strip-prefix
+      tls: {}
 
     keycloak:
-      entryPoints: web
+      entryPoints: websecure
       rule: PathPrefix(`{{ env "KC_HTTP_RELATIVE_PATH" }}`)
       service: keycloak
+      tls: {}
 
     lakekeeper:
-      entryPoints: web
+      entryPoints: websecure
       rule: PathPrefix(`/iceberg`)
       middlewares:
         - lakekeeper-strip-prefix
       service: lakekeeper
+      tls: {}
 
     trino:
       entryPoints: trinosecure

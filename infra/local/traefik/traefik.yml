@@ -13,10 +13,12 @@ log:
   noColor: true
 
 entryPoints:
-  trinosecure:
-    address: :8443
   web:
     address: :80
+  websecure:
+    address: :443
+  trinosecure:
+    address: :8443
   minioapi:
     address: :9000
 
