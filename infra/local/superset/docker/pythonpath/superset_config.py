@@ -14,6 +14,8 @@ logger = logging.getLogger()
 # configured when this file is read. It can be used inside class methods of classes defined here
 log_level_text = os.getenv("SUPERSET_LOG_LEVEL", "INFO")
 LOG_LEVEL = getattr(logging, log_level_text.upper(), logging.INFO)
+if LOG_LEVEL == logging.DEBUG:
+    SILENCE_FAB = False
 
 #####
 # Supersets own database details
@@ -46,6 +48,7 @@ AUTH_TYPE = AUTH_OAUTH
 AUTH_USER_REGISTRATION_ROLE = "Gamma"
 AUTH_ROLES_SYNC_AT_LOGIN = True
 
+KEYCLOAK_REALM = os.environ["KEYCLOAK_REALM"]
 OAUTH_PROVIDERS = [
     {
         "name": "keycloak",
@@ -53,12 +56,9 @@ OAUTH_PROVIDERS = [
         "token_key": "access_token",
         "remote_app": {
             "client_id": "superset",
-            "api_base_url": "http://analytics.local:58080/auth/realms/iceberg/protocol/openid-connect",
             "client_kwargs": {"scope": "openid email profile"},
-            "access_token_url": "http://analytics.local:58080/auth/realms/iceberg/protocol/openid-connect/token",
-            "authorize_url": "http://analytics.local:58080/auth/realms/iceberg/protocol/openid-connect/auth",
-            "server_metadata_url": "http://analytics.local:58080/auth/realms/iceberg/.well-known/openid-configuration",
-            "request_token_url": None,
+            "server_metadata_url": KEYCLOAK_REALM + "/.well-known/openid-configuration",
+            "api_base_url": KEYCLOAK_REALM + "/protocol/",
         },
     }
 ]

@@ -81,6 +81,7 @@ x-superset-depends-on: &superset-depends-on
     condition: service_completed_successfully
 x-superset-volumes: &superset-volumes
   - ./superset/docker/docker-init.sh:/app/docker/docker-init.sh:ro
+  - ./superset/docker/docker-bootstrap-cert.sh:/app/docker/docker-bootstrap-cert.sh:ro
   - ./superset/docker/requirements-local.txt:/app/docker/requirements-local.txt:ro
   - ./superset/docker/pythonpath:/app/docker/pythonpath:ro
   - *certs-volume
@@ -355,7 +356,7 @@ services:
     command: >
       /bin/bash -c "
         function trinocli() {
-          trino --server=https://traefik:8443 --user $$TRINO_USER --password --insecure $@
+          trino --server=https://analytics.localdev:58443 --user $$TRINO_USER --password --insecure $@
         }
         MAX_RETRIES=5
         RETRY_COUNT=0
@@ -411,7 +412,7 @@ services:
     container_name: local-lakehouse-superset-app
     env_file: *env-file
     image: *superset-image
-    command: ["/app/docker/docker-bootstrap.sh", "app-gunicorn"]
+    command: ["/app/docker/docker-bootstrap-cert.sh", "app-gunicorn"]
     user: *superset-user
     restart: unless-stopped
     depends_on:

@@ -9,9 +9,10 @@ http:
     # user services
     #############################################
     superset:
-      entryPoints: web
+      entryPoints: websecure
       rule: PathPrefix(`{{ env "SUPERSET_APP_ROOT" }}`)
       service: superset
+      tls: {}
 
     #############################################
     # backend services
