@@ -88,15 +88,19 @@ services:
   mkcert:
     container_name: local-lakehouse-mkcert
     image: alpine/mkcert
-    entrypoint: >
-      /bin/sh -c "
-        cd /certs && \\
-        mkcert \\
-          -cert-file analytics.localdev.pem \\
-          -key-file analytics.localdev-key.pem \\
-          analytics.localdev localhost 127.0.0.1 ::1 && \\
-        cp $(mkcert -CAROOT)/* .
-      "
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        certfile=/certs/analytics.localdev.pem
+        if [ ! -f "$$certfile" ]; then
+          echo "$$certfile not found. Creating new CA and certificate."
+          cd /certs || exit 1
+          mkcert -cert-file "$$certfile" -key-file analytics.localdev-key.pem analytics.localdev localhost 127.0.0.1 ::1
+          cp "$$(mkcert -CAROOT)"/* .
+        else
+          echo "$$certfile exists, skipping certificate creation."
+        fi
     restart: "no"
     volumes:
       - mkcert_data:/certs
