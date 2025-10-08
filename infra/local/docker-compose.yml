@@ -103,7 +103,8 @@ services:
         fi
     restart: "no"
     volumes:
-      - mkcert_data:/certs
+      - *certs-volume
+    networks: *local-networks
 
   traefik:
     container_name: local-lakehouse-traefik
@@ -154,23 +155,24 @@ services:
     depends_on:
       shared-database:
         condition: service_healthy
-    entrypoint: |
-      /bin/bash -c "
-      create_db_if_not_exists() {
-        psql -v ON_ERROR_STOP=1 --host=shared-database --username=adpuser <<-EOSQL
-          SELECT 'CREATE DATABASE $1' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$1')\\gexec
-      EOSQL
-      }
-      rename_schema() {
-        psql -v ON_ERROR_STOP=1 --host=shared-database --username=adpuser $1 <<-EOSQL
-          SELECT 'ALTER SCHEMA $2 RENAME TO $3' WHERE NOT EXISTS (select schema_name from information_schema.schemata WHERE schema_name = '$3')\\gexec
-      EOSQL
-      }
-      create_db_if_not_exists $$SHARED_DB__OPENFGA_DB_NAME
-      create_db_if_not_exists $$SHARED_DB__LAKEKEEPER_DB_NAME
-      create_db_if_not_exists $$SHARED_DB__SUPERSET_DB_NAME
-      rename_schema $$SUPERSET_DB_NAME public $$SUPERSET_DB_SCHEMA_NAME
-      "
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        create_db_if_not_exists() {
+          psql -v ON_ERROR_STOP=1 --host=shared-database --username="$$ADPSUPERUSER" <<-EOSQL
+            SELECT 'CREATE DATABASE $1' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$1')\\gexec
+        EOSQL
+        }
+        rename_schema() {
+          psql -v ON_ERROR_STOP=1 --host=shared-database --username="$$ADPSUPERUSER" $1 <<-EOSQL
+            SELECT 'ALTER SCHEMA $2 RENAME TO $3' WHERE NOT EXISTS (select schema_name from information_schema.schemata WHERE schema_name = '$3')\\gexec
+        EOSQL
+        }
+        create_db_if_not_exists $$SHARED_DB__OPENFGA_DB_NAME
+        create_db_if_not_exists $$SHARED_DB__LAKEKEEPER_DB_NAME
+        create_db_if_not_exists $$SHARED_DB__SUPERSET_DB_NAME
+        rename_schema $$SUPERSET_DB_NAME public $$SUPERSET_DB_SCHEMA_NAME
     networks: *local-networks
 
   #########################################################
@@ -243,17 +245,18 @@ services:
         condition: service_healthy
     image: *minio-mc-image
     env_file: *env-file
-    entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set minio http://analytics.localdev:59000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
-      if ! /usr/bin/mc ls minio/$${MINIO_BUCKET_NAME}; then
-        echo \"Bucket '$${MINIO_BUCKET_NAME}' not found, creating...\"
-        /usr/bin/mc mb minio/$${MINIO_BUCKET_NAME};
-        echo \"Bucket '$${MINIO_BUCKET_NAME}' created.\"
-      else
-        echo \"Found bucket '$${MINIO_BUCKET_NAME}'\"
-      fi
-      "
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        /usr/bin/mc alias set minio http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
+        if ! /usr/bin/mc ls minio/"$${MINIO_BUCKET_NAME}"; then
+          echo "Bucket $${MINIO_BUCKET_NAME} not found, creating..."
+          /usr/bin/mc mb minio/"$${MINIO_BUCKET_NAME}"
+          echo "Bucket $${MINIO_BUCKET_NAME} created."
+        else
+          echo "Found bucket $${MINIO_BUCKET_NAME}"
+        fi
     networks: *local-networks
     extra_hosts: *extra-hosts
 
@@ -265,10 +268,10 @@ services:
     image: *openfga-image
     env_file: *env-file
     command: migrate
-    networks: *local-networks
     depends_on:
       shared-database-createdatabases:
         condition: service_completed_successfully
+    networks: *local-networks
 
   openfga:
     container_name: local-lakehouse-openfga
@@ -384,8 +387,10 @@ services:
     env_file: *env-file
     volumes:
       - "./trino/trino-create-catalog.sql:/docker/trino-create-catalog.sql:ro"
-    command: >
-      /bin/bash -c "
+    command:
+      - /bin/bash
+      - -c
+      - |
         function trinocli() {
           trino --server=https://analytics.localdev:58443 --user $$TRINO_USER --password --insecure $@
         }
@@ -393,27 +398,26 @@ services:
         RETRY_COUNT=0
         SLEEP_TIME=2
         while [ $$RETRY_COUNT -lt $$MAX_RETRIES ]; do
-          echo \"Attempt $$((RETRY_COUNT + 1)) of $${MAX_RETRIES}\"
-          if ! trinocli --execute=\"show catalogs\" 2>/dev/null | grep -q 'playground'; then
-            echo \"Playground catalog not found, creating...\"
+          echo Attempt $$((RETRY_COUNT + 1)) of $${MAX_RETRIES}
+          if ! trinocli --execute="show catalogs" 2>/dev/null | grep -q 'playground'; then
+            echo "Playground catalog not found, creating..."
             if trinocli --file=/docker/trino-create-catalog.sql; then
-              echo \"Successfully created catalog\"
+              echo "Successfully created catalog"
               exit 0
             fi
           else
-            echo \"Playground catalog already exists\"
+            echo "Playground catalog already exists"
             exit 0
           fi
           RETRY_COUNT=$$((RETRY_COUNT + 1))
           if [ $$RETRY_COUNT -lt $$MAX_RETRIES ]; then
-            echo \"Waiting $${SLEEP_TIME} seconds before next attempt...\"
+            echo "Waiting $${SLEEP_TIME} seconds before next attempt..."
             sleep $${SLEEP_TIME}
           fi
         done
 
-        echo \"Failed to create catalog after $${MAX_RETRIES} attempts\"
+        echo "Failed to create catalog after $${MAX_RETRIES} attempts"
         exit 1
-      "
     depends_on:
       trino:
         condition: service_healthy
