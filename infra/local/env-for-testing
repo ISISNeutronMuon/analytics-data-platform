@@ -1,10 +1,6 @@
 ###############################################################################
 # WARNING=DO NOT USE THIS FILE FOR PRODUCTION
 ###############################################################################
-TRAEFIK_HOST=analytics.localdev
-TRAEFIK_TLS_PORT=50443
-TRAEFIK_BASE_URL=https://$TRAEFIK_HOST:$TRAEFIK_TLS_PORT
-
 ADPSUPERUSER=adpsuperuser
 ADPSUPERUSER_PASS=adppassword
 
@@ -23,7 +19,8 @@ SHARED_DB__HOST=shared-database
 KC_BOOTSTRAP_ADMIN_USERNAME=$ADPSUPERUSER
 KC_BOOTSTRAP_ADMIN_PASSWORD=$ADPSUPERUSER_PASS
 KC_HTTP_RELATIVE_PATH=/auth
-KEYCLOAK_REALM=$TRAEFIK_BASE_URL$KC_HTTP_RELATIVE_PATH/realms/analytics-data-platform
+KEYCLOAK_REALM_DOCKER=http://keycloak:8080$KC_HTTP_RELATIVE_PATH/realms/analytics-data-platform
+KEYCLOAK_REALM_HOST=http://localhost:50000$KC_HTTP_RELATIVE_PATH/realms/analytics-data-platform
 
 ###############################################################################
 # MinIO
@@ -31,10 +28,7 @@ KEYCLOAK_REALM=$TRAEFIK_BASE_URL$KC_HTTP_RELATIVE_PATH/realms/analytics-data-pla
 MINIO_ROOT_USER=$ADPSUPERUSER
 MINIO_ROOT_PASSWORD=$ADPSUPERUSER_PASS
 MINIO_SCHEME=http
-# This needs to match the route in traefik/traefik-dynamic.yml
-MINIO_BROWSER_REDIRECT_URL=$TRAEFIK_BASE_URL/minio-console
 MINIO_BUCKET_NAME=playground
-
 
 ###############################################################################
 # OpenFGA
@@ -52,31 +46,35 @@ SHARED_DB__LAKEKEEPER_DB_NAME=lakekeeper
 LAKEKEEPER__PG_ENCRYPTION_KEY=This-is-NOT-Secure!
 LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@shared-database:5432/$SHARED_DB__LAKEKEEPER_DB_NAME
 LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@shared-database:5432/$SHARED_DB__LAKEKEEPER_DB_NAME
-LAKEKEEPER__OPENID_PROVIDER_URI=$KEYCLOAK_REALM
+LAKEKEEPER__OPENID_PROVIDER_URI=$KEYCLOAK_REALM_DOCKER
+LAKEKEEPER__OPENID_ADDITIONAL_ISSUERS=$KEYCLOAK_REALM_HOST
 LAKEKEEPER__OPENID_AUDIENCE=lakekeeper
 LAKEKEEPER__AUTHZ_BACKEND=openfga
 LAKEKEEPER__OPENFGA__ENDPOINT=http://openfga:8081
 # Use host-accessible URI for browser-based UI
-LAKEKEEPER__UI__OPENID_PROVIDER_URI=$LAKEKEEPER__OPENID_PROVIDER_URI
+LAKEKEEPER__UI__OPENID_PROVIDER_URI=$KEYCLOAK_REALM_HOST
 LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
 
 # Bootstrapping
 UV_LINK_MODE=copy
 UV_PROJECT_ENVIRONMENT=/opt/uv-venv
-LAKEKEEPER_BOOTSTRAP__REQUESTS_CA_BUNDLE=/certs/rootCA.pem
 
-# LAKEKEEPER_BOOTSTRAP__LOG_LEVEL=DEBUG
-# LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL=$TRAEFIK_BASE_URL/iceberg
-# LAKEKEEPER_BOOTSTRAP__TOKEN_ENDPOINT_URL=$KEYCLOAK_REALM/protocol/openid-connect/token
-# LAKEKEEPER_BOOTSTRAP__CLIENT_ID=localinfra
-# LAKEKEEPER_BOOTSTRAP__CLIENT_SECRET=s3cr3t
-# LAKEKEEPER_BOOTSTRAP__SCOPE=lakekeeper
+###############################################################################
+# Open Policy Agent
+###############################################################################
+LAKEKEEPER_URL=http://lakekeeper:8181
+LAKEKEEPER_TOKEN_ENDPOINT=$KEYCLOAK_REALM_DOCKER
+LAKEKEEPER_CLIENT_ID=trino
+LAKEKEEPER_CLIENT_SECRET=s3cr3t
+LAKEKEEPER_SCOPE=lakekeeper
+LAKEKEEPER_LAKEKEEPER_WAREHOUSE=playground
+TRINO_LAKEKEEPER_CATALOG_NAME=playground
 
 ###############################################################################
 # Trino
 ###############################################################################
-TRINO_USER=superset
-TRINO_PASSWORD=adppassword
+#TRINO_USER=superset
+#TRINO_PASSWORD=adppassword
 
 ###############################################################################
 # Superset
@@ -103,7 +101,7 @@ SUPERSET_ADMIN_EMAIL=test@example.com
 SUPERSET_ADMIN_PASSWORD=adppassword
 
 # Environment/development settings
-SUPERSET_CA_BUNDLE=$LAKEKEEPER_BOOTSTRAP__REQUESTS_CA_BUNDLE
+SUPERSET_CA_BUNDLE=/certs/rootCA.pem
 PYTHONPATH=/app/docker/pythonpath
 SCARF_ANALYTICS=false
 FLASK_DEBUG=False

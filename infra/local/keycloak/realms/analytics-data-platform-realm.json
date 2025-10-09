@@ -109,6 +109,30 @@
       "disableableCredentialTypes": [],
       "requiredActions": [],
       "notBefore": 0
+    },
+    {
+      "id": "725f4266-f754-4ab5-b3f6-7ec2678d73d7",
+      "username": "service-account-machine-ingestion",
+      "emailVerified": false,
+      "enabled": true,
+      "createdTimestamp": 1760015029187,
+      "totp": false,
+      "serviceAccountClientId": "machine-ingestion",
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "notBefore": 0
+    },
+    {
+      "id": "0dc646ea-c5da-4de4-b105-842c6a03098a",
+      "username": "service-account-trino",
+      "emailVerified": false,
+      "enabled": true,
+      "createdTimestamp": 1760021638228,
+      "totp": false,
+      "serviceAccountClientId": "trino",
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "notBefore": 0
     }
   ],
   "scopeMappings": [
@@ -324,6 +348,63 @@
       ]
     },
     {
+      "id": "caf7cf59-ee52-48ee-93b7-b964c79a7099",
+      "clientId": "lakekeeper",
+      "name": "Lakekeeper client",
+      "description": "Public client for Lakekeeper UI & API",
+      "rootUrl": "",
+      "adminUrl": "",
+      "baseUrl": "",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "backchannel.logout.session.required": "true",
+        "standard.token.exchange.enabled": "false",
+        "frontchannel.logout.session.required": "true",
+        "post.logout.redirect.uris": "+",
+        "oauth2.device.authorization.grant.enabled": "true",
+        "display.on.consent.screen": "false",
+        "backchannel.logout.revoke.offline.tokens": "false"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "lakekeeper",
+        "address",
+        "phone",
+        "offline_access",
+        "organization",
+        "microprofile-jwt"
+      ]
+    },
+    {
       "id": "9bcad67c-2b2d-4023-8da4-40df1a9d9714",
       "clientId": "machine-infra",
       "name": "Machine Infrastructure",
@@ -377,6 +458,66 @@
         "email"
       ],
       "optionalClientScopes": [
+        "lakekeeper",
+        "address",
+        "phone",
+        "offline_access",
+        "organization",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "51d4cbc4-b3ca-4121-a325-3ed4b08c3200",
+      "clientId": "machine-ingestion",
+      "name": "Machine Ingestion",
+      "description": "Machine User for Ingestion",
+      "rootUrl": "",
+      "adminUrl": "",
+      "baseUrl": "",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "s3cr3t",
+      "redirectUris": [
+        "/*"
+      ],
+      "webOrigins": [
+        "/*"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "client.secret.creation.time": "1760015029",
+        "backchannel.logout.session.required": "true",
+        "standard.token.exchange.enabled": "true",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.revoke.offline.tokens": "false"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "web-origins",
+        "service_account",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "lakekeeper",
         "address",
         "phone",
         "offline_access",
@@ -490,6 +631,68 @@
       ],
       "optionalClientScopes": [
         "address",
+        "phone",
+        "offline_access",
+        "organization",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "1a9bad6d-4f1c-46b0-8e7c-5c6bbaface41",
+      "clientId": "trino",
+      "name": "Trino client",
+      "description": "Confidential client for Trino",
+      "rootUrl": "",
+      "adminUrl": "",
+      "baseUrl": "",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "s3cr3t",
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "/*"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "client.secret.creation.time": "1760021638",
+        "backchannel.logout.session.required": "true",
+        "standard.token.exchange.enabled": "true",
+        "frontchannel.logout.session.required": "true",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "display.on.consent.screen": "false",
+        "backchannel.logout.revoke.offline.tokens": "false"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "web-origins",
+        "service_account",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "lakekeeper",
+        "address",
+        "trino",
         "phone",
         "offline_access",
         "organization",
@@ -648,6 +851,34 @@
       ]
     },
     {
+      "id": "85c18268-d499-4ed1-81fb-7cb836327152",
+      "name": "trino",
+      "description": "Add aud=trino scope",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "true",
+        "gui.order": "",
+        "consent.screen.text": ""
+      },
+      "protocolMappers": [
+        {
+          "id": "e0d2941e-bd9b-4c1e-8dc5-64a3bc4a3bb0",
+          "name": "Add trino audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "false",
+            "lightweight.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true",
+            "included.custom.audience": "trino"
+          }
+        }
+      ]
+    },
+    {
       "id": "65b5eb33-99d2-4e7c-857b-60171d7bea87",
       "name": "roles",
       "description": "OpenID Connect scope for add user roles to the access token",
@@ -720,11 +951,12 @@
           "protocolMapper": "oidc-audience-mapper",
           "consentRequired": false,
           "config": {
-            "included.client.audience": "machine-infra",
-            "id.token.claim": "true",
+            "id.token.claim": "false",
             "lightweight.claim": "false",
+            "introspection.token.claim": "true",
             "access.token.claim": "true",
-            "introspection.token.claim": "true"
+            "included.custom.audience": "lakekeeper",
+            "userinfo.token.claim": "true"
           }
         }
       ]
@@ -1228,7 +1460,8 @@
     "phone",
     "microprofile-jwt",
     "organization",
-    "lakekeeper"
+    "lakekeeper",
+    "trino"
   ],
   "browserSecurityHeaders": {
     "contentSecurityPolicyReportOnly": "",
@@ -1267,14 +1500,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
-            "saml-user-property-mapper",
-            "saml-user-attribute-mapper",
-            "oidc-usermodel-attribute-mapper",
             "oidc-usermodel-property-mapper",
+            "saml-user-attribute-mapper",
             "oidc-sha256-pairwise-sub-mapper",
-            "oidc-address-mapper",
             "oidc-full-name-mapper",
-            "saml-role-list-mapper"
+            "saml-user-property-mapper",
+            "saml-role-list-mapper",
+            "oidc-address-mapper",
+            "oidc-usermodel-attribute-mapper"
           ]
         }
       },
@@ -1321,14 +1554,14 @@
         "subComponents": {},
         "config": {
           "allowed-protocol-mapper-types": [
+            "oidc-full-name-mapper",
+            "oidc-usermodel-property-mapper",
             "saml-user-property-mapper",
-            "oidc-sha256-pairwise-sub-mapper",
             "oidc-address-mapper",
+            "oidc-usermodel-attribute-mapper",
             "saml-user-attribute-mapper",
             "saml-role-list-mapper",
-            "oidc-usermodel-property-mapper",
-            "oidc-full-name-mapper",
-            "oidc-usermodel-attribute-mapper"
+            "oidc-sha256-pairwise-sub-mapper"
           ]
         }
       },
