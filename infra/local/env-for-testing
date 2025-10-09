@@ -5,11 +5,14 @@ TRAEFIK_HOST=analytics.localdev
 TRAEFIK_TLS_PORT=50443
 TRAEFIK_BASE_URL=https://$TRAEFIK_HOST:$TRAEFIK_TLS_PORT
 
+ADPSUPERUSER=adpsuperuser
+ADPSUPERUSER_PASS=adppassword
+
 ###############################################################################
 # Postgres image
 ###############################################################################
-POSTGRES_USER=adpuser
-POSTGRES_PASSWORD=adppassword
+POSTGRES_USER=$ADPSUPERUSER
+POSTGRES_PASSWORD=$ADPSUPERUSER_PASS
 PGPASSWORD=$POSTGRES_PASSWORD
 POSTGRES_DATABASE=unused
 SHARED_DB__HOST=shared-database
@@ -17,16 +20,16 @@ SHARED_DB__HOST=shared-database
 ###############################################################################
 # Keycloak
 ###############################################################################
-KC_BOOTSTRAP_ADMIN_USERNAME=$POSTGRES_USER
-KC_BOOTSTRAP_ADMIN_PASSWORD=$POSTGRES_PASSWORD
+KC_BOOTSTRAP_ADMIN_USERNAME=$ADPSUPERUSER
+KC_BOOTSTRAP_ADMIN_PASSWORD=$ADPSUPERUSER_PASS
 KC_HTTP_RELATIVE_PATH=/auth
-KEYCLOAK_REALM=$TRAEFIK_BASE_URL$KC_HTTP_RELATIVE_PATH/realms/iceberg
+KEYCLOAK_REALM=$TRAEFIK_BASE_URL$KC_HTTP_RELATIVE_PATH/realms/analytics-data-platform
 
 ###############################################################################
 # MinIO
 ###############################################################################
-MINIO_ROOT_USER=$POSTGRES_USER
-MINIO_ROOT_PASSWORD=$POSTGRES_PASSWORD
+MINIO_ROOT_USER=$ADPSUPERUSER
+MINIO_ROOT_PASSWORD=$ADPSUPERUSER_PASS
 MINIO_SCHEME=http
 # This needs to match the route in traefik/traefik-dynamic.yml
 MINIO_BROWSER_REDIRECT_URL=$TRAEFIK_BASE_URL/minio-console
@@ -61,12 +64,13 @@ LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
 UV_LINK_MODE=copy
 UV_PROJECT_ENVIRONMENT=/opt/uv-venv
 LAKEKEEPER_BOOTSTRAP__REQUESTS_CA_BUNDLE=/certs/rootCA.pem
-LAKEKEEPER_BOOTSTRAP__LOG_LEVEL=DEBUG
-LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL=$TRAEFIK_BASE_URL/iceberg
-LAKEKEEPER_BOOTSTRAP__TOKEN_ENDPOINT_URL=$KEYCLOAK_REALM/protocol/openid-connect/token
-LAKEKEEPER_BOOTSTRAP__CLIENT_ID=localinfra
-LAKEKEEPER_BOOTSTRAP__CLIENT_SECRET=s3cr3t
-LAKEKEEPER_BOOTSTRAP__SCOPE=lakekeeper
+
+# LAKEKEEPER_BOOTSTRAP__LOG_LEVEL=DEBUG
+# LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL=$TRAEFIK_BASE_URL/iceberg
+# LAKEKEEPER_BOOTSTRAP__TOKEN_ENDPOINT_URL=$KEYCLOAK_REALM/protocol/openid-connect/token
+# LAKEKEEPER_BOOTSTRAP__CLIENT_ID=localinfra
+# LAKEKEEPER_BOOTSTRAP__CLIENT_SECRET=s3cr3t
+# LAKEKEEPER_BOOTSTRAP__SCOPE=lakekeeper
 
 ###############################################################################
 # Trino

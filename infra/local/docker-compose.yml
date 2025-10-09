@@ -32,7 +32,7 @@
 # bucket_url = "s3://playground"
 #
 # [destination.pyiceberg.credentials]
-# uri = "http://localhost:58080/iceberg/catalog"
+# uri = "https://analytics.localdev/iceberg/catalog"
 # warehouse = "playground"
 #
 
@@ -185,7 +185,7 @@ services:
     volumes:
       - keycloak_data:/opt/keycloak/data
       - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
-      - "./keycloak/iceberg-realm.json:/opt/keycloak/data/import/iceberg-realm.json:ro"
+      - "./keycloak/realms:/opt/keycloak/data/import:ro"
     healthcheck:
       test:
         [
@@ -342,12 +342,18 @@ services:
     image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
     env_file: *env-file
     command:
-      [
-        "uv",
-        "run",
-        "/opt/work/bootstrap-warehouse.py",
-        "/opt/work/bootstrap-warehouse.json",
-      ]
+      - /bin/bash
+      - -c
+      - >
+        uv run /opt/work/bootstrap-warehouse.py
+        --token-url "$$KEYCLOAK_REALM/protocol/openid-connect/token"
+        --client-id machine-infra --client-secret s3cr3t
+        --token-scope lakekeeper
+        --initial-admin-id "oidc~e814f4f3-3a9c-49b9-bb8c-bcabcdaab800"
+        --log-level=DEBUG
+        --warehouse-json "/opt/work/bootstrap-warehouse.json"
+        "$$TRAEFIK_BASE_URL/iceberg"
+    restart: "no"
     depends_on:
       lakekeeper:
         condition: service_healthy

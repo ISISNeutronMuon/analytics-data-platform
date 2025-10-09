@@ -1,22 +1,15 @@
 # /// script
 # requires-python = "==3.13.*"
 # dependencies = [
-#     "requests",
+#      "click~=8.3.0",
+#     "requests~=2.32.5",
 # ]
 # ///
 """Combined script to bootstrap a Lakeeper instance and create a named warehouse:
 
-The following environment variables are required:
+The following environment variables are optional:
 
-- LAKEKEEPER_BOOTSTRAP__TOKEN_ENDPOINT_URL
-- LAKEKEEPER_BOOTSTRAP__CLIENT_ID
-- LAKEKEEPER_BOOTSTRAP__CLIENT_SECRET
-- LAKEKEEPER_BOOTSTRAP__SCOPE
-- LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL
-
-The following are optional:
-
-- LAKEKEEPER_BOOTSTRAP__REQUESTS_CA_BUNDLE
+- LAKEKEEPER_BOOTSTRAP__REQUESTS_CA_BUNDLE: A CA bundle as an alternative to certifi
 """
 
 import dataclasses
@@ -24,43 +17,22 @@ import json
 from pathlib import Path
 import logging
 import os
-import sys
 from typing import Any, Dict, Callable
 
+import click
 import requests
 
 # Prefix for environment variables mapped directly to class variables
-LAKEKEEPER_BOOTSTRAP_PREFIX = "LAKEKEEPER_BOOTSTRAP__"
 LOGGER = logging.getLogger(__name__)
 LOGGER_FILENAME = f"{Path(__file__).name}.log"
 LOGGER_FORMAT = "%(asctime)s|%(message)s"
 REQUESTS_TIMEOUT_DEFAULT = 60.0
-REQUESTS_CA_BUNDLE = os.environ.get(f"{LAKEKEEPER_BOOTSTRAP_PREFIX}REQUESTS_CA_BUNDLE")
+REQUESTS_CA_BUNDLE = os.environ.get("LAKEKEEPER_BOOTSTRAP__REQUESTS_CA_BUNDLE")
 REQUESTS_DEFAULT_KWARGS: Dict[str, Any] = {
     "timeout": REQUESTS_TIMEOUT_DEFAULT,
 }
 if REQUESTS_CA_BUNDLE is not None:
     REQUESTS_DEFAULT_KWARGS["verify"] = REQUESTS_CA_BUNDLE
-
-
-@dataclasses.dataclass(init=False)
-class EnvParser:
-    # Logging
-    log_level: str = "INFO"
-
-    # ID provider
-    token_endpoint_url: str
-    client_id: str
-    client_secret: str
-    scope: str
-
-    # Lakekeeper
-    lakekeeper_url: str
-
-    def __init__(self, env_prefix: str):
-        """Parse environment variables prefixed with env_prefix into class variables"""
-        for field in dataclasses.fields(self):
-            setattr(self, field.name, os.environ[f"{env_prefix}{field.name.upper()}"])
 
 
 @dataclasses.dataclass
@@ -95,11 +67,32 @@ class Server:
         )
         LOGGER.info("Server bootstrapped successfully.")
 
+    def assign_permissions(self, oidc_id: str, entities: Dict[str, Any]):
+        """Assign a list of grants to each user"""
+        LOGGER.debug(f"Assigning permissions for user {oidc_id}")
+        for entity, grants in entities.items():
+            response = self._request_with_auth(
+                requests.get,
+                url=self.management_url + f"/permissions/{entity}/assignments",
+            )
+            if any(map(lambda x: x["user"] == oidc_id, response.json()["assignments"])):
+                LOGGER.debug(
+                    f"Grants already assigned for entity '{entity}'. Skipping assignment."
+                )
+                continue
+            else:
+                self._request_with_auth(
+                    requests.post,
+                    url=self.management_url + f"/permissions/{entity}/assignments",
+                    json={
+                        "writes": [{"type": grant, "user": oidc_id} for grant in grants]
+                    },
+                )
+
     def warehouse_exists(self, warehouse_name: str) -> bool:
         response = self._request_with_auth(
             requests.get, self.management_url + "/warehouse"
         )
-        LOGGER.debug(f"'/warehouse' response: {response.json()}")
         for warehouse in response.json()["warehouses"]:
             if warehouse["name"] == warehouse_name:
                 return True
@@ -127,7 +120,6 @@ class Server:
         url: str,
         *,
         json=None,
-        timeout: float = REQUESTS_TIMEOUT_DEFAULT,
     ) -> requests.Response:
         """Make an authenticated request to the given url.
 
@@ -144,13 +136,13 @@ class Server:
 
 def request_access_token(token_endpoint, client_id, client_secret, scope) -> str:
     """Request and return an access token from the given ID provider"""
+    LOGGER.debug(f"Requesting access token from '{token_endpoint}'")
     response = requests.post(
         token_endpoint,
         data={
             "grant_type": "client_credentials",
             "client_id": client_id,
             "client_secret": client_secret,
-            "audience": scope,
             "scope": scope,
         },
         headers={"Content-type": "application/x-www-form-urlencoded"},
@@ -160,14 +152,35 @@ def request_access_token(token_endpoint, client_id, client_secret, scope) -> str
     return response.json()["access_token"]
 
 
-def main():
-    env_vars = EnvParser(LAKEKEEPER_BOOTSTRAP_PREFIX)
+@click.command()
+@click.argument("lakekeeper-url")
+@click.option("--token-url", help="Endpoint to retrieve a token")
+@click.option("--client-id", help="IDP client id")
+@click.option("--client-secret", help="Secret for given client id")
+@click.option("--token-scope", help="Additional scopes for token")
+@click.option("--initial-admin-id", help="OIDC ID of user initial admin/project_admin")
+@click.option("--warehouse-json", help="JSON file for creating a warehouse")
+@click.option("-l", "--log-level", default="INFO", show_default=True)
+def main(
+    lakekeeper_url: str,
+    token_url: str,
+    client_id: str,
+    client_secret: str,
+    token_scope: str,
+    initial_admin_id: str,
+    warehouse_json: str | None,
+    log_level: str,
+):
+    """Bootstrap Lakekeeper and create a list of warehouses
+
+    lakekeeper_url: Lakekeeper api base endpoint
+    """
 
     this_file_dir = Path(__file__).parent
     logging.basicConfig(
         filename=this_file_dir / LOGGER_FILENAME,
         format=LOGGER_FORMAT,
-        level=getattr(logging, env_vars.log_level),
+        level=getattr(logging, log_level.upper()),
         filemode="a",
         encoding="utf-8",
         force=True,
@@ -177,22 +190,24 @@ def main():
     stream_handler.setFormatter(logging.Formatter(LOGGER_FORMAT))
 
     server = Server(
-        env_vars.lakekeeper_url,
+        lakekeeper_url,
         request_access_token(
-            env_vars.token_endpoint_url,
-            env_vars.client_id,
-            env_vars.client_secret,
-            env_vars.scope,
+            token_url,
+            client_id,
+            client_secret,
+            token_scope,
         ),
     )
     server.bootstrap()
+    server.assign_permissions(
+        oidc_id=initial_admin_id,
+        entities={"server": ["admin"], "project": ["project_admin"]},
+    )
 
-    warehouses_json = sys.argv[1:]
-    if warehouses_json:
-        LOGGER.debug(f"Creating warehouses using files: {warehouses_json}")
-        for warehouse_json_file in warehouses_json:
-            with open(warehouse_json_file) as fp:
-                server.create_warehouse(json.load(fp))
+    if warehouse_json:
+        LOGGER.debug(f"Creating warehouse using file: {warehouse_json}")
+        with open(warehouse_json) as fp:
+            server.create_warehouse(json.load(fp))
 
 
 if __name__ == "__main__":
