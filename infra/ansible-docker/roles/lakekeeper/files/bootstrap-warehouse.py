@@ -38,7 +38,7 @@ if REQUESTS_CA_BUNDLE is not None:
 @dataclasses.dataclass
 class Server:
     url: str
-    access_token: str
+    access_token: str | None
 
     @property
     def management_url(self) -> str:
@@ -124,9 +124,14 @@ class Server:
         """Make an authenticated request to the given url.
 
         A non-success response raises a requests.RequestException"""
+        headers = (
+            {"Authorization": f"Bearer {self.access_token}"}
+            if self.access_token
+            else {}
+        )
         response = method(
             url,
-            headers={"Authorization": f"Bearer {self.access_token}"},
+            headers=headers,
             json=json,
             **REQUESTS_DEFAULT_KWARGS,
         )
@@ -134,7 +139,9 @@ class Server:
         return response
 
 
-def request_access_token(token_endpoint, client_id, client_secret, scope) -> str:
+def request_access_token(
+    token_endpoint: str, client_id: str, client_secret: str, scope: str
+) -> str:
     """Request and return an access token from the given ID provider"""
     LOGGER.debug(f"Requesting access token from '{token_endpoint}'")
     response = requests.post(
@@ -163,11 +170,11 @@ def request_access_token(token_endpoint, client_id, client_secret, scope) -> str
 @click.option("-l", "--log-level", default="INFO", show_default=True)
 def main(
     lakekeeper_url: str,
-    token_url: str,
-    client_id: str,
-    client_secret: str,
-    token_scope: str,
-    initial_admin_id: str,
+    token_url: str | None,
+    client_id: str | None,
+    client_secret: str | None,
+    token_scope: str | None,
+    initial_admin_id: str | None,
     warehouse_json: str | None,
     log_level: str,
 ):
@@ -189,22 +196,33 @@ def main(
     logging.getLogger().addHandler(stream_handler)
     stream_handler.setFormatter(logging.Formatter(LOGGER_FORMAT))
 
-    server = Server(
-        lakekeeper_url,
-        request_access_token(
-            token_url,
-            client_id,
-            client_secret,
-            token_scope,
-        ),
-    )
-    server.bootstrap()
-    server.assign_permissions(
-        oidc_id=initial_admin_id,
-        entities={"server": ["admin"], "project": ["project_admin"]},
-    )
+    access_token = None
+    main_args = locals()
+    if all(
+        map(
+            lambda x: main_args[x] is not None,
+            ("client_id", "client_secret", "token_url", "token_scope"),
+        )
+    ):
+        LOGGER.debug("Requesting access token from IDP")
+        access_token = request_access_token(
+            token_url,  # type: ignore
+            client_id,  # type: ignore
+            client_secret,  # type: ignore
+            token_scope,  # type: ignore
+        )
+    else:
+        LOGGER.debug("Skipping access token request.")
 
-    if warehouse_json:
+    server = Server(lakekeeper_url, access_token)
+    server.bootstrap()
+    if initial_admin_id is not None:
+        server.assign_permissions(
+            oidc_id=initial_admin_id,
+            entities={"server": ["admin"], "project": ["project_admin"]},
+        )
+
+    if warehouse_json is not None:
         LOGGER.debug(f"Creating warehouse using file: {warehouse_json}")
         with open(warehouse_json) as fp:
             server.create_warehouse(json.load(fp))

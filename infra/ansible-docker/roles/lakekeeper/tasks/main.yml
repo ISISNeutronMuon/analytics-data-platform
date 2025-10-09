@@ -107,6 +107,14 @@
         "uv",
         "run",
         "/opt/work/bootstrap-warehouse.py",
+        "--token-url",
+        "{{ keycloak_token_endpoint_url_isis }}/protocol/openid-connect/token",
+        "--client-id ansible --client-secret {{ vault_keycloak_client_secret_ansible }}",
+        "--token-scope",
+        "lakekeeper",
+        "--log-level",
+        "{{ lakekeeper_bootstrap_log_level }}",
+        "--warehouse-json",
         "{{ warehouse_json_file | replace(lakekeeper_working_dir, '/opt/work') }}",
       ]
     state: started
@@ -118,12 +126,6 @@
       #
       UV_LINK_MODE=copy
       UV_PROJECT_ENVIRONMENT=/opt/uv-venv
-      LAKEKEEPER_BOOTSTRAP__LOG_LEVEL="{{ lakekeeper_bootstrap_log_level }}"
-      LAKEKEEPER_BOOTSTRAP__TOKEN_ENDPOINT_URL="{{ keycloak_token_endpoint_url_isis }}"
-      LAKEKEEPER_BOOTSTRAP__CLIENT_ID=ansible
-      LAKEKEEPER_BOOTSTRAP__CLIENT_SECRET="{{ vault_keycloak_client_secret_ansible }}"
-      LAKEKEEPER_BOOTSTRAP__SCOPE=lakekeeper
-      LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL="{{ lakekeeper_url }}"
     networks:
       - name: "{{ lakekeeper_container_network }}"
     volumes:
