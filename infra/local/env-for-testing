@@ -16,11 +16,12 @@ SHARED_DB__HOST=shared-database
 ###############################################################################
 # Keycloak
 ###############################################################################
-KC_BOOTSTRAP_ADMIN_USERNAME=$ADPSUPERUSER
-KC_BOOTSTRAP_ADMIN_PASSWORD=$ADPSUPERUSER_PASS
+KC_BOOTSTRAP_ADMIN_USERNAME=admin
+KC_BOOTSTRAP_ADMIN_PASSWORD=admin
 KC_HTTP_RELATIVE_PATH=/auth
-KEYCLOAK_REALM_DOCKER=http://keycloak:8080$KC_HTTP_RELATIVE_PATH/realms/analytics-data-platform
-KEYCLOAK_REALM_HOST=http://localhost:50000$KC_HTTP_RELATIVE_PATH/realms/analytics-data-platform
+KC_REALM_NAME=analytics-data-platform
+KEYCLOAK_REALM_DOCKER=http://keycloak:8080$KC_HTTP_RELATIVE_PATH/realms/$KC_REALM_NAME
+KEYCLOAK_REALM_HOST=http://localhost:50000$KC_HTTP_RELATIVE_PATH/realms/$KC_REALM_NAME
 
 ###############################################################################
 # MinIO

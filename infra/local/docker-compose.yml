@@ -51,8 +51,6 @@ x-env-file: &env-file
 # network
 x-networks: &local-networks
   - local-lakehouse_net
-x-extra-hosts: &extra-hosts
-  - "analytics.localdev:host-gateway"
 
 # certs volume
 x-certs-volume: &certs-volume "mkcert_data:/certs"
@@ -178,7 +176,6 @@ services:
     volumes:
       - keycloak_data:/opt/keycloak/data
       - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
-      - "./keycloak/realms:/opt/keycloak/data/import:ro"
     ports:
       - "50000:8080"
     healthcheck:
@@ -189,7 +186,7 @@ services:
         ]
       start_period: 20s
       start_interval: 2s
-      interval: 30s
+      interval: 15s
       timeout: 30s
       retries: 5
     command:
@@ -199,13 +196,28 @@ services:
         "--health-enabled=true",
         "--features=token-exchange",
         "--hostname-debug=true",
-        "--proxy-headers=xforwarded",
-        "--proxy-trusted-addresses=0.0.0.0/0",
-        "--import-realm",
         "--verbose",
-        "--log-level=INFO",
+        "--log-level=DEBUG",
       ]
     networks: *local-networks
+
+  keycloak-bootstrap:
+    profiles:
+      - bootstrap
+    container_name: local-lakehouse-keycloak-bootstrap
+    image: *keycloak-image
+    env_file: *env-file
+    entrypoint:
+      - /bin/sh
+      - -c
+      - "sleep 2; /opt/keycloak/bootstrap.sh"
+    restart: "no"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    networks: *local-networks
+    volumes:
+      - "./keycloak/bootstrap.sh:/opt/keycloak/bootstrap.sh:ro"
 
   #########################################################
   # MinIO - Object store emulating the Ceph object store
@@ -459,7 +471,6 @@ services:
     volumes:
       - shared_redis_data:/data
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   superset-app:
     profiles:
@@ -491,7 +502,6 @@ services:
     user: *superset-user
     volumes: *superset-volumes
     networks: *local-networks
-    extra_hosts: *extra-hosts
     healthcheck:
       disable: true
 
@@ -510,7 +520,6 @@ services:
     user: *superset-user
     volumes: *superset-volumes
     networks: *local-networks
-    extra_hosts: *extra-hosts
     healthcheck:
       test:
         [
