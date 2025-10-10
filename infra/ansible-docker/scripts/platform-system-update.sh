@@ -15,7 +15,7 @@ function system_update() {
 test -f $INVENTORY || fail_with_message "$INVENTORY must exist in current directory ($PWD)"
 
 # Do updates in a top-down order
-# system_update elt
+system_update elt
 system_update superset_farm
 system_update trino
 system_update lakekeeper
