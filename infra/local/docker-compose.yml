@@ -5,19 +5,21 @@
 #
 # An additional entry in host `/etc/hosts` is required:
 #
-# 127.0.0.1    adp-minio
+# 127.0.0.1    analytics.localdev
+#
+# Insecure web traffic runs on port 50080 to avoid clashing with other local applications.
 #
 # Tools such as pyiceberg connect to Lakekeeper, retrieve the address of the S3 storage endpoint
 # and communicate directly with it via the 'storage-profile.endpoint' defined in
-# infra/local/lakekeeper/bootstrap-warehouse.json. To this end MinIO runs on port 59000 in both
-# the container and also on the host.
+# infra/local/lakekeeper/bootstrap-warehouse.json. To this end MinIO runs on port 59000 through
+# the Traefik router.
 #
 #  Service routes (you'll have to accept the self-signed certificate warning):
 #
-#  - Keycloak identity provider: http://localhost:50000/auth
-#  - Lakekeeper iceberg catalog UI: http://localhost:50001/ui. Log in with the credentials listed in keycloak/README
+#  - Keycloak identity provider: http://analytics.localdev:50080/auth
+#  - Lakekeeper iceberg catalog UI: http://analytics.localdev:50080/ui. Log in with the credentials listed in keycloak/README
 #  - Trino query engine: https://analytics.localdev:58443
-#  - Superset BI tool: https://analytics.localdev:50443/workspace/playground. Log in with the credentials defined in env-for-testing
+#  - Superset BI tool: http://analytics.localdev:50080/workspace/playground. Log in with the credentials defined in env-for-testing
 #
 #
 # To test ELT scripts based on the Python package `dlt`, create and add the following to
@@ -51,6 +53,8 @@ x-env-file: &env-file
 # network
 x-networks: &local-networks
   - local-lakehouse_net
+x-extra-hosts: &extra-hosts
+  - "analytics.localdev:host-gateway"
 
 # certs volume
 x-certs-volume: &certs-volume "mkcert_data:/certs"
@@ -64,7 +68,7 @@ x-superset-user: &superset-user root
 x-superset-depends-on: &superset-depends-on
   superset-redis:
     condition: service_started
-  shared-database-createdatabases:
+  shared-database-bootstrap:
     condition: service_completed_successfully
   trino-createcatalog:
     condition: service_completed_successfully
@@ -99,6 +103,7 @@ services:
     volumes:
       - *certs-volume
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   traefik:
     container_name: local-lakehouse-traefik
@@ -113,13 +118,15 @@ services:
       start_period: 5s
     ports:
       - "50080:80"
-      - "50443:443" # Standard TLS entrypoint
+      - "59000:9000" # MinIO api (match ports)
+      - "50443:443"
       - "58443:8443" # TLS entrypoint for Trino (cannot run on non-root path prefix or without https with auth enabled)
     volumes:
       - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
       - "./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
       - *certs-volume
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   #########################################################
   # Database shared by all services
@@ -137,9 +144,10 @@ services:
     volumes:
       - "shared_database_data:/var/lib/postgresql/data"
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
-  shared-database-createdatabases:
-    container_name: local-lakehouse-shared-database-createdatabases
+  shared-database-bootstrap:
+    container_name: local-lakehouse-shared-database-bootstrap
     image: *postgres-image
     env_file: *env-file
     restart: "no"
@@ -165,6 +173,7 @@ services:
         create_db_if_not_exists $$SHARED_DB__SUPERSET_DB_NAME
         rename_schema $$SUPERSET_DB_NAME public $$SUPERSET_DB_SCHEMA_NAME
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   #########################################################
   # Keycloak identity provider
@@ -176,8 +185,6 @@ services:
     volumes:
       - keycloak_data:/opt/keycloak/data
       - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
-    ports:
-      - "50000:8080"
     healthcheck:
       test:
         [
@@ -197,9 +204,10 @@ services:
         "--features=token-exchange",
         "--hostname-debug=true",
         "--verbose",
-        "--log-level=DEBUG",
+        "--log-level=INFO",
       ]
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   keycloak-bootstrap:
     profiles:
@@ -216,6 +224,7 @@ services:
       keycloak:
         condition: service_healthy
     networks: *local-networks
+    extra_hosts: *extra-hosts
     volumes:
       - "./keycloak/bootstrap.sh:/opt/keycloak/bootstrap.sh:ro"
 
@@ -226,15 +235,15 @@ services:
   # PyIcberg.
   # Service name needs to match the endpoint value in bootstrap-warehouse.json
   #########################################################
-  adp-minio:
+  minio:
     container_name: local-lakehouse-minio
     image: *minio-image
     env_file: *env-file
     # Match ports on host & container to use the same address inside and outside the container network
     command:
-      ["server", "/data", "--address", ":59000", "--console-address", ":59001"]
+      ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
     healthcheck:
-      test: ["CMD-SHELL", "healthcheck-localhost.sh 59000 /minio/health/live"]
+      test: ["CMD-SHELL", "healthcheck-localhost.sh 9000 /minio/health/live"]
       start_period: 10s
       interval: 30s
       timeout: 30s
@@ -242,15 +251,13 @@ services:
     volumes:
       - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
       - "minio_data:/data"
-    ports:
-      - "59000:59000"
-      - "59001:59001"
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
-  minio-createbucket:
-    container_name: local-lakehouse-minio-create-bucket
+  minio-bootstrap:
+    container_name: local-lakehouse-minio-bootstrap
     depends_on:
-      adp-minio:
+      minio:
         condition: service_healthy
     image: *minio-mc-image
     env_file: *env-file
@@ -258,7 +265,7 @@ services:
       - /bin/sh
       - -c
       - |
-        /usr/bin/mc alias set minio http://adp-minio:59000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
+        /usr/bin/mc alias set minio http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
         if ! /usr/bin/mc ls minio/"$${MINIO_BUCKET_NAME}"; then
           echo "Bucket $${MINIO_BUCKET_NAME} not found, creating..."
           /usr/bin/mc mb minio/"$${MINIO_BUCKET_NAME}"
@@ -267,6 +274,7 @@ services:
           echo "Found bucket $${MINIO_BUCKET_NAME}"
         fi
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   #########################################################
   # OpenFGA - Permissioning
@@ -277,9 +285,10 @@ services:
     env_file: *env-file
     command: migrate
     depends_on:
-      shared-database-createdatabases:
+      shared-database-bootstrap:
         condition: service_completed_successfully
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   openfga:
     container_name: local-lakehouse-openfga
@@ -295,6 +304,7 @@ services:
       interval: 10s
       timeout: 30s
       retries: 3
+    extra_hosts: *extra-hosts
 
   #########################################################
   # Lakekeeper - Iceberg REST catalog
@@ -314,19 +324,20 @@ services:
       timeout: 30s
       retries: 3
     depends_on:
+      traefik:
+        condition: service_healthy
       keycloak:
         condition: service_healthy
       lakekeeper-migrate:
         condition: service_completed_successfully
-      minio-createbucket:
+      minio-bootstrap:
         condition: service_completed_successfully
-      shared-database-createdatabases:
+      shared-database-bootstrap:
         condition: service_completed_successfully
     volumes:
       - *certs-volume
-    ports:
-      - "50001:8181"
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   lakekeeper-migrate:
     container_name: local-lakehouse-lakekeeper-migrate
@@ -335,14 +346,15 @@ services:
     restart: "no"
     command: ["migrate"]
     depends_on:
-      shared-database-createdatabases:
+      shared-database-bootstrap:
         condition: service_completed_successfully
       openfga:
         condition: service_healthy
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
-  lakekeeper-createwarehouse:
-    container_name: local-lakehouse-lakekeeper-createwarehouse
+  lakekeeper-bootstrap:
+    container_name: local-lakehouse-lakekeeper-bootstrap
     image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
     env_file: *env-file
     command:
@@ -350,7 +362,7 @@ services:
       - -c
       - >
         uv run /opt/work/bootstrap-warehouse.py
-        --token-url "$$KEYCLOAK_REALM_DOCKER/protocol/openid-connect/token"
+        --token-url "$$KEYCLOAK_REALM/protocol/openid-connect/token"
         --client-id machine-infra --client-secret s3cr3t
         --token-scope lakekeeper
         --initial-admin-id "oidc~2e50ed02-29a6-4842-93e0-f14f3c80f661"
@@ -366,6 +378,7 @@ services:
       - "./lakekeeper/bootstrap-warehouse.json:/opt/work/bootstrap-warehouse.json:ro"
       - *certs-volume
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   #########################################################
   # Trino query engine
@@ -395,6 +408,7 @@ services:
     volumes:
       - ./openpolicyagent/policies:/policies
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   trino:
     container_name: local-lakehouse-trino
@@ -409,11 +423,12 @@ services:
       timeout: 30s
       retries: 2
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
-  trino-createcatalog:
+  trino-bootstrap:
     profiles:
       - superset
-    container_name: local-lakehouse-trino-create-catalog
+    container_name: local-lakehouse-trino-bootstrap
     image: *trino-image
     env_file: *env-file
     volumes:
@@ -456,6 +471,7 @@ services:
         condition: service_healthy
     restart: "no"
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   #########################################################
   # Superset BI tool
@@ -471,6 +487,7 @@ services:
     volumes:
       - shared_redis_data:/data
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   superset-app:
     profiles:
@@ -487,6 +504,7 @@ services:
         condition: service_completed_successfully
     volumes: *superset-volumes
     networks: *local-networks
+    extra_hosts: *extra-hosts
 
   superset-init:
     profiles:
@@ -502,6 +520,7 @@ services:
     user: *superset-user
     volumes: *superset-volumes
     networks: *local-networks
+    extra_hosts: *extra-hosts
     healthcheck:
       disable: true
 
@@ -520,6 +539,7 @@ services:
     user: *superset-user
     volumes: *superset-volumes
     networks: *local-networks
+    extra_hosts: *extra-hosts
     healthcheck:
       test:
         [
@@ -542,6 +562,7 @@ services:
     user: *superset-user
     volumes: *superset-volumes
     networks: *local-networks
+    extra_hosts: *extra-hosts
     healthcheck:
       disable: true
 

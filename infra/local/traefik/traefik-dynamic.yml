@@ -5,11 +5,49 @@ tls:
 
 http:
   routers:
+    #############################################
+    # user services
+    #############################################
     superset:
-      entryPoints: websecure
+      entryPoints: web
       rule: PathPrefix(`{{ env "SUPERSET_APP_ROOT" }}`)
       service: superset
-      tls: {}
+
+    #############################################
+    # backend services
+    #############################################
+    traefik:
+      entryPoints: web
+      rule: PathPrefix(`/internal/traefik`) || HeaderRegexp(`Referer`, `/internal/traefik`)
+      service: api@internal
+      middlewares:
+        - traefik-strip-prefix
+
+    keycloak:
+      entryPoints: web
+      rule: PathPrefix(`{{ env "KC_HTTP_RELATIVE_PATH" }}`)
+      service: keycloak
+
+    minioapi:
+      entryPoints: minioapi
+      rule: PathPrefix(`/`)
+      service: minioapi
+      middlewares:
+        - traefik-strip-prefix
+
+    minioconsole:
+      entryPoints: web
+      rule: PathPrefix(`/minio-console`)
+      service: minioconsole
+      middlewares:
+        - minioconsole-strip-prefix
+
+    lakekeeper:
+      entryPoints: web
+      rule: PathPrefix(`/iceberg`)
+      middlewares:
+        - lakekeeper-strip-prefix
+      service: lakekeeper
 
     trino:
       entryPoints: trinosecure
@@ -17,7 +55,37 @@ http:
       service: trino
       tls: {}
 
+  middlewares:
+    traefik-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/internal/traefik"
+    minioconsole-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/minio-console"
+    lakekeeper-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/iceberg"
+
   services:
+    keycloak:
+      loadBalancer:
+        servers:
+          - url: "http://keycloak:8080"
+    minioapi:
+      loadBalancer:
+        servers:
+          - url: "http://minio:9000"
+    minioconsole:
+      loadBalancer:
+        servers:
+          - url: "http://minio:9001"
+    lakekeeper:
+      loadBalancer:
+        servers:
+          - url: "http://lakekeeper:8181"
     trino:
       loadBalancer:
         servers:
