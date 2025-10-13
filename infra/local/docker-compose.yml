@@ -70,7 +70,7 @@ x-superset-depends-on: &superset-depends-on
     condition: service_started
   shared-database-bootstrap:
     condition: service_completed_successfully
-  trino-createcatalog:
+  trino-bootstrap:
     condition: service_completed_successfully
 x-superset-volumes: &superset-volumes
   - ./superset/docker/docker-init.sh:/app/docker/docker-init.sh:ro
@@ -218,7 +218,7 @@ services:
     entrypoint:
       - /bin/sh
       - -c
-      - "sleep 2; /opt/keycloak/bootstrap.sh"
+      - "sleep 2; /opt/keycloak/bootstrap.sh http://keycloak:8080/auth"
     restart: "no"
     depends_on:
       keycloak:
