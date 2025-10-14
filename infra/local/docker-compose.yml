@@ -211,8 +211,6 @@ services:
     extra_hosts: *extra-hosts
 
   keycloak-bootstrap:
-    profiles:
-      - bootstrap
     container_name: local-lakehouse-keycloak-bootstrap
     image: *keycloak-image
     env_file: *env-file
@@ -367,9 +365,10 @@ services:
         --keycloak-realm "$$KC_REALM_NAME"
         --client-id machine-infra --client-secret s3cr3t
         --token-scope lakekeeper
+        --project-name analytics-data-platform
         --initial-admin "$$ADPSUPERUSER"
         --log-level=DEBUG
-        --warehouse-json "/opt/work/bootstrap-warehouse.json"
+        --warehouse-json-file "/opt/work/bootstrap-warehouse.json"
         "http://lakekeeper:8181"
     restart: "no"
     depends_on:
@@ -442,30 +441,17 @@ services:
         function trinocli() {
           trino --server=https://traefik:8443 --user $$TRINO_USER --password --insecure $@
         }
-        MAX_RETRIES=3
-        RETRY_COUNT=0
-        SLEEP_TIME=2
-        while [ $$RETRY_COUNT -lt $$MAX_RETRIES ]; do
-          echo Attempt $$((RETRY_COUNT + 1)) of $${MAX_RETRIES}
-          if ! trinocli --execute="show catalogs" 2>/dev/null | grep -q 'playground'; then
-            echo "Playground catalog not found, creating..."
-            if trinocli --file=/docker/trino-create-catalog.sql; then
-              echo "Successfully created catalog"
-              exit 0
-            fi
-          else
-            echo "Playground catalog already exists"
+        if ! trinocli --execute="show catalogs" 2>/dev/null | grep -q 'playground'; then
+          echo "Playground catalog not found, creating..."
+          if trinocli --file=/docker/trino-create-catalog.sql; then
+            echo "Successfully created catalog"
             exit 0
           fi
-          RETRY_COUNT=$$((RETRY_COUNT + 1))
-          if [ $$RETRY_COUNT -lt $$MAX_RETRIES ]; then
-            echo "Waiting $${SLEEP_TIME} seconds before next attempt..."
-            sleep $${SLEEP_TIME}
-          fi
-        done
+        else
+          echo "Playground catalog already exists"
+          exit 0
+        fi
 
-        echo "Failed to create catalog after $${MAX_RETRIES} attempts"
-        exit 1
     depends_on:
       trino:
         condition: service_healthy
@@ -528,7 +514,7 @@ services:
 
   superset-worker:
     profiles:
-      - superset
+      - superset-worker
     container_name: local-lakehouse-superset-worker
     env_file: *env-file
     image: *superset-image
@@ -548,10 +534,11 @@ services:
           "CMD-SHELL",
           "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME",
         ]
+      interval: 15s
 
   superset-worker-beat:
     profiles:
-      - superset
+      - superset-worker
     container_name: local-lakehouse-superset-worker-beat
     env_file: *env-file
     image: *superset-image

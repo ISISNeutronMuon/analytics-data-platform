@@ -1,6 +1,5 @@
 {
   "warehouse-name": "playground",
-  "project-id": "00000000-0000-0000-0000-000000000000",
   "storage-credential": {
     "type": "s3",
     "aws-access-key-id": "adpsuperuser",
