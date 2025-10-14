@@ -28,6 +28,12 @@ http:
       rule: PathPrefix(`{{ env "KC_HTTP_RELATIVE_PATH" }}`)
       service: keycloak
 
+    keycloak-secure:
+      entryPoints: websecure
+      rule: PathPrefix(`{{ env "KC_HTTP_RELATIVE_PATH" }}`)
+      service: keycloak
+      tls: {}
+
     minioapi:
       entryPoints: minioapi
       rule: PathPrefix(`/`)
@@ -48,6 +54,14 @@ http:
       middlewares:
         - lakekeeper-strip-prefix
       service: lakekeeper
+
+    lakekeeper-secure:
+      entryPoints: websecure
+      rule: PathPrefix(`/iceberg`)
+      middlewares:
+        - lakekeeper-strip-prefix
+      service: lakekeeper
+      tls: {}
 
     trino:
       entryPoints: trinosecure

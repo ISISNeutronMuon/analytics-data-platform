@@ -203,6 +203,7 @@ services:
         "--health-enabled=true",
         "--features=token-exchange",
         "--hostname-debug=true",
+        "--proxy-headers=xforwarded",
         "--verbose",
         "--log-level=INFO",
       ]
@@ -315,7 +316,7 @@ services:
     env_file: *env-file
     environment:
       - SSL_CERT_FILE=/certs/rootCA.pem
-      - RUST_LOG=info,lakekeeper=info,lakekeeper_bin=info,iceberg_ext=info
+      - RUST_LOG=info,lakekeeper=${LAKEKEEPER_LOG_LEVEL:-info},lakekeeper_bin=${LAKEKEEPER_LOG_LEVEL:-info},iceberg_ext=${LAKEKEEPER_LOG_LEVEL:-info}
     command: ["serve"]
     healthcheck:
       test: ["CMD", "/home/nonroot/lakekeeper", "healthcheck"]
@@ -324,11 +325,11 @@ services:
       timeout: 30s
       retries: 3
     depends_on:
+      lakekeeper-migrate:
+        condition: service_completed_successfully
       traefik:
         condition: service_healthy
-      keycloak:
-        condition: service_healthy
-      lakekeeper-migrate:
+      keycloak-bootstrap:
         condition: service_completed_successfully
       minio-bootstrap:
         condition: service_completed_successfully
