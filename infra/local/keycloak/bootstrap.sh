@@ -70,6 +70,12 @@ $KC_ADM create clients \
   --set 'optionalClientScopes=["lakekeeper", "address", "phone", "offline_access", "organization", "microprofile-jwt"]' \
   --set 'attributes={ "access.token.lifespan": 600 }' \
   --set 'secret=s3cr3t'
+# Allow this account to administer the realm
+$KC_ADM add-roles \
+  --target-realm "$KC_REALM_NAME" \
+  --uusername service-account-machine-infra \
+  --cclientid realm-management \
+  --rolename realm-admin
 
 $KC_ADM create clients \
   --target-realm "$KC_REALM_NAME" \

@@ -362,10 +362,11 @@ services:
       - -c
       - >
         uv run /opt/work/bootstrap-warehouse.py
-        --token-url "$$KEYCLOAK_REALM/protocol/openid-connect/token"
+        --keycloak-url "$$KEYCLOAK_URL"
+        --keycloak-realm "$$KC_REALM_NAME"
         --client-id machine-infra --client-secret s3cr3t
         --token-scope lakekeeper
-        --initial-admin-id "oidc~2e50ed02-29a6-4842-93e0-f14f3c80f661"
+        --initial-admin "$$ADPSUPERUSER"
         --log-level=DEBUG
         --warehouse-json "/opt/work/bootstrap-warehouse.json"
         "http://lakekeeper:8181"

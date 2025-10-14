@@ -17,7 +17,7 @@ import json
 from pathlib import Path
 import logging
 import os
-from typing import Any, Dict, Callable
+from typing import Any, Dict, Callable, Iterable
 
 import click
 import requests
@@ -26,6 +26,7 @@ import requests
 LOGGER = logging.getLogger(__name__)
 LOGGER_FILENAME = f"{Path(__file__).name}.log"
 LOGGER_FORMAT = "%(asctime)s|%(message)s"
+OIDC_PREFIX = "oidc~"
 REQUESTS_TIMEOUT_DEFAULT = 60.0
 REQUESTS_CA_BUNDLE = os.environ.get("LAKEKEEPER_BOOTSTRAP__REQUESTS_CA_BUNDLE")
 REQUESTS_DEFAULT_KWARGS: Dict[str, Any] = {
@@ -35,8 +36,94 @@ if REQUESTS_CA_BUNDLE is not None:
     REQUESTS_DEFAULT_KWARGS["verify"] = REQUESTS_CA_BUNDLE
 
 
+def _request_with_auth(
+    method: Callable, url: str, access_token: str | None, **kwargs
+) -> requests.Response:
+    """Make an authenticated request to the given url.
+
+    A non-success response raises a requests.RequestException"""
+    headers = {"Authorization": f"Bearer {access_token}"} if access_token else {}
+    response = method(url, headers=headers, **REQUESTS_DEFAULT_KWARGS, **kwargs)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as exc:
+        LOGGER.debug(f"request failed: {response.content.decode('utf-8')}")
+        raise exc
+    return response
+
+
 @dataclasses.dataclass
-class Server:
+class Keycloak:
+    """Encapsulate Keycloak as an OpenID provider
+
+    Keycloak should be accessible at "{url}" and the admin api at "{url}/admin"
+    """
+
+    url: str
+    realm: str
+
+    @property
+    def realm_url(self) -> str:
+        return self.url + f"/realms/{self.realm}"
+
+    @property
+    def realm_admin_url(self) -> str:
+        return self.url + f"/admin/realms/{self.realm}"
+
+    @property
+    def openid_config(self) -> Dict[str, Any]:
+        response = requests.get(self.realm_url + "/.well-known/openid-configuration")
+        response.raise_for_status()
+        return response.json()
+
+    @property
+    def token_endpoint(self) -> str:
+        return self.openid_config["token_endpoint"]
+
+    def oidc_ids(self, users: Iterable[str], access_token: str | None) -> Iterable[str]:
+        oidc_users = []
+        for user in users:
+            response = _request_with_auth(
+                requests.get,
+                self.realm_admin_url + "/users",
+                access_token,
+                params={"username": user, "exact": True},
+            )
+            response.raise_for_status()
+            users_json = response.json()
+            if len(users_json) == 1:
+                oidc_users.append(OIDC_PREFIX + users_json[0]["id"])
+            elif len(users_json) == 0:
+                raise RuntimeError(f"No user found for username={user}.")
+            else:
+                raise RuntimeError(
+                    f"Multiple users ({len(users_json)}) found for username={user}."
+                )
+
+        return oidc_users
+
+    def request_access_token(
+        self, client_id: str, client_secret: str, scope: str
+    ) -> str:
+        """Request and return an access token from the given ID provider"""
+        LOGGER.debug(f"Requesting access token from '{self.token_endpoint}'")
+        response = requests.post(
+            self.token_endpoint,
+            data={
+                "grant_type": "client_credentials",
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "scope": scope,
+            },
+            headers={"Content-type": "application/x-www-form-urlencoded"},
+            **REQUESTS_DEFAULT_KWARGS,
+        )
+        response.raise_for_status()
+        return response.json()["access_token"]
+
+
+@dataclasses.dataclass
+class Lakekeeper:
     url: str
     access_token: str | None
 
@@ -45,7 +132,9 @@ class Server:
         return self.url + "/management/v1"
 
     def is_bootstrapped(self) -> bool:
-        response = self._request_with_auth(requests.get, self.management_url + "/info")
+        response = _request_with_auth(
+            requests.get, self.management_url + "/info", self.access_token
+        )
         return response.json()["bootstrapped"]
 
     def bootstrap(self):
@@ -57,9 +146,10 @@ class Server:
             return
 
         LOGGER.info("Bootstrapping server.")
-        self._request_with_auth(
+        _request_with_auth(
             requests.post,
             url=self.management_url + "/bootstrap",
+            access_token=self.access_token,
             json={
                 "accept-terms-of-use": True,
                 "is-operator": True,
@@ -67,31 +157,34 @@ class Server:
         )
         LOGGER.info("Server bootstrapped successfully.")
 
-    def assign_permissions(self, oidc_id: str, entities: Dict[str, Any]):
-        """Assign a list of grants to each user"""
-        LOGGER.debug(f"Assigning permissions for user {oidc_id}")
-        for entity, grants in entities.items():
-            response = self._request_with_auth(
-                requests.get,
-                url=self.management_url + f"/permissions/{entity}/assignments",
+    def assign_permissions(self, oidc_ids: Iterable[str], entities: Dict[str, Any]):
+        """Assign a list of grants to a user"""
+        for oidc_id in oidc_ids:
+            LOGGER.debug(f"Assigning permissions for user {oidc_id}")
+            for entity, grants in entities.items():
+                self.assign_grants(oidc_id, entity, grants)
+
+    def assign_grants(self, oidc_id: str, entity: str, grants: Iterable[str]):
+        response = _request_with_auth(
+            requests.get,
+            self.management_url + f"/permissions/{entity}/assignments",
+            self.access_token,
+        )
+        if any(map(lambda x: x["user"] == oidc_id, response.json()["assignments"])):
+            LOGGER.debug(
+                f"Grants already assigned for entity '{entity}'. Skipping assignment."
             )
-            if any(map(lambda x: x["user"] == oidc_id, response.json()["assignments"])):
-                LOGGER.debug(
-                    f"Grants already assigned for entity '{entity}'. Skipping assignment."
-                )
-                continue
-            else:
-                self._request_with_auth(
-                    requests.post,
-                    url=self.management_url + f"/permissions/{entity}/assignments",
-                    json={
-                        "writes": [{"type": grant, "user": oidc_id} for grant in grants]
-                    },
-                )
+        else:
+            _request_with_auth(
+                requests.post,
+                url=self.management_url + f"/permissions/{entity}/assignments",
+                access_token=self.access_token,
+                json={"writes": [{"type": grant, "user": oidc_id} for grant in grants]},
+            )
 
     def warehouse_exists(self, warehouse_name: str) -> bool:
-        response = self._request_with_auth(
-            requests.get, self.management_url + "/warehouse"
+        response = _request_with_auth(
+            requests.get, self.management_url + "/warehouse", self.access_token
         )
         for warehouse in response.json()["warehouses"]:
             if warehouse["name"] == warehouse_name:
@@ -109,72 +202,36 @@ class Server:
             return
 
         LOGGER.info(f"Creating warehouse '{warehouse_name}'")
-        self._request_with_auth(
-            requests.post, self.management_url + "/warehouse", json=warehouse_config
+        _request_with_auth(
+            requests.post,
+            self.management_url + "/warehouse",
+            self.access_token,
+            json=warehouse_config,
         )
         LOGGER.info(f"Warehouse '{warehouse_name}' created successfully.")
-
-    def _request_with_auth(
-        self,
-        method: Callable,
-        url: str,
-        *,
-        json=None,
-    ) -> requests.Response:
-        """Make an authenticated request to the given url.
-
-        A non-success response raises a requests.RequestException"""
-        headers = (
-            {"Authorization": f"Bearer {self.access_token}"}
-            if self.access_token
-            else {}
-        )
-        response = method(
-            url,
-            headers=headers,
-            json=json,
-            **REQUESTS_DEFAULT_KWARGS,
-        )
-        response.raise_for_status()
-        return response
-
-
-def request_access_token(
-    token_endpoint: str, client_id: str, client_secret: str, scope: str
-) -> str:
-    """Request and return an access token from the given ID provider"""
-    LOGGER.debug(f"Requesting access token from '{token_endpoint}'")
-    response = requests.post(
-        token_endpoint,
-        data={
-            "grant_type": "client_credentials",
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "scope": scope,
-        },
-        headers={"Content-type": "application/x-www-form-urlencoded"},
-        **REQUESTS_DEFAULT_KWARGS,
-    )
-    response.raise_for_status()
-    return response.json()["access_token"]
 
 
 @click.command()
 @click.argument("lakekeeper-url")
-@click.option("--token-url", help="Endpoint to retrieve a token")
+@click.option("--keycloak-url", help="Base endpoint of Keycloak")
+@click.option("--keycloak-realm", help="Realm name to retrieve access token")
 @click.option("--client-id", help="IDP client id")
 @click.option("--client-secret", help="Secret for given client id")
 @click.option("--token-scope", help="Additional scopes for token")
-@click.option("--initial-admin-id", help="OIDC ID of user initial admin/project_admin")
+@click.option(
+    "--initial-admin",
+    help="Usernames(s) assigned as warehouse/project admin as a comma-separated list.",
+)
 @click.option("--warehouse-json", help="JSON file for creating a warehouse")
 @click.option("-l", "--log-level", default="INFO", show_default=True)
 def main(
     lakekeeper_url: str,
-    token_url: str | None,
+    keycloak_url: str | None,
+    keycloak_realm: str | None,
     client_id: str | None,
     client_secret: str | None,
     token_scope: str | None,
-    initial_admin_id: str | None,
+    initial_admin: str | None,
     warehouse_json: str | None,
     log_level: str,
 ):
@@ -196,29 +253,35 @@ def main(
     logging.getLogger().addHandler(stream_handler)
     stream_handler.setFormatter(logging.Formatter(LOGGER_FORMAT))
 
-    access_token = None
+    identity_provider, access_token = None, None
+    idp_required_args = (
+        "keycloak_url",
+        "keycloak_realm",
+        "client_id",
+        "client_secret",
+        "token_scope",
+    )
     main_args = locals()
-    if all(
-        map(
-            lambda x: main_args[x] is not None,
-            ("client_id", "client_secret", "token_url", "token_scope"),
-        )
-    ):
-        LOGGER.debug("Requesting access token from IDP")
-        access_token = request_access_token(
-            token_url,  # type: ignore
+    if all(map(lambda x: main_args[x] is not None, idp_required_args)):
+        LOGGER.debug("Creating identity provider.")
+        identity_provider = Keycloak(keycloak_url, keycloak_realm)  # type: ignore
+        access_token = identity_provider.request_access_token(
             client_id,  # type: ignore
             client_secret,  # type: ignore
             token_scope,  # type: ignore
         )
     else:
-        LOGGER.debug("Skipping access token request.")
+        LOGGER.debug(
+            f"Skipping identity provider creation. Missing one of {idp_required_args}"
+        )
 
-    server = Server(lakekeeper_url, access_token)
+    server = Lakekeeper(lakekeeper_url, access_token)
     server.bootstrap()
-    if initial_admin_id is not None:
+
+    if initial_admin is not None and identity_provider is not None:
+        users = map(lambda x: x.strip(), initial_admin.split(","))
         server.assign_permissions(
-            oidc_id=initial_admin_id,
+            identity_provider.oidc_ids(users, access_token),
             entities={"server": ["admin"], "project": ["project_admin"]},
         )
 
