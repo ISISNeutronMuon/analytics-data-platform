@@ -3,14 +3,20 @@
 ###############################################################################
 ROUTER_URL_HTTP=http://analytics.localdev:50080
 ROUTER_URL_HTTPS=https://analytics.localdev:50443
-ADPSUPERUSER=adpsuperuser
-ADPSUPERUSER_PASS=adppassword
+# These details are also present in
+#  - lakekeeper/bootstrap-warehouse.json
+#  - trino/etc/catalog/playground.properties (the name of the file matches the ADP_WORKSPACE_NAME value)
+# and will need to be adjusted there if the values change
+ADP_SUPERUSER=adpsuperuser
+ADP_SUPERUSER_PASS=adppassword
+ADP_PROJECT_ID=c4fcd44f-7ce7-4446-9f7c-dcc7ba76dd22
+ADP_WORKSPACE_NAME=playground
 
 ###############################################################################
 # Postgres image
 ###############################################################################
-POSTGRES_USER=$ADPSUPERUSER
-POSTGRES_PASSWORD=$ADPSUPERUSER_PASS
+POSTGRES_USER=$ADP_SUPERUSER
+POSTGRES_PASSWORD=$ADP_SUPERUSER_PASS
 PGPASSWORD=$POSTGRES_PASSWORD
 POSTGRES_DATABASE=unused
 SHARED_DB__HOST=shared-database
@@ -30,11 +36,11 @@ KEYCLOAK_REALM_HTTPS=$KEYCLOAK_URL_HTTPS/realms/$KC_REALM_NAME
 ###############################################################################
 # MinIO
 ###############################################################################
-MINIO_ROOT_USER=$ADPSUPERUSER
-MINIO_ROOT_PASSWORD=$ADPSUPERUSER_PASS
+MINIO_ROOT_USER=$ADP_SUPERUSER
+MINIO_ROOT_PASSWORD=$ADP_SUPERUSER_PASS
 MINIO_SCHEME=http
 MINIO_BROWSER_REDIRECT_URL=$ROUTER_URL_HTTP/minio-console
-MINIO_BUCKET_NAME=playground
+MINIO_BUCKET_NAME=$ADP_WORKSPACE_NAME
 
 ###############################################################################
 # OpenFGA
@@ -55,7 +61,6 @@ LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD
 LAKEKEEPER__ENABLE_DEFAULT_PROJECT=false
 LAKEKEEPER__OPENID_PROVIDER_URI=$KEYCLOAK_REALM
 LAKEKEEPER__OPENID_ADDITIONAL_ISSUERS=$KEYCLOAK_REALM_HTTPS
-#LAKEKEEPER__OPENID_SUBJECT_CLAIM=oid
 LAKEKEEPER__OPENID_AUDIENCE=lakekeeper
 LAKEKEEPER__AUTHZ_BACKEND=openfga
 LAKEKEEPER__OPENFGA__ENDPOINT=http://openfga:8081
@@ -76,8 +81,8 @@ LAKEKEEPER_TOKEN_ENDPOINT=$KEYCLOAK_REALM
 LAKEKEEPER_CLIENT_ID=trino
 LAKEKEEPER_CLIENT_SECRET=s3cr3t
 LAKEKEEPER_SCOPE=lakekeeper
-LAKEKEEPER_LAKEKEEPER_WAREHOUSE=playground
-TRINO_LAKEKEEPER_CATALOG_NAME=playground
+LAKEKEEPER_LAKEKEEPER_WAREHOUSE=$ADP_WORKSPACE_NAME
+TRINO_LAKEKEEPER_CATALOG_NAME=$ADP_WORKSPACE_NAME
 
 ###############################################################################
 # Trino
@@ -91,10 +96,10 @@ TRINO_LAKEKEEPER_CATALOG_NAME=playground
 # Metadata DB
 SHARED_DB__SUPERSET_DB_NAME=superset
 SUPERSET_DB_HOST=shared-database
-SUPERSET_DB_USER=$ADPSUPERUSER
-SUPERSET_DB_PASSWORD=$ADPSUPERUSER_PASS
+SUPERSET_DB_USER=$ADP_SUPERUSER
+SUPERSET_DB_PASSWORD=$ADP_SUPERUSER_PASS
 SUPERSET_DB_NAME=$SHARED_DB__SUPERSET_DB_NAME
-SUPERSET_DB_SCHEMA_NAME=playground
+SUPERSET_DB_SCHEMA_NAME=$ADP_WORKSPACE_NAME
 SUPERSET_DB_PORT=5432
 SUPERSET_DB_DIALECT=postgresql
 

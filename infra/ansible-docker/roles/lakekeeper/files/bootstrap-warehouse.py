@@ -28,6 +28,7 @@ LOGGER_FILENAME = f"{Path(__file__).name}.log"
 LOGGER_FORMAT = "%(asctime)s|%(message)s"
 
 LAKEKEEPER_PROJECT_ID_DEFAULT = "00000000-0000-0000-0000-000000000000"
+LAKEKEEPER_PROJECT_NAME_DEFAULT = "Default Project"
 OIDC_PREFIX = "oidc~"
 REQUESTS_TIMEOUT_DEFAULT = 60.0
 REQUESTS_CA_BUNDLE = os.environ.get("LAKEKEEPER_BOOTSTRAP__REQUESTS_CA_BUNDLE")
@@ -185,20 +186,30 @@ class Lakekeeper:
         )
         return response.json()["bootstrapped"]
 
-    def get_or_create_project(self, name: str) -> str:
-        """Create a new project of the given name if one does not exist. Return the id"""
+    def get_or_create_project(
+        self, name: str, new_project_id: str | None = None
+    ) -> str:
+        """Get the ID of a project with the given name or create one if it does not exist."""
         project_id = self.get_project(name)
         if project_id is None:
-            response = _request_with_auth(
-                requests.post,
-                url=self.management_url + "/project",
-                access_token=self.access_token,
-                json={"project-name": name},
-            )
-            response.raise_for_status()
-            project_id = response.json()["project-id"]
-            LOGGER.debug(f"Project '{name}' created with id '{project_id}'.")
+            project_id = self.create_project(name, new_project_id)
 
+        return project_id
+
+    def create_project(self, name: str, new_project_id: str | None = None):
+        """Create a new project, optionally specifying the ID"""
+        payload = {"project-name": name}
+        if new_project_id is not None:
+            payload["project-id"] = new_project_id
+        response = _request_with_auth(
+            requests.post,
+            url=self.management_url + "/project",
+            access_token=self.access_token,
+            json=payload,
+        )
+        response.raise_for_status()
+        project_id = response.json()["project-id"]
+        LOGGER.debug(f"Project '{name}' created with id '{project_id}'.")
         return project_id
 
     def get_project(self, name: str) -> str | None:
@@ -250,12 +261,20 @@ class Lakekeeper:
 
 @click.command()
 @click.argument("lakekeeper-url")
+@click.option(
+    "--project-name",
+    default=LAKEKEEPER_PROJECT_NAME_DEFAULT,
+    help="Project name other than the default",
+)
+@click.option(
+    "--new-project-id",
+    help="An optional project ID for the new project. Default is a newly generated one.",
+)
 @click.option("--keycloak-url", help="Base endpoint of Keycloak")
 @click.option("--keycloak-realm", help="Realm name to retrieve access token")
 @click.option("--client-id", help="IDP client id")
 @click.option("--client-secret", help="Secret for given client id")
 @click.option("--token-scope", help="Additional scopes for token")
-@click.option("--project-name", help="Project name other than the default")
 @click.option(
     "--initial-admin",
     help="Usernames(s) assigned as warehouse/project admin as a comma-separated list.",
@@ -264,12 +283,13 @@ class Lakekeeper:
 @click.option("-l", "--log-level", default="INFO", show_default=True)
 def main(
     lakekeeper_url: str,
+    project_name: str,
+    new_project_id: str | None,
     keycloak_url: str | None,
     keycloak_realm: str | None,
     client_id: str | None,
     client_secret: str | None,
     token_scope: str | None,
-    project_name: str | None,
     initial_admin: str | None,
     warehouse_json_file: str | None,
     log_level: str,
@@ -316,10 +336,7 @@ def main(
 
     server = Lakekeeper(lakekeeper_url, access_token)
     server.bootstrap()
-    if project_name is not None:
-        project_id = server.get_or_create_project(project_name)
-    else:
-        project_id = LAKEKEEPER_PROJECT_ID_DEFAULT
+    project_id = server.get_or_create_project(project_name, new_project_id)
 
     if initial_admin is not None and identity_provider is not None:
         users = map(lambda x: x.strip(), initial_admin.split(","))

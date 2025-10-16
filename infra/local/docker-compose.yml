@@ -56,12 +56,11 @@ x-networks: &local-networks
 x-extra-hosts: &extra-hosts
   - "analytics.localdev:host-gateway"
 
-# certs volume
-x-certs-volume: &certs-volume "mkcert_data:/certs"
-
+# certs
 x-mkcert-depends: &mkcert-depends
   mkcert:
     condition: service_completed_successfully
+x-certs-volume: &certs-volume "mkcert_data:/certs"
 
 # superset options
 x-superset-user: &superset-user root
@@ -141,6 +140,9 @@ services:
       timeout: 10s
       retries: 2
       start_period: 10s
+    ports:
+      # Open the port for easy access to viewing the database
+      - "55432:5432"
     volumes:
       - "shared_database_data:/var/lib/postgresql/data"
     networks: *local-networks
@@ -159,12 +161,12 @@ services:
       - -c
       - |
         create_db_if_not_exists() {
-          psql -v ON_ERROR_STOP=1 --host=shared-database --username="$$ADPSUPERUSER" <<-EOSQL
+          psql -v ON_ERROR_STOP=1 --host=shared-database --username="$$ADP_SUPERUSER" <<-EOSQL
             SELECT 'CREATE DATABASE $1' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$1')\\gexec
         EOSQL
         }
         rename_schema() {
-          psql -v ON_ERROR_STOP=1 --host=shared-database --username="$$ADPSUPERUSER" $1 <<-EOSQL
+          psql -v ON_ERROR_STOP=1 --host=shared-database --username="$$ADP_SUPERUSER" $1 <<-EOSQL
             SELECT 'ALTER SCHEMA $2 RENAME TO $3' WHERE NOT EXISTS (select schema_name from information_schema.schemata WHERE schema_name = '$3')\\gexec
         EOSQL
         }
@@ -361,12 +363,13 @@ services:
       - -c
       - >
         uv run /opt/work/bootstrap-warehouse.py
+        --project-name "$$KC_REALM_NAME"
+        --new-project-id "$$ADP_PROJECT_ID"
         --keycloak-url "$$KEYCLOAK_URL"
         --keycloak-realm "$$KC_REALM_NAME"
         --client-id machine-infra --client-secret s3cr3t
         --token-scope lakekeeper
-        --project-name analytics-data-platform
-        --initial-admin "$$ADPSUPERUSER"
+        --initial-admin "$$ADP_SUPERUSER"
         --log-level=DEBUG
         --warehouse-json-file "/opt/work/bootstrap-warehouse.json"
         "http://lakekeeper:8181"
@@ -415,51 +418,55 @@ services:
     container_name: local-lakehouse-trino
     image: *trino-image
     env_file: *env-file
-    volumes:
-      - "./trino/etc:/etc/trino:ro"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      traefik:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-I", "http://localhost:8080/v1/status"]
       start_period: 10s
       interval: 30s
       timeout: 30s
       retries: 2
-    networks: *local-networks
-    extra_hosts: *extra-hosts
-
-  trino-bootstrap:
-    profiles:
-      - superset
-    container_name: local-lakehouse-trino-bootstrap
-    image: *trino-image
-    env_file: *env-file
     volumes:
-      - "./trino/trino-create-catalog.sql:/docker/trino-create-catalog.sql:ro"
-    command:
-      - /bin/bash
-      - -c
-      - |
-        function trinocli() {
-          trino --server=https://traefik:8443 --user $$TRINO_USER --password --insecure $@
-        }
-        if ! trinocli --execute="show catalogs" 2>/dev/null | grep -q 'playground'; then
-          echo "Playground catalog not found, creating..."
-          if trinocli --file=/docker/trino-create-catalog.sql; then
-            echo "Successfully created catalog"
-            exit 0
-          fi
-        else
-          echo "Playground catalog already exists"
-          exit 0
-        fi
-
-    depends_on:
-      trino:
-        condition: service_healthy
-      traefik:
-        condition: service_healthy
-    restart: "no"
+      - "./trino/etc:/etc/trino:ro"
     networks: *local-networks
     extra_hosts: *extra-hosts
+
+  # trino-bootstrap:
+  #   profiles:
+  #     - superset
+  #   container_name: local-lakehouse-trino-bootstrap
+  #   image: *trino-image
+  #   env_file: *env-file
+  #   volumes:
+  #     - "./trino/trino-create-catalog.sql:/docker/trino-create-catalog.sql:ro"
+  #   command:
+  #     - /bin/bash
+  #     - -c
+  #     - |
+  #       function trinocli() {
+  #         trino --server=https://traefik:8443 --user $$TRINO_USER --password --insecure $@
+  #       }
+  #       if ! trinocli --execute="show catalogs" 2>/dev/null | grep -q 'playground'; then
+  #         echo "Playground catalog not found, creating..."
+  #         if trinocli --file=/docker/trino-create-catalog.sql; then
+  #           echo "Successfully created catalog"
+  #           exit 0
+  #         fi
+  #       else
+  #         echo "Playground catalog already exists"
+  #         exit 0
+  #       fi
+  # depends_on:
+  #   trino:
+  #     condition: service_healthy
+  #   traefik:
+  #     condition: service_healthy
+  # restart: "no"
+  # networks: *local-networks
+  # extra_hosts: *extra-hosts
 
   #########################################################
   # Superset BI tool

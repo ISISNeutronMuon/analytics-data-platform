@@ -90,11 +90,13 @@ $KC_ADM create clients \
   --target-realm "$KC_REALM_NAME" \
   --set clientId=trino \
   --set publicClient=false \
+  --set standardFlowEnabled=true \
+  --set directAccessGrantsEnabled=true \
   --set serviceAccountsEnabled=true \
   --set 'redirectUris=["*"]' \
   --set 'defaultClientScopes=["web-origins", "acr", "profile", "roles", "basic", "email"]' \
   --set 'optionalClientScopes=["trino", "address", "phone", "offline_access", "organization", "microprofile-jwt"]' \
-  --set 'attributes={ "access.token.lifespan": 600 }' \
+  --set 'attributes={ "access.token.lifespan": 3600 }' \
   --set 'secret=s3cr3t'
 
 $KC_ADM create clients \
@@ -110,12 +112,12 @@ $KC_ADM create clients \
 ####################
 $KC_ADM create users \
   --target-realm "$KC_REALM_NAME" \
-  --set username="$ADPSUPERUSER" \
+  --set username="$ADP_SUPERUSER" \
   --set firstName=Super \
   --set lastName=User \
   --set email=adpsuperuser@dev.com \
   --set enabled=true
 $KC_ADM set-password \
   --target-realm "$KC_REALM_NAME" \
-  --username "$ADPSUPERUSER" \
-  --new-password "$ADPSUPERUSER_PASS"
+  --username "$ADP_SUPERUSER" \
+  --new-password "$ADP_SUPERUSER_PASS"

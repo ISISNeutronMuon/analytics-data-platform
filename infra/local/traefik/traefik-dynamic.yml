@@ -5,34 +5,49 @@ tls:
 
 http:
   routers:
-    #############################################
-    # user services
-    #############################################
-    superset:
-      entryPoints: web
-      rule: PathPrefix(`{{ env "SUPERSET_APP_ROOT" }}`)
-      service: superset
-
-    #############################################
-    # backend services
-    #############################################
-    traefik:
-      entryPoints: web
-      rule: PathPrefix(`/internal/traefik`) || HeaderRegexp(`Referer`, `/internal/traefik`)
-      service: api@internal
-      middlewares:
-        - traefik-strip-prefix
-
-    keycloak:
-      entryPoints: web
-      rule: PathPrefix(`{{ env "KC_HTTP_RELATIVE_PATH" }}`)
-      service: keycloak
-
+    #
+    # Https: For login with OAuth using the browser the following services are required on HTTPS
+    #
     keycloak-secure:
       entryPoints: websecure
       rule: PathPrefix(`{{ env "KC_HTTP_RELATIVE_PATH" }}`)
       service: keycloak
       tls: {}
+
+    lakekeeper-secure:
+      entryPoints: websecure
+      rule: PathPrefix(`/iceberg`)
+      middlewares:
+        - lakekeeper-strip-prefix
+      service: lakekeeper
+      tls: {}
+
+    trino:
+      entryPoints: trinosecure
+      rule: PathPrefix(`/`)
+      service: trino
+      tls: {}
+
+    #
+    # Http: For easier access from hosts without using certificates we define the following on
+    # insecure entrypoints for use in places its hard to turn of https cert validation.
+    #
+    keycloak:
+      entryPoints: web
+      rule: PathPrefix(`{{ env "KC_HTTP_RELATIVE_PATH" }}`)
+      service: keycloak
+
+    lakekeeper:
+      entryPoints: websecure
+      rule: PathPrefix(`/iceberg`)
+      middlewares:
+        - lakekeeper-strip-prefix
+      service: lakekeeper
+
+    superset:
+      entryPoints: web
+      rule: PathPrefix(`{{ env "SUPERSET_APP_ROOT" }}`)
+      service: superset
 
     minioapi:
       entryPoints: minioapi
@@ -48,26 +63,12 @@ http:
       middlewares:
         - minioconsole-strip-prefix
 
-    lakekeeper:
+    traefik:
       entryPoints: web
-      rule: PathPrefix(`/iceberg`)
+      rule: PathPrefix(`/internal/traefik`) || HeaderRegexp(`Referer`, `/internal/traefik`)
+      service: api@internal
       middlewares:
-        - lakekeeper-strip-prefix
-      service: lakekeeper
-
-    lakekeeper-secure:
-      entryPoints: websecure
-      rule: PathPrefix(`/iceberg`)
-      middlewares:
-        - lakekeeper-strip-prefix
-      service: lakekeeper
-      tls: {}
-
-    trino:
-      entryPoints: trinosecure
-      rule: PathPrefix(`/`)
-      service: trino
-      tls: {}
+        - traefik-strip-prefix
 
   middlewares:
     traefik-strip-prefix:
