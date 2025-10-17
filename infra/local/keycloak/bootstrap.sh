@@ -116,7 +116,8 @@ $KC_ADM create users \
   --set firstName=Super \
   --set lastName=User \
   --set email=adpsuperuser@dev.com \
-  --set enabled=true
+  --set enabled=true \
+  --output
 $KC_ADM set-password \
   --target-realm "$KC_REALM_NAME" \
   --username "$ADP_SUPERUSER" \
