@@ -431,6 +431,7 @@ services:
       retries: 2
     volumes:
       - "./trino/etc:/etc/trino:ro"
+      - *certs-volume
     networks: *local-networks
     extra_hosts: *extra-hosts
 
