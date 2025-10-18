@@ -79,12 +79,25 @@ $KC_ADM add-roles \
 
 $KC_ADM create clients \
   --target-realm "$KC_REALM_NAME" \
+  --set clientId=opa \
+  --set publicClient=false \
+  --set standardFlowEnabled=false \
+  --set serviceAccountsEnabled=true \
+  --set 'redirectUris=["*"]' \
+  --set 'defaultClientScopes=["web-origins", "acr", "profile", "roles", "basic", "email"]' \
+  --set 'optionalClientScopes=["lakekeeper", "address", "phone", "offline_access", "organization", "microprofile-jwt"]' \
+  --set 'attributes={ "access.token.lifespan": 3600 }' \
+  --set 'secret=s3cr3t'
+
+$KC_ADM create clients \
+  --target-realm "$KC_REALM_NAME" \
   --set clientId=lakekeeper \
   --set publicClient=true \
   --set 'redirectUris=["*"]' \
   --set 'defaultClientScopes=["web-origins", "acr", "profile", "roles", "basic", "email"]' \
   --set 'optionalClientScopes=["lakekeeper", "address", "phone", "offline_access", "organization", "microprofile-jwt"]' \
   --set 'attributes={ "access.token.lifespan": 3600 }'
+
 
 $KC_ADM create clients \
   --target-realm "$KC_REALM_NAME" \
