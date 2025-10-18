@@ -38,7 +38,7 @@ http:
       service: keycloak
 
     lakekeeper:
-      entryPoints: websecure
+      entryPoints: web
       rule: PathPrefix(`/iceberg`)
       middlewares:
         - lakekeeper-strip-prefix
