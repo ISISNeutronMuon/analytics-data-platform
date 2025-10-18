@@ -276,8 +276,12 @@ class Lakekeeper:
 @click.option("--client-secret", help="Secret for given client id")
 @click.option("--token-scope", help="Additional scopes for token")
 @click.option(
-    "--initial-admin",
-    help="Usernames(s) assigned as warehouse/project admin as a comma-separated list.",
+    "--server-admins",
+    help="Username(s) assigned as server/project admin as a comma-separated list.",
+)
+@click.option(
+    "--server-operators",
+    help="Username(s) assigned as server operators a comma-separated list.",
 )
 @click.option("--warehouse-json-file", help="JSON file for creating a warehouse")
 @click.option("-l", "--log-level", default="INFO", show_default=True)
@@ -290,7 +294,8 @@ def main(
     client_id: str | None,
     client_secret: str | None,
     token_scope: str | None,
-    initial_admin: str | None,
+    server_admins: str | None,
+    server_operators: str | None,
     warehouse_json_file: str | None,
     log_level: str,
 ):
@@ -338,11 +343,18 @@ def main(
     server.bootstrap()
     project_id = server.get_or_create_project(project_name, new_project_id)
 
-    if initial_admin is not None and identity_provider is not None:
-        users = map(lambda x: x.strip(), initial_admin.split(","))
+    if server_admins is not None and identity_provider is not None:
+        users = map(lambda x: x.strip(), server_admins.split(","))
         server.assign_permissions(
             identity_provider.oidc_ids(users, access_token),
             entities={"server": ["admin"], f"project/{project_id}": ["project_admin"]},
+        )
+
+    if server_operators is not None and identity_provider is not None:
+        users = map(lambda x: x.strip(), server_operators.split(","))
+        server.assign_permissions(
+            identity_provider.oidc_ids(users, access_token),
+            entities={"server": ["operator"]},
         )
 
     if warehouse_json_file is not None:

@@ -369,7 +369,8 @@ services:
         --keycloak-realm "$$KC_REALM_NAME"
         --client-id machine-infra --client-secret s3cr3t
         --token-scope lakekeeper
-        --initial-admin "$$ADP_SUPERUSER"
+        --server-admins "$$ADP_SUPERUSER"
+        --server-operators "service-account-trino,service-account-opa"
         --log-level=DEBUG
         --warehouse-json-file "/opt/work/bootstrap-warehouse.json"
         "http://lakekeeper:8181"
