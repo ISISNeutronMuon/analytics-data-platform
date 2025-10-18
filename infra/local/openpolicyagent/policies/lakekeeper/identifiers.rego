@@ -12,7 +12,8 @@ warehouse_id_for_name(lakekeeper_id, warehouse_name) := warehouse_id if {
         "method": "GET",
         "url": url,
         "headers": {
-            "Authorization": sprintf("Bearer %v", [access_token[lakekeeper_id]])
+            "Authorization": sprintf("Bearer %v", [access_token[lakekeeper_id]]),
+            "x-project-id": this.project_id
         },
         "force_cache": true,
         "force_cache_duration_seconds": 3600,

@@ -27,6 +27,7 @@ lakekeeper := [
     {
         "id": "default",
         "url": trim_right(object.get(env, "LAKEKEEPER_URL", "http://localhost:8181"), "/"),
+        "project_id": object.get(env, "LAKEKEEPER_PROJECT_ID", "00000000-0000-0000-0000-000000000000"),
         "openid_token_endpoint": env["LAKEKEEPER_TOKEN_ENDPOINT"],
         "client_id": env["LAKEKEEPER_CLIENT_ID"],
         "client_secret": env["LAKEKEEPER_CLIENT_SECRET"],
