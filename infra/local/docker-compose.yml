@@ -7,18 +7,22 @@
 #
 # 127.0.0.1    analytics.localdev
 #
-# Insecure web traffic runs on port 50080 to avoid clashing with other local applications.
-#
 # Tools such as pyiceberg connect to Lakekeeper, retrieve the address of the S3 storage endpoint
 # and communicate directly with it via the 'storage-profile.endpoint' defined in
-# infra/local/lakekeeper/bootstrap-warehouse.json. To this end MinIO runs on port 59000 through
-# the Traefik router.
+# infra/local/lakekeeper/bootstrap-warehouse.json. The additional /etc/hosts entry combined with
+# the extra_hosts definition below allows the same address to work from the host or inside the container
+# network. MinIO runs on port 59000 through the Traefik router for the same reason.
+
+# Insecure web traffic runs on port 50080 to avoid clashing with other local applications. Allowing
+# insecure access to the catalog helps with running tools on the host where disabling the ssl validation
+# is tricky, e.g. inside pyiceberg.
 #
-#  Service routes (you'll have to accept the self-signed certificate warning):
+#
+# Service routes (you'll have to accept the self-signed certificate warning):
 #
 #  - Keycloak identity provider: http://analytics.localdev:50080/auth
 #  - Lakekeeper iceberg catalog UI: http://analytics.localdev:50080/ui. Log in with the credentials listed in keycloak/README
-#  - Trino query engine: https://analytics.localdev:58443
+#  - Trino endpoint: https://analytics.localdev:58443
 #  - Superset BI tool: http://analytics.localdev:50080/workspace/playground. Log in with the credentials defined in env-for-testing
 #
 #
@@ -29,7 +33,7 @@
 # bucket_url = "s3://playground"
 #
 # [destination.pyiceberg.credentials]
-# uri = "http://localhost:50001/catalog"
+# uri = "http://analytics.localdev:50080/iceberg"
 # warehouse = "playground"
 #
 
