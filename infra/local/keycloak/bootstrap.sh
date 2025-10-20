@@ -59,6 +59,7 @@ $KC_ADM create client-scopes \
 # Clients
 # If optionalClientScopes are provided then defaultClientScopes must be or they are all deleted
 ####################
+# Confidential clients
 $KC_ADM create clients \
   --target-realm "$KC_REALM_NAME" \
   --set clientId=machine-infra \
@@ -91,16 +92,6 @@ $KC_ADM create clients \
 
 $KC_ADM create clients \
   --target-realm "$KC_REALM_NAME" \
-  --set clientId=lakekeeper \
-  --set publicClient=true \
-  --set 'redirectUris=["*"]' \
-  --set 'defaultClientScopes=["web-origins", "acr", "profile", "roles", "basic", "email"]' \
-  --set 'optionalClientScopes=["lakekeeper", "address", "phone", "offline_access", "organization", "microprofile-jwt"]' \
-  --set 'attributes={ "access.token.lifespan": 3600 }'
-
-
-$KC_ADM create clients \
-  --target-realm "$KC_REALM_NAME" \
   --set clientId=trino \
   --set publicClient=false \
   --set standardFlowEnabled=true \
@@ -108,9 +99,19 @@ $KC_ADM create clients \
   --set serviceAccountsEnabled=true \
   --set 'redirectUris=["*"]' \
   --set 'defaultClientScopes=["web-origins", "acr", "profile", "roles", "basic", "email"]' \
-  --set 'optionalClientScopes=["trino", "address", "phone", "offline_access", "organization", "microprofile-jwt"]' \
+  --set 'optionalClientScopes=["trino", "lakekeeper", "address", "phone", "offline_access", "organization", "microprofile-jwt"]' \
   --set 'attributes={ "access.token.lifespan": 3600 }' \
   --set 'secret=s3cr3t'
+
+# Public clients
+$KC_ADM create clients \
+  --target-realm "$KC_REALM_NAME" \
+  --set clientId=lakekeeper \
+  --set publicClient=true \
+  --set 'redirectUris=["*"]' \
+  --set 'defaultClientScopes=["web-origins", "acr", "profile", "roles", "basic", "email"]' \
+  --set 'optionalClientScopes=["lakekeeper", "address", "phone", "offline_access", "organization", "microprofile-jwt"]' \
+  --set 'attributes={ "access.token.lifespan": 3600 }'
 
 $KC_ADM create clients \
   --target-realm "$KC_REALM_NAME" \

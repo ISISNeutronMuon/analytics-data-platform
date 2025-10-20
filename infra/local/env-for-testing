@@ -1,8 +1,9 @@
 ###############################################################################
 # WARNING=DO NOT USE THIS FILE FOR PRODUCTION
 ###############################################################################
-ROUTER_URL_HTTP=http://analytics.localdev:50080
-ROUTER_URL_HTTPS=https://analytics.localdev:50443
+ROUTER_HOSTNAME=analytics.localdev
+ROUTER_URL_HTTP=http://$ROUTER_HOSTNAME:50080
+ROUTER_URL_HTTPS=https://$ROUTER_HOSTNAME:50443
 # These details are also present in
 #  - lakekeeper/bootstrap-warehouse.json
 #  - trino/etc/catalog/playground.properties (the name of the file matches the ADP_WORKSPACE_NAME value)

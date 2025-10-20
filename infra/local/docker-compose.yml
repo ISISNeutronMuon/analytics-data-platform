@@ -367,10 +367,11 @@ services:
         --new-project-id "$$ADP_PROJECT_ID"
         --keycloak-url "$$KEYCLOAK_URL"
         --keycloak-realm "$$KC_REALM_NAME"
-        --client-id machine-infra --client-secret s3cr3t
+        --bootstrap-credentials "machine-infra:s3cr3t"
         --token-scope lakekeeper
-        --server-admins "$$ADP_SUPERUSER"
-        --server-operators "service-account-trino,service-account-opa"
+        --server-admin "$$ADP_SUPERUSER"
+        --server-operator trino:s3cr3t
+        --server-operator opa:s3cr3t
         --log-level=DEBUG
         --warehouse-json-file "/opt/work/bootstrap-warehouse.json"
         "http://lakekeeper:8181"
@@ -421,6 +422,8 @@ services:
     env_file: *env-file
     depends_on:
       keycloak:
+        condition: service_healthy
+      opa:
         condition: service_healthy
       traefik:
         condition: service_healthy

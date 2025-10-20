@@ -12,12 +12,13 @@ The following environment variables are optional:
 - LAKEKEEPER_BOOTSTRAP__REQUESTS_CA_BUNDLE: A CA bundle as an alternative to certifi
 """
 
+from collections import namedtuple
 import dataclasses
 import json
 from pathlib import Path
 import logging
 import os
-from typing import Any, Dict, Callable, Iterable
+from typing import Any, Dict, Callable, Iterable, Sequence
 
 import click
 import requests
@@ -27,6 +28,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER_FILENAME = f"{Path(__file__).name}.log"
 LOGGER_FORMAT = "%(asctime)s|%(message)s"
 
+KEYCLOAK_MACHINE_USER_PREFIX = "service-account-"
 LAKEKEEPER_PROJECT_ID_DEFAULT = "00000000-0000-0000-0000-000000000000"
 LAKEKEEPER_PROJECT_NAME_DEFAULT = "Default Project"
 OIDC_PREFIX = "oidc~"
@@ -107,19 +109,22 @@ class Keycloak:
         return oidc_users
 
     def request_access_token(
-        self, client_id: str, client_secret: str, scope: str
+        self, client_id: str, client_secret: str, scope: str | None
     ) -> str:
         """Request and return an access token from the given ID provider"""
         LOGGER.debug(f"Requesting access token from '{self.token_endpoint}'")
+        payload = {
+            "grant_type": "client_credentials",
+            "client_id": client_id,
+            "client_secret": client_secret,
+        }
+        if scope is not None:
+            payload["scope"] = scope
+
         response = requests.post(
             self.token_endpoint,
-            data={
-                "grant_type": "client_credentials",
-                "client_id": client_id,
-                "client_secret": client_secret,
-                "scope": scope,
-            },
             headers={"Content-type": "application/x-www-form-urlencoded"},
+            data=payload,
             **REQUESTS_DEFAULT_KWARGS,
         )
         response.raise_for_status()
@@ -127,9 +132,13 @@ class Keycloak:
 
 
 @dataclasses.dataclass
-class Lakekeeper:
+class LakekeeperRestV1:
     url: str
     access_token: str | None
+
+    @property
+    def catalog_url(self) -> str:
+        return self.url + "/catalog/v1"
 
     @property
     def management_url(self) -> str:
@@ -226,6 +235,18 @@ class Lakekeeper:
 
         return None
 
+    def provision_user(self, access_token: str):
+        """Provision a user through the /catalog/v1/config endpoint
+
+        User details are retrieved from the access token
+        """
+        try:
+            _request_with_auth(requests.get, self.catalog_url + "/config", access_token)
+        except requests.exceptions.HTTPError:
+            # Do not check the response status. If the user does not exist then a 400 is returned
+            # but the user is provisioned internally.
+            pass
+
     def warehouse_exists(self, project_id: str, warehouse_name: str) -> bool:
         response = _request_with_auth(
             requests.get,
@@ -259,6 +280,29 @@ class Lakekeeper:
         LOGGER.info(f"Warehouse '{warehouse_name}' created successfully.")
 
 
+Credential = namedtuple("Credential", ["client_id", "client_secret"])
+
+
+class CredentialsParamType(click.ParamType):
+    """Accepts a string in the form 'username:password' and splits it a 2-namedtuple (username, password)"""
+
+    name = "credential"
+
+    def convert(self, value, param, ctx):
+        if isinstance(value, tuple):
+            return value
+
+        try:
+            left, right = value.split(":")
+            return Credential(left, right)
+        except ValueError:
+            self.fail(
+                f"{value!r} is not a valid credential string in the form 'id:secret'",
+                param,
+                ctx,
+            )
+
+
 @click.command()
 @click.argument("lakekeeper-url")
 @click.option(
@@ -272,16 +316,22 @@ class Lakekeeper:
 )
 @click.option("--keycloak-url", help="Base endpoint of Keycloak")
 @click.option("--keycloak-realm", help="Realm name to retrieve access token")
-@click.option("--client-id", help="IDP client id")
-@click.option("--client-secret", help="Secret for given client id")
+@click.option(
+    "--bootstrap-credentials",
+    type=CredentialsParamType(),
+    help="IDP client id & client secret in the format client_id:client_secret",
+)
 @click.option("--token-scope", help="Additional scopes for token")
 @click.option(
-    "--server-admins",
-    help="Username(s) assigned as server/project admin as a comma-separated list.",
+    "--server-admin",
+    multiple=True,
+    help="Human users assigned as server/project admin for UI access. Value should be username. Options can be provided multiple times.",
 )
 @click.option(
-    "--server-operators",
-    help="Username(s) assigned as server operators a comma-separated list.",
+    "--server-operator",
+    type=CredentialsParamType(),
+    multiple=True,
+    help="Credentials for an operator/machine user. Registers the user and sets them as server operators.",
 )
 @click.option("--warehouse-json-file", help="JSON file for creating a warehouse")
 @click.option("-l", "--log-level", default="INFO", show_default=True)
@@ -291,11 +341,10 @@ def main(
     new_project_id: str | None,
     keycloak_url: str | None,
     keycloak_realm: str | None,
-    client_id: str | None,
-    client_secret: str | None,
+    bootstrap_credentials: Credential | None,
     token_scope: str | None,
-    server_admins: str | None,
-    server_operators: str | None,
+    server_admin: Sequence[str] | None,
+    server_operator: Sequence[Credential] | None,
     warehouse_json_file: str | None,
     log_level: str,
 ):
@@ -321,8 +370,7 @@ def main(
     idp_required_args = (
         "keycloak_url",
         "keycloak_realm",
-        "client_id",
-        "client_secret",
+        "bootstrap_credentials",
         "token_scope",
     )
     main_args = locals()
@@ -330,8 +378,8 @@ def main(
         LOGGER.debug("Creating identity provider.")
         identity_provider = Keycloak(keycloak_url, keycloak_realm)  # type: ignore
         access_token = identity_provider.request_access_token(
-            client_id,  # type: ignore
-            client_secret,  # type: ignore
+            bootstrap_credentials.client_id,  # type: ignore
+            bootstrap_credentials.client_secret,  # type: ignore
             token_scope,  # type: ignore
         )
     else:
@@ -339,21 +387,32 @@ def main(
             f"Skipping identity provider creation. Missing one of {idp_required_args}"
         )
 
-    server = Lakekeeper(lakekeeper_url, access_token)
+    server = LakekeeperRestV1(lakekeeper_url, access_token)
     server.bootstrap()
     project_id = server.get_or_create_project(project_name, new_project_id)
 
-    if server_admins is not None and identity_provider is not None:
-        users = map(lambda x: x.strip(), server_admins.split(","))
+    if server_admin is not None and identity_provider is not None:
+        # Server admins are human users and will be provisioned the first time they log in
         server.assign_permissions(
-            identity_provider.oidc_ids(users, access_token),
+            identity_provider.oidc_ids(server_admin, server.access_token),
             entities={"server": ["admin"], f"project/{project_id}": ["project_admin"]},
         )
 
-    if server_operators is not None and identity_provider is not None:
-        users = map(lambda x: x.strip(), server_operators.split(","))
+    if server_operator is not None and identity_provider is not None:
+        for operator in server_operator:
+            server.provision_user(
+                identity_provider.request_access_token(
+                    operator.client_id, operator.client_secret, token_scope
+                )
+            )
         server.assign_permissions(
-            identity_provider.oidc_ids(users, access_token),
+            identity_provider.oidc_ids(
+                map(
+                    lambda x: f"{KEYCLOAK_MACHINE_USER_PREFIX}{x.client_id}",
+                    server_operator,
+                ),
+                access_token,
+            ),
             entities={"server": ["operator"]},
         )
 

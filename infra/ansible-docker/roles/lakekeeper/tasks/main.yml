@@ -109,10 +109,10 @@
         "/opt/work/bootstrap-warehouse.py",
         "--keycloak-url {{ keycloak_url }}",
         "--keycloak-realm {{ keycloak_realm }}",
-        "--client-id ansible",
-        "--client-secret {{ vault_keycloak_client_secret_ansible }}",
+        "---bootstrap-credentials ansible:{{ vault_keycloak_client_secret_ansible }}",
         "--token-scope lakekeeper",
         "--log-level {{ lakekeeper_bootstrap_log_level }}",
+        "--server-admin {{ vault_lakekeeper_admin_user }}",
         "--warehouse-json-file",
         "{{ warehouse_json_file | replace(lakekeeper_working_dir, '/opt/work') }}",
       ]
