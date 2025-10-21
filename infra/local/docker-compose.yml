@@ -46,7 +46,7 @@ x-minio-mc-image: &minio-mc-image quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
 x-postgres-image: &postgres-image postgres:16.9-bookworm
 x-superset-image: &superset-image ghcr.io/martyngigg/adp-superset-forked:901412e
 x-traefik-image: &traefik-image traefik:v3.5.3
-x-openpolicyagent: &openpolicyagent-image openpolicyagent/opa:1.9.0-static
+x-openpolicyagent: &openpolicyagent-image openpolicyagent/opa:1.9.0-debug
 x-trino-image: &trino-image trinodb/trino:477
 
 # environment
@@ -72,8 +72,6 @@ x-superset-depends-on: &superset-depends-on
   superset-redis:
     condition: service_started
   shared-database-bootstrap:
-    condition: service_completed_successfully
-  trino-bootstrap:
     condition: service_completed_successfully
 x-superset-volumes: &superset-volumes
   - ./superset/docker/docker-init.sh:/app/docker/docker-init.sh:ro
@@ -218,12 +216,16 @@ services:
 
   keycloak-bootstrap:
     container_name: local-lakehouse-keycloak-bootstrap
-    image: *keycloak-image
+    build:
+      context: keycloak
+      dockerfile: Dockerfile-kcadm.dockerfile
+      args:
+        base: *keycloak-image
     env_file: *env-file
     entrypoint:
       - /bin/sh
       - -c
-      - "sleep 2; /opt/keycloak/bootstrap.sh http://keycloak:8080/auth"
+      - "sleep 1; /opt/keycloak/bootstrap.sh http://keycloak:8080/auth"
     restart: "no"
     depends_on:
       keycloak:
@@ -411,11 +413,12 @@ services:
       lakekeeper:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8181/health"]
+      test: ["CMD-SHELL", "healthcheck-localhost.sh 8181 /health"]
       interval: 15s
       timeout: 10s
       retries: 3
     volumes:
+      - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
       - ./openpolicyagent/policies:/policies
     networks: *local-networks
     extra_hosts: *extra-hosts
@@ -442,40 +445,6 @@ services:
       - *certs-volume
     networks: *local-networks
     extra_hosts: *extra-hosts
-
-  # trino-bootstrap:
-  #   profiles:
-  #     - superset
-  #   container_name: local-lakehouse-trino-bootstrap
-  #   image: *trino-image
-  #   env_file: *env-file
-  #   volumes:
-  #     - "./trino/trino-create-catalog.sql:/docker/trino-create-catalog.sql:ro"
-  #   command:
-  #     - /bin/bash
-  #     - -c
-  #     - |
-  #       function trinocli() {
-  #         trino --server=https://traefik:8443 --user $$TRINO_USER --password --insecure $@
-  #       }
-  #       if ! trinocli --execute="show catalogs" 2>/dev/null | grep -q 'playground'; then
-  #         echo "Playground catalog not found, creating..."
-  #         if trinocli --file=/docker/trino-create-catalog.sql; then
-  #           echo "Successfully created catalog"
-  #           exit 0
-  #         fi
-  #       else
-  #         echo "Playground catalog already exists"
-  #         exit 0
-  #       fi
-  # depends_on:
-  #   trino:
-  #     condition: service_healthy
-  #   traefik:
-  #     condition: service_healthy
-  # restart: "no"
-  # networks: *local-networks
-  # extra_hosts: *extra-hosts
 
   #########################################################
   # Superset BI tool

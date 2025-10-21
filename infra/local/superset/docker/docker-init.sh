@@ -6,7 +6,7 @@ set -e
 #
 /app/docker/docker-bootstrap.sh
 
-STEP_CNT=4
+STEP_CNT=2
 
 echo_step() {
 cat <<EOF
@@ -28,19 +28,19 @@ superset db upgrade
 echo_step "1" "Complete" "Applying DB migrations"
 
 # Create an admin user
-echo_step "2" "Starting" "Setting up admin user admin "
-superset fab create-admin \
-              --username "$SUPERSET_ADMIN_USER" \
-              --firstname "$SUPERSET_ADMIN_FIRSTNAME" \
-              --lastname "$SUPERSET_ADMIN_LASTNAME" \
-              --email "$SUPERSET_ADMIN_EMAIL" \
-              --password "$SUPERSET_ADMIN_PASSWORD"
-echo_step "2" "Complete" "Setting up admin user"
+# echo_step "2" "Starting" "Setting up admin user admin "
+# superset fab create-admin \
+#               --username "$SUPERSET_ADMIN_USER" \
+#               --firstname "$SUPERSET_ADMIN_FIRSTNAME" \
+#               --lastname "$SUPERSET_ADMIN_LASTNAME" \
+#               --email "$SUPERSET_ADMIN_EMAIL" \
+#               --password "$SUPERSET_ADMIN_PASSWORD"
+# echo_step "2" "Complete" "Setting up admin user"
 
 # Create default roles and permissions
-echo_step "3" "Starting" "Setting up roles and perms"
+echo_step "2" "Starting" "Setting up roles and perms"
 superset init
-echo_step "3" "Complete" "Setting up roles and perms"
+echo_step "2" "Complete" "Setting up roles and perms"
 
 # Create a database connection
 # echo_step "4" "Starting" "Setting up Iceberg catalog connection"

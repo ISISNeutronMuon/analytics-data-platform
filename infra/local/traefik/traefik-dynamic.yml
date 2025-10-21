@@ -28,6 +28,12 @@ http:
       service: trino
       tls: {}
 
+    superset:
+      entryPoints: websecure
+      rule: PathPrefix(`{{ env "SUPERSET_APP_ROOT" }}`)
+      service: superset
+      tls: {}
+
     #
     # Http: For easier access from hosts without using certificates we define the following on
     # insecure entrypoints for use in places its hard to turn of https cert validation.
@@ -43,11 +49,6 @@ http:
       middlewares:
         - lakekeeper-strip-prefix
       service: lakekeeper
-
-    superset:
-      entryPoints: web
-      rule: PathPrefix(`{{ env "SUPERSET_APP_ROOT" }}`)
-      service: superset
 
     minioapi:
       entryPoints: minioapi

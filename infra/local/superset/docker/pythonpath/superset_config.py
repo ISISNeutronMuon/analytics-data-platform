@@ -2,8 +2,10 @@ import logging
 import os
 
 from celery.schedules import crontab
+from flask import g
 from flask_appbuilder.security.manager import AUTH_OAUTH
 from flask_caching.backends.rediscache import RedisCache
+from superset.security import SupersetSecurityManager
 
 
 logger = logging.getLogger()
@@ -38,17 +40,42 @@ if SUPERSET_DB_SCHEMA_NAME:
 
 #####
 # Auth
-# disable recaptcha as we don't allow self registration
+
+
+class CustomSsoSecurityManager(SupersetSecurityManager):
+    def oauth_user_info(self, provider, response=None):  # noqa: ARG002
+        me = self.appbuilder.sm.oauth_remotes[provider].get("openid-connect/userinfo")
+        me.raise_for_status()
+        data = me.json()
+        logging.debug("User info from Keycloak: %s", data)
+        return {
+            "username": data.get("preferred_username", ""),
+            "first_name": data.get("given_name", ""),
+            "last_name": data.get("family_name", ""),
+            "email": data.get("email", ""),
+            "role_keys": data.get("realm_access", {}).get("roles", []),
+        }
+
+    def load_user_jwt(self, _jwt_header, jwt_data):
+        username = jwt_data["preferred_username"]
+        user = self.find_user(username=username)
+        if user.is_active:
+            # Set flask g.user to JWT user, we can't do it on before request
+            g.user = user
+            return user
+        return None
+
+
+CUSTOM_SECURITY_MANAGER = CustomSsoSecurityManager
+
+# User registration is required to fill the Superset users table and happens automatically
+# via Keycloak
+AUTH_TYPE = AUTH_OAUTH
 AUTH_USER_REGISTRATION = True
 AUTH_API_LOGIN_ALLOW_MULTIPLE_PROVIDERS = False
-RECAPTCHA_PUBLIC_KEY = ""
-RECAPTCHA_PRIVATE_KEY = ""
+FAB_ADD_SECURITY_API = True
 
-AUTH_TYPE = AUTH_OAUTH
-AUTH_USER_REGISTRATION_ROLE = "Gamma"
-AUTH_ROLES_SYNC_AT_LOGIN = True
-
-KEYCLOAK_REALM = os.environ["KEYCLOAK_REALM"]
+KEYCLOAK_REALM = os.environ["KEYCLOAK_REALM_HTTPS"]
 OAUTH_PROVIDERS = [
     {
         "name": "keycloak",
@@ -56,12 +83,19 @@ OAUTH_PROVIDERS = [
         "token_key": "access_token",
         "remote_app": {
             "client_id": "superset",
-            "client_kwargs": {"scope": "openid email profile"},
+            "client_kwargs": {
+                "scope": "openid email profile roles",
+            },
             "server_metadata_url": KEYCLOAK_REALM + "/.well-known/openid-configuration",
             "api_base_url": KEYCLOAK_REALM + "/protocol/",
         },
     }
 ]
+AUTH_ROLES_MAPPING = {
+    "adp_platform_admins": ["Admin"],
+}
+AUTH_USER_REGISTRATION_ROLE = "Gamma"
+AUTH_ROLES_SYNC_AT_LOGIN = True
 
 
 #####
