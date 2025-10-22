@@ -110,11 +110,11 @@ REDIS_HOST=superset-redis
 REDIS_PORT=6379
 
 # Admin user
-# SUPERSET_ADMIN_USER=adpuser
-# SUPERSET_ADMIN_FIRSTNAME=Admin
-# SUPERSET_ADMIN_LASTNAME=Admin
-# SUPERSET_ADMIN_EMAIL=test@example.com
-# SUPERSET_ADMIN_PASSWORD=adppassword
+SUPERSET_ADMIN_USER=superset_admin
+SUPERSET_ADMIN_FIRSTNAME=Superset
+SUPERSET_ADMIN_LASTNAME=Admin
+SUPERSET_ADMIN_EMAIL=superset_admin@dev.com
+SUPERSET_ADMIN_PASSWORD=s3cr3t
 
 # Environment/development settings
 SUPERSET_CA_BUNDLE=/certs/rootCA.pem
