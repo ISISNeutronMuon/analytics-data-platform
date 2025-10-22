@@ -41,7 +41,7 @@ LAG_WINDOW_SECONDS = 24 * 60 * 60
 # It was observed that trying to load too many files concurrently from a sharepoint drive
 # randomly resulted in empty content. Lower the maximum number of threads that can be used
 # to extract the data
-MAX_WORKERS_DEFAULT = 10
+MAX_WORKERS_DEFAULT = min(10, (os.cpu_count() or 1) + 4)
 
 
 def to_utc(ts: pd.Series) -> pd.Series:
@@ -91,7 +91,8 @@ def extract_content_and_read(
 
     :param items: An iterator of dicts describing the file content
     :param skip_rows: Number of rows in the csv/xlsx files to skip
-    :param max_workers (optional): How many threads to use to process the files. Defaults to concurrent.futures.ThreadPoolExecutor default value.
+    :param max_workers (optional): How many threads to use to process the files.
+                                   Defaults to a maximum of MAX_WORKERS_DEFAULT.
     """
 
     # The files are all independent. Process them in parallel and combine for a single yield
@@ -115,12 +116,11 @@ def extract_content_and_read(
 
         return df
 
-    max_workers_request = (
-        max_workers if max_workers is not None else MAX_WORKERS_DEFAULT
-    )
-    max_workers = min(max_workers_request, (os.cpu_count() or 1) + 4)
     df_batch = None
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+    effective_max_workers = min(MAX_WORKERS_DEFAULT, max_workers or MAX_WORKERS_DEFAULT)
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=effective_max_workers
+    ) as executor:
         future_to_file_item = {
             executor.submit(read_as_dataframe, file_obj): file_obj for file_obj in items
         }
