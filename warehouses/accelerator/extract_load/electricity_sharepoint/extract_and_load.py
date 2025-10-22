@@ -11,6 +11,7 @@
 # ///
 import concurrent.futures
 import io
+import os
 import pathlib
 from typing import Iterator, Optional
 
@@ -37,6 +38,10 @@ PIPELINE_NAME = "electricity_sharepoint"
 RDM_TIMEZONE = "Europe/London"
 SITE_URL = "https://stfc365.sharepoint.com/sites/ISISSustainability"
 LAG_WINDOW_SECONDS = 24 * 60 * 60
+# It was observed that trying to load too many files concurrently from a sharepoint drive
+# randomly resulted in empty content. Lower the maximum number of threads that can be used
+# to extract the data
+MAX_WORKERS_DEFAULT = 10
 
 
 def to_utc(ts: pd.Series) -> pd.Series:
@@ -77,7 +82,7 @@ def read_power_consumption_excel(
 def extract_content_and_read(
     items: Iterator[M365DriveItem],
     skip_rows: int = dlt.config.value,
-    max_threads: Optional[int] = dlt.config.value,
+    max_workers: Optional[int] = dlt.config.value,
 ) -> Iterator[TDataItems]:
     """Extracts the file content and reads it assuming it is a .csv or a .xlsx file
 
@@ -86,7 +91,7 @@ def extract_content_and_read(
 
     :param items: An iterator of dicts describing the file content
     :param skip_rows: Number of rows in the csv/xlsx files to skip
-    :param max_threads (optional): How many threads to use to process the files. Defaults to concurrent.futures.ThreadPoolExecutor default value.
+    :param max_workers (optional): How many threads to use to process the files. Defaults to concurrent.futures.ThreadPoolExecutor default value.
     """
 
     # The files are all independent. Process them in parallel and combine for a single yield
@@ -110,8 +115,12 @@ def extract_content_and_read(
 
         return df
 
+    max_workers_request = (
+        max_workers if max_workers is not None else MAX_WORKERS_DEFAULT
+    )
+    max_workers = min(max_workers_request, (os.cpu_count() or 1) + 4)
     df_batch = None
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_file_item = {
             executor.submit(read_as_dataframe, file_obj): file_obj for file_obj in items
         }
