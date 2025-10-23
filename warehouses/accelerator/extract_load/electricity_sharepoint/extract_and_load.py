@@ -149,7 +149,6 @@ def rdm_data(
 ) -> Iterator[TDataItems]:
     files = sharepoint(
         site_url=SITE_URL,
-        file_glob="/General/RDM Data/**/*.*",
         extract_content=False,
         modified_after=datetime_cur.start_value
         - pendulum.Duration(seconds=ONE_DAY_SECS),
