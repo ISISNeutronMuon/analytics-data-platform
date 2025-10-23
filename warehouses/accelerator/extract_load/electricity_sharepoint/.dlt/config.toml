@@ -1,3 +1,5 @@
 [electricity_sharepoint.sources.m365]
+file_glob = "/General/RDM Data/**/*.*"
 files_per_page = 200
 skip_rows = 7
+max_workers = 6

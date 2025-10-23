@@ -9,7 +9,7 @@ with (
   "iceberg.rest-catalog.oauth2.credential" = 'localinfra:s3cr3t',
   "iceberg.rest-catalog.oauth2.scope" = 'lakekeeper offline_access',
   "fs.native-s3.enabled" = 'true',
-  "s3.endpoint" = 'http://traefik:9000',
+  "s3.endpoint" = 'http://minio:59000',
   "s3.region" = 'local-01',
   "s3.path-style-access" = 'true',
   "s3.aws-access-key" = 'adpuser',
