@@ -33,15 +33,24 @@ from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
 LOGGER = logging.getLogger(__name__)
 
 
+MAX_WORKERS_DEFAULT = min(8, (os.cpu_count() or 1) + 4)
 EXCEL_ENGINE = "calamine"
+ONE_DAY_SECS = 24 * 60 * 60
 PIPELINE_NAME = "electricity_sharepoint"
 RDM_TIMEZONE = "Europe/London"
 SITE_URL = "https://stfc365.sharepoint.com/sites/ISISSustainability"
-LAG_WINDOW_SECONDS = 24 * 60 * 60
-# It was observed that trying to load too many files concurrently from a sharepoint drive
-# randomly resulted in empty content. Lower the maximum number of threads that can be used
-# to extract the data
-MAX_WORKERS_DEFAULT = min(10, (os.cpu_count() or 1) + 4)
+
+
+def effective_max_workers(max_workers: int | None) -> int:
+    # For high-cpu-count machines the ThreadPoolExecutor default ends up being too high.
+    # It has been observed that too many concurrent threads cause issues with partial file reads from
+    # OneDrive. 8 threads seems to work correctly so clamp this as them maximum...
+
+    return (
+        min(MAX_WORKERS_DEFAULT, max_workers)
+        if max_workers is not None
+        else MAX_WORKERS_DEFAULT
+    )
 
 
 def to_utc(ts: pd.Series) -> pd.Series:
@@ -59,7 +68,7 @@ def read_power_consumption_csv(
     """
     df = pd.read_csv(file_content, skiprows=skip_rows)
     df["DateTime"] = to_utc(
-        pd.to_datetime(df["Date"] + " " + df["Time"], format="%d/%m/%y %H:%M:%S")
+        pd.to_datetime(df["Date"] + " " + df["Time"], format="%d/%m/%y %H:%M:%S")  # type: ignore
     )
     return df.drop(["Date", "Time"], axis=1)
 
@@ -92,34 +101,33 @@ def extract_content_and_read(
     :param items: An iterator of dicts describing the file content
     :param skip_rows: Number of rows in the csv/xlsx files to skip
     :param max_workers (optional): How many threads to use to process the files.
-                                   Defaults to a maximum of MAX_WORKERS_DEFAULT.
+                                   Defaults to a maximum defined by concurrent.futures.ThreadPoolExecutor
     """
 
     # The files are all independent. Process them in parallel and combine for a single yield
     def read_as_dataframe(file_obj: M365DriveItem) -> pd.DataFrame | None:
-        file_content = io.BytesIO(file_obj.read_bytes())
+        file_name = file_obj["file_name"]
+        file_bytes = file_obj.read_bytes()
+        LOGGER.debug(f"Filename '{file_name}' has size {len(file_bytes)} bytes.")
         try:
-            match pathlib.Path(file_obj["file_name"]).suffix:
+            match pathlib.Path(file_name).suffix:
                 case ".csv":
-                    df = read_power_consumption_csv(file_content, skip_rows)
+                    df = read_power_consumption_csv(io.BytesIO(file_bytes), skip_rows)
                 case ".xlsx":
-                    df = read_power_consumption_excel(file_content, skip_rows)
+                    df = read_power_consumption_excel(io.BytesIO(file_bytes), skip_rows)
                 case _:
-                    raise RuntimeError(
-                        f"Unsupported file extension in '{file_obj['file_name']}'"
-                    )
-        except ValueError as exc:
-            LOGGER.warning(
-                f"Error reading '{file_obj['file_name']}': {str(exc)}. Skipping"
-            )
-            df = None
+                    raise RuntimeError(f"Unsupported file extension in '{file_name}'")
+        except pd.errors.EmptyDataError as exc:
+            raise RuntimeError(
+                f"'{file_name} ({len(file_bytes)} bytes)': {str(exc)}"
+            ) from exc
 
+        df["file_name"] = file_obj["file_name"]
         return df
 
     df_batch = None
-    effective_max_workers = min(MAX_WORKERS_DEFAULT, max_workers or MAX_WORKERS_DEFAULT)
     with concurrent.futures.ThreadPoolExecutor(
-        max_workers=effective_max_workers
+        max_workers=effective_max_workers(max_workers)
     ) as executor:
         future_to_file_item = {
             executor.submit(read_as_dataframe, file_obj): file_obj for file_obj in items
@@ -132,24 +140,19 @@ def extract_content_and_read(
     yield df_batch
 
 
-# Occasionally pandas raises a EmptyDataError when parsing the CSV content indicating
-# there is no data. This is likely an issue with a file being listed but no content yet available.
-# We skip these files but want to make sure we grab them next time so we use the lag functionality
-# to look back LAG_WINDOW_SECONDS when the next load is run.
-@dlt.resource(merge_key="DateTime")
+@dlt.resource(merge_key="file_name")
 def rdm_data(
     datetime_cur=dlt.sources.incremental(
         "DateTime",
         initial_value=pendulum.DateTime.EPOCH,
-        lag=LAG_WINDOW_SECONDS,
-        last_value_func=max,
     ),
 ) -> Iterator[TDataItems]:
     files = sharepoint(
         site_url=SITE_URL,
         file_glob="/General/RDM Data/**/*.*",
         extract_content=False,
-        modified_after=datetime_cur.start_value,
+        modified_after=datetime_cur.start_value
+        - pendulum.Duration(seconds=ONE_DAY_SECS),
     )
     reader = files | extract_content_and_read()
     yield from reader

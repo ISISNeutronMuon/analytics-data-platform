@@ -1,28 +1,19 @@
 """Reads files from a SharePoint documents library"""
 
-from typing import Iterator, List, cast
+from typing import Iterator, List
 
 import dlt
-from dlt.common.storages.fsspec_filesystem import MTIME_DISPATCH, glob_files, FileItemDict
+from dlt.common.storages.fsspec_filesystem import MTIME_DISPATCH, glob_files
 from dlt.extract import decorators
 import dlt.common.logger as logger
 import pendulum
 
-from .helpers import M365CredentialsResource, M365DriveFS
+from .helpers import M365CredentialsResource, M365DriveFS, M365DriveItem
 from .settings import DEFAULT_CHUNK_SIZE
 
 # Add our M365DriveFS protocol(s) to the known modificaton time mappings
 for protocol in M365DriveFS.protocol:
     MTIME_DISPATCH[protocol] = MTIME_DISPATCH["file"]
-
-
-class M365DriveItem(FileItemDict):
-    """Specialises FileItemDict to add 'fetch_bytes' to bypass complicated file reading/caching in
-    'read_bytes' and just download the file content"""
-
-    def read_bytes(self) -> bytes:
-        drive_fs = cast(M365DriveFS, self.fsspec)
-        return drive_fs.fetch_all(self["file_url"])
 
 
 # This is designed to look similar to the dlt.filesystem resource where the resource returns DriveItem
@@ -50,8 +41,8 @@ def sharepoint(
     for file_model in glob_files(
         sp_library, bucket_url=M365DriveFS.protocol[0] + "://", file_glob=file_glob
     ):
-        log_msg = f"Found '{file_model['file_name']}' with modification date '{file_model['modification_date']}'"
-        if modified_after and file_model["modification_date"] <= modified_after:
+        log_msg = f"Found '{file_model['file_name']}' with modification date '{file_model['modification_date']}'"  # type: ignore
+        if modified_after and file_model["modification_date"] <= modified_after:  # type: ignore
             log_msg += ": skipped old item."
             continue
         else:
