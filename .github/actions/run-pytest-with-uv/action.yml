@@ -11,6 +11,9 @@ inputs:
   pytest-file-or-dir:
     description: Path to a file or directory for pytest execution
     required: true
+  python-version:
+    description: The version of Python to install. Defaults to 3.13 as 3.14 was released but not all dependencies work.
+    default: "3.13"
   uv-cache-dependency-glob:
     description: Cache dependencies based on the supplied glob
   uv-version:
@@ -25,6 +28,7 @@ runs:
       with:
         cache-dependency-glob: ${{ inputs.uv-cache-dependency-glob }}
         version: ${{ inputs.uv-version }}
+        python-version: ${{ inputs.python-version }}
 
     - name: Bring up Docker Compose services
       if: inputs.compose-file-path != ''
