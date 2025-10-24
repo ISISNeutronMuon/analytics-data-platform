@@ -4,6 +4,7 @@ set -euo pipefail
 # Constants
 ELT_SECRETS=${ELT_SECRETS:?}
 ELT_GIT_REF=${ELT_GIT_REF:-main}
+ELT_WRITE_DISPOSITION=${ELT_WRITE_DISPOSITION:-}
 EXTRACT_AND_LOAD_SCRIPT=extract_and_load.py
 LOG_LEVEL=DEBUG
 ON_PIPELINE_FAILURE=log_and_continue
@@ -51,11 +52,17 @@ set -o allexport; source $ELT_SECRETS; set +o allexport
 # Extraction
 ensure_elt_sources_exist $git_url $git_clone_dir
 cd $git_clone_dir/$extract_and_load_dir
+dlt_write_disposition=
+if [ -n "$ELT_WRITE_DISPOSITION" ]; then
+  dlt_write_disposition="--write-disposition $ELT_WRITE_DISPOSITION"
+fi
 uv run \
   --reinstall \
   --script $EXTRACT_AND_LOAD_SCRIPT \
   --log-level $LOG_LEVEL \
-  --on-pipeline-step-failure $ON_PIPELINE_FAILURE
+  --on-pipeline-step-failure $ON_PIPELINE_FAILURE \
+  $dlt_write_disposition
+
 
 # Transform
 if [ -n "$dbt_project_dir" ]; then
