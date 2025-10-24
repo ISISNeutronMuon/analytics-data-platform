@@ -1,4 +1,11 @@
 ---
+- name: Read global configuration
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - ansible.builtin.include_vars:
+        dir: "../../group_vars/all"
+
 - name: Provision private network
   hosts: localhost
   gather_facts: False

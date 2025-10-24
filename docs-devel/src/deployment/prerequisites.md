@@ -75,15 +75,11 @@ to create a new access key/secret pair. Update the Ansible vault accordingly.
 
 ## Networking
 
-Two floating IPs are required:
+A floating IP is required for the Traefik load balancer node.
 
-- One for the management/SSH jump node.
-- One for the Traefik load balancer node.
+Using the web interface create one from _Project->Network->Floating IPs_, using _ALLOCATE IP TO PROJECT_, ensuring
+a description is provided.
 
-Using the web interface create them from _Project->Network->Floating IPs_, using _ALLOCATE IP TO PROJECT_, ensuring
-tgat a description is provided with each.
-
-Check the values of `openstack_management_vm_fip` and
-`openstack_reverse_proxy_fip` in `<repo_root>/ansible/group_vars/all/openstack.yml`
-and update accordingly. The `openstack_reverse_proxy_fip` value must match the value configured
+Update the value of `openstack_reverse_proxy_fip` in `<repo_root>/ansible/group_vars/all/openstack.yml`.
+The `openstack_reverse_proxy_fip` value must match the value configured
 in the DNS record for the domain defined in `<repo_root>/ansible/group_vars/all/domains.yml`
