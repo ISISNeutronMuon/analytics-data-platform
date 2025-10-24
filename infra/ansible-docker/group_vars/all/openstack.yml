@@ -12,8 +12,6 @@ openstack_virtual_network:
       gateway_ip: 192.168.42.1
 
 openstack_reverse_proxy_fip: 130.246.214.124
-openstack_management_vm_fip: 130.246.81.245
-openstack_jump_host: "{{ openstack_reverse_proxy_fip }}"
 
 openstack_apt_keys:
   - url: https://dl.igtf.net/distribution/igtf/current/GPG-KEY-EUGridPMA-RPM-4
