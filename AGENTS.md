@@ -1,6 +1,6 @@
 # LLM Context Guide for Analytics Data Platform
 
-This repository contains ELT code for an Iceberg-based data warehouse together with
+This repository contains ELT code for an Iceberg-based data warehouse, together with
 infrastructure code used to run the warehouse both locally (docker-compose) and in an
 OpenStack cloud (Ansible).
 
@@ -28,7 +28,7 @@ common developer tasks.
 └── warehouses/             # One subdirectory per (Lakekeeper) warehouse. Each contains ELT code to extract, transform and load data from external sources into Iceberg tables.
 ```
 
-## Prek hooks
+## Pre-commit hooks
 
 - Static code checks are enforced using `prek`. Install with your environment's tooling and run checks
   on all files with `prek run --all-files`. Install the pre-commit hook with `prek install`.
@@ -37,7 +37,7 @@ common developer tasks.
 
 - There are both unit and e2e tests for the `elt-common` package under `elt-common/tests/`. They are
   written using `pytest`.
-- Install the package in editable mode + dev dependencies in a Python environment, e.g with `uv`
+- Install the package in editable mode + dev dependencies in a Python environment, e.g. with `uv`
 
 ```bash
 cd elt-common/
