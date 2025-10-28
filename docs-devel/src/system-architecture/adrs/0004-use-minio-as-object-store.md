@@ -1,7 +1,5 @@
 # 4. Use MinIO as object store
 
-Date: 2024-07-04
-
 ## Status
 
 Accepted
