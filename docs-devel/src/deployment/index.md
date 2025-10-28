@@ -83,4 +83,4 @@ for svc in keycloak lakekeeper trino elt superset; do
 done
 ```
 
-Superset should be available at `https://<domain>/workspace/accelerator.
+Superset should be available at `https://<domain>/workspace/accelerator`.
