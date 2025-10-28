@@ -1,6 +1,6 @@
 docs_dir: src
 site_name: ISIS Accelerator Data Platform - Developer
-site_url: https://analytics.isis.cclrc.ac.uk/docs-devel/
+site_url: https://analytics.isis.cclrc.ac.uk/docs/devel
 site_author: ISIS Computing Division
 site_description: Developer documentation for the ISIS Data Platform Prototype
 theme:
