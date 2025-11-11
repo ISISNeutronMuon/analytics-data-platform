@@ -54,8 +54,6 @@ http:
       entryPoints: minioapi
       rule: PathPrefix(`/`)
       service: minioapi
-      middlewares:
-        - traefik-strip-prefix
 
     minioconsole:
       entryPoints: web
@@ -63,6 +61,13 @@ http:
       service: minioconsole
       middlewares:
         - minioconsole-strip-prefix
+
+    openfga:
+      entrypoints: web
+      rule: PathPrefix(`/authz`)
+      service: openfga
+      middlewares:
+        - openfga-strip-prefix
 
     traefik:
       entryPoints: web
@@ -72,18 +77,22 @@ http:
         - traefik-strip-prefix
 
   middlewares:
-    traefik-strip-prefix:
-      stripPrefix:
-        prefixes:
-          - "/internal/traefik"
-    minioconsole-strip-prefix:
-      stripPrefix:
-        prefixes:
-          - "/minio-console"
     lakekeeper-strip-prefix:
       stripPrefix:
         prefixes:
           - "/iceberg"
+    minioconsole-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/minio-console"
+    openfga-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/authz"
+    traefik-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/internal/traefik"
 
   services:
     keycloak:
@@ -102,6 +111,10 @@ http:
       loadBalancer:
         servers:
           - url: "http://lakekeeper:8181"
+    openfga:
+      loadBalancer:
+        servers:
+          - url: "http://openfga:8080"
     trino:
       loadBalancer:
         servers:
