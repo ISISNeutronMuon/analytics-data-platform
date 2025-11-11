@@ -389,10 +389,14 @@ def main(
 
     server = LakekeeperRestV1(lakekeeper_url, access_token)
     server.bootstrap()
-    project_id = server.get_or_create_project(project_name, new_project_id)
 
+    project_id = server.get_or_create_project(project_name, new_project_id)
     if server_admin is not None and identity_provider is not None:
         # Server admins are human users and will be provisioned the first time they log in
+        server.assign_permissions(
+            identity_provider.oidc_ids(server_admin, server.access_token),
+            entities={"server": ["admin"]},
+        )
         server.assign_permissions(
             identity_provider.oidc_ids(server_admin, server.access_token),
             entities={"server": ["admin"], f"project/{project_id}": ["project_admin"]},
