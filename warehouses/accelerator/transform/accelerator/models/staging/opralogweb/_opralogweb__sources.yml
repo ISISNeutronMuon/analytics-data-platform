@@ -3,7 +3,7 @@ version: 2
 sources:
   - name: src_opralogweb
     tables:
-      - name: user_entries
+      - name: entries
       - name: chapter_entry
       - name: logbook_chapter
       - name: logbooks

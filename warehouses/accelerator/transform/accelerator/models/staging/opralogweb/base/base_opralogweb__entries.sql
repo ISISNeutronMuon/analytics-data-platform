@@ -2,7 +2,7 @@ with
 
 source as (
 
-  select * from {{ source('src_opralogweb', 'user_entries') }}
+  select * from {{ source('src_opralogweb', 'entries') }}
 
 ),
 
