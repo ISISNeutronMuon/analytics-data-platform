@@ -5,7 +5,7 @@ update Entries
 where EntryId = 100;
 
 update MoreEntryColumns
-  set NumberValue = 4.7
+  set ColData='4.7', NumberValue = 4.7
 where EntryId = 100 and AdditionalColumnId = 2;
 
 insert into

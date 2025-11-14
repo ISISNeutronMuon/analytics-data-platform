@@ -1,5 +1,5 @@
 models:
-  - name: base_opralogweb__user_entries
+  - name: base_opralogweb__entries
     description: >
       Opralogweb "entries" table with basic cleaning. Table has been renamed from "entries"
       due to an expected clash with a reserved internal name in Iceberg.

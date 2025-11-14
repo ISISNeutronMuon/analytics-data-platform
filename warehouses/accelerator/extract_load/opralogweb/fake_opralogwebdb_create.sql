@@ -4,8 +4,8 @@
 -- Logbooks
 drop table if exists Logbooks;
 create table Logbooks (
-    LogbookId INTEGER PRIMARY KEY,
-    LogbookName VARCHAR
+    LogbookId INTEGER PRIMARY KEY NOT NULL,
+    LogbookName VARCHAR NOT NULL
 );
 insert into
     Logbooks
@@ -16,8 +16,8 @@ values
 -- LogbookChapter
 drop table if exists LogbookChapter;
 create table LogbookChapter (
-    LogbookChapterNo INTEGER PRIMARY KEY,
-    LogbookId INTEGER
+    LogbookChapterNo INTEGER PRIMARY KEY NOT NULL,
+    LogbookId INTEGER NOT NULL
 );
 insert into
     LogbookChapter
@@ -32,9 +32,9 @@ drop table if exists ChapterEntry;
 create table ChapterEntry (
     LogbookEntryId INTEGER PRIMARY KEY NOT NULL,
     EntryId INTEGER NOT NULL,
-    PrincipalLogbook INTEGER,
-    LogbookChapterNo INTEGER,
-    LogbookId INTEGER
+    PrincipalLogbook INTEGER NOT NULL,
+    LogbookChapterNo INTEGER NOT NULL,
+    LogbookId INTEGER NOT NULL
 );
 insert into
     ChapterEntry
@@ -48,7 +48,7 @@ values
 drop table if exists Entries;
 create table Entries (
     EntryId INTEGER PRIMARY KEY NOT NULL,
-    EntryTimestamp TIMESTAMP,
+    EntryTimestamp TIMESTAMP NOT NULL,
     AdditionalComment VARCHAR
 );
 insert into
