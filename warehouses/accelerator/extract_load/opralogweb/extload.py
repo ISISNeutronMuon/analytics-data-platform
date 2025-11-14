@@ -11,18 +11,19 @@ import pyiceberg.types as pyt
 import pyarrow as pa
 import pyarrow.compute as pc
 import requests
+import sqlalchemy.sql.sqltypes as sqltypes
 from sqlalchemy import (
     create_engine,
     make_url,
     inspect,
     Column,
+    Connection,
     Engine,
     MetaData,
     Table,
     URL,
 )
-import sqlalchemy.sql.sqltypes as sqltypes
-
+from sqlalchemy.sql import text
 import os
 
 
@@ -125,7 +126,7 @@ def sql_to_iceberg_schema(
     return Schema(*fields, identifier_field_ids=identifier_field_ids)
 
 
-def sql_select(
+def sql_select_connectorx(
     url: URL,
     table_identifier: str,
     columns: Sequence[str] | None = None,
@@ -137,31 +138,60 @@ def sql_select(
     query = f"select {','.join(columns)} from {table_identifier}"
     if where is not None:
         query += f" {where}"
+    query += " LIMIT 100"
 
     results: pa.Table = cx.read_sql(
-        url.render_as_string(), query, protocol="binary", return_type="arrow"
+        url.render_as_string(),
+        query,
+        protocol="binary",
+        return_type="arrow",
     )
     return results.rename_columns(
         list(map(lambda x: normalize_indentifier(x), results.column_names))
     )
 
 
+def sql_select_sqlalchemy(
+    conn: Connection,
+    table_identifier: str,
+    columns: Sequence[str] | None = None,
+    where: str | None = None,
+) -> pa.Table:
+    """Query the database and return the results with normalized identifiers"""
+    if columns is None:
+        columns = ["*"]
+    query = f"select {','.join(columns)} from {table_identifier}"
+    if where is not None:
+        query += f" {where}"
+    query += " LIMIT 100"
+
+    rows = conn.execute(text(query)).fetchall()
+    # results: pa.Table = cx.read_sql(
+    #     url.render_as_string(),
+    #     query,
+    #     protocol="binary",
+    #     return_type="arrow",
+    # )
+    # return results.rename_columns(
+    #     list(map(lambda x: normalize_indentifier(x), results.column_names))
+    # )
+
+
 def extract_and_load(
-    db_conn: URL,
+    db_conn: Connection,
     src_table: str,
     dest_table: Tuple[str, str],
     *,
     columns: Sequence[str] | None = None,
     where: str | None = None,
 ) -> int:
-    src_query_results = sql_select(db_conn, src_table, columns, where)
+    src_query_results = sql_select_sqlalchemy(db_conn, src_table, columns, where)
     if catalog.table_exists(dest_table):
         tbl = catalog.load_table(dest_table)
     else:
-        engine = create_engine(db_url)
         tbl = catalog.create_table(
             dest_table,
-            sql_to_iceberg_schema(engine, src_table),
+            sql_to_iceberg_schema(db_engine, src_table),
             properties={
                 TableProperties.FORMAT_VERSION: TableProperties.DEFAULT_FORMAT_VERSION
             },
@@ -176,6 +206,8 @@ def extract_and_load(
 
 db_url = make_db_url(sys.argv[1])
 print(f"Using source database {db_url}")
+db_engine = create_engine(db_url)
+
 
 client_id, client_secret = "localinfra", "s3cr3t"
 oauth2_server_uri = (
@@ -208,12 +240,15 @@ if catalog.table_exists(dest_logbook_entry_changes):
 print(f"Last ChangeId recorded in destination: {last_changeid}")
 
 src_logbook_entry_changes = "LogbookEntryChanges"
-src_query_results = sql_select(
-    db_url,
-    src_logbook_entry_changes,
-    ["ChangeId", "EntryId"],
-    where=f"WHERE ChangeId > {last_changeid}" if last_changeid is not None else None,
-)
+with db_engine.connect() as conn:
+    src_query_results = sql_select_sqlalchemy(
+        conn,
+        src_logbook_entry_changes,
+        ["ChangeId", "EntryId"],
+        where=f"WHERE ChangeId > {last_changeid}"
+        if last_changeid is not None
+        else None,
+    )
 if src_query_results.num_rows == 0:
     print(
         f"Last ChangeId in {src_logbook_entry_changes} matches that in warehouse. No new records to process."
@@ -235,17 +270,17 @@ tables = [
     {"name": "ChapterEntry"},
     {"name": "AdditionalColumns"},
 ]
-for table_info in tables:
-    src_table = table_info["name"]
-    dest_table = (DATASET_NAME, normalize_indentifier(src_table))
-    num_rows_loaded = extract_and_load(
-        db_url,
-        src_table,
-        dest_table,
-        where=table_info.get("where"),
-    )
-    print(f"Loaded {num_rows_loaded} rows into '{dest_table}'")
-
+with db_engine.connect():
+    for table_info in tables:
+        src_table = table_info["name"]
+        dest_table = (DATASET_NAME, normalize_indentifier(src_table))
+        num_rows_loaded = extract_and_load(
+            conn,
+            src_table,
+            dest_table,
+            where=table_info.get("where"),
+        )
+        print(f"Loaded {num_rows_loaded} rows into '{dest_table}'")
 
 # save last change id loaded
 max_change_id_tbl = pa.table({"changeid": [max_change_id]})
