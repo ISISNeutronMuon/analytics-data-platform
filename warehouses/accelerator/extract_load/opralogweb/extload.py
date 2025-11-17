@@ -1,15 +1,13 @@
 from pathlib import Path
 import re
 import sys
-from typing import Sequence, Tuple
+from typing import Literal, Sequence, Tuple
 
-import connectorx as cx
 from pyiceberg.catalog.rest import RestCatalog
 from pyiceberg.schema import Schema
 from pyiceberg.table import TableProperties
 import pyiceberg.types as pyt
 import pyarrow as pa
-import pyarrow.compute as pc
 import requests
 import sqlalchemy.sql.sqltypes as sqltypes
 from sqlalchemy import (
@@ -102,8 +100,6 @@ def sql_to_iceberg_schema(
 
     We use reflection from the original tables so that the 'required' flags within
     each schema field are set correctly, allowing us to use the upsert operation.
-    The pyarrow schema from connectorx does not set the nullable field correctly
-    but it is faster to read and create the pyarrow.Table.
     """
     meta = MetaData()
     sqltable = Table(table_name, meta)
@@ -126,36 +122,13 @@ def sql_to_iceberg_schema(
     return Schema(*fields, identifier_field_ids=identifier_field_ids)
 
 
-def sql_select_connectorx(
-    url: URL,
-    table_identifier: str,
-    columns: Sequence[str] | None = None,
-    where: str | None = None,
-) -> pa.Table:
-    """Query the database and return the results with normalized identifiers"""
-    if columns is None:
-        columns = ["*"]
-    query = f"select {','.join(columns)} from {table_identifier}"
-    if where is not None:
-        query += f" {where}"
-    query += " LIMIT 100"
-
-    results: pa.Table = cx.read_sql(
-        url.render_as_string(),
-        query,
-        protocol="binary",
-        return_type="arrow",
-    )
-    return results.rename_columns(
-        list(map(lambda x: normalize_indentifier(x), results.column_names))
-    )
-
-
 def sql_select_sqlalchemy(
     conn: Connection,
     table_identifier: str,
     columns: Sequence[str] | None = None,
     where: str | None = None,
+    return_type: Literal["arrow", "rows"] = "arrow",
+    arrow_schema: pa.Schema = None,
 ) -> pa.Table:
     """Query the database and return the results with normalized identifiers"""
     if columns is None:
@@ -165,16 +138,18 @@ def sql_select_sqlalchemy(
         query += f" {where}"
     query += " LIMIT 100"
 
-    rows = conn.execute(text(query)).fetchall()
-    # results: pa.Table = cx.read_sql(
-    #     url.render_as_string(),
-    #     query,
-    #     protocol="binary",
-    #     return_type="arrow",
-    # )
-    # return results.rename_columns(
-    #     list(map(lambda x: normalize_indentifier(x), results.column_names))
-    # )
+    cursor_result = conn.execute(text(query))
+    if return_type == "arrow":
+        tbl = pa.Table.from_pylist(cursor_result.mappings().all())
+        if arrow_schema is not None:
+            tbl = pa.Table.from_arrays(tbl.columns, schema=arrow_schema)
+        return tbl
+    elif return_type == "rows":
+        return cursor_result.all()
+    else:
+        raise ValueError(
+            f"Unknown return_type '{return_type}'. Allowed values: arrow, rows."
+        )
 
 
 def extract_and_load(
@@ -185,23 +160,27 @@ def extract_and_load(
     columns: Sequence[str] | None = None,
     where: str | None = None,
 ) -> int:
-    src_query_results = sql_select_sqlalchemy(db_conn, src_table, columns, where)
+    iceberg_schema = sql_to_iceberg_schema(db_conn.engine, src_table)
+    src_query_pyarrow = sql_select_sqlalchemy(
+        db_conn,
+        src_table,
+        columns,
+        where,
+        return_type="arrow",
+        arrow_schema=iceberg_schema.as_arrow(),
+    )
     if catalog.table_exists(dest_table):
         tbl = catalog.load_table(dest_table)
     else:
         tbl = catalog.create_table(
             dest_table,
-            sql_to_iceberg_schema(db_engine, src_table),
+            iceberg_schema,
             properties={
                 TableProperties.FORMAT_VERSION: TableProperties.DEFAULT_FORMAT_VERSION
             },
         )
-    # This feels hacky but the pyarrow schema doesn't have the correct nullable fields so we force our
-    # iceberg version on it.
-    tbl.upsert(
-        pa.Table.from_arrays(src_query_results.columns, schema=tbl.schema().as_arrow())
-    )
-    return src_query_results.num_rows
+    tbl.upsert(src_query_pyarrow)
+    return src_query_pyarrow.num_rows
 
 
 db_url = make_db_url(sys.argv[1])
@@ -228,8 +207,6 @@ catalog = RestCatalog(
 )
 catalog.create_namespace_if_not_exists(DATASET_NAME)
 
-
-# extract
 # examine LogbookEntryChanges for new changes
 last_changeid = None
 dest_logbook_entry_changes = (DATASET_NAME, LOGBOOK_ENTRY_CHANGES_LAST_SEEN)
@@ -241,22 +218,23 @@ print(f"Last ChangeId recorded in destination: {last_changeid}")
 
 src_logbook_entry_changes = "LogbookEntryChanges"
 with db_engine.connect() as conn:
-    src_query_results = sql_select_sqlalchemy(
+    rows = sql_select_sqlalchemy(
         conn,
         src_logbook_entry_changes,
         ["ChangeId", "EntryId"],
         where=f"WHERE ChangeId > {last_changeid}"
         if last_changeid is not None
         else None,
+        return_type="rows",
     )
-if src_query_results.num_rows == 0:
+if len(rows) == 0:
     print(
         f"Last ChangeId in {src_logbook_entry_changes} matches that in warehouse. No new records to process."
     )
     sys.exit(0)
 
-min_entry_id = pc.min(src_query_results["entry_id"])
-max_change_id = pc.max(src_query_results["change_id"])
+min_entry_id = min(map(lambda x: x[1], rows))
+max_change_id = max(map(lambda x: x[0], rows))
 print(
     f"Last ChangeId recored in source {max_change_id}. Affects entry_id > {min_entry_id}. Reloading entries."
 )
@@ -270,7 +248,7 @@ tables = [
     {"name": "ChapterEntry"},
     {"name": "AdditionalColumns"},
 ]
-with db_engine.connect():
+with db_engine.connect() as conn:
     for table_info in tables:
         src_table = table_info["name"]
         dest_table = (DATASET_NAME, normalize_indentifier(src_table))
