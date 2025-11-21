@@ -30,8 +30,10 @@ LOGBOOK_ENTRY_CHANGES_LAST_SEEN = "logbook_entry_changes_last_seen"
 SNAKE_CASE_BREAK_1 = re.compile("([^_])([A-Z][a-z]+)")
 SNAKE_CASE_BREAK_2 = re.compile("([a-z0-9])([A-Z])")
 SQL_TO_ICEBERG_TYPES = {
-    sqltypes.Integer: pyt.LongType,
-    sqltypes.INTEGER: pyt.LongType,
+    sqltypes.Integer: pyt.IntegerType,
+    sqltypes.INTEGER: pyt.IntegerType,
+    sqltypes.BigInteger: pyt.LongType,
+    sqltypes.BIGINT: pyt.LongType,
     sqltypes.Float: pyt.FloatType,
     sqltypes.FLOAT: pyt.FloatType,
     sqltypes.Double: pyt.DoubleType,
@@ -85,12 +87,27 @@ def normalize_indentifier(identifier: str) -> str:
 
 
 def sql_to_iceberg_type(table_name: str, column: Column) -> pyt.IcebergType:
-    try:
-        return SQL_TO_ICEBERG_TYPES[type(column.type)]()
-    except KeyError:
+    src_type = column.type
+    if isinstance(src_type, sqltypes.BigInteger):
+        dest_type = pyt.LongType
+    elif isinstance(src_type, sqltypes.Integer):
+        dest_type = pyt.IntegerType
+    elif isinstance(src_type, sqltypes.DateTime):
+        dest_type = pyt.TimestamptzType
+    elif isinstance(src_type, sqltypes.Double):
+        dest_type = pyt.DoubleType
+    elif isinstance(src_type, sqltypes.Float):
+        dest_type = pyt.FloatType
+    elif isinstance(src_type, (sqltypes.Text, sqltypes.VARCHAR, sqltypes.Uuid)):
+        dest_type = pyt.StringType
+    elif isinstance(src_type, sqltypes.Boolean):
+        dest_type = pyt.BooleanType
+    else:
         raise TypeError(
             f"Column '{table_name}.{column.name}' has unsupported type '{column.type}'"
         )
+
+    return dest_type()
 
 
 def sql_to_iceberg_schema(
@@ -133,10 +150,9 @@ def sql_select_sqlalchemy(
     """Query the database and return the results with normalized identifiers"""
     if columns is None:
         columns = ["*"]
-    query = f"select {','.join(columns)} from {table_identifier}"
+    query = f"select TOP (100) {','.join(columns)} from {table_identifier}"
     if where is not None:
         query += f" {where}"
-    query += " LIMIT 100"
 
     cursor_result = conn.execute(text(query))
     if return_type == "arrow":
@@ -183,7 +199,10 @@ def extract_and_load(
     return src_query_pyarrow.num_rows
 
 
-db_url = make_db_url(sys.argv[1])
+# db_url = make_db_url(sys.argv[1])
+db_url = (
+    "mssql+pymssql://dataplatform-ingest:Martyn!123@fitgensql1.isis.cclrc.ac.uk:1433"
+)
 print(f"Using source database {db_url}")
 db_engine = create_engine(db_url)
 
@@ -222,7 +241,7 @@ with db_engine.connect() as conn:
         conn,
         src_logbook_entry_changes,
         ["ChangeId", "EntryId"],
-        where=f"WHERE ChangeId > {last_changeid}"
+        where=f"WHERE ChangeId > {last_changeid} AND EntryId IS NOT NULL"
         if last_changeid is not None
         else None,
         return_type="rows",
