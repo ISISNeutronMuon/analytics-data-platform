@@ -29,6 +29,7 @@ elt_warehouses:
         hour: 2
         minute: 11
         dbt_args: "--select '+models/operations' --exclude '+models/operations/power_consumption.sql'"
+        write_disposition: "replace"
       - name: electricity_sharepoint
         hour: "*"
         minute: 5
