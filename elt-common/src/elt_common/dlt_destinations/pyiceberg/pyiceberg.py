@@ -59,7 +59,11 @@ class PyIcebergLoadJob(RunnableLoadJob):
         return self.iceberg_client.iceberg_catalog
 
     def run(self):
-        self.iceberg_client.write_to_table(self.load_table_name, pq.read_table(self._file_path))
+        self.iceberg_client.write_to_table(
+            self.load_table_name,
+            pq.read_table(self._file_path),
+            self._load_table.get("write_disposition"),
+        )
 
 
 class PyIcebergClient(JobClientBase, WithStateSync):
@@ -384,7 +388,7 @@ class PyIcebergClient(JobClientBase, WithStateSync):
             table.append(table_data)
         else:
             raise DestinationTerminalException(
-                "Unsupported write disposition {write_disposition} for pyiceberg destination."
+                f"Unsupported write disposition {write_disposition} for pyiceberg destination."
             )
 
     @pyiceberg_error
