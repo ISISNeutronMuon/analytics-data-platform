@@ -9,7 +9,7 @@ from elt_common.dlt_destinations.pyiceberg.configuration import (
 from elt_common.dlt_destinations.pyiceberg.pyiceberg import (
     PyIcebergClient,
 )
-from elt_common.dlt_destinations.pyiceberg.schema import PyIcebergTypeMapper
+from elt_common.dlt_destinations.pyiceberg.type_mapping import PyIcebergTypeMapper
 
 
 class pyiceberg(Destination[IcebergClientConfiguration, "PyIcebergClient"]):
@@ -23,13 +23,13 @@ class pyiceberg(Destination[IcebergClientConfiguration, "PyIcebergClient"]):
         caps.supported_table_formats = ["iceberg"]
         caps.type_mapper = PyIcebergTypeMapper
         caps.has_case_sensitive_identifiers = True
-        # v1 & v2 of Iceberg on support timestamps at  microsecond resolution
+        # v1 & v2 of Iceberg on support timestamps at microsecond resolution
         caps.timestamp_precision = 6
 
         caps.max_identifier_length = 255
         caps.max_column_identifier_length = 255
 
-        caps.supported_merge_strategies = ["delete-insert"]
+        caps.supported_merge_strategies = ["upsert"]
         caps.supported_replace_strategies = [
             "truncate-and-insert",
         ]

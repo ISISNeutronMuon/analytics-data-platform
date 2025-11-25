@@ -10,7 +10,7 @@ import pendulum
 
 import pytest
 
-from elt_common.dlt_destinations.pyiceberg.catalog import (
+from elt_common.dlt_destinations.pyiceberg.helpers import (
     namespace_exists as catalog_namespace_exists,
 )
 from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
@@ -35,10 +35,18 @@ def pipeline_name(frame: FrameType | None):
     return frame.f_code.co_name if frame is not None else "pipeline_name_frame_none"
 
 
-@dlt.resource()
-def data_items(data: List[Dict[str, Any]] | None = None):
-    data = [] if data is None else data
-    yield data
+def resource_factory(data: List[Dict[str, Any]] | None = None, primary_key: str | None = "id"):
+    if primary_key is not None:
+        decorator = dlt.resource(primary_key=primary_key)
+    else:
+        decorator = dlt.resource
+
+    @decorator
+    def data_items():
+        items = [] if data is None else data
+        yield items
+
+    return data_items
 
 
 def test_dlt_tables_created(
@@ -52,7 +60,7 @@ def test_dlt_tables_created(
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
-    pipeline.run(data_items(data))
+    pipeline.run(resource_factory(data))
 
     assert_table_has_shape(
         pipeline,
@@ -92,7 +100,7 @@ def test_explicit_append(
         pipelines_dir=pipelines_dir,
     )
     # first run
-    pipeline.run(data_items(data), write_disposition="append")
+    pipeline.run(resource_factory(data), write_disposition="append")
     assert_table_has_data(
         pipeline,
         f"{pipeline.dataset_name}.data_items",
@@ -108,7 +116,7 @@ def test_explicit_append(
         }
         for i in range(10)
     ]
-    pipeline.run(data_items(data_second), write_disposition="append")
+    pipeline.run(resource_factory(data_second), write_disposition="append")
     final_data = data
     final_data.extend(data_second)
     assert_table_has_data(
@@ -137,7 +145,7 @@ def test_explicit_replace(
         pipelines_dir=pipelines_dir,
     )
     # first run
-    pipeline.run(data_items(data))
+    pipeline.run(resource_factory(data))
     assert_table_has_data(
         pipeline,
         f"{pipeline.dataset_name}.data_items",
@@ -153,13 +161,88 @@ def test_explicit_replace(
         }
         for i in range(10)
     ]
-    pipeline.run(data_items(data_second), write_disposition="replace")
+    pipeline.run(resource_factory(data_second), write_disposition="replace")
     assert_table_has_data(
         pipeline,
         f"{pipeline.dataset_name}.data_items",
         expected_items_count=len(data_second),
         items=data_second,
     )
+
+
+def test_explicit_merge_updates_expected_values(
+    warehouse: Warehouse,
+    pipelines_dir,
+    destination_config: PyIcebergDestinationTestConfiguration,
+) -> None:
+    num_records_first_run = 1000
+    data = [
+        {
+            "id": i + 1,
+            "category": "A",
+        }
+        for i in range(num_records_first_run)
+    ]
+    pipeline = destination_config.setup_pipeline(
+        warehouse,
+        pipeline_name(inspect.currentframe()),
+        pipelines_dir=pipelines_dir,
+    )
+    # first run
+    pipeline.run(resource_factory(data, primary_key="id"))
+    assert_table_has_data(
+        pipeline,
+        f"{pipeline.dataset_name}.data_items",
+        expected_items_count=len(data),
+        items=data,
+    )
+
+    id_updated_start, num_records_upserted = 501, 2000
+    # run again and see we update existing records and added new ones
+    data_updated = [
+        {
+            "id": id_updated_start + i,
+            "category": "B",
+        }
+        for i in range(num_records_upserted)
+    ]
+    pipeline.run(resource_factory(data_updated, primary_key="id"), write_disposition="merge")
+    expected_data = [
+        {"id": i + 1, "category": "A" if i + 1 < id_updated_start else "B"}
+        for i in range(num_records_first_run + num_records_upserted - id_updated_start + 1)
+    ]
+    assert_table_has_data(
+        pipeline,
+        f"{pipeline.dataset_name}.data_items",
+        expected_items_count=len(expected_data),
+        items=expected_data,
+    )
+
+
+@pytest.mark.parametrize("merge_strategy", ["delete-insert", "scd2"])
+def test_explicit_merge_not_supported_for_strategies_other_than_upsert(
+    warehouse: Warehouse,
+    pipelines_dir,
+    destination_config: PyIcebergDestinationTestConfiguration,
+    merge_strategy,
+) -> None:
+    data = [
+        {
+            "id": i + 1,
+            "category": "A",
+        }
+        for i in range(10)
+    ]
+    pipeline = destination_config.setup_pipeline(
+        warehouse,
+        pipeline_name(inspect.currentframe()),
+        pipelines_dir=pipelines_dir,
+    )
+    with pytest.raises(Exception, match=f"`{merge_strategy}` merge strategy not supported"):
+        pipeline.run(
+            resource_factory(data),
+            write_disposition={"disposition": "merge", "strategy": merge_strategy},
+        )
 
 
 def test_drop_storage(
@@ -174,7 +257,7 @@ def test_drop_storage(
         pipelines_dir=pipelines_dir,
     )
     # run a pipeline to populate destination state and then drop the storage
-    pipeline.run(data_items(data))
+    pipeline.run(resource_factory(data))
 
     with pipeline.destination_client() as client:
         client.drop_storage()
@@ -195,14 +278,14 @@ def test_sync_state(
         pipelines_dir=pipelines_dir,
     )
     # run a pipeline to populate destination state, remove local state and run again
-    pipeline_1.run(data_items(data))
+    pipeline_1.run(resource_factory(data))
     shutil.rmtree(pipelines_dir)
     pipeline_2 = destination_config.setup_pipeline(
         warehouse,
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
-    pipeline_2.run(data_items(data), write_disposition="replace")
+    pipeline_2.run(resource_factory(data), write_disposition="replace")
 
     assert pipeline_2.state == pipeline_1.state
 
@@ -226,7 +309,7 @@ def test_expected_datatypes_can_be_loaded(
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
-    pipeline.run(data_items(data))
+    pipeline.run(resource_factory(data, primary_key=None))
 
     assert_table_has_data(
         pipeline,
@@ -247,11 +330,11 @@ def test_schema_evolution_not_supported(
         pipelines_dir=pipelines_dir,
     )
     data_schema_1 = [{"id": 1}]
-    pipeline.run(data_items(data_schema_1))
+    pipeline.run(resource_factory(data_schema_1))
     data_schema_2 = [{"id": 2, "new_column": "string value"}]
 
     with pytest.raises(PipelineStepFailed):
-        pipeline.run(data_items(data_schema_2))
+        pipeline.run(resource_factory(data_schema_2))
 
 
 @pytest.mark.parametrize(

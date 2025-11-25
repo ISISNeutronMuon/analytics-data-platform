@@ -25,8 +25,8 @@ from elt_common.dlt_destinations.pyiceberg.pyiceberg import (
     PyIcebergClient,
 )
 from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
-    pyiceberg_partition,
-    pyiceberg_sortorder,
+    PartitionTrBuilder,
+    SortOrderBuilder,
     PartitionTransformation,
     SortOrderSpecification,
 )
@@ -173,7 +173,7 @@ def partition_test_configs() -> List[PyIcebergPartitionTestConfiguration]:
             PyIcebergPartitionTestConfiguration(
                 name=f"partition_date_by_{dt_element}",
                 data=standard_test_data,
-                partition_request=[getattr(pyiceberg_partition, dt_element)("created_at")],
+                partition_request=[getattr(PartitionTrBuilder, dt_element)("created_at")],
                 expected_spec=PartitionSpec(
                     PartitionField(
                         source_id=3,
@@ -199,7 +199,7 @@ def partition_test_configs() -> List[PyIcebergPartitionTestConfiguration]:
         PyIcebergPartitionTestConfiguration(
             name="partition_by_multiple_fields",
             data=standard_test_data,
-            partition_request=["category", pyiceberg_partition.year("created_at")],
+            partition_request=["category", PartitionTrBuilder.year("created_at")],
             expected_spec=PartitionSpec(
                 PartitionField(
                     source_id=2,
@@ -234,7 +234,7 @@ def sort_order_test_configs() -> List[PyIcebergSortOrderTestConfiguration]:
         PyIcebergSortOrderTestConfiguration(
             name="sort_by_single_field",
             data=standard_test_data,
-            sort_order_request=[pyiceberg_sortorder("created_at").desc().build()],
+            sort_order_request=[SortOrderBuilder("created_at").desc().build()],
             expected_spec=SortOrder(
                 SortField(
                     source_id=3,
@@ -247,8 +247,8 @@ def sort_order_test_configs() -> List[PyIcebergSortOrderTestConfiguration]:
             name="sort_by_multiple_fields",
             data=standard_test_data,
             sort_order_request=[
-                pyiceberg_sortorder("category").asc().build(),
-                pyiceberg_sortorder("created_at").desc().build(),
+                SortOrderBuilder("category").asc().build(),
+                SortOrderBuilder("created_at").desc().build(),
             ],
             expected_spec=SortOrder(
                 *[
@@ -298,7 +298,9 @@ def assert_table_has_data(
         table = catalog.load_table(qualified_table_name)
 
     arrow_table = table.scan().to_arrow()
-    assert arrow_table.shape[0] == expected_items_count
+    assert arrow_table.shape[0] == expected_items_count, (
+        f"{arrow_table.shape[0]} != {expected_items_count}"
+    )
 
     if items is None:
         return

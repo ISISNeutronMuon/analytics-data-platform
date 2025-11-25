@@ -1,123 +1,17 @@
-from typing import Any, Dict, Sequence, Union, Final, TypeAlias
+from typing import Any, Dict, Sequence, Union, TypeAlias
 
 from dlt.destinations.utils import get_resource_for_adapter
 from dlt.extract import DltResource
-from dlt.extract.items import TTableHintTemplate
+from dlt.common.typing import TTableHintTemplate
 
-import pyiceberg.table.sorting as sorting
-import pyiceberg.transforms as tr
-
-PARTITION_HINT: Final[str] = "x-pyiceberg-partition"
-SORT_ORDER_HINT: Final[str] = "x-pyiceberg-sortorder"
-
-# This module is a copy of the athena_adapter from
-# dlt/destinations/impl/athena/athena_adatper.py adapted to the pyiceberg
-# destination.
-
-
-class PartitionTransformation:
-    transform: str
-    """The transform as a string representation understood by pyicberg.transforms.parse_transform., e.g. `bucket[16]`"""
-    column_name: str
-    """Column name to apply the transformation to"""
-
-    def __init__(self, transform: str, column_name: str) -> None:
-        self.transform = transform
-        self.column_name = column_name
-
-
-class pyiceberg_partition:
-    """Helper class to generate iceberg partition transformations"""
-
-    @staticmethod
-    def identity(column_name: str) -> PartitionTransformation:
-        """Partition by column without an transformation"""
-        return PartitionTransformation(tr.IDENTITY, column_name)
-
-    @staticmethod
-    def year(column_name: str) -> PartitionTransformation:
-        """Partition by year part of a date or timestamp column."""
-        return PartitionTransformation(tr.YEAR, column_name)
-
-    @staticmethod
-    def month(column_name: str) -> PartitionTransformation:
-        """Partition by month part of a date or timestamp column."""
-        return PartitionTransformation(tr.MONTH, column_name)
-
-    @staticmethod
-    def day(column_name: str) -> PartitionTransformation:
-        """Partition by day part of a date or timestamp column."""
-        return PartitionTransformation(tr.DAY, column_name)
-
-    @staticmethod
-    def hour(column_name: str) -> PartitionTransformation:
-        """Partition by hour part of a date or timestamp column."""
-        return PartitionTransformation(tr.HOUR, column_name)
-
-    # NOTE: The following transformations are not currently supported by writing through
-    # pyarrow so they are disabled.
-
-    # @staticmethod
-    # def bucket(n: int, column_name: str) -> PartitionTransformation:
-    #     """Partition by hashed value to n buckets."""
-    #     return PartitionTransformation(f"{tr.BUCKET}[{n}]", column_name)
-
-    # @staticmethod
-    # def truncate(length: int, column_name: str) -> PartitionTransformation:
-    #     """Partition by value truncated to length."""
-    #     return PartitionTransformation(f"{tr.TRUNCATE}[{length}]", column_name)
-
-
-class SortOrderSpecification:
-    direction: str
-    """The direction to apply to the sort"""
-    column_name: str
-    """Column name to apply the transformation to"""
-
-    def __init__(self, direction: str, column_name: str) -> None:
-        self.direction = direction
-        self.column_name = column_name
-
-
-class pyiceberg_sortorder:
-    """Builder to generate iceberg sort order specs.
-
-    Note: This only affects the order in which the data is written and not the final
-    query. Queries still need to include any ORDER BY clauses if necessary.
-    """
-
-    def __init__(self, column_name: str) -> None:
-        self.column_name = column_name
-        self._direction = None
-
-    @property
-    def direction(self) -> str:
-        if self._direction is None:
-            raise ValueError(
-                "Sort direction not specified. Use .asc()/.desc() to indicate the required sort direction."
-            )
-        return self._direction
-
-    def asc(self) -> "pyiceberg_sortorder":
-        self._direction = sorting.SortDirection.ASC.value
-        return self
-
-    def desc(self) -> "pyiceberg_sortorder":
-        self._direction = sorting.SortDirection.DESC.value
-        return self
-
-    def build(self) -> SortOrderSpecification:
-        return SortOrderSpecification(self.direction, self.column_name)
-
-    # @staticmethod
-    # def ascending(transform: PartitionTransformation) -> SortOrderSpecification:
-    # @staticmethod
-    # def identity(
-    #     column_name: str, direction: str, null_order: str
-    # ) -> SortOrderSpecification:
-    #     """Sort by a column without a transformation"""
-    #     return SortOrderSpecification(tr.IDENTITY, column_name)
-
+from .helpers import (
+    PARTITION_HINT,
+    SORT_ORDER_HINT,
+    PartitionTransformation,
+    PartitionTrBuilder,
+    SortOrderSpecification,
+    SortOrderBuilder,  # noqa: F401
+)
 
 TPartitionTransformation: TypeAlias = Union[
     str, PartitionTransformation, Sequence[Union[str, PartitionTransformation]]
@@ -148,7 +42,7 @@ def pyiceberg_adapter(
 
     Examples:
         >>> data = [{"name": "Marcel", "department": "Engineering", "date_hired": "2024-01-30"}]
-        >>> pyiceberg_adapter(data, partition=["department", pyiceberg_partition.year("date_hired"), pyiceberg_partition.bucket(8, "name")])
+        >>> pyiceberg_adapter(data, partition=["department", PartitionTrBuilder.year("date_hired"), PartitionTrBuilder.bucket(8, "name")])
         [DltResource with hints applied]
     """
     resource = get_resource_for_adapter(data)
@@ -162,11 +56,11 @@ def pyiceberg_adapter(
         # Use one dict for all hints instead of storing on column so order is preserved
         partition_hint: Dict[str, str] = {}
         for item in partition:
-            # client understand how to decode this representation into the correct PartitionField specs
+            # client understands how to decode this representation into the correct PartitionField specs
             if isinstance(item, PartitionTransformation):
                 partition_hint[item.column_name] = item.transform
             else:
-                partition_hint[item] = pyiceberg_partition.identity(item).transform
+                partition_hint[item] = PartitionTrBuilder.identity(item).transform
 
         additional_table_hints[PARTITION_HINT] = partition_hint
 

@@ -16,7 +16,7 @@ from dlt.common.configuration.providers import (
 )
 from dlt.common.runtime.run_context import RunContext
 
-from elt_common.dlt_destinations.pyiceberg.catalog import create_catalog
+from elt_common.dlt_destinations.pyiceberg.helpers import create_catalog
 from elt_common.dlt_destinations.pyiceberg.configuration import PyIcebergCatalogCredentials
 from minio import Minio
 import pyarrow as pa
