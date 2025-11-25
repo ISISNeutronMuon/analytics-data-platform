@@ -1,6 +1,5 @@
 """Define tables that look like Opralog tables. They contain only the data we are interested in."""
 
-from collections import namedtuple
 import logging
 
 from sqlalchemy import (
@@ -186,6 +185,16 @@ def insert_downtime_record(
             PrincipalLogbook=logbook_id,
             LogbookChapterNo=chapter_num,
             LogbookId=logbook_id,
+        )
+    )
+
+    # insert a changelog entry
+    session.add(
+        LogbookEntryChanges(
+            ChangedDate=record["EntryTimestamp"],
+            LogbookId=logbook_id,
+            ChangeType="Entry modified",
+            EntryId=next_entry_id,
         )
     )
 

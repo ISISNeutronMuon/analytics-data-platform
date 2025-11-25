@@ -45,6 +45,19 @@ def html_to_markdown(
     yield table
 
 
+def query_adapter_callback(query, table):
+    if table.name in ("entries", "more_entry_columns"):
+        try:
+            import os
+
+            oldest_changed_entry_id = int(os.environ["OLDEST_CHANGED_ENTRY_ID"])
+            return query.where(table.c.entry_id >= oldest_changed_entry_id)
+        except KeyError:
+            pass
+
+    return query
+
+
 @dlt.source()
 def opralogwebdb() -> Generator[DltResource]:
     """Pull the configured tables from the database backing the Opralog application"""
@@ -54,13 +67,19 @@ def opralogwebdb() -> Generator[DltResource]:
         backend="pyarrow",
         backend_kwargs={"tz": "UTC"},
         table_names=[table_info["name"] for table_info in tables],
+        query_adapter_callback=query_adapter_callback,
     )
+
     for table_info in tables:
         table_src_name = table_info["name"]
         resource = getattr(source, table_src_name)
         resource.apply_hints(
-            incremental=dlt.sources.incremental(table_info["incremental_id"])
+            write_disposition=table_info.get("write_disposition", "append"),
         )
+        if "incremental_id" in table_info:
+            resource.apply_hints(
+                incremental=dlt.sources.incremental(table_info["incremental_id"])
+            )
         if "html_to_markdown_columns" in table_info:
             resource = resource | html_to_markdown(
                 column_names=table_info["html_to_markdown_columns"]
@@ -76,5 +95,4 @@ if __name__ == "__main__":
         default_destination="elt_common.dlt_destinations.pyiceberg",
         data_generator=opralogwebdb,
         dataset_name_suffix="opralogweb",
-        default_write_disposition="append",
     )

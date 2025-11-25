@@ -1,13 +1,16 @@
+import datetime as dt
 from pathlib import Path
 import re
 import sys
-from typing import Literal, Sequence, Tuple
+from typing import Any, Literal, Mapping, Sequence, Tuple
 
+import pandas as pd
 from pyiceberg.catalog.rest import RestCatalog
 from pyiceberg.schema import Schema
 from pyiceberg.table import TableProperties
 import pyiceberg.types as pyt
 import pyarrow as pa
+import pyarrow.compute as pc
 import requests
 import sqlalchemy.sql.sqltypes as sqltypes
 from sqlalchemy import (
@@ -18,6 +21,7 @@ from sqlalchemy import (
     Connection,
     Engine,
     MetaData,
+    RowMapping,
     Table,
     URL,
 )
@@ -139,29 +143,101 @@ def sql_to_iceberg_schema(
     return Schema(*fields, identifier_field_ids=identifier_field_ids)
 
 
+def to_destination_schema(
+    src_table: pa.Table, dest_schema: pa.Schema | None = None
+) -> pa.Table:
+    if dest_schema is None:
+        return src_table
+
+    src_schema = src_table.schema
+    src_field_names, dest_field_names = src_schema.names, dest_schema.names
+    assert len(src_field_names) == len(dest_field_names)
+    for index, src_name in enumerate(src_field_names):
+        if pa.types.is_string(src_schema.field(index).type) and pa.types.is_timestamp(
+            dest_schema.field(index).type
+        ):
+            src_table[src_name] = pc.assume_timezone(
+                pc.strptime(
+                    src_table[src_name],
+                    format="%Y-%m-%d %H:%M:%S.%f",
+                    unit="us",  # or "ns" if you prefer
+                ),
+                "UTC",
+            )
+
+    return src_table
+
+
+def str_to_timestamp(ts_str):
+    return pa.scalar(
+        dt.datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S.%f"),
+        pa.timestamp("us", tz="UTC"),
+    )
+
+
+def rows_to_arrow_table(
+    rows: Sequence[RowMapping], dest_schema: pa.Schema | None = None
+) -> pa.Table:
+    """Convert rows as return by sqlalchemy into an arrow Table.
+    If the destination schema is provided then types are coerced
+    """
+
+    # tbl = pa.Table.from_pylist(rows)
+    # if dest_schema is None:
+    #     return tbl
+
+    from pandas._libs import lib
+
+    lib.to_object_array_tuples(rows).T
+
+    # src_schema: pa.Schema = tbl.schema
+    # for col_index, name in enumerate(src_schema.names):
+    #     src_type = src_schema.field(col_index).type
+    #     dest_type = dest_schema.field(col_index).type
+    #     if pa.types.is_string(src_type) and pa.types.is_timestamp(dest_type):
+    #         result = pc.call_function("str_to_timestamp", [tbl[name]])
+    #         new_table = tbl.set_colum(col_index, name, str_to_timestamp(result))
+    #     else:
+    #         new_table = tbl
+
+    # return new_table
+
+    # for row in rows:
+    #     for col, name in enumerate(dest_schema.names):
+    #         dest_type = dest_schema.field(col).type
+    #         value = row[col]
+    #         if isinstance(value, str) and pa.types.is_timestamp(dest_type):
+    #             row[col] = dt.datetime.strptime()
+
+    # # Convert via Pandas to allow proper date/time conversion
+    # df = pd.DataFrame.from_records(rows)  # type: ignore
+    # df.columns = dest_schema.names
+
+    # tbl = pa.Table.from_pandas(df, dest_schema)
+    # return tbl
+
+
 def sql_select_sqlalchemy(
     conn: Connection,
     table_identifier: str,
     columns: Sequence[str] | None = None,
     where: str | None = None,
+    chunk_size: int | None = None,
     return_type: Literal["arrow", "rows"] = "arrow",
     arrow_schema: pa.Schema = None,
 ) -> pa.Table:
     """Query the database and return the results with normalized identifiers"""
     if columns is None:
         columns = ["*"]
-    query = f"select TOP (100) {','.join(columns)} from {table_identifier}"
+    query = f"select {','.join(columns)} from {table_identifier}"
     if where is not None:
         query += f" {where}"
 
-    cursor_result = conn.execute(text(query))
+    cursor = conn.execute(text(query))
     if return_type == "arrow":
-        tbl = pa.Table.from_pylist(cursor_result.mappings().all())
-        if arrow_schema is not None:
-            tbl = pa.Table.from_arrays(tbl.columns, schema=arrow_schema)
-        return tbl
+        yield rows_to_arrow_table(cursor.mappings().all(), arrow_schema)
     elif return_type == "rows":
-        return cursor_result.all()
+        yield cursor.all()
     else:
         raise ValueError(
             f"Unknown return_type '{return_type}'. Allowed values: arrow, rows."
@@ -177,74 +253,82 @@ def extract_and_load(
     where: str | None = None,
 ) -> int:
     iceberg_schema = sql_to_iceberg_schema(db_conn.engine, src_table)
-    src_query_pyarrow = sql_select_sqlalchemy(
-        db_conn,
-        src_table,
-        columns,
-        where,
-        return_type="arrow",
-        arrow_schema=iceberg_schema.as_arrow(),
-    )
-    if catalog.table_exists(dest_table):
-        tbl = catalog.load_table(dest_table)
-    else:
-        tbl = catalog.create_table(
-            dest_table,
-            iceberg_schema,
-            properties={
-                TableProperties.FORMAT_VERSION: TableProperties.DEFAULT_FORMAT_VERSION
-            },
+    num_rows_total = 0
+    src_query_pyarrow = next(
+        sql_select_sqlalchemy(
+            db_conn,
+            src_table,
+            columns,
+            where,
+            return_type="arrow",
+            arrow_schema=iceberg_schema.as_arrow(),
         )
-    tbl.upsert(src_query_pyarrow)
+    )
+    num_rows_total += src_query_pyarrow.num_rows
+    print(f"Query yielded {src_query_pyarrow.num_rows} rows.")
+    # if catalog.table_exists(dest_table):
+    #     tbl = catalog.load_table(dest_table)
+    # else:
+    #     tbl = catalog.create_table(
+    #         dest_table,
+    #         iceberg_schema,
+    #         properties={
+    #             TableProperties.FORMAT_VERSION: TableProperties.DEFAULT_FORMAT_VERSION
+    #         },
+    #     )
+    # tbl.upsert(src_query_pyarrow)
     return src_query_pyarrow.num_rows
 
 
-# db_url = make_db_url(sys.argv[1])
-db_url = (
-    "mssql+pymssql://dataplatform-ingest:Martyn!123@fitgensql1.isis.cclrc.ac.uk:1433"
-)
+db_url = make_db_url(sys.argv[1])
+# db_url = (
+#     "mssql+pymssql://dataplatform-ingest:Martyn!123@fitgensql1.isis.cclrc.ac.uk:1433"
+# )
 print(f"Using source database {db_url}")
 db_engine = create_engine(db_url)
 
 
-client_id, client_secret = "localinfra", "s3cr3t"
-oauth2_server_uri = (
-    "http://localhost:58080/auth/realms/iceberg/protocol/openid-connect/token"
-)
-token_scope = "lakekeeper"
-catalog = RestCatalog(
-    name="playground",
-    warehouse="playground",
-    uri="http://localhost:58080/iceberg/catalog/",
-    credential=f"{client_id}:{client_secret}",
-    **{
-        "oauth2-server-uri": oauth2_server_uri,
-        "scope": token_scope,
-        "token": access_token(oauth2_server_uri, client_id, client_secret, token_scope),
-        "downcast-ns-timestamp-to-us-on-write": True,
-    },
-)
-catalog.create_namespace_if_not_exists(DATASET_NAME)
+# client_id, client_secret = "localinfra", "s3cr3t"
+# oauth2_server_uri = (
+#     "http://localhost:58080/auth/realms/iceberg/protocol/openid-connect/token"
+# )
+# token_scope = "lakekeeper"
+# catalog = RestCatalog(
+#     name="playground",
+#     warehouse="playground",
+#     uri="http://localhost:58080/iceberg/catalog/",
+#     credential=f"{client_id}:{client_secret}",
+#     **{
+#         "oauth2-server-uri": oauth2_server_uri,
+#         "scope": token_scope,
+#         "token": access_token(oauth2_server_uri, client_id, client_secret, token_scope),
+#         "downcast-ns-timestamp-to-us-on-write": True,
+#     },
+# )
+# catalog.create_namespace_if_not_exists(DATASET_NAME)
 
 # examine LogbookEntryChanges for new changes
 last_changeid = None
-dest_logbook_entry_changes = (DATASET_NAME, LOGBOOK_ENTRY_CHANGES_LAST_SEEN)
-if catalog.table_exists(dest_logbook_entry_changes):
-    tbl = catalog.load_table(dest_logbook_entry_changes)
-    df = tbl.scan().to_arrow()
-    last_changeid = df["changeid"][0] if df.num_rows > 0 else None
+# dest_logbook_entry_changes = (DATASET_NAME, LOGBOOK_ENTRY_CHANGES_LAST_SEEN)
+# if catalog.table_exists(dest_logbook_entry_changes):
+#     tbl = catalog.load_table(dest_logbook_entry_changes)
+#     df = tbl.scan().to_arrow()
+#     last_changeid = df["changeid"][0] if df.num_rows > 0 else None
 print(f"Last ChangeId recorded in destination: {last_changeid}")
 
 src_logbook_entry_changes = "LogbookEntryChanges"
 with db_engine.connect() as conn:
-    rows = sql_select_sqlalchemy(
-        conn,
-        src_logbook_entry_changes,
-        ["ChangeId", "EntryId"],
-        where=f"WHERE ChangeId > {last_changeid} AND EntryId IS NOT NULL"
-        if last_changeid is not None
-        else None,
-        return_type="rows",
+    rows = next(
+        sql_select_sqlalchemy(
+            conn,
+            src_logbook_entry_changes,
+            ["ChangeId", "EntryId"],
+            where=f"WHERE ChangeId > {last_changeid} AND EntryId IS NOT NULL"
+            if last_changeid is not None
+            else None,
+            chunk_size=None,
+            return_type="rows",
+        )
     )
 if len(rows) == 0:
     print(
@@ -279,12 +363,12 @@ with db_engine.connect() as conn:
         )
         print(f"Loaded {num_rows_loaded} rows into '{dest_table}'")
 
-# save last change id loaded
-max_change_id_tbl = pa.table({"changeid": [max_change_id]})
-if catalog.table_exists(dest_logbook_entry_changes):
-    tbl = catalog.load_table(dest_logbook_entry_changes)
-else:
-    tbl = catalog.create_table_if_not_exists(
-        dest_logbook_entry_changes, max_change_id_tbl.schema
-    )
-tbl.overwrite(max_change_id_tbl)
+# # save last change id loaded
+# max_change_id_tbl = pa.table({"changeid": [max_change_id]})
+# if catalog.table_exists(dest_logbook_entry_changes):
+#     tbl = catalog.load_table(dest_logbook_entry_changes)
+# else:
+#     tbl = catalog.create_table_if_not_exists(
+#         dest_logbook_entry_changes, max_change_id_tbl.schema
+#     )
+# tbl.overwrite(max_change_id_tbl)

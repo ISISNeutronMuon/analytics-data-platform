@@ -11,4 +11,4 @@ where EntryId = 100 and AdditionalColumnId = 2;
 insert into
    LogbookEntryChanges
 values
-   (4, '2024-11-14 15:06:31.000', 24, 'Entry modified', 100);
+   (101, '2024-11-14 15:06:31.000', 24, 'Entry modified', 100);
