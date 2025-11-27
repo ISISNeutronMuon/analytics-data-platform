@@ -42,7 +42,7 @@ def pyiceberg_adapter(
 
     Examples:
         >>> data = [{"name": "Marcel", "department": "Engineering", "date_hired": "2024-01-30"}]
-        >>> pyiceberg_adapter(data, partition=["department", PartitionTrBuilder.year("date_hired"), PartitionTrBuilder.bucket(8, "name")])
+        >>> pyiceberg_adapter(data, partition=["department", PartitionTrBuilder.year("date_hired")])
         [DltResource with hints applied]
     """
     resource = get_resource_for_adapter(data)

@@ -23,7 +23,7 @@ class pyiceberg(Destination[IcebergClientConfiguration, "PyIcebergClient"]):
         caps.supported_table_formats = ["iceberg"]
         caps.type_mapper = PyIcebergTypeMapper
         caps.has_case_sensitive_identifiers = True
-        # v1 & v2 of Iceberg on support timestamps at microsecond resolution
+        # v1 & v2 of Iceberg only supports timestamps at microsecond resolution
         caps.timestamp_precision = 6
 
         caps.max_identifier_length = 255
