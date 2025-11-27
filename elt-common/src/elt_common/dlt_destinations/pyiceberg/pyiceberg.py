@@ -342,7 +342,7 @@ class PyIcebergClient(JobClientBase, WithStateSync):
                 for field in schema.fields:
                     column = self.type_mapper.from_destination_type(field)
                     column["name"] = field.name
-                    if field.field_id is schema.identifier_field_ids:
+                    if field.field_id in schema.identifier_field_ids:
                         column["primary_key"] = True
                     storage_columns[field.name] = column
 
