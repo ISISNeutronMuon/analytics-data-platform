@@ -25,7 +25,7 @@ def dlt_schema() -> PreparedTableSchema:
         row_id=TColumnSchema(data_type="bigint", nullable=False, primary_key=True),
         entry_name=TColumnSchema(data_type="text", nullable=False),
         entry_timestamp=TColumnSchema(data_type="timestamp", nullable=False),
-        entry_weight=TColumnSchema(data_type="double", nullable=False),
+        entry_weight=TColumnSchema(data_type="double"),
     )
     return PreparedTableSchema(name="table_name", columns=columns)
 
@@ -113,22 +113,24 @@ def test_iceberg_to_dlt_type_raises_type_error_if_type_not_supported():
         pass
 
     with pytest.raises(TypeError):
-        iceberg_to_dlt_type(pyiceberg.types.NestedField(1, "name", NewType()))
+        iceberg_to_dlt_type(pyiceberg.types.NestedField(1, "name", NewType()))  # type: ignore
 
 
 def test_create_iceberg_schema(dlt_schema: PreparedTableSchema):
     iceberg_schema = create_iceberg_schema(dlt_schema)
 
-    assert len(iceberg_schema.fields) == len(dlt_schema.get("columns"))
+    assert len(iceberg_schema.fields) == len(dlt_schema.get("columns"))  # type: ignore
     assert iceberg_schema.identifier_field_ids == [1]
-    expected_types = dict(
-        row_id=pyiceberg.types.LongType,
-        entry_name=pyiceberg.types.StringType,
-        entry_timestamp=pyiceberg.types.TimestamptzType,
-        entry_weight=pyiceberg.types.DoubleType,
+    expected_field_info = dict(
+        row_id=(pyiceberg.types.LongType, True),
+        entry_name=(pyiceberg.types.StringType, True),
+        entry_timestamp=(pyiceberg.types.TimestamptzType, True),
+        entry_weight=(pyiceberg.types.DoubleType, False),
     )
     for field in iceberg_schema.fields:
-        assert isinstance(field.field_type, expected_types[field.name])
+        field_info = expected_field_info[field.name]
+        assert isinstance(field.field_type, field_info[0])
+        assert field.required == field_info[1]
 
 
 def test_create_partition_spec(dlt_schema: PreparedTableSchema):

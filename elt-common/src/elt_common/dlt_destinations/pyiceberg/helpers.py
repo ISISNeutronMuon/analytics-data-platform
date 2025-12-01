@@ -162,7 +162,10 @@ def create_iceberg_schema(dlt_schema: PreparedTableSchema) -> Schema:
         col_id = index + 1
         fields.append(
             NestedField(
-                col_id, col_name, dlt_type_to_iceberg(column), required=not column.get("nullable")
+                col_id,
+                col_name,
+                dlt_type_to_iceberg(column),
+                required=not column.get("nullable", True),
             )
         )
         if column.get("primary_key", False):
