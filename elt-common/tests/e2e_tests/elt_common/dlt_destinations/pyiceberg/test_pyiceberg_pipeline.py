@@ -5,17 +5,15 @@ from typing import Any, Dict, List
 
 import dlt
 from dlt.common.schema.utils import loads_table, pipeline_state_table, version_table
-from dlt.pipeline.exceptions import PipelineStepFailed
-import pendulum
-
-import pytest
-
 from elt_common.dlt_destinations.pyiceberg.helpers import (
     namespace_exists as catalog_namespace_exists,
 )
 from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
     pyiceberg_adapter,
 )
+import pendulum
+import pytest
+
 
 from e2e_tests.conftest import Warehouse
 from e2e_tests.elt_common.dlt_destinations.pyiceberg.utils import (
@@ -319,7 +317,7 @@ def test_expected_datatypes_can_be_loaded(
     )
 
 
-def test_schema_evolution_not_supported(
+def test_schema_evolution_supported(
     warehouse: Warehouse,
     pipelines_dir,
     destination_config: PyIcebergDestinationTestConfiguration,
@@ -332,9 +330,14 @@ def test_schema_evolution_not_supported(
     data_schema_1 = [{"id": 1}]
     pipeline.run(resource_factory(data_schema_1))
     data_schema_2 = [{"id": 2, "new_column": "string value"}]
+    pipeline.run(resource_factory(data_schema_2))
 
-    with pytest.raises(PipelineStepFailed):
-        pipeline.run(resource_factory(data_schema_2))
+    assert_table_has_data(
+        pipeline,
+        f"{pipeline.dataset_name}.data_items",
+        expected_items_count=1 + len(data_schema_2),
+        items=[{"id": 1, "new_column": None}] + data_schema_2,
+    )
 
 
 @pytest.mark.parametrize(
