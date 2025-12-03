@@ -3,7 +3,7 @@
 
 with
 
-staging_entries as ( select * from {{ ref('base_opralogweb__user_entries') }} ),
+staging_entries as ( select * from {{ ref('base_opralogweb__entries') }} ),
 
 staging_chapter_entry as ( select * from {{ ref('base_opralogweb__chapter_entry') }} ),
 

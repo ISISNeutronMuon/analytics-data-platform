@@ -8,9 +8,6 @@ schema = "dbo"
 
 [[sources.sql_database.tables]]
 name = "Entries"
-# Spark seems to have an issue with seeing a table named 'entries' regardless of the namespace it is in
-# so we rename it
-destination_name = "user_entries"
 incremental_id = "EntryId"
 html_to_markdown_columns = ["AdditionalComment"]
 
