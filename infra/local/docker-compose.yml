@@ -8,6 +8,19 @@
 #  - Trino query engine: http://localhost:58088
 #  - Superset BI tool: http://localhost:58080/workspace/playground. Log in with the credentials defined in env-for-testing
 #
+# Login credentials
+# -----------------
+#
+# To login to Keycloak & Lakekeeper use the following credentials:
+#
+#  - Username: iceberguser-1
+#  - Password: icebergpassword
+#
+# To login to Superset use the following credentials:
+#
+#  - Username: adpuser
+#  - Password: adppassword
+#
 # Running scripts on the host
 # ---------------------------
 #
