@@ -18,9 +18,9 @@ from dlt.common.destination.exceptions import (
     DestinationTerminalException,
 )
 from dlt.common.destination.typing import PreparedTableSchema
+from dlt.common.destination.utils import resolve_merge_strategy, resolve_replace_strategy
 from dlt.common.schema import Schema, TColumnSchema, TSchemaTables, TTableSchemaColumns
-from dlt.common.schema.typing import TWriteDisposition
-from dlt.common.storages.exceptions import SchemaStorageException
+from dlt.common.schema.typing import TPartialTableSchema, TWriteDisposition
 from dlt.common.utils import uniq_id
 
 from dlt.common.libs.pyarrow import pyarrow as pa
@@ -31,14 +31,17 @@ from pyiceberg.table import Table as PyIcebergTable
 from elt_common.dlt_destinations.pyiceberg.configuration import (
     IcebergClientConfiguration,
 )
-from elt_common.dlt_destinations.pyiceberg.catalog import (
+from elt_common.dlt_destinations.pyiceberg.helpers import (
     create_catalog,
+    create_iceberg_schema,
+    create_partition_spec,
+    create_sort_order,
     namespace_exists,
     Identifier,
-    PyIcebergCatalog,
+    Catalog as PyIcebergCatalog,
 )
 from elt_common.dlt_destinations.pyiceberg.exceptions import pyiceberg_error
-from elt_common.dlt_destinations.pyiceberg.schema import (
+from elt_common.dlt_destinations.pyiceberg.type_mapping import (
     PyIcebergTypeMapper,
 )
 
@@ -59,7 +62,11 @@ class PyIcebergLoadJob(RunnableLoadJob):
         return self.iceberg_client.iceberg_catalog
 
     def run(self):
-        self.iceberg_client.write_to_table(self.load_table_name, pq.read_table(self._file_path))
+        self.iceberg_client.write_to_table(
+            self.load_table_name,
+            pq.read_table(self._file_path),
+            self._load_table.get("write_disposition"),
+        )
 
 
 class PyIcebergClient(JobClientBase, WithStateSync):
@@ -104,19 +111,26 @@ class PyIcebergClient(JobClientBase, WithStateSync):
         # Now drop namespace
         self.iceberg_catalog.drop_namespace(self.dataset_name)
 
+    def is_dlt_table(self, table_name: str) -> bool:
+        return table_name.startswith(self.schema._dlt_tables_prefix)
+
     def update_stored_schema(
         self,
         only_tables: Iterable[str] = None,
         expected_update: TSchemaTables = None,
     ) -> TSchemaTables | None:
-        applied_update = super().update_stored_schema(only_tables, expected_update)
+        applied_update = {}
         schema_info = self.get_stored_schema_by_hash(self.schema.stored_version_hash)
         if schema_info is None:
             logger.info(
                 f"Schema with hash {self.schema.stored_version_hash} not found in the storage."
                 " upgrading"
             )
-            self.execute_destination_schema_update(only_tables)
+            for table_name in only_tables or self.schema.tables.keys():
+                if table_schema := self.create_or_update_table_schema(table_name):
+                    applied_update[table_name] = table_schema
+
+            self.update_schema_in_version_table()
         else:
             logger.info(
                 f"Schema with hash {self.schema.stored_version_hash} inserted at"
@@ -124,6 +138,25 @@ class PyIcebergClient(JobClientBase, WithStateSync):
             )
 
         return applied_update
+
+    def prepare_load_table(self, table_name: str) -> PreparedTableSchema:
+        table = super().prepare_load_table(table_name)
+        merge_strategy = resolve_merge_strategy(self.schema.tables, table, self.capabilities)
+        if table["write_disposition"] == "merge":
+            if merge_strategy is None:
+                # no supported merge strategies, fall back to append
+                table["write_disposition"] = "append"
+            else:
+                table["x-merge-strategy"] = merge_strategy  # type: ignore[typeddict-unknown-key]
+        if table["write_disposition"] == "replace":
+            replace_strategy = resolve_replace_strategy(
+                table, self.config.replace_strategy, self.capabilities
+            )
+            assert replace_strategy, f"Must be able to get replace strategy for {table_name}"
+            table["x-replace-strategy"] = replace_strategy  # type: ignore[typeddict-unknown-key]
+        if self.is_dlt_table(table["name"]):
+            table.pop("table_format", None)
+        return table
 
     def update_schema_in_version_table(self) -> None:
         """Update the dlt version table with details of the current schema"""
@@ -143,10 +176,9 @@ class PyIcebergClient(JobClientBase, WithStateSync):
 
         data_to_load = pa.Table.from_pylist(
             [{k: v for k, v in zip(version_table_identifiers, values)}],
-            schema=self.type_mapper.create_pyarrow_schema(
-                version_table_dlt_columns.values(),
+            schema=create_iceberg_schema(
                 self.prepare_load_table(self.schema.version_table_name),
-            ),
+            ).as_arrow(),
         )
         write_disposition = self.schema.get_table(self.schema.version_table_name).get(
             "write_disposition"
@@ -179,10 +211,9 @@ class PyIcebergClient(JobClientBase, WithStateSync):
 
         data_to_load = pa.Table.from_pylist(
             [{k: v for k, v in zip(loads_table_identifiers, values)}],
-            schema=self.type_mapper.create_pyarrow_schema(
-                loads_table_dlt_columns.values(),
+            schema=create_iceberg_schema(
                 self.prepare_load_table(self.schema.loads_table_name),
-            ),
+            ).as_arrow(),
         )
 
         self.write_to_table(self.schema.loads_table_name, data_to_load)
@@ -263,31 +294,57 @@ class PyIcebergClient(JobClientBase, WithStateSync):
             return None
 
     # ----- Helpers  -----
-    def execute_destination_schema_update(self, only_tables: Iterable[str]) -> TSchemaTables:
-        """Ensure the schemas of the destination tables match what they are expected to be.
+    @pyiceberg_error
+    def create_or_update_table_schema(self, table_name: str) -> Optional[TPartialTableSchema]:
+        prepared_table = self.prepare_load_table(table_name)
+        # table with empty columns will not be created
+        if not prepared_table["columns"]:
+            return None
 
-        The tables are created if they do not exist or their schemas are evolved if they
-        already exist but the schema is out of date.
+        # Most catalogs purge files as background tasks so if tables of the
+        # same identifier are created/deleted in tight loops, e.g. in tests,
+        # then the same location can produce invalid location errors.
+        # The location_tag can be used to set to unique string to avoid this
+        if self.config.table_location_layout is not None:
+            location = f"{self.config.bucket_url}/" + self.config.table_location_layout.format(  # type: ignore
+                dataset_name=self.dataset_name,
+                table_name=table_name.rstrip("/"),
+                location_tag=uniq_id(6),
+            )
+        else:
+            location = None
 
-        :param only_tables: Only `only_tables` are included, or all if None.
-        :return: A mapping of table name to newly updated schemas.
-        """
-        applied_update: TSchemaTables = {}
-        for table_name, storage_columns in self.get_storage_tables(
-            only_tables or self.schema.tables.keys()
-        ):
-            new_columns = self.compare_table_schemas(table_name, storage_columns)
-            if len(new_columns) > 0:
-                if len(storage_columns) > 0:
-                    # TODO: Implement schema evolution
-                    raise SchemaStorageException(
-                        "pyiceberg destination does not currently support schema evolution."
-                    )
-                table = self.prepare_load_table(table_name)
-                self.execute_destination_schema_create_table(new_columns, table)
+        catalog = self.iceberg_catalog
+        table_id = self.make_qualified_table_name(table_name)
+        required_iceberg_schema = create_iceberg_schema(prepared_table)
+        if catalog.table_exists(table_id):
+            iceberg_table = catalog.load_table(table_id)
+            new_columns = set(prepared_table["columns"].keys()).difference(
+                iceberg_table.schema().column_names
+            )
+            if new_columns:
+                with iceberg_table.update_schema() as update:
+                    update.union_by_name(required_iceberg_schema)
+                prepared_table["columns"] = {
+                    k: v for k, v in prepared_table["columns"].items() if k in new_columns
+                }
+            else:
+                prepared_table = None
 
-        self.update_schema_in_version_table()
-        return applied_update
+        else:
+            partition_spec, sort_order = (
+                create_partition_spec(prepared_table, required_iceberg_schema),
+                create_sort_order(prepared_table, required_iceberg_schema),
+            )
+            self.iceberg_catalog.create_table(
+                table_id,
+                required_iceberg_schema,
+                partition_spec=partition_spec,
+                sort_order=sort_order,
+                location=location,
+            )
+
+        return prepared_table
 
     def get_storage_tables(
         self, table_names: Iterable[str]
@@ -310,14 +367,14 @@ class PyIcebergClient(JobClientBase, WithStateSync):
             if catalog.table_exists(table_id):
                 storage_columns = {}
                 table: PyIcebergTable = catalog.load_table(table_id)
-                schema = table.schema().as_arrow()
-                for name in schema.names:
-                    field = schema.field(name)
-                    storage_columns[name] = {
-                        "name": name,
-                        **self.type_mapper.from_destination_type(field.type, None, None),
-                        "nullable": field.nullable,
-                    }
+                schema = table.schema()
+                for field in schema.fields:
+                    column = self.type_mapper.from_destination_type(field)
+                    column["name"] = field.name
+                    if field.field_id in schema.identifier_field_ids:
+                        column["primary_key"] = True
+                    storage_columns[field.name] = column
+
                 yield table_name, storage_columns
             else:
                 yield table_name, {}
@@ -335,36 +392,6 @@ class PyIcebergClient(JobClientBase, WithStateSync):
         return updates
 
     @pyiceberg_error
-    def execute_destination_schema_create_table(
-        self, columns: Sequence[TColumnSchema], table: PreparedTableSchema
-    ):
-        """Create a new table schema in the catalog given the column schemas"""
-        schema, partition_spec, sort_order = self.type_mapper.create_pyiceberg_schema(
-            columns, table
-        )
-        table_name: str = table["name"]
-        # Most catalogs purge files as background tasks so if tables of the
-        # same identifier are created/deleted in tight loops, e.g. in tests,
-        # then the same location can produce invalid location errors.
-        # The location_tag can be used to set to unique string to avoid this
-        if self.config.table_location_layout is not None:
-            location = f"{self.config.bucket_url}/" + self.config.table_location_layout.format(  # type: ignore
-                dataset_name=self.dataset_name,
-                table_name=table_name.rstrip("/"),
-                location_tag=uniq_id(6),
-            )
-        else:
-            location = None
-
-        self.iceberg_catalog.create_table(
-            self.make_qualified_table_name(table_name),
-            schema,
-            partition_spec=partition_spec,
-            sort_order=sort_order,
-            location=location,
-        )
-
-    @pyiceberg_error
     def write_to_table(
         self,
         table_name: str,
@@ -379,12 +406,28 @@ class PyIcebergClient(JobClientBase, WithStateSync):
         """
         table_identifier = self.make_qualified_table_name(table_name)
         table = self.iceberg_catalog.load_table(table_identifier)
-        if write_disposition in ("append", "skip", "replace"):
+        if write_disposition in ("append", "replace", "skip"):
             # replace will have triggered the tables to be truncated so we can just append
+            # skip is internally used for dlt tables
             table.append(table_data)
+        elif write_disposition == "merge":
+            strategy = self.prepare_load_table(table_name)["x-merge-strategy"]  # type:ignore
+            if strategy == "upsert":
+                # requires the indentifier fields to have been defined
+                table.upsert(
+                    df=table_data,
+                    when_matched_update_all=True,
+                    when_not_matched_insert_all=True,
+                    case_sensitive=True,
+                )
+            else:
+                raise DestinationTerminalException(
+                    f'Merge strategy "{strategy}" is not supported for Iceberg tables. '
+                    f'Table: "{table_name}".'
+                )
         else:
             raise DestinationTerminalException(
-                "Unsupported write disposition {write_disposition} for pyiceberg destination."
+                f"Unsupported write disposition {write_disposition} for pyiceberg destination."
             )
 
     @pyiceberg_error

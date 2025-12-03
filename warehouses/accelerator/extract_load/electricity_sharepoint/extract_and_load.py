@@ -27,7 +27,7 @@ from elt_common.dlt_sources.m365 import (
 )
 from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
     pyiceberg_adapter,
-    pyiceberg_partition,
+    PartitionTrBuilder,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -161,7 +161,7 @@ cli_main(
     pipeline_name=PIPELINE_NAME,
     default_destination="elt_common.dlt_destinations.pyiceberg",
     data_generator=pyiceberg_adapter(
-        rdm_data, partition=pyiceberg_partition.year("date_time")
+        rdm_data, partition=PartitionTrBuilder.year("date_time")
     ),
     dataset_name_suffix=PIPELINE_NAME,
     default_write_disposition="merge",
