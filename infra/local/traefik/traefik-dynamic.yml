@@ -102,11 +102,11 @@ http:
     minioapi:
       loadBalancer:
         servers:
-          - url: "http://minio:9000"
+          - url: "http://minio:59000"
     minioconsole:
       loadBalancer:
         servers:
-          - url: "http://minio:9001"
+          - url: "http://minio:59001"
     lakekeeper:
       loadBalancer:
         servers:
