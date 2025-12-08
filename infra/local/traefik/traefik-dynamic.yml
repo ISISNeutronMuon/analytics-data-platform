@@ -1,42 +1,21 @@
 tls:
   certificates:
-    - certFile: /certs/analytics.localdev.pem
-      keyFile: /certs/analytics.localdev-key.pem
+    - certFile: /certs/localdev.pem
+      keyFile: /certs/localdev-key.pem
 
 http:
   routers:
     #
-    # Https: For login with OAuth using the browser the following services are required on HTTPS
+    # Https: Trino requires https when authentication is enabled
     #
-    keycloak-secure:
-      entryPoints: websecure
-      rule: PathPrefix(`{{ env "KC_HTTP_RELATIVE_PATH" }}`)
-      service: keycloak
-      tls: {}
-
-    lakekeeper-secure:
-      entryPoints: websecure
-      rule: PathPrefix(`/iceberg`)
-      middlewares:
-        - lakekeeper-strip-prefix
-      service: lakekeeper
-      tls: {}
-
     trino:
       entryPoints: trinosecure
       rule: PathPrefix(`/`)
       service: trino
       tls: {}
 
-    superset:
-      entryPoints: websecure
-      rule: PathPrefix(`{{ env "SUPERSET_APP_ROOT" }}`)
-      service: superset
-      tls: {}
-
     #
-    # Http: For easier access from hosts without using certificates we define the following on
-    # insecure entrypoints for use in places its hard to turn of https cert validation.
+    # Http
     #
     keycloak:
       entryPoints: web
@@ -69,12 +48,24 @@ http:
       middlewares:
         - openfga-strip-prefix
 
+    superset:
+      entryPoints: web
+      rule: PathPrefix(`{{ env "SUPERSET_APP_ROOT" }}`)
+      service: superset
+
     traefik:
       entryPoints: web
       rule: PathPrefix(`/internal/traefik`) || HeaderRegexp(`Referer`, `/internal/traefik`)
       service: api@internal
       middlewares:
         - traefik-strip-prefix
+
+    redirecter:
+      entryPoints: redirection
+      rule: PathPrefix(`/`)
+      service: noop@internal
+      middlewares:
+        - redirect-to-localhost
 
   middlewares:
     lakekeeper-strip-prefix:

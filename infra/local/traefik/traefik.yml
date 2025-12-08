@@ -14,13 +14,11 @@ log:
 
 entryPoints:
   web:
-    address: :80
-  websecure:
-    address: :443
+    address: :50080
+  minioapi:
+    address: :59000
   trinosecure:
     address: :8443
-  minioapi:
-    address: :9000
 
 # file configuration backend
 providers:

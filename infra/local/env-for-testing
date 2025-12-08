@@ -3,7 +3,6 @@
 ###############################################################################
 ROUTER_HOSTNAME=localhost
 ROUTER_URL_HTTP=http://$ROUTER_HOSTNAME:50080
-ROUTER_URL_HTTPS=https://$ROUTER_HOSTNAME:50443
 # These details are also present in
 #  - lakekeeper/bootstrap-warehouse.json
 #  - trino/etc/catalog/playground.properties (the name of the file matches the ADP_WORKSPACE_NAME value)
@@ -29,13 +28,11 @@ KC_BOOTSTRAP_ADMIN_USERNAME=admin
 KC_BOOTSTRAP_ADMIN_PASSWORD=admin
 KC_HTTP_RELATIVE_PATH=/auth
 KC_REALM_NAME=analytics-data-platform
-KEYCLOAK_URL_INTERNAL=http://keycloak:8080$KC_HTTP_RELATIVE_PATH
+KEYCLOAK_URL_INTERNAL=http://adp-router:50080$KC_HTTP_RELATIVE_PATH
 KEYCLOAK_URL_EXTERNAL=$ROUTER_URL_HTTP$KC_HTTP_RELATIVE_PATH
 #KEYCLOAK_URL_HTTPS=$ROUTER_URL_HTTPS$KC_HTTP_RELATIVE_PATH
 KEYCLOAK_REALM_INTERNAL=$KEYCLOAK_URL_INTERNAL/realms/$KC_REALM_NAME
 KEYCLOAK_REALM_EXTERNAL=$KEYCLOAK_URL_EXTERNAL/realms/$KC_REALM_NAME
-
-#KEYCLOAK_REALM_HTTPS=$KEYCLOAK_URL_HTTPS/realms/$KC_REALM_NAME
 
 ###############################################################################
 # MinIO
@@ -82,7 +79,7 @@ UV_PROJECT_ENVIRONMENT=/opt/uv-venv
 ###############################################################################
 LAKEKEEPER_URL=http://lakekeeper:8181
 LAKEKEEPER_PROJECT_ID=$ADP_PROJECT_ID
-LAKEKEEPER_TOKEN_ENDPOINT=$KEYCLOAK_REALM/protocol/openid-connect/token
+LAKEKEEPER_TOKEN_ENDPOINT=$KEYCLOAK_REALM_INTERNAL/protocol/openid-connect/token
 LAKEKEEPER_CLIENT_ID=opa
 LAKEKEEPER_CLIENT_SECRET=s3cr3t
 LAKEKEEPER_SCOPE=lakekeeper

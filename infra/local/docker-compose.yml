@@ -91,11 +91,11 @@ services:
       - /bin/sh
       - -c
       - |
-        certfile=/certs/localcert.pem
+        certfile=/certs/localdev.pem
         if [ ! -f "$$certfile" ]; then
           echo "$$certfile not found. Creating new CA and certificate."
           cd /certs || exit 1
-          mkcert -cert-file "$$certfile" -key-file localcert-key.pem localhost 127.0.0.1 ::1
+          mkcert -cert-file "$$certfile" -key-file localdev-key.pem localhost 127.0.0.1 ::1
           cp "$$(mkcert -CAROOT)"/* .
         else
           echo "$$certfile exists, skipping certificate creation."
@@ -106,7 +106,7 @@ services:
     networks: *local-networks
     extra_hosts: *extra-hosts
 
-  traefik:
+  adp-router:
     container_name: local-lakehouse-traefik
     image: *traefik-image
     env_file: *env-file
@@ -118,9 +118,8 @@ services:
       retries: 5
       start_period: 5s
     ports:
-      - "50080:80"
-      - "59000:9000" # MinIO api (match ports)
-      - "50443:443"
+      - "50080:50080"
+      - "59000:59000" # MinIO api
       - "58443:8443" # TLS entrypoint for Trino (cannot run on non-root path prefix or without https with auth enabled)
     volumes:
       - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
@@ -334,7 +333,7 @@ services:
     depends_on:
       lakekeeper-migrate:
         condition: service_completed_successfully
-      traefik:
+      adp-router:
         condition: service_healthy
       keycloak-bootstrap:
         condition: service_completed_successfully
@@ -433,7 +432,7 @@ services:
         condition: service_healthy
       opa:
         condition: service_healthy
-      traefik:
+      adp-router:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-I", "http://localhost:8080/v1/status"]
