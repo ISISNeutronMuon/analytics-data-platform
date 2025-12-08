@@ -46,6 +46,9 @@ class PyIcebergDestinationTestConfiguration:
         os.environ["DESTINATION__PYICEBERG__CREDENTIALS__URI"] = str(
             warehouse.server.catalog_endpoint()
         )
+        os.environ["DESTINATION__PYICEBERG__CREDENTIALS__PROJECT_ID"] = str(
+            warehouse.server.settings.project_id
+        )
         os.environ.setdefault("DESTINATION__PYICEBERG__CREDENTIALS__WAREHOUSE", warehouse.name)
         os.environ.setdefault(
             "DESTINATION__PYICEBERG__CREDENTIALS__OAUTH2_SERVER_URI",

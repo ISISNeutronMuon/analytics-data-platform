@@ -15,6 +15,7 @@ TPyIcebergAccessDelegation: TypeAlias = Literal["vended-credentials", "remote-si
 @configspec(init=False)
 class PyIcebergRestCatalogCredentials(CredentialsConfiguration):
     uri: str = None  # type: ignore
+    project_id: Optional[str] = None
     warehouse: Optional[str] = None
     access_delegation: TPyIcebergAccessDelegation = "vended-credentials"
     oauth2_server_uri: Optional[str] = None  # This is the endpoint to use to retrieve a token
@@ -29,8 +30,9 @@ class PyIcebergRestCatalogCredentials(CredentialsConfiguration):
         properties = {"credential": self.client_credential()} if self.client_id else {}
 
         field_aliases: Dict[str, str] = {
-            "access_delegation": f"{CATALOG_HEADER_PREFIX}X-Iceberg-Access-Delegation",
+            "access_delegation": f"{CATALOG_HEADER_PREFIX}x-iceberg-access-delegation",
             "oauth2_server_uri": "oauth2-server-uri",
+            "project_id": f"{CATALOG_HEADER_PREFIX}x-project-id",
         }
         skip_fields = ("client_id", "client_secret")
         properties.update(
