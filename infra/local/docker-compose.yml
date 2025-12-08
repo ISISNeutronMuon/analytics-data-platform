@@ -1,39 +1,4 @@
 # A development stack to emulate the Lakehouse. This is intended for local development only.
-#
-# One-time configuration
-# ----------------------
-#
-# An additional entry in `/etc/hosts` on the host machine is required:
-#
-# 127.0.0.1    adp-router
-#
-# Some tools, such as PyIceberg and Superset in the browser, need to access services both outside
-# and inside the container network. The `adp-router` service is a Traefik instance that routes
-# traffic to match the url layout of the production deployment. By defining the above /etc/hosts
-# entry a request will hit the router regardless of whether it is inside or outside of the container
-# network.
-
-# Service routes:
-#
-#  - Keycloak identity provider: http://localhost:50080/auth
-#  - Lakekeeper iceberg catalog UI: http://localhost:50080/ui. Log in with the credentials listed in keycloak/README
-#  - Trino endpoint: https://localhost:58443 (note the https as this is required by Trino. You may need to use an "--insecure" flag)
-#  - Superset BI tool: http://localhost:50080/workspace/playground. Log in with the credentials defined in env-for-testing
-#
-# To test ELT scripts based on the Python package `dlt`, create and add the following to
-# `$HOME/.dlt/secrets.toml`:
-#
-# [destination.pyiceberg]
-# bucket_url = "s3://playground"
-#
-# [destination.pyiceberg.credentials]
-# uri = "http://localhost:50080/iceberg/catalog"
-# warehouse = "playground"
-# oauth2_server_uri = "http://localhost:50080/auth/realms/analytics-data-platform/protocol/openid-connect/token"
-# client_id = "machine-infra"
-# client_secret = "s3cr3t"
-# scope = "lakekeeper"
-#
 
 # image versions
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3

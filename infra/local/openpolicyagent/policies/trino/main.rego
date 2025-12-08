@@ -49,3 +49,5 @@ batch contains i if {
     ]
     allow with input.action.resource as new_resources[i]
 }
+
+allow = true
