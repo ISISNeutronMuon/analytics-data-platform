@@ -76,25 +76,25 @@ class Settings(BaseSettings):
     # The default values assume the docker-compose.yml in the infra/local has been used.
     # These are provided for the convenience of easily running a debugger without having
     # to set up remote debugging
-    host_netloc: str = "localhost:58080"
+    host_netloc: str = "localhost:50080"
     docker_netloc: str = "traefik"
-    s3_access_key: str = "adpuser"
+    s3_access_key: str = "adpsuperuser"
     s3_secret_key: str = "adppassword"
     s3_bucket: str = "e2e-tests-warehouse"
-    s3_endpoint: str = "http://minio:59000"
+    s3_endpoint: str = "http://adp-router:59000"
     s3_region: str = "local-01"
     s3_path_style_access: bool = True
-    openid_client_id: str = "localinfra"
+    openid_client_id: str = "machine-infra"
     openid_client_secret: str = "s3cr3t"
     openid_scope: str = "lakekeeper"
     warehouse_name: str = "e2e_tests"
 
     # trino
-    trino_http_scheme: str = "http"
+    trino_http_scheme: str = "https"
     trino_host: str = "localhost"
-    trino_port: str = "58088"
-    trino_user: str = "trino"
-    trino_password: str = ""
+    trino_port: str = "58443"
+    trino_user: str = "superset"
+    trino_password: str = "adppassword"
 
     @property
     def lakekeeper_url(self) -> Endpoint:
@@ -102,7 +102,9 @@ class Settings(BaseSettings):
 
     @property
     def openid_provider_uri(self) -> Endpoint:
-        return Endpoint(f"http://{self.host_netloc}/auth/realms/iceberg", self.docker_netloc)
+        return Endpoint(
+            f"http://{self.host_netloc}/auth/realms/analytics-data-platform", self.docker_netloc
+        )
 
     def storage_config(self) -> Dict[str, Any]:
         return {
