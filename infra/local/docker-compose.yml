@@ -1,30 +1,24 @@
 # A development stack to emulate the Lakehouse. This is intended for local development only.
 #
-# Hostname
-# --------
+# One-time configuration
+# ----------------------
 #
-# An additional entry in host `/etc/hosts` is required:
+# An additional entry in `/etc/hosts` on the host machine is required:
 #
-# 127.0.0.1    analytics.localdev
+# 127.0.0.1    adp-router
 #
-# Tools such as pyiceberg connect to Lakekeeper, retrieve the address of the S3 storage endpoint
-# and communicate directly with it via the 'storage-profile.endpoint' defined in
-# infra/local/lakekeeper/bootstrap-warehouse.json. The additional /etc/hosts entry combined with
-# the extra_hosts definition below allows the same address to work from the host or inside the container
-# network. MinIO runs on port 59000 through the Traefik router for the same reason.
+# Some tools, such as PyIceberg and Superset in the browser, need to access services both outside
+# and inside the container network. The `adp-router` service is a Traefik instance that routes
+# traffic to match the url layout of the production deployment. By defining the above /etc/hosts
+# entry a request will hit the router regardless of whether it is inside or outside of the container
+# network.
 
-# Insecure web traffic runs on port 50080 to avoid clashing with other local applications. Allowing
-# insecure access to the catalog helps with running tools on the host where disabling the ssl validation
-# is tricky, e.g. inside pyiceberg.
+# Service routes:
 #
-#
-# Service routes (you'll have to accept the self-signed certificate warning):
-#
-#  - Keycloak identity provider: http://analytics.localdev:50080/auth
-#  - Lakekeeper iceberg catalog UI: http://analytics.localdev:50080/ui. Log in with the credentials listed in keycloak/README
-#  - Trino endpoint: https://analytics.localdev:58443
-#  - Superset BI tool: http://analytics.localdev:50080/workspace/playground. Log in with the credentials defined in env-for-testing
-#
+#  - Keycloak identity provider: http://localhost:50080/auth
+#  - Lakekeeper iceberg catalog UI: http://localhost:50080/ui. Log in with the credentials listed in keycloak/README
+#  - Trino endpoint: https://localhost:58443 (note the https as this is required by Trino. You may need to use an "--insecure" flag)
+#  - Superset BI tool: http://localhost:50080/workspace/playground. Log in with the credentials defined in env-for-testing
 #
 # To test ELT scripts based on the Python package `dlt`, create and add the following to
 # `$HOME/.dlt/secrets.toml`:
@@ -33,8 +27,12 @@
 # bucket_url = "s3://playground"
 #
 # [destination.pyiceberg.credentials]
-# uri = "http://analytics.localdev:50080/iceberg"
+# uri = "http://localhost:50080/iceberg/catalog"
 # warehouse = "playground"
+# oauth2_server_uri = "http://localhost:50080/auth/realms/analytics-data-platform/protocol/openid-connect/token"
+# client_id = "machine-infra"
+# client_secret = "s3cr3t"
+# scope = "lakekeeper"
 #
 
 # image versions
@@ -57,8 +55,6 @@ x-env-file: &env-file
 # network
 x-networks: &local-networks
   - local-lakehouse_net
-x-extra-hosts: &extra-hosts
-  - "DELETEME:host-gateway"
 
 # certs
 x-mkcert-depends: &mkcert-depends
@@ -104,7 +100,6 @@ services:
     volumes:
       - *certs-volume
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   adp-router:
     container_name: local-lakehouse-traefik
@@ -126,7 +121,6 @@ services:
       - "./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
       - *certs-volume
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   #########################################################
   # Database shared by all services
@@ -147,7 +141,6 @@ services:
     volumes:
       - "shared_database_data:/var/lib/postgresql/data"
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   shared-database-bootstrap:
     container_name: local-lakehouse-shared-database-bootstrap
@@ -176,7 +169,6 @@ services:
         create_db_if_not_exists $$SHARED_DB__SUPERSET_DB_NAME
         rename_schema $$SUPERSET_DB_NAME public $$SUPERSET_DB_SCHEMA_NAME
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   #########################################################
   # Keycloak identity provider
@@ -211,7 +203,6 @@ services:
         "--log-level=INFO",
       ]
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   keycloak-bootstrap:
     container_name: local-lakehouse-keycloak-bootstrap
@@ -230,7 +221,6 @@ services:
       keycloak:
         condition: service_healthy
     networks: *local-networks
-    extra_hosts: *extra-hosts
     volumes:
       - "./keycloak/bootstrap.sh:/opt/keycloak/bootstrap.sh:ro"
 
@@ -259,7 +249,6 @@ services:
       - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
       - "minio_data:/data"
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   minio-bootstrap:
     container_name: local-lakehouse-minio-bootstrap
@@ -281,7 +270,6 @@ services:
           echo "Found bucket $${MINIO_BUCKET_NAME}"
         fi
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   #########################################################
   # OpenFGA - Permissioning
@@ -295,7 +283,6 @@ services:
       shared-database-bootstrap:
         condition: service_completed_successfully
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   openfga:
     container_name: local-lakehouse-openfga
@@ -311,7 +298,6 @@ services:
       interval: 10s
       timeout: 30s
       retries: 3
-    extra_hosts: *extra-hosts
 
   #########################################################
   # Lakekeeper - Iceberg REST catalog
@@ -344,7 +330,6 @@ services:
     volumes:
       - *certs-volume
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   lakekeeper-migrate:
     container_name: local-lakehouse-lakekeeper-migrate
@@ -358,7 +343,6 @@ services:
       openfga:
         condition: service_healthy
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   lakekeeper-bootstrap:
     container_name: local-lakehouse-lakekeeper-bootstrap
@@ -390,7 +374,6 @@ services:
       - "./lakekeeper/bootstrap-warehouse.json:/opt/work/bootstrap-warehouse.json:ro"
       - *certs-volume
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   #########################################################
   # Trino query engine
@@ -421,7 +404,6 @@ services:
       - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
       - ./openpolicyagent/policies:/policies
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   trino:
     container_name: local-lakehouse-trino
@@ -444,7 +426,6 @@ services:
       - "./trino/etc:/etc/trino:ro"
       - *certs-volume
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   #########################################################
   # Superset BI tool
@@ -460,7 +441,6 @@ services:
     volumes:
       - shared_redis_data:/data
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   superset-app:
     profiles:
@@ -477,7 +457,6 @@ services:
         condition: service_completed_successfully
     volumes: *superset-volumes
     networks: *local-networks
-    extra_hosts: *extra-hosts
 
   superset-init:
     profiles:
@@ -493,7 +472,6 @@ services:
     user: *superset-user
     volumes: *superset-volumes
     networks: *local-networks
-    extra_hosts: *extra-hosts
     healthcheck:
       disable: true
 
@@ -512,7 +490,6 @@ services:
     user: *superset-user
     volumes: *superset-volumes
     networks: *local-networks
-    extra_hosts: *extra-hosts
     healthcheck:
       test:
         [
@@ -536,7 +513,6 @@ services:
     user: *superset-user
     volumes: *superset-volumes
     networks: *local-networks
-    extra_hosts: *extra-hosts
     healthcheck:
       disable: true
 
