@@ -13,6 +13,12 @@ reviews:
     auto_incremental_review: false
     drafts: false
   sequence_diagrams: false
+  estimate_code_review_effort: false
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
   tools:
     gitleaks:
       enabled: true

@@ -6,6 +6,7 @@ from authlib.integrations.httpx_client import OAuth2Client
 from fsspec import AbstractFileSystem
 from dlt.common.configuration.specs import configspec
 from dlt.common.typing import TSecretStrValue
+from dlt.common.storages.fsspec_filesystem import FileItemDict
 from httpx import Response
 from httpx import HTTPStatusError, NetworkError, TimeoutException
 import tenacity
@@ -236,3 +237,13 @@ class M365DriveFS(AbstractFileSystem):
     @tenacity.retry(**_RETRY_ARGS)
     def _msgraph_request(self, method: str, url: str, **kwargs) -> Response:
         return self.client.request(method, url, **kwargs)
+
+
+class M365DriveItem(FileItemDict):
+    """Specialises FileItemDict to add 'fetch_bytes' to bypass complicated file reading/caching in
+    'read_bytes' and just download the file content"""
+
+    @tenacity.retry(**_RETRY_ARGS)
+    def read_bytes(self) -> bytes:
+        drive_fs = cast(M365DriveFS, self.fsspec)
+        return drive_fs.fetch_all(self["file_url"])

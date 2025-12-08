@@ -16,7 +16,7 @@ from dlt.common.configuration.providers import (
 )
 from dlt.common.runtime.run_context import RunContext
 
-from elt_common.dlt_destinations.pyiceberg.catalog import create_catalog
+from elt_common.dlt_destinations.pyiceberg.helpers import create_catalog
 from elt_common.dlt_destinations.pyiceberg.configuration import PyIcebergCatalogCredentials
 from minio import Minio
 import pyarrow as pa
@@ -341,14 +341,14 @@ def warehouse(server: Server, project: uuid.UUID) -> Generator:
     # Ensure bucket exists
     s3_hostname = urllib.parse.urlparse(storage_config["storage-profile"]["endpoint"]).netloc
     minio_client = Minio(
-        s3_hostname,
+        endpoint=s3_hostname,
         access_key=storage_config["storage-credential"]["aws-access-key-id"],
         secret_key=storage_config["storage-credential"]["aws-secret-access-key"],
         secure=False,
     )
     bucket_name = storage_config["storage-profile"]["bucket"]
-    if not minio_client.bucket_exists(bucket_name):
-        minio_client.make_bucket(bucket_name)
+    if not minio_client.bucket_exists(bucket_name=bucket_name):
+        minio_client.make_bucket(bucket_name=bucket_name)
         print(f"Bucket {bucket_name} created.")
 
     warehouse = server.create_warehouse(settings.warehouse_name, project, storage_config)
@@ -359,7 +359,7 @@ def warehouse(server: Server, project: uuid.UUID) -> Generator:
 
         @tenacity.retry(**_RETRY_ARGS)
         def _remove_bucket(bucket_name):
-            minio_client.remove_bucket(bucket_name)
+            minio_client.remove_bucket(bucket_name=bucket_name)
 
         try:
             server.purge_warehouse(warehouse)
