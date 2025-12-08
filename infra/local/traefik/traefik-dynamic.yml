@@ -60,13 +60,6 @@ http:
       middlewares:
         - traefik-strip-prefix
 
-    redirecter:
-      entryPoints: redirection
-      rule: PathPrefix(`/`)
-      service: noop@internal
-      middlewares:
-        - redirect-to-localhost
-
   middlewares:
     lakekeeper-strip-prefix:
       stripPrefix:

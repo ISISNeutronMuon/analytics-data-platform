@@ -9,7 +9,7 @@ api:
 ping: {}
 
 log:
-  level: DEBUG
+  level: ERROR
   noColor: true
 
 entryPoints:
