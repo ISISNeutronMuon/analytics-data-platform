@@ -92,7 +92,7 @@ class Settings(BaseSettings):
     # trino
     trino_http_scheme: str = "http"
     trino_host: str = "localhost"
-    trino_port: str = "58088"
+    trino_port: str = "59088"
     trino_user: str = "trino"
     trino_password: str = ""
 

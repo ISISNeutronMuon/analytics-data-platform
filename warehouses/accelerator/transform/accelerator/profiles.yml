@@ -9,7 +9,7 @@ trino_catalog:
       password: "{{ env_var('DBT_TRINO_PASSWORD', '') }}"
       http_scheme: "{{ env_var('DBT_TRINO_HTTP_SCHEME', 'http') }}"
       host: "{{ env_var('DBT_TRINO_HOST', 'analytics.localhost') }}"
-      port: "{{ env_var('DBT_TRINO_PORT', '58088') | int }}"
+      port: "{{ env_var('DBT_TRINO_PORT', '59088') | int }}"
       database: "{{ env_var('DBT_TRINO_CATALOG', 'accelerator') }}"
       schema: "{{ env_var('DBT_TRINO_CATALOG_SCHEMA_PREFIX', 'dev_') }}analytics"
       threads: "{{ env_var('DBT_TRINO_THREADS', '8') | int }}"

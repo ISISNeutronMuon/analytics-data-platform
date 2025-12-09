@@ -117,10 +117,11 @@ def extract_content_and_read(
                     df = read_power_consumption_excel(io.BytesIO(file_bytes), skip_rows)
                 case _:
                     raise RuntimeError(f"Unsupported file extension in '{file_name}'")
-        except pd.errors.EmptyDataError as exc:
-            raise RuntimeError(
-                f"'{file_name} ({len(file_bytes)} bytes)': {str(exc)}"
-            ) from exc
+        except Exception as exc:
+            LOGGER.error(
+                f"'Error loading {file_name} ({len(file_bytes)} bytes)'. File skipped.\nDetails: {str(exc)}"
+            )
+            return None
 
         df["file_name"] = file_obj["file_name"]
         return df
@@ -140,7 +141,7 @@ def extract_content_and_read(
     yield df_batch
 
 
-@dlt.resource(merge_key="file_name")
+@dlt.resource(merge_key="DateTime", columns={"DateTime": {"nullable": False}})
 def rdm_data(
     datetime_cur=dlt.sources.incremental(
         "DateTime",

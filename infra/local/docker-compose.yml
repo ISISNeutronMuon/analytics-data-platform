@@ -5,7 +5,7 @@
 #
 #  - Keycloak identity provider: http://localhost:58080/auth
 #  - Lakekeeper iceberg catalog UI: http://localhost:58080/iceberg/ui. Log in with the credentials listed in keycloak/README
-#  - Trino query engine: http://localhost:58088
+#  - Trino query engine: http://localhost:59088
 #  - Superset BI tool: http://localhost:58080/workspace/playground. Log in with the credentials defined in env-for-testing
 #
 # Login credentials
@@ -97,7 +97,7 @@ services:
       start_period: 5s
     ports:
       - "58080:80"
-      - "58088:8088" # Trino won't allow itself to be deployed on a prefix path
+      - "59088:8088" # Trino won't allow itself to be deployed on a prefix path
     volumes:
       - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
       - "./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"

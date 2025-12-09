@@ -33,9 +33,19 @@ def pipeline_name(frame: FrameType | None):
     return frame.f_code.co_name if frame is not None else "pipeline_name_frame_none"
 
 
-def resource_factory(data: List[Dict[str, Any]] | None = None, primary_key: str | None = "id"):
+def resource_factory(
+    data: List[Dict[str, Any]] | None = None,
+    primary_key: str | None = "id",
+    merge_key: str | None = None,
+):
+    kwargs = {}
     if primary_key is not None:
-        decorator = dlt.resource(primary_key=primary_key)
+        kwargs["primary_key"] = primary_key
+    if merge_key is not None:
+        kwargs["merge_key"] = merge_key
+
+    if kwargs:
+        decorator = dlt.resource(**kwargs)
     else:
         decorator = dlt.resource
 
@@ -168,7 +178,64 @@ def test_explicit_replace(
     )
 
 
+@pytest.mark.parametrize(
+    "identifier_keys",
+    [
+        {"primary_key": "id", "merge_key": None},
+        {"primary_key": None, "merge_key": "id"},
+    ],
+)
 def test_explicit_merge_updates_expected_values(
+    warehouse: Warehouse,
+    pipelines_dir,
+    destination_config: PyIcebergDestinationTestConfiguration,
+    identifier_keys: dict,
+) -> None:
+    num_records_first_run = 1000
+    data = [
+        {
+            "id": i + 1,
+            "category": "A",
+        }
+        for i in range(num_records_first_run)
+    ]
+    pipeline = destination_config.setup_pipeline(
+        warehouse,
+        pipeline_name(inspect.currentframe()),
+        pipelines_dir=pipelines_dir,
+    )
+    # first run
+    pipeline.run(resource_factory(data, **identifier_keys))
+    assert_table_has_data(
+        pipeline,
+        f"{pipeline.dataset_name}.data_items",
+        expected_items_count=len(data),
+        items=data,
+    )
+
+    id_updated_start, num_records_upserted = 501, 2000
+    # run again and see we update existing records and added new ones
+    data_updated = [
+        {
+            "id": id_updated_start + i,
+            "category": "B",
+        }
+        for i in range(num_records_upserted)
+    ]
+    pipeline.run(resource_factory(data_updated, **identifier_keys), write_disposition="merge")
+    expected_data = [
+        {"id": i + 1, "category": "A" if i + 1 < id_updated_start else "B"}
+        for i in range(num_records_first_run + num_records_upserted - id_updated_start + 1)
+    ]
+    assert_table_has_data(
+        pipeline,
+        f"{pipeline.dataset_name}.data_items",
+        expected_items_count=len(expected_data),
+        items=expected_data,
+    )
+
+
+def test_merge_without_primary_or_merge_key_raises_error(
     warehouse: Warehouse,
     pipelines_dir,
     destination_config: PyIcebergDestinationTestConfiguration,
@@ -186,35 +253,8 @@ def test_explicit_merge_updates_expected_values(
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
-    # first run
-    pipeline.run(resource_factory(data, primary_key="id"))
-    assert_table_has_data(
-        pipeline,
-        f"{pipeline.dataset_name}.data_items",
-        expected_items_count=len(data),
-        items=data,
-    )
-
-    id_updated_start, num_records_upserted = 501, 2000
-    # run again and see we update existing records and added new ones
-    data_updated = [
-        {
-            "id": id_updated_start + i,
-            "category": "B",
-        }
-        for i in range(num_records_upserted)
-    ]
-    pipeline.run(resource_factory(data_updated, primary_key="id"), write_disposition="merge")
-    expected_data = [
-        {"id": i + 1, "category": "A" if i + 1 < id_updated_start else "B"}
-        for i in range(num_records_first_run + num_records_upserted - id_updated_start + 1)
-    ]
-    assert_table_has_data(
-        pipeline,
-        f"{pipeline.dataset_name}.data_items",
-        expected_items_count=len(expected_data),
-        items=expected_data,
-    )
+    with pytest.raises(Exception):
+        pipeline.run(resource_factory(data, primary_key=None), write_disposition="merge")
 
 
 @pytest.mark.parametrize("merge_strategy", ["delete-insert", "scd2"])
