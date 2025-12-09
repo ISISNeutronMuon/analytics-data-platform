@@ -422,19 +422,13 @@ class PyIcebergClient(JobClientBase, WithStateSync):
             # provide merge key columns if no identifier-field-ids exist to mark the primary key columns
             strategy = dlt_schema["x-merge-strategy"]  # type:ignore
             if strategy == "upsert":
-                # requires the indentifier fields to have been defined
-                try:
-                    table.upsert(
-                        df=table_data,
-                        join_cols=join_columns,
-                        when_matched_update_all=True,
-                        when_not_matched_insert_all=True,
-                        case_sensitive=True,
-                    )
-                except ValueError as exc:
-                    logger.info(f"----- Existing data ------\n{table.scan().to_arrow()}")
-                    logger.info(f"----- New data ------\n{table_data}")
-                    raise exc
+                table.upsert(
+                    df=table_data,
+                    join_cols=join_columns,
+                    when_matched_update_all=True,
+                    when_not_matched_insert_all=True,
+                    case_sensitive=True,
+                )
             else:
                 raise DestinationTerminalException(
                     f'Merge strategy "{strategy}" is not supported for Iceberg tables. '

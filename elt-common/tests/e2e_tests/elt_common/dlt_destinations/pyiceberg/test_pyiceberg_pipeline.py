@@ -34,7 +34,9 @@ def pipeline_name(frame: FrameType | None):
 
 
 def resource_factory(
-    data: List[Dict[str, Any]] | None = None, primary_key: str | None = "id", merge_key=None
+    data: List[Dict[str, Any]] | None = None,
+    primary_key: str | None = "id",
+    merge_key: str | None = None,
 ):
     kwargs = {}
     if primary_key is not None:
