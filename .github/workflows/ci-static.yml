@@ -10,7 +10,7 @@ on:
 jobs:
   staticcheck:
     name: static checks
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
