@@ -4,6 +4,7 @@
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
 x-openfga-image: &openfga-image openfga/openfga:v1.8
 x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.10.0
+x-marimo-image: &marimo-image ghcr.io/marimo-team/marimo:0.16.4-sql
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
 x-minio-mc-image: &minio-mc-image quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
 x-postgres-image: &postgres-image postgres:16.9-bookworm
@@ -477,6 +478,25 @@ services:
         condition: service_healthy
     user: *superset-user
     volumes: *superset-volumes
+    networks: *local-networks
+    healthcheck:
+      disable: true
+
+  #########################################################
+  # Marimo Notebook server
+  #########################################################
+  marimo:
+    image: *marimo-image
+    command:
+      - marimo
+      - edit
+      - --no-token
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8080"
+      - --base-url
+      - /marimo
     networks: *local-networks
     healthcheck:
       disable: true

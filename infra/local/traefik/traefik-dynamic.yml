@@ -29,6 +29,13 @@ http:
         - lakekeeper-strip-prefix
       service: lakekeeper
 
+    marimo:
+      entryPoints: web
+      rule: PathPrefix(`{{ env "MARIMO_APP_ROOT" }}`)
+      #      middlewares:
+      #        - marimo-strip-prefix
+      service: marimo
+
     minioapi:
       entryPoints: minioapi
       rule: PathPrefix(`/`)
@@ -65,6 +72,10 @@ http:
       stripPrefix:
         prefixes:
           - "/iceberg"
+    marimo-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/marimo"
     minioconsole-strip-prefix:
       stripPrefix:
         prefixes:
@@ -83,6 +94,14 @@ http:
       loadBalancer:
         servers:
           - url: "http://keycloak:8080"
+    lakekeeper:
+      loadBalancer:
+        servers:
+          - url: "http://lakekeeper:8181"
+    marimo:
+      loadBalancer:
+        servers:
+          - url: "http://marimo:8080"
     minioapi:
       loadBalancer:
         servers:
@@ -91,10 +110,6 @@ http:
       loadBalancer:
         servers:
           - url: "http://minio:59001"
-    lakekeeper:
-      loadBalancer:
-        servers:
-          - url: "http://lakekeeper:8181"
     openfga:
       loadBalancer:
         servers:
