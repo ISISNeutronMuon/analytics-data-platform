@@ -125,7 +125,12 @@ SUPERSET_LOG_LEVEL=info
 SUPERSET_ENV=development
 SUPERSET_PORT=8088
 # Needs to match traefik rule in traefik-dynamic.yml
-SUPERSET_APP_ROOT=/workspace/$SUPERSET_DB_SCHEMA_NAME
+SUPERSET_APP_ROOT=/workspace/$ADP_WORKSPACE_NAME
 
 # Make sure you set this to a unique secure random value on production
 SUPERSET_SECRET_KEY=0123456789
+
+###############################################################################
+# Marimo
+###############################################################################
+MARIMO_APP_ROOT=/marimo
