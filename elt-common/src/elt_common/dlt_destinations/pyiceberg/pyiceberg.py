@@ -411,15 +411,30 @@ class PyIcebergClient(JobClientBase, WithStateSync):
             # skip is internally used for dlt tables
             table.append(table_data)
         elif write_disposition == "merge":
-            strategy = self.prepare_load_table(table_name)["x-merge-strategy"]  # type:ignore
+            dlt_schema = self.prepare_load_table(table_name)
+            join_columns = None
+            if not table.schema().identifier_field_ids:
+                join_columns = [
+                    name
+                    for name, column in dlt_schema["columns"].items()
+                    if column.get("merge_key", False)
+                ]
+            # provide merge key columns if no identifier-field-ids exist to mark the primary key columns
+            strategy = dlt_schema["x-merge-strategy"]  # type:ignore
             if strategy == "upsert":
                 # requires the indentifier fields to have been defined
-                table.upsert(
-                    df=table_data,
-                    when_matched_update_all=True,
-                    when_not_matched_insert_all=True,
-                    case_sensitive=True,
-                )
+                try:
+                    table.upsert(
+                        df=table_data,
+                        join_cols=join_columns,
+                        when_matched_update_all=True,
+                        when_not_matched_insert_all=True,
+                        case_sensitive=True,
+                    )
+                except ValueError as exc:
+                    logger.info(f"----- Existing data ------\n{table.scan().to_arrow()}")
+                    logger.info(f"----- New data ------\n{table_data}")
+                    raise exc
             else:
                 raise DestinationTerminalException(
                     f'Merge strategy "{strategy}" is not supported for Iceberg tables. '
