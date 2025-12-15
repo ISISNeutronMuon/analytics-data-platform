@@ -15,7 +15,6 @@ env:
   REGISTRY: ghcr.io
   ORG_NAME: isisneutronmuon
   IMAGE_NAME: analytics-data-platform-superset
-  FQ_IMAGE_NAME: ${{ env.REGISTRY }}/${{ env.ORG_NAME }}/${{ env.IMAGE_NAME }}
   PUBLISH: false
 
 jobs:
@@ -42,14 +41,14 @@ jobs:
           context: infra/container-images/${{ env.IMAGE_NAME }}
           push: ${{ env.PUBLISH }}
           tags: |
-            ${{ FQ_IMAGE_NAME }}:${{ github.sha }}
-            ${{ FQ_IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.ORG_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.ORG_NAME }}/${{ env.IMAGE_NAME }}:latest
 
       # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built.
       # See [Using artifact attestations to establish provenance for builds](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
         with:
-          subject-name: ${{ FQ_IMAGE_NAME }}
+          subject-name: ${{ env.REGISTRY }}/${{ env.ORG_NAME }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: ${{ env.PUBLISH }}
