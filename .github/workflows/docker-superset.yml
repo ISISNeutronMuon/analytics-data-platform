@@ -20,7 +20,7 @@ env:
   REGISTRY: ghcr.io
   ORG_NAME: isisneutronmuon
   IMAGE_NAME: analytics-data-platform-superset
-  PUBLISH: false
+  PUBLISH: ${{ github.ref == 'refs/heads/main' && true || false }}
 
 jobs:
   build-and-push-image:
