@@ -328,10 +328,10 @@ class CredentialsParamType(click.ParamType):
     help="Human users assigned as server/project admin for UI access. Value should be username. Options can be provided multiple times.",
 )
 @click.option(
-    "--server-operator",
+    "--additional-user",
     type=CredentialsParamType(),
     multiple=True,
-    help="Credentials for an operator/machine user. Registers the user and sets them as server operators.",
+    help="Credentials for an additional user. Registers them but does not set permissions.",
 )
 @click.option("--warehouse-json-file", help="JSON file for creating a warehouse")
 @click.option("-l", "--log-level", default="INFO", show_default=True)
@@ -344,7 +344,7 @@ def main(
     bootstrap_credentials: Credential | None,
     token_scope: str | None,
     server_admin: Sequence[str] | None,
-    server_operator: Sequence[Credential] | None,
+    additional_user: Sequence[Credential] | None,
     warehouse_json_file: str | None,
     log_level: str,
 ):
@@ -402,23 +402,13 @@ def main(
             entities={"server": ["admin"], f"project/{project_id}": ["project_admin"]},
         )
 
-    if server_operator is not None and identity_provider is not None:
-        for operator in server_operator:
+    if additional_user is not None and identity_provider is not None:
+        for user in additional_user:
             server.provision_user(
                 identity_provider.request_access_token(
-                    operator.client_id, operator.client_secret, token_scope
+                    user.client_id, user.client_secret, token_scope
                 )
             )
-        # server.assign_permissions(
-        #     identity_provider.oidc_ids(
-        #         map(
-        #             lambda x: f"{KEYCLOAK_MACHINE_USER_PREFIX}{x.client_id}",
-        #             server_operator,
-        #         ),
-        #         access_token,
-        #     ),
-        #     entities={"server": ["operator"]},
-        # )
 
     if warehouse_json_file is not None:
         LOGGER.debug(f"Creating warehouse using file: {warehouse_json_file}")

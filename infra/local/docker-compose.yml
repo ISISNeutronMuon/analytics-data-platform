@@ -324,7 +324,7 @@ services:
         --bootstrap-credentials "machine-infra:s3cr3t"
         --token-scope lakekeeper
         --server-admin "$$ADP_SUPERUSER"
-        --server-operator trino:s3cr3t
+        --additional-user trino:s3cr3t
         --log-level=DEBUG
         --warehouse-json-file "/opt/work/bootstrap-warehouse.json"
         "http://lakekeeper:8181"
