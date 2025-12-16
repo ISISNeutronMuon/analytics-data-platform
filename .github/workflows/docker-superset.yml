@@ -33,6 +33,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+      - name: Compute fully qualified image name
+        run: echo "FQ_IMAGE_NAME=${{ env.REGISTRY }}/${{ env.ORG_NAME }}/${{ env.IMAGE_NAME }}" >> $GITHUB_ENV
       - name: Log in to the Container registry
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
@@ -46,14 +48,14 @@ jobs:
           context: infra/container-images/${{ env.IMAGE_NAME }}
           push: ${{ env.PUBLISH }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.ORG_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.ORG_NAME }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.FQ_IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.FQ_IMAGE_NAME }}:latest
 
       # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built.
       # See [Using artifact attestations to establish provenance for builds](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.ORG_NAME }}/${{ env.IMAGE_NAME }}
+          subject-name: ${{ env.FQ_IMAGE_NAME }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: ${{ env.PUBLISH }}
