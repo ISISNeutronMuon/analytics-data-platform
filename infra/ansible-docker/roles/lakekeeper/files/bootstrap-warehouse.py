@@ -5,11 +5,9 @@
 #     "requests~=2.32.5",
 # ]
 # ///
-"""Combined script to bootstrap a Lakeeper instance and create a named warehouse:
+"""Combined script to bootstrap a Lakeeper instance and create a named warehouse.
 
-The following environment variables are optional:
-
-- LAKEKEEPER_BOOTSTRAP__REQUESTS_CA_BUNDLE: A CA bundle as an alternative to certifi
+Note: This script is used by both local, dev deployments and the ansible scripts.
 """
 
 from collections import namedtuple
@@ -17,7 +15,6 @@ import dataclasses
 import json
 from pathlib import Path
 import logging
-import os
 from typing import Any, Dict, Callable, Iterable, Sequence
 
 import click
@@ -33,12 +30,9 @@ LAKEKEEPER_PROJECT_ID_DEFAULT = "00000000-0000-0000-0000-000000000000"
 LAKEKEEPER_PROJECT_NAME_DEFAULT = "Default Project"
 OIDC_PREFIX = "oidc~"
 REQUESTS_TIMEOUT_DEFAULT = 60.0
-REQUESTS_CA_BUNDLE = os.environ.get("LAKEKEEPER_BOOTSTRAP__REQUESTS_CA_BUNDLE")
 REQUESTS_DEFAULT_KWARGS: Dict[str, Any] = {
     "timeout": REQUESTS_TIMEOUT_DEFAULT,
 }
-if REQUESTS_CA_BUNDLE is not None:
-    REQUESTS_DEFAULT_KWARGS["verify"] = REQUESTS_CA_BUNDLE
 
 
 def _request_with_auth(
