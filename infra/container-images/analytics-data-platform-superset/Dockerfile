@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=ghcr.io/isisneutronmuon/superset-fork:sha256-1f2019bd5a6ed81902d7c4035f0a363bceb10f60f5d9d98b4784857e2578506e
+ARG BASE_IMAGE=ghcr.io/isisneutronmuon/superset-fork:1a7712b054d5cf6f15f815e79eddb6f034a5ae49
 FROM ${BASE_IMAGE}
 
 LABEL org.opencontainers.image.source=https://github.com/ISISNeutronMuon/analytics-data-platform
