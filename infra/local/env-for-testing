@@ -1,8 +1,9 @@
 ###############################################################################
 # WARNING=DO NOT USE THIS FILE FOR PRODUCTION
 ###############################################################################
-ROUTER_HOSTNAME=localhost
-ROUTER_URL_HTTP=http://$ROUTER_HOSTNAME:50080
+ROUTER_HOSTNAME_EXTERNAL=localhost
+ROUTER_HOSTNAME_INTERNAL=adp-router
+ROUTER_PORT_HTTP=50080
 # These details are also present in
 #  - lakekeeper/bootstrap-warehouse.json
 #  - trino/etc/catalog/playground.properties (the name of the file matches the ADP_WORKSPACE_NAME value)
@@ -28,9 +29,8 @@ KC_BOOTSTRAP_ADMIN_USERNAME=admin
 KC_BOOTSTRAP_ADMIN_PASSWORD=admin
 KC_HTTP_RELATIVE_PATH=/auth
 KC_REALM_NAME=analytics-data-platform
-KEYCLOAK_URL_INTERNAL=http://adp-router:50080$KC_HTTP_RELATIVE_PATH
-KEYCLOAK_URL_EXTERNAL=$ROUTER_URL_HTTP$KC_HTTP_RELATIVE_PATH
-#KEYCLOAK_URL_HTTPS=$ROUTER_URL_HTTPS$KC_HTTP_RELATIVE_PATH
+KEYCLOAK_URL_INTERNAL=http://$ROUTER_HOSTNAME_INTERNAL:$ROUTER_PORT_HTTP$KC_HTTP_RELATIVE_PATH
+KEYCLOAK_URL_EXTERNAL=http://$ROUTER_HOSTNAME_EXTERNAL:$ROUTER_PORT_HTTP$KC_HTTP_RELATIVE_PATH
 KEYCLOAK_REALM_INTERNAL=$KEYCLOAK_URL_INTERNAL/realms/$KC_REALM_NAME
 KEYCLOAK_REALM_EXTERNAL=$KEYCLOAK_URL_EXTERNAL/realms/$KC_REALM_NAME
 
@@ -40,7 +40,7 @@ KEYCLOAK_REALM_EXTERNAL=$KEYCLOAK_URL_EXTERNAL/realms/$KC_REALM_NAME
 MINIO_ROOT_USER=$ADP_SUPERUSER
 MINIO_ROOT_PASSWORD=$ADP_SUPERUSER_PASS
 MINIO_SCHEME=http
-MINIO_BROWSER_REDIRECT_URL=$ROUTER_URL_HTTP/minio-console
+MINIO_BROWSER_REDIRECT_URL=http://$ROUTER_HOSTNAME_EXTERNAL:$ROUTER_PORT_HTTP/minio-console
 MINIO_BUCKET_NAME=$ADP_WORKSPACE_NAME
 
 ###############################################################################
@@ -75,22 +75,11 @@ UV_LINK_MODE=copy
 UV_PROJECT_ENVIRONMENT=/opt/uv-venv
 
 ###############################################################################
-# Open Policy Agent
-###############################################################################
-LAKEKEEPER_URL=http://lakekeeper:8181
-LAKEKEEPER_PROJECT_ID=$ADP_PROJECT_ID
-LAKEKEEPER_TOKEN_ENDPOINT=$KEYCLOAK_REALM_INTERNAL/protocol/openid-connect/token
-LAKEKEEPER_CLIENT_ID=opa
-LAKEKEEPER_CLIENT_SECRET=s3cr3t
-LAKEKEEPER_SCOPE=lakekeeper
-LAKEKEEPER_LAKEKEEPER_WAREHOUSE=$ADP_WORKSPACE_NAME
-TRINO_LAKEKEEPER_CATALOG_NAME=$ADP_WORKSPACE_NAME
-
-###############################################################################
 # Trino
 ###############################################################################
-#TRINO_USER=superset
-#TRINO_PASSWORD=adppassword
+TRINO_USER=superset
+TRINO_PASSWORD=s3cr3t
+TRINO_HTTPS_PORT=8443
 
 ###############################################################################
 # Superset

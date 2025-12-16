@@ -9,7 +9,6 @@ x-minio-mc-image: &minio-mc-image quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
 x-postgres-image: &postgres-image postgres:16.9-bookworm
 x-superset-image: &superset-image ghcr.io/martyngigg/adp-superset-forked:901412e
 x-traefik-image: &traefik-image traefik:v3.5.3
-x-openpolicyagent: &openpolicyagent-image openpolicyagent/opa:1.9.0-debug
 x-trino-image: &trino-image trinodb/trino:477
 
 # environment
@@ -326,7 +325,6 @@ services:
         --token-scope lakekeeper
         --server-admin "$$ADP_SUPERUSER"
         --server-operator trino:s3cr3t
-        --server-operator opa:s3cr3t
         --log-level=DEBUG
         --warehouse-json-file "/opt/work/bootstrap-warehouse.json"
         "http://lakekeeper:8181"
@@ -343,32 +341,6 @@ services:
   #########################################################
   # Trino query engine
   #########################################################
-  opa:
-    container_name: local-lakehouse-opa
-    image: *openpolicyagent-image
-    env_file: *env-file
-    command:
-      - run
-      - --server
-      - --log-format
-      - text
-      - --log-level
-      - debug
-      - --addr
-      - 0.0.0.0:8181
-      - /policies
-    depends_on:
-      lakekeeper:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "healthcheck-localhost.sh 8181 /health"]
-      interval: 15s
-      timeout: 10s
-      retries: 3
-    volumes:
-      - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
-      - ./openpolicyagent/policies:/policies
-    networks: *local-networks
 
   trino:
     container_name: local-lakehouse-trino
@@ -376,8 +348,6 @@ services:
     env_file: *env-file
     depends_on:
       keycloak:
-        condition: service_healthy
-      opa:
         condition: service_healthy
       adp-router:
         condition: service_healthy

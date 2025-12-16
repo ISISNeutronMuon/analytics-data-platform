@@ -409,16 +409,16 @@ def main(
                     operator.client_id, operator.client_secret, token_scope
                 )
             )
-        server.assign_permissions(
-            identity_provider.oidc_ids(
-                map(
-                    lambda x: f"{KEYCLOAK_MACHINE_USER_PREFIX}{x.client_id}",
-                    server_operator,
-                ),
-                access_token,
-            ),
-            entities={"server": ["operator"]},
-        )
+        # server.assign_permissions(
+        #     identity_provider.oidc_ids(
+        #         map(
+        #             lambda x: f"{KEYCLOAK_MACHINE_USER_PREFIX}{x.client_id}",
+        #             server_operator,
+        #         ),
+        #         access_token,
+        #     ),
+        #     entities={"server": ["operator"]},
+        # )
 
     if warehouse_json_file is not None:
         LOGGER.debug(f"Creating warehouse using file: {warehouse_json_file}")

@@ -1,0 +1,9 @@
+{
+  "catalogs": [
+    {
+      "user": "superset",
+      "catalog": "(playground)",
+      "allow": "read-only"
+    }
+  ]
+}
