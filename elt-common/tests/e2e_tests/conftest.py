@@ -96,7 +96,7 @@ class Settings(BaseSettings):
     trino_host: str = "localhost"
     trino_port: str = "58443"
     trino_user: str = "superset"
-    trino_password: str = "adppassword"
+    trino_password: str = "s3cr3t"
 
     @property
     def lakekeeper_url(self) -> Endpoint:
