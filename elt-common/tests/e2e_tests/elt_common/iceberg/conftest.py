@@ -13,8 +13,8 @@ def trino_engine(warehouse: Warehouse):
         port=server_settings.trino_port,
         user=server_settings.trino_user,
         password=server_settings.trino_password,
-        catalog="",
-        http_scheme="http",
+        catalog=warehouse.name,
+        http_scheme="https",
     )
     # Use one connection to create the catalog
     trino_catalog_creator = TrinoQueryEngine(creds)
@@ -22,7 +22,7 @@ def trino_engine(warehouse: Warehouse):
         f"""create catalog {warehouse.name} using iceberg
 with (
   "iceberg.catalog.type" = 'rest',
-  "iceberg.rest-catalog.warehouse" = '{warehouse.name}',
+  "iceberg.rest-catalog.warehouse" = '{warehouse.server.settings.project_id}/{warehouse.name}',
   "iceberg.rest-catalog.uri" = '{server.catalog_endpoint().value(use_internal_netloc=True)}',
   "iceberg.rest-catalog.vended-credentials-enabled" = 'false',
   "iceberg.rest-catalog.security" = 'OAUTH2',

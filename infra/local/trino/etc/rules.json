@@ -2,8 +2,13 @@
   "catalogs": [
     {
       "user": "superset",
-      "catalog": "(playground)",
+      "catalog": "playground",
       "allow": "read-only"
+    },
+    {
+      "user": "machine-infra",
+      "catalog": ".*",
+      "allow": "owner"
     }
   ]
 }

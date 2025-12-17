@@ -2,7 +2,7 @@
 
 # image versions
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
-x-openfga-image: &openfga-image openfga/openfga:v1.8
+x-openfga-image: &openfga-image openfga/openfga:v1.10
 x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.10.0
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
 x-minio-mc-image: &minio-mc-image quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
@@ -88,6 +88,7 @@ services:
 
   #########################################################
   # Database shared by all services
+  # Do not do this in production!
   #########################################################
   shared-database:
     container_name: local-lakehouse-shared-database
@@ -226,13 +227,7 @@ services:
       - -c
       - |
         /usr/bin/mc alias set minio http://minio:59000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
-        if ! /usr/bin/mc ls minio/"$${MINIO_BUCKET_NAME}"; then
-          echo "Bucket $${MINIO_BUCKET_NAME} not found, creating..."
-          /usr/bin/mc mb minio/"$${MINIO_BUCKET_NAME}"
-          echo "Bucket $${MINIO_BUCKET_NAME} created."
-        else
-          echo "Found bucket $${MINIO_BUCKET_NAME}"
-        fi
+        /usr/bin/mc mb --ignore-existing minio/playground
     networks: *local-networks
 
   #########################################################
@@ -312,29 +307,31 @@ services:
     container_name: local-lakehouse-lakekeeper-bootstrap
     image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
     env_file: *env-file
-    command:
+    entrypoint:
       - /bin/bash
       - -c
-      - >
-        uv run /opt/work/bootstrap-warehouse.py
-        --project-name "$$KC_REALM_NAME"
-        --new-project-id "$$ADP_PROJECT_ID"
-        --keycloak-url "$$KEYCLOAK_URL_INTERNAL"
-        --keycloak-realm "$$KC_REALM_NAME"
-        --bootstrap-credentials "machine-infra:s3cr3t"
-        --token-scope lakekeeper
-        --server-admin "$$ADP_SUPERUSER"
-        --additional-user trino:s3cr3t
-        --log-level=DEBUG
-        --warehouse-json-file "/opt/work/bootstrap-warehouse.json"
-        "http://lakekeeper:8181"
+      - |
+        for name in playground; do
+          uv run /opt/work/bootstrap-warehouse.py \
+          --project-name "$$KC_REALM_NAME" \
+          --new-project-id "$$ADP_PROJECT_ID" \
+          --keycloak-url "$$KEYCLOAK_URL_INTERNAL" \
+          --keycloak-realm "$$KC_REALM_NAME" \
+          --bootstrap-credentials "machine-infra:s3cr3t" \
+          --token-scope lakekeeper \
+          --server-admin "$$ADP_SUPERUSER" \
+          --additional-user trino:s3cr3t \
+          --log-level=DEBUG \
+          --warehouse-json-file "/opt/work/bootstrap-$$name.json" \
+          "http://lakekeeper:8181"
+        done
     restart: "no"
     depends_on:
       lakekeeper:
         condition: service_healthy
     volumes:
       - "../ansible-docker/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py"
-      - "./lakekeeper/bootstrap-warehouse.json:/opt/work/bootstrap-warehouse.json:ro"
+      - "./lakekeeper/bootstrap-playground.json:/opt/work/bootstrap-playground.json:ro"
       - *certs-volume
     networks: *local-networks
 
@@ -358,7 +355,7 @@ services:
       timeout: 30s
       retries: 2
     volumes:
-      - "./trino/etc:/etc/trino:ro"
+      - "./trino/etc:/etc/trino"
       - *certs-volume
     networks: *local-networks
 

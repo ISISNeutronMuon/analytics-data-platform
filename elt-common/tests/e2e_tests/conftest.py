@@ -81,7 +81,7 @@ class Settings(BaseSettings):
     docker_netloc: str = "adp-router:50080"
     s3_access_key: str = "adpsuperuser"
     s3_secret_key: str = "adppassword"
-    s3_bucket: str = "e2e-tests-warehouse"
+    s3_bucket: str = "e2e-tests"
     s3_endpoint: str = "http://adp-router:59000"
     s3_region: str = "local-01"
     s3_path_style_access: bool = True
@@ -95,7 +95,7 @@ class Settings(BaseSettings):
     trino_http_scheme: str = "https"
     trino_host: str = "localhost"
     trino_port: str = "58443"
-    trino_user: str = "superset"
+    trino_user: str = "machine-infra"
     trino_password: str = "s3cr3t"
 
     @property
