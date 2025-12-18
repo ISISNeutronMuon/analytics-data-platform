@@ -152,8 +152,9 @@ CELERY_CONFIG = CeleryConfig
 WEBDRIVER_BASEURL = f"http://localhost:8088{os.environ.get('SUPERSET_APP_ROOT', '')}/"
 # The base URL for the email report hyperlinks.
 WEBDRIVER_BASEURL_USER_FRIENDLY = (
-    "https://{{ top_level_domain }}{os.environ.get('SUPERSET_APP_ROOT', '')}/"
+    f"https://localhost:50080{os.environ.get('SUPERSET_APP_ROOT', '')}/"
 )
+
 
 #####
 
