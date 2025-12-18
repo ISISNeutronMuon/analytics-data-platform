@@ -1,4 +1,4 @@
-# Analytics Data Platform Proof-of-Concept
+# Analytics Data Platform
 
 ## Introduction
 
