@@ -20,3 +20,8 @@ repos:
     rev: v0.11.0
     hooks:
       - id: shellcheck
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.15.0
+    hooks:
+      - id: markdownlint-cli2-docker
+        exclude: '^(?:\.github|docs)(?:/|$)'

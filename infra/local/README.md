@@ -48,11 +48,11 @@ docker compose up -d
 
 Services:
 
-- Keycloak identity provider: http://localhost:50080/auth
-  - `master` realm credentials: _admin/admin_
-  - `analytics-data-platform` realm credentials: _adpsuperuser/adppassword_
-- Lakekeeper iceberg catalog UI: http://localhost:50080/iceberg/ui.
-  - Use the same credentials as the `analytics-data-platform` realm
-- Superset BI tool: http://localhost:50080/workspace/playground.
-  - Use the same credentials as the `analytics-data-platform` realm
-- Trino endpoint: https://localhost:58443 (note the https as this is required by Trino. You may need to use an "--insecure" flag)
+- Keycloak identity provider: <http://localhost:50080/auth>
+   - `master` realm credentials: *admin/admin*
+   - `analytics-data-platform` realm credentials: *adpsuperuser/adppassword*
+- Lakekeeper iceberg catalog UI: <http://localhost:50080/iceberg/ui>.
+   - Use the same credentials as the `analytics-data-platform` realm
+- Superset BI tool: <http://localhost:50080/workspace/playground>.
+   - Use the same credentials as the `analytics-data-platform` realm
+- Trino endpoint: <https://localhost:58443> (note the https as this is required by Trino. You may need to use an "--insecure" flag)

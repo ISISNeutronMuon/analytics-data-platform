@@ -36,7 +36,7 @@ rest catalog to test complete functionality.
 The local, docker-compose-based configuration provided by
 [infra/local/docker-compose.yml](../infra/local/docker-compose.yml) is the easiest way to
 spin up a set of services compatible with running the tests.
-_Note the requirement to edit `/etc/hosts` described in [here](../infra/local/README.md)._
+_Note the requirement to edit `/etc/hosts` described in [infra/local/README](../infra/local/README.md)._
 
 Once the compose services are running, execute the e2e tests using `pytest`:
 

@@ -41,11 +41,12 @@ common developer tasks.
 
 - When creating pull requests:
 
-  1. **Read the current PR template**: Always check `.github/PULL_REQUEST_TEMPLATE.md` for the latest format
-  2. **Follow PR title conventions**: Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
-     - Format: `type(scope): description`
-     - Example: `fix(warehouse/accelerator): fix join in model`
-     - Types: `fix`, `feat`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
+1. **Read the current PR template**: Always check `.github/PULL_REQUEST_TEMPLATE.md` for the latest format
+
+2. **Follow PR title conventions**: Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+   - Format: `type(scope): description`
+   - Example: `fix(warehouse/accelerator): fix join in model`
+   - Types: `fix`, `feat`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
 
 **Important**: Always reference the actual template file at `.github/PULL_REQUEST_TEMPLATE.md` instead of using cached content, as the template may be updated over time.
 
