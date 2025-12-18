@@ -57,6 +57,7 @@ uv run pytest unit_tests
 
 ```bash
 pushd infra/local; docker compose up -d; popd    # start the services
+echo "127.0.0.1    adp-router" | sudo tee -a /etc/hosts   # edit /etc/hosts
 cd elt-common/
 uv run pytest e2e_tests
 pushd infra/local; docker compose down -v; popd  # stop the services

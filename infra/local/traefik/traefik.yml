@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://www.schemastore.org/traefik-v3.json
 global:
   checkNewVersion: false
   sendAnonymousUsage: false
@@ -8,14 +9,16 @@ api:
 ping: {}
 
 log:
-  level: DEBUG
+  level: ERROR
   noColor: true
 
 entryPoints:
   web:
-    address: :80
-  trino:
-    address: :8088
+    address: :50080
+  minioapi:
+    address: :59000
+  trinosecure:
+    address: :8443
 
 # file configuration backend
 providers:

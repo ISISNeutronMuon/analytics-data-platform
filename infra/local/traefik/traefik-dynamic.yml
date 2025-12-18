@@ -1,23 +1,22 @@
+tls:
+  certificates:
+    - certFile: /certs/localdev.pem
+      keyFile: /certs/localdev-key.pem
+
 http:
   routers:
-    #############################################
-    # user services
-    #############################################
-    superset:
-      entryPoints: web
-      rule: PathPrefix(`{{ env "SUPERSET_APP_ROOT" }}`)
-      service: superset
+    #
+    # Https: Trino requires https when authentication is enabled
+    #
+    trino:
+      entryPoints: trinosecure
+      rule: PathPrefix(`/`)
+      service: trino
+      tls: {}
 
-    #############################################
-    # backend services
-    #############################################
-    traefik:
-      entryPoints: web
-      rule: PathPrefix(`/internal/traefik`) || HeaderRegexp(`Referer`, `/internal/traefik`)
-      service: api@internal
-      middlewares:
-        - traefik-strip-prefix
-
+    #
+    # Http
+    #
     keycloak:
       entryPoints: web
       rule: PathPrefix(`{{ env "KC_HTTP_RELATIVE_PATH" }}`)
@@ -30,38 +29,76 @@ http:
         - lakekeeper-strip-prefix
       service: lakekeeper
 
-    trino:
-      entryPoints: trino
+    minioapi:
+      entryPoints: minioapi
       rule: PathPrefix(`/`)
-      service: trino
+      service: minioapi
+
+    minioconsole:
+      entryPoints: web
+      rule: PathPrefix(`/minio-console`)
+      service: minioconsole
+      middlewares:
+        - minioconsole-strip-prefix
+
+    openfga:
+      entryPoints: web
+      rule: PathPrefix(`/authz`)
+      service: openfga
+      middlewares:
+        - openfga-strip-prefix
+
+    superset:
+      entryPoints: web
+      rule: PathPrefix(`{{ env "SUPERSET_APP_ROOT" }}`)
+      service: superset
+
+    traefik:
+      entryPoints: web
+      rule: PathPrefix(`/internal/traefik`) || HeaderRegexp(`Referer`, `/internal/traefik`)
+      service: api@internal
+      middlewares:
+        - traefik-strip-prefix
 
   middlewares:
-    traefik-strip-prefix:
-      stripPrefix:
-        prefixes:
-          - "/internal/traefik"
     lakekeeper-strip-prefix:
       stripPrefix:
         prefixes:
           - "/iceberg"
+    minioconsole-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/minio-console"
+    openfga-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/authz"
+    traefik-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/internal/traefik"
 
   services:
     keycloak:
       loadBalancer:
         servers:
           - url: "http://keycloak:8080"
-    minio-console:
+    minioapi:
       loadBalancer:
         servers:
-          - url: "http://minio:9001"
-    minio-api:
+          - url: "http://minio:59000"
+    minioconsole:
       loadBalancer:
         servers:
-          - url: "http://minio:9000"
+          - url: "http://minio:59001"
     lakekeeper:
       loadBalancer:
         servers:
           - url: "http://lakekeeper:8181"
+    openfga:
+      loadBalancer:
+        servers:
+          - url: "http://openfga:8080"
     trino:
       loadBalancer:
         servers:

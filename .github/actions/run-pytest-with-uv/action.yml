@@ -24,8 +24,9 @@ runs:
   using: composite
   steps:
     - name: Install uv
-      uses: astral-sh/setup-uv@v5
+      uses: astral-sh/setup-uv@v7
       with:
+        activate-environment: false
         cache-dependency-glob: ${{ inputs.uv-cache-dependency-glob }}
         version: ${{ inputs.uv-version }}
         python-version: ${{ inputs.python-version }}
@@ -43,22 +44,10 @@ runs:
       run: uv sync --locked --all-extras --dev
       working-directory: ${{ inputs.pyproject-directory }}
 
-    - name: Add minio to /etc/hosts
-      if: inputs.compose-file-path != ''
-      shell: bash -l {0}
-      run: |
-        echo "127.0.0.1 minio" | sudo tee -a /etc/hosts
-
     - name: Run tests
       shell: bash -l {0}
       run: uv run pytest --durations-min=0.5 --exitfirst "${{ inputs.pytest-file-or-dir }}" --cache-clear
       working-directory: ${{ inputs.pyproject-directory }}
-
-    - name: Remove minio from /etc/hosts
-      if: inputs.compose-file-path != ''
-      shell: bash -l {0}
-      run: |
-        sudo sed -i -e '/minio/d' /etc/hosts
 
     - name: Dump Docker Compose logs on failure
       if: failure() && inputs.compose-file-path != ''

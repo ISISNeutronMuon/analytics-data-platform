@@ -1,0 +1,125 @@
+###############################################################################
+# WARNING=DO NOT USE THIS FILE FOR PRODUCTION
+###############################################################################
+ROUTER_HOSTNAME_EXTERNAL=localhost
+ROUTER_HOSTNAME_INTERNAL=adp-router
+ROUTER_PORT_HTTP=50080
+# These details are also present in
+#  - lakekeeper/bootstrap-warehouse.json
+#  - trino/etc/catalog/playground.properties (the name of the file matches the ADP_WORKSPACE_NAME value)
+# and will need to be adjusted there if the values change
+ADP_SUPERUSER=adpsuperuser
+ADP_SUPERUSER_PASS=adppassword
+ADP_PROJECT_ID=c4fcd44f-7ce7-4446-9f7c-dcc7ba76dd22
+ADP_WORKSPACE_NAME=playground
+
+###############################################################################
+# Postgres image
+###############################################################################
+POSTGRES_USER=$ADP_SUPERUSER
+POSTGRES_PASSWORD=$ADP_SUPERUSER_PASS
+PGPASSWORD=$POSTGRES_PASSWORD
+POSTGRES_DATABASE=unused
+SHARED_DB__HOST=shared-database
+
+###############################################################################
+# Keycloak
+###############################################################################
+KC_BOOTSTRAP_ADMIN_USERNAME=admin
+KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+KC_HTTP_RELATIVE_PATH=/auth
+KC_REALM_NAME=analytics-data-platform
+KEYCLOAK_URL_INTERNAL=http://$ROUTER_HOSTNAME_INTERNAL:$ROUTER_PORT_HTTP$KC_HTTP_RELATIVE_PATH
+KEYCLOAK_URL_EXTERNAL=http://$ROUTER_HOSTNAME_EXTERNAL:$ROUTER_PORT_HTTP$KC_HTTP_RELATIVE_PATH
+KEYCLOAK_REALM_INTERNAL=$KEYCLOAK_URL_INTERNAL/realms/$KC_REALM_NAME
+KEYCLOAK_REALM_EXTERNAL=$KEYCLOAK_URL_EXTERNAL/realms/$KC_REALM_NAME
+
+###############################################################################
+# MinIO
+###############################################################################
+MINIO_ROOT_USER=$ADP_SUPERUSER
+MINIO_ROOT_PASSWORD=$ADP_SUPERUSER_PASS
+MINIO_SCHEME=http
+MINIO_BROWSER_REDIRECT_URL=http://$ROUTER_HOSTNAME_EXTERNAL:$ROUTER_PORT_HTTP/minio-console
+MINIO_BUCKET_NAME=$ADP_WORKSPACE_NAME
+
+###############################################################################
+# OpenFGA
+###############################################################################
+SHARED_DB__OPENFGA_DB_NAME=openfga
+OPENFGA_DATASTORE_ENGINE=postgres
+OPENFGA_DATASTORE_URI=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$SHARED_DB__HOST:5432/$SHARED_DB__OPENFGA_DB_NAME?sslmode=disable
+OPENFGA_DATASTORE_MAX_OPEN_CONNS=200
+OPENFGA_DATASTORE_MAX_IDLE_CONNS=100
+OPENFGA_CACHE_CONTROLLER_ENABLED=true
+OPENFGA_CHECK_QUERY_CACHE_ENABLED=true
+OPENFGA_CHECK_ITERATOR_CACHE_ENABLED=true
+OPENFGA_PLAYGROUND_ENABLED=false
+
+###############################################################################
+# Iceberg catalog
+###############################################################################
+SHARED_DB__LAKEKEEPER_DB_NAME=lakekeeper
+LAKEKEEPER__PG_ENCRYPTION_KEY=This-is-NOT-Secure!
+LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@shared-database:5432/$SHARED_DB__LAKEKEEPER_DB_NAME
+LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@shared-database:5432/$SHARED_DB__LAKEKEEPER_DB_NAME
+LAKEKEEPER__ENABLE_DEFAULT_PROJECT=false
+LAKEKEEPER__OPENID_PROVIDER_URI=$KEYCLOAK_REALM_INTERNAL
+LAKEKEEPER__OPENID_ADDITIONAL_ISSUERS=$KEYCLOAK_REALM_EXTERNAL
+LAKEKEEPER__OPENID_AUDIENCE=lakekeeper
+LAKEKEEPER__AUTHZ_BACKEND=openfga
+LAKEKEEPER__OPENFGA__ENDPOINT=http://openfga:8081
+# Use host-accessible URI for browser-based UI
+LAKEKEEPER__UI__OPENID_PROVIDER_URI=$KEYCLOAK_REALM_EXTERNAL
+LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
+LAKEKEEPER__UI__OPENID_SCOPE="lakekeeper openid profile email"
+
+# Bootstrapping
+UV_LINK_MODE=copy
+UV_PROJECT_ENVIRONMENT=/opt/uv-venv
+
+###############################################################################
+# Trino
+###############################################################################
+TRINO_USER=superset
+TRINO_PASSWORD=s3cr3t
+TRINO_HTTPS_PORT=8443
+TRINO_CATALOG_STORE=${TRINO_CATALOG_STORE:-file}
+
+###############################################################################
+# Superset
+###############################################################################
+# Metadata DB
+SHARED_DB__SUPERSET_DB_NAME=superset
+SUPERSET_DB_HOST=shared-database
+SUPERSET_DB_USER=$ADP_SUPERUSER
+SUPERSET_DB_PASSWORD=$ADP_SUPERUSER_PASS
+SUPERSET_DB_NAME=$SHARED_DB__SUPERSET_DB_NAME
+SUPERSET_DB_SCHEMA_NAME=$ADP_WORKSPACE_NAME
+SUPERSET_DB_PORT=5432
+SUPERSET_DB_DIALECT=postgresql
+
+# Caching layer (match service name and port in compose file)
+REDIS_HOST=superset-redis
+REDIS_PORT=6379
+
+# Admin user
+SUPERSET_ADMIN_USER=superset_admin
+SUPERSET_ADMIN_FIRSTNAME=Superset
+SUPERSET_ADMIN_LASTNAME=Admin
+SUPERSET_ADMIN_EMAIL=superset_admin@dev.com
+SUPERSET_ADMIN_PASSWORD=s3cr3t
+
+# Environment/development settings
+SUPERSET_CA_BUNDLE=/certs/rootCA.pem
+PYTHONPATH=/app/docker/pythonpath
+SCARF_ANALYTICS=false
+FLASK_DEBUG=False
+SUPERSET_LOG_LEVEL=info
+SUPERSET_ENV=development
+SUPERSET_PORT=8088
+# Needs to match traefik rule in traefik-dynamic.yml
+SUPERSET_APP_ROOT=/workspace/$SUPERSET_DB_SCHEMA_NAME
+
+# Make sure you set this to a unique secure random value on production
+SUPERSET_SECRET_KEY=0123456789

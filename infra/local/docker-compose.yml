@@ -1,56 +1,9 @@
 # A development stack to emulate the Lakehouse. This is intended for local development only.
-#
-# Most services are exposed through a Traefik reverse proxy on port 58080 with the exception
-# of MinIO (S3 storage). Service routes:
-#
-#  - Keycloak identity provider: http://localhost:58080/auth
-#  - Lakekeeper iceberg catalog UI: http://localhost:58080/iceberg/ui. Log in with the credentials listed in keycloak/README
-#  - Trino query engine: http://localhost:59088
-#  - Superset BI tool: http://localhost:58080/workspace/playground. Log in with the credentials defined in env-for-testing
-#
-# Login credentials
-# -----------------
-#
-# To login to Keycloak & Lakekeeper use the following credentials:
-#
-#  - Username: iceberguser-1
-#  - Password: icebergpassword
-#
-# To login to Superset use the following credentials:
-#
-#  - Username: adpuser
-#  - Password: adppassword
-#
-# Running scripts on the host
-# ---------------------------
-#
-# Tools such as pyiceberg connect to Lakekeeper, retrieve the address of the S3 storage endpoint
-# and communicate directly with it via the 'storage-profile.endpoint' defined in
-# infra/local/lakekeeper/bootstrap-warehouse.json. To this end MinIO runs on port 59000 in both
-# the container and also on the host.
-#
-# To run scripts on the host, e.g. the Python e2e tests, the host /etc/hosts files needs an extra
-# entry to be able to contact the minio service directly:
-#
-# 127.0.0.1       minio
-#
-#
-# To test ELT scripts based on the Python package `dlt`, create and add the following to
-# `$HOME/.dlt/secrets.toml`:
-#
-# [destination.pyiceberg]
-# bucket_url = "s3://playground"
-#
-# [destination.pyiceberg.credentials]
-# uri = "http://localhost:58080/iceberg/catalog"
-# warehouse = "playground"
-# oauth2_server_uri = "http://localhost:58080/auth/realms/iceberg/protocol/openid-connect/token"
-# client_id = "localinfra"
-# client_secret = "s3cr3t"
-# scope = "lakekeeper"
+# See ./README.md
 
 # image versions
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
+x-openfga-image: &openfga-image openfga/openfga:v1.10
 x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.10.0
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
 x-minio-mc-image: &minio-mc-image quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
@@ -61,34 +14,63 @@ x-trino-image: &trino-image trinodb/trino:477
 
 # environment
 x-env-file: &env-file
-  - path: ./env-for-testing
+  - path: ./env-local
     required: true
 
-# named network as the default form the directory name is not good
+# network
 x-networks: &local-networks
   - local-lakehouse_net
+
+# certs
+x-mkcert-depends: &mkcert-depends
+  mkcert:
+    condition: service_completed_successfully
+x-certs-volume: &certs-volume "mkcert_data:/certs"
 
 # superset options
 x-superset-user: &superset-user root
 x-superset-depends-on: &superset-depends-on
   superset-redis:
     condition: service_started
-  shared-database-createdatabases:
-    condition: service_completed_successfully
-  trino-createcatalog:
+  shared-database-bootstrap:
     condition: service_completed_successfully
 x-superset-volumes: &superset-volumes
   - ./superset/docker/docker-init.sh:/app/docker/docker-init.sh:ro
+  - ./superset/docker/docker-bootstrap-cert.sh:/app/docker/docker-bootstrap-cert.sh:ro
+  - ./superset/docker/requirements-local.txt:/app/docker/requirements-local.txt:ro
   - ./superset/docker/pythonpath:/app/docker/pythonpath:ro
+  - *certs-volume
 
 services:
   #########################################################
   # Ingress
   #########################################################
-  traefik:
+  mkcert:
+    container_name: local-lakehouse-mkcert
+    image: alpine/mkcert
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        certfile=/certs/localdev.pem
+        if [ ! -f "$$certfile" ]; then
+          echo "$$certfile not found. Creating new CA and certificate."
+          cd /certs || exit 1
+          mkcert -cert-file "$$certfile" -key-file localdev-key.pem localhost 127.0.0.1 ::1
+          cp "$$(mkcert -CAROOT)"/* .
+        else
+          echo "$$certfile exists, skipping certificate creation."
+        fi
+    restart: "no"
+    volumes:
+      - *certs-volume
+    networks: *local-networks
+
+  adp-router:
     container_name: local-lakehouse-traefik
     image: *traefik-image
     env_file: *env-file
+    depends_on: *mkcert-depends
     healthcheck:
       test: ["CMD-SHELL", "traefik healthcheck"]
       interval: 30s
@@ -96,15 +78,18 @@ services:
       retries: 5
       start_period: 5s
     ports:
-      - "58080:80"
-      - "59088:8088" # Trino won't allow itself to be deployed on a prefix path
+      - "50080:50080"
+      - "59000:59000" # MinIO api
+      - "58443:8443" # TLS entrypoint for Trino (cannot run on non-root path prefix or without https with auth enabled)
     volumes:
       - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
       - "./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
+      - *certs-volume
     networks: *local-networks
 
   #########################################################
   # Database shared by all services
+  # Do not do this in production!
   #########################################################
   shared-database:
     container_name: local-lakehouse-shared-database
@@ -116,34 +101,39 @@ services:
       timeout: 10s
       retries: 2
       start_period: 10s
+    ports:
+      # Open the port for easy access to viewing the database
+      - "55432:5432"
     volumes:
       - "shared_database_data:/var/lib/postgresql/data"
     networks: *local-networks
 
-  shared-database-createdatabases:
-    container_name: local-lakehouse-shared-database-createdatabases
+  shared-database-bootstrap:
+    container_name: local-lakehouse-shared-database-bootstrap
     image: *postgres-image
     env_file: *env-file
     restart: "no"
     depends_on:
       shared-database:
         condition: service_healthy
-    entrypoint: |
-      /bin/bash -c "
-      create_db_if_not_exists() {
-        psql -v ON_ERROR_STOP=1 --host=shared-database --username=adpuser <<-EOSQL
-          SELECT 'CREATE DATABASE $1' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$1')\\gexec
-      EOSQL
-      }
-      rename_schema() {
-        psql -v ON_ERROR_STOP=1 --host=shared-database --username=adpuser $1 <<-EOSQL
-          SELECT 'ALTER SCHEMA $2 RENAME TO $3' WHERE NOT EXISTS (select schema_name from information_schema.schemata WHERE schema_name = '$3')\\gexec
-      EOSQL
-      }
-      create_db_if_not_exists lakekeeper
-      create_db_if_not_exists $$SUPERSET_DB_NAME
-      rename_schema $$SUPERSET_DB_NAME public $$SUPERSET_DB_SCHEMA_NAME
-      "
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        create_db_if_not_exists() {
+          psql -v ON_ERROR_STOP=1 --host=shared-database --username="$$ADP_SUPERUSER" <<-EOSQL
+            SELECT 'CREATE DATABASE $1' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$1')\\gexec
+        EOSQL
+        }
+        rename_schema() {
+          psql -v ON_ERROR_STOP=1 --host=shared-database --username="$$ADP_SUPERUSER" $1 <<-EOSQL
+            SELECT 'ALTER SCHEMA $2 RENAME TO $3' WHERE NOT EXISTS (select schema_name from information_schema.schemata WHERE schema_name = '$3')\\gexec
+        EOSQL
+        }
+        create_db_if_not_exists $$SHARED_DB__OPENFGA_DB_NAME
+        create_db_if_not_exists $$SHARED_DB__LAKEKEEPER_DB_NAME
+        create_db_if_not_exists $$SHARED_DB__SUPERSET_DB_NAME
+        rename_schema $$SUPERSET_DB_NAME public $$SUPERSET_DB_SCHEMA_NAME
     networks: *local-networks
 
   #########################################################
@@ -154,9 +144,8 @@ services:
     image: *keycloak-image
     env_file: *env-file
     volumes:
-      - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
       - keycloak_data:/opt/keycloak/data
-      - ./keycloak/iceberg-realm.json:/opt/keycloak/data/import/iceberg-realm.json:ro
+      - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
     healthcheck:
       test:
         [
@@ -165,7 +154,7 @@ services:
         ]
       start_period: 20s
       start_interval: 2s
-      interval: 30s
+      interval: 15s
       timeout: 30s
       retries: 5
     command:
@@ -176,24 +165,44 @@ services:
         "--features=token-exchange",
         "--hostname-debug=true",
         "--proxy-headers=xforwarded",
-        "--proxy-trusted-addresses=0.0.0.0/0",
-        "--import-realm",
         "--verbose",
         "--log-level=INFO",
       ]
     networks: *local-networks
+
+  keycloak-bootstrap:
+    container_name: local-lakehouse-keycloak-bootstrap
+    build:
+      context: keycloak
+      dockerfile: Dockerfile-kcadm.dockerfile
+      args:
+        base: *keycloak-image
+    env_file: *env-file
+    entrypoint:
+      - /bin/sh
+      - -c
+      - "sleep 1; /opt/keycloak/bootstrap.sh http://keycloak:8080/auth"
+    restart: "no"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    networks: *local-networks
+    volumes:
+      - "./keycloak/bootstrap.sh:/opt/keycloak/bootstrap.sh:ro"
 
   #########################################################
   # MinIO - Object store emulating the Ceph object store
   # in SCD. This is exposed directly rather than through traefik
   # as the service needs to be accessible for clients such as
   # PyIcberg.
+  # Service name needs to match the endpoint value in bootstrap-warehouse.json
   #########################################################
   minio:
     container_name: local-lakehouse-minio
     image: *minio-image
     env_file: *env-file
-    # Match ports on host & container to use the same address inside and outside the container network
+    # Match ports on host & container to use the same port inside and outside the container
+    # network
     command:
       ["server", "/data", "--address", ":59000", "--console-address", ":59001"]
     healthcheck:
@@ -202,33 +211,53 @@ services:
       interval: 30s
       timeout: 30s
       retries: 3
-    ports:
-      - "59000:59000"
-      - "59001:59001"
     volumes:
       - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
       - "minio_data:/data"
     networks: *local-networks
 
-  minio-createbucket:
-    container_name: local-lakehouse-minio-create-bucket
+  minio-bootstrap:
+    container_name: local-lakehouse-minio-bootstrap
     depends_on:
       minio:
         condition: service_healthy
     image: *minio-mc-image
     env_file: *env-file
-    entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set minio http://minio:59000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
-      if ! /usr/bin/mc ls minio/$${MINIO_BUCKET_NAME}; then
-        echo \"Bucket '$${MINIO_BUCKET_NAME}' not found, creating...\"
-        /usr/bin/mc mb minio/$${MINIO_BUCKET_NAME};
-        echo \"Bucket '$${MINIO_BUCKET_NAME}' created.\"
-      else
-        echo \"Found bucket '$${MINIO_BUCKET_NAME}'\"
-      fi
-      "
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        /usr/bin/mc alias set minio http://minio:59000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
+        /usr/bin/mc mb --ignore-existing minio/playground
     networks: *local-networks
+
+  #########################################################
+  # OpenFGA - Permissioning
+  #########################################################
+  openfga-migrate:
+    container_name: local-lakehouse-openfga-migrate
+    image: *openfga-image
+    env_file: *env-file
+    command: migrate
+    depends_on:
+      shared-database-bootstrap:
+        condition: service_completed_successfully
+    networks: *local-networks
+
+  openfga:
+    container_name: local-lakehouse-openfga
+    image: *openfga-image
+    env_file: *env-file
+    command: run
+    depends_on:
+      openfga-migrate:
+        condition: service_completed_successfully
+    networks: *local-networks
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/grpc_health_probe", "-addr=openfga:8081"]
+      interval: 10s
+      timeout: 30s
+      retries: 3
 
   #########################################################
   # Lakekeeper - Iceberg REST catalog
@@ -238,7 +267,8 @@ services:
     image: *lakekeeper-image
     env_file: *env-file
     environment:
-      - RUST_LOG=info,lakekeeper=info,lakekeeper_bin=info,iceberg_ext=info
+      - SSL_CERT_FILE=/certs/rootCA.pem
+      - RUST_LOG=info,lakekeeper=${LAKEKEEPER_LOG_LEVEL:-info},lakekeeper_bin=${LAKEKEEPER_LOG_LEVEL:-info},iceberg_ext=${LAKEKEEPER_LOG_LEVEL:-info}
     command: ["serve"]
     healthcheck:
       test: ["CMD", "/home/nonroot/lakekeeper", "healthcheck"]
@@ -247,16 +277,18 @@ services:
       timeout: 30s
       retries: 3
     depends_on:
-      keycloak:
-        condition: service_healthy
       lakekeeper-migrate:
         condition: service_completed_successfully
-      minio-createbucket:
+      adp-router:
+        condition: service_healthy
+      keycloak-bootstrap:
         condition: service_completed_successfully
-      shared-database:
-        condition: service_healthy
-      traefik:
-        condition: service_healthy
+      minio-bootstrap:
+        condition: service_completed_successfully
+      shared-database-bootstrap:
+        condition: service_completed_successfully
+    volumes:
+      - *certs-volume
     networks: *local-networks
 
   lakekeeper-migrate:
@@ -266,88 +298,66 @@ services:
     restart: "no"
     command: ["migrate"]
     depends_on:
-      shared-database-createdatabases:
+      shared-database-bootstrap:
         condition: service_completed_successfully
+      openfga:
+        condition: service_healthy
     networks: *local-networks
 
-  lakekeeper-createwarehouse:
-    container_name: local-lakehouse-lakekeeper-createwarehouse
+  lakekeeper-bootstrap:
+    container_name: local-lakehouse-lakekeeper-bootstrap
     image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
     env_file: *env-file
-    command:
-      [
-        "uv",
-        "run",
-        "/opt/work/bootstrap-warehouse.py",
-        "/opt/work/bootstrap-warehouse.json",
-      ]
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        for name in playground; do
+          uv run /opt/work/bootstrap-warehouse.py \
+          --project-name "$$KC_REALM_NAME" \
+          --new-project-id "$$ADP_PROJECT_ID" \
+          --keycloak-url "$$KEYCLOAK_URL_INTERNAL" \
+          --keycloak-realm "$$KC_REALM_NAME" \
+          --bootstrap-credentials "machine-infra:s3cr3t" \
+          --token-scope lakekeeper \
+          --server-admin "$$ADP_SUPERUSER" \
+          --additional-user trino:s3cr3t \
+          --log-level=DEBUG \
+          --warehouse-json-file "/opt/work/bootstrap-$$name.json" \
+          "http://lakekeeper:8181"
+        done
+    restart: "no"
     depends_on:
       lakekeeper:
         condition: service_healthy
     volumes:
       - "../ansible-docker/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py"
-      - "./lakekeeper/bootstrap-warehouse.json:/opt/work/bootstrap-warehouse.json:ro"
+      - "./lakekeeper/bootstrap-playground.json:/opt/work/bootstrap-playground.json:ro"
+      - *certs-volume
     networks: *local-networks
 
   #########################################################
   # Trino query engine
   #########################################################
+
   trino:
     container_name: local-lakehouse-trino
     image: *trino-image
     env_file: *env-file
-    volumes:
-      - "./trino/etc:/etc/trino:ro"
     depends_on:
-      lakekeeper-createwarehouse:
-        condition: service_completed_successfully
+      keycloak:
+        condition: service_healthy
+      adp-router:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-I", "http://localhost:8080/v1/status"]
       start_period: 10s
       interval: 30s
       timeout: 30s
       retries: 2
-    networks: *local-networks
-
-  trino-createcatalog:
-    profiles:
-      - superset
-    container_name: local-lakehouse-trino-create-catalog
-    image: *trino-image
-    env_file: *env-file
     volumes:
-      - "./trino/trino-create-catalog.sql:/docker/trino-create-catalog.sql:ro"
-    command: >
-      /bin/bash -c "
-        MAX_RETRIES=5
-        RETRY_COUNT=0
-        SLEEP_TIME=2
-        while [ $$RETRY_COUNT -lt $$MAX_RETRIES ]; do
-          echo \"Attempt $$((RETRY_COUNT + 1)) of $${MAX_RETRIES}\"
-          if ! trino --execute=\"show catalogs\" --server=http://trino:8080 2>/dev/null | grep -q 'playground'; then
-            echo \"Playground catalog not found, creating...\"
-            if trino --file=/docker/trino-create-catalog.sql --server=http://trino:8080; then
-              echo \"Successfully created catalog\"
-              exit 0
-            fi
-          else
-            echo \"Playground catalog already exists\"
-            exit 0
-          fi
-          RETRY_COUNT=$$((RETRY_COUNT + 1))
-          if [ $$RETRY_COUNT -lt $$MAX_RETRIES ]; then
-            echo \"Waiting $${SLEEP_TIME} seconds before next attempt...\"
-            sleep $${SLEEP_TIME}
-          fi
-        done
-
-        echo \"Failed to create catalog after $${MAX_RETRIES} attempts\"
-        exit 1
-      "
-    depends_on:
-      trino:
-        condition: service_healthy
-    restart: "no"
+      - "./trino/etc:/etc/trino"
+      - *certs-volume
     networks: *local-networks
 
   #########################################################
@@ -371,7 +381,7 @@ services:
     container_name: local-lakehouse-superset-app
     env_file: *env-file
     image: *superset-image
-    command: ["/app/docker/docker-bootstrap.sh", "app-gunicorn"]
+    command: ["/app/docker/docker-bootstrap-cert.sh", "app-gunicorn"]
     user: *superset-user
     restart: unless-stopped
     depends_on:
@@ -400,7 +410,7 @@ services:
 
   superset-worker:
     profiles:
-      - superset
+      - superset-worker
     container_name: local-lakehouse-superset-worker
     env_file: *env-file
     image: *superset-image
@@ -419,10 +429,11 @@ services:
           "CMD-SHELL",
           "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME",
         ]
+      interval: 15s
 
   superset-worker-beat:
     profiles:
-      - superset
+      - superset-worker
     container_name: local-lakehouse-superset-worker-beat
     env_file: *env-file
     image: *superset-image
@@ -443,6 +454,8 @@ networks:
     name: local-lakehouse-network
 
 volumes:
+  mkcert_data:
+    name: local-lakehouse_mkcert_data
   keycloak_data:
     name: local-lakehouse_keycloak_data
   minio_data:

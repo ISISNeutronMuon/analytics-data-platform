@@ -20,6 +20,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
+env:
+  TRINO_CATALOG_STORE: memory
+
 jobs:
   test:
     name: elt-common end-to-end tests
@@ -27,7 +30,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Add adp-router to /etc/hosts
+        shell: bash -l {0}
+        run: |
+          echo "127.0.0.1    adp-router" | sudo tee -a /etc/hosts
 
       - name: Run end-to-end tests
         uses: ./.github/actions/run-pytest-with-uv
@@ -36,3 +44,8 @@ jobs:
           pyproject-directory: elt-common
           pytest-file-or-dir: tests/e2e_tests
           uv-cache-dependency-glob: elt-common/pyproject.toml
+
+      - name: Remove adp-router from /etc/hosts
+        shell: bash -l {0}
+        run: |
+          sudo sed -i -e '/adp-router/d' /etc/hosts

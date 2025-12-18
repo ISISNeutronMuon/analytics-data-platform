@@ -35,7 +35,7 @@
       LAKEKEEPER__PG_ENCRYPTION_KEY="{{ lakekeeper_metadb_encryption_key }}"
       LAKEKEEPER__PG_DATABASE_URL_READ="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
       LAKEKEEPER__PG_DATABASE_URL_WRITE="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
-      LAKEKEEPER__OPENID_PROVIDER_URI="http://{{ top_level_domain }}/auth/realms/isis"
+      LAKEKEEPER__OPENID_PROVIDER_URI="http://{{ top_level_domain }}/auth/realms/{{ keycloak_realm }}"
       LAKEKEEPER__OPENID_AUDIENCE="lakekeeper"
       LAKEKEEPER__UI__OPENID_CLIENT_ID="lakekeeper"
       RUST_LOG="error"
@@ -62,10 +62,10 @@
       LAKEKEEPER__PG_ENCRYPTION_KEY="{{ lakekeeper_metadb_encryption_key }}"
       LAKEKEEPER__PG_DATABASE_URL_READ="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
       LAKEKEEPER__PG_DATABASE_URL_WRITE="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
-      LAKEKEEPER__OPENID_PROVIDER_URI="http://{{ top_level_domain }}/auth/realms/isis"
+      LAKEKEEPER__OPENID_PROVIDER_URI="http://{{ top_level_domain }}/auth/realms/{{ keycloak_realm }}"
       LAKEKEEPER__OPENID_AUDIENCE="lakekeeper"
       LAKEKEEPER__UI__OPENID_CLIENT_ID="lakekeeper"
-      LAKEKEEPER__UI__OPENID_PROVIDER_URI="http://{{ top_level_domain }}/auth/realms/isis"
+      LAKEKEEPER__UI__OPENID_PROVIDER_URI="http://{{ top_level_domain }}/auth/realms/{{ keycloak_realm }}"
       RUST_LOG="error"
     networks:
       - name: "{{ lakekeeper_container_network }}"
@@ -107,6 +107,13 @@
         "uv",
         "run",
         "/opt/work/bootstrap-warehouse.py",
+        "--keycloak-url {{ keycloak_url }}",
+        "--keycloak-realm {{ keycloak_realm }}",
+        "--bootstrap-credentials ansible:{{ vault_keycloak_client_secret_ansible }}",
+        "--token-scope lakekeeper",
+        "--log-level {{ lakekeeper_bootstrap_log_level }}",
+        "--server-admin {{ vault_lakekeeper_admin_user }}",
+        "--warehouse-json-file",
         "{{ warehouse_json_file | replace(lakekeeper_working_dir, '/opt/work') }}",
       ]
     state: started
@@ -118,12 +125,6 @@
       #
       UV_LINK_MODE=copy
       UV_PROJECT_ENVIRONMENT=/opt/uv-venv
-      LAKEKEEPER_BOOTSTRAP__LOG_LEVEL="{{ lakekeeper_bootstrap_log_level }}"
-      LAKEKEEPER_BOOTSTRAP__TOKEN_ENDPOINT_URL="{{ keycloak_token_endpoint_url_isis }}"
-      LAKEKEEPER_BOOTSTRAP__CLIENT_ID=ansible
-      LAKEKEEPER_BOOTSTRAP__CLIENT_SECRET="{{ vault_keycloak_client_secret_ansible }}"
-      LAKEKEEPER_BOOTSTRAP__SCOPE=lakekeeper
-      LAKEKEEPER_BOOTSTRAP__LAKEKEEPER_URL="{{ lakekeeper_url }}"
     networks:
       - name: "{{ lakekeeper_container_network }}"
     volumes:

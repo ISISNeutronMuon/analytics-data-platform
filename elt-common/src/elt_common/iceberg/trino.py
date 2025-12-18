@@ -109,5 +109,6 @@ class TrinoQueryEngine:
             connect_args={
                 "auth": BasicAuthentication(credentials.user, credentials.password),
                 "http_scheme": credentials.http_scheme,
+                "verify": False,
             },
         )

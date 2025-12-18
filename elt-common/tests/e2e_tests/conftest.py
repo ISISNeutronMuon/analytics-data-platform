@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 import dataclasses
 from pathlib import Path
+import time
 from typing import Any, Callable, Dict, Generator, List
 import urllib.parse
 import uuid
@@ -28,7 +29,7 @@ import tenacity
 
 _RETRY_ARGS = {
     "wait": tenacity.wait_exponential(max=10),
-    "stop": tenacity.stop_after_attempt(10),
+    "stop": tenacity.stop_after_attempt(5),
     "reraise": True,
 }
 
@@ -76,25 +77,26 @@ class Settings(BaseSettings):
     # The default values assume the docker-compose.yml in the infra/local has been used.
     # These are provided for the convenience of easily running a debugger without having
     # to set up remote debugging
-    host_netloc: str = "localhost:58080"
-    docker_netloc: str = "traefik"
-    s3_access_key: str = "adpuser"
+    host_netloc: str = "localhost:50080"
+    docker_netloc: str = "adp-router:50080"
+    s3_access_key: str = "adpsuperuser"
     s3_secret_key: str = "adppassword"
-    s3_bucket: str = "e2e-tests-warehouse"
-    s3_endpoint: str = "http://minio:59000"
+    s3_bucket: str = "e2e-tests"
+    s3_endpoint: str = "http://adp-router:59000"
     s3_region: str = "local-01"
     s3_path_style_access: bool = True
-    openid_client_id: str = "localinfra"
+    openid_client_id: str = "machine-infra"
     openid_client_secret: str = "s3cr3t"
     openid_scope: str = "lakekeeper"
+    project_id: str = "c4fcd44f-7ce7-4446-9f7c-dcc7ba76dd22"
     warehouse_name: str = "e2e_tests"
 
     # trino
-    trino_http_scheme: str = "http"
+    trino_http_scheme: str = "https"
     trino_host: str = "localhost"
-    trino_port: str = "59088"
-    trino_user: str = "trino"
-    trino_password: str = ""
+    trino_port: str = "58443"
+    trino_user: str = "machine-infra"
+    trino_password: str = "s3cr3t"
 
     @property
     def lakekeeper_url(self) -> Endpoint:
@@ -102,7 +104,9 @@ class Settings(BaseSettings):
 
     @property
     def openid_provider_uri(self) -> Endpoint:
-        return Endpoint(f"http://{self.host_netloc}/auth/realms/iceberg", self.docker_netloc)
+        return Endpoint(
+            f"http://{self.host_netloc}/auth/realms/analytics-data-platform", self.docker_netloc
+        )
 
     def storage_config(self) -> Dict[str, Any]:
         return {
@@ -129,25 +133,11 @@ class Settings(BaseSettings):
 
 
 class Server:
+    """Wraps a Lakekeeper instance. It is assumed that the instance is bootstrapped."""
+
     def __init__(self, access_token: str, settings: Settings):
         self.access_token = access_token
         self.settings = settings
-
-        # Bootstrap server once
-        management_endpoint_v1 = self.management_endpoint(version=1)
-        server_info = self._request_with_auth(
-            requests.get,
-            url=management_endpoint_v1 + "/info",
-        )
-        server_info.raise_for_status()
-        server_info = server_info.json()
-        if not server_info["bootstrapped"]:
-            response = self._request_with_auth(
-                requests.post,
-                management_endpoint_v1 + "/bootstrap",
-                json={"accept-terms-of-use": True},
-            )
-            response.raise_for_status()
 
     @property
     def token_endpoint(self) -> Endpoint:
@@ -169,13 +159,11 @@ class Server:
     def warehouse_endpoint(self, *, version: int = 1) -> Endpoint:
         return self.management_endpoint(version=version) + "/warehouse"
 
-    def create_warehouse(
-        self, name: str, project_id: uuid.UUID, storage_config: dict
-    ) -> "Warehouse":
+    def create_warehouse(self, name: str, project_id: str, storage_config: dict) -> "Warehouse":
         """Create a warehouse in this server"""
 
         payload = {
-            "project-id": str(project_id),
+            "project-id": project_id,
             **storage_config,
         }
 
@@ -233,6 +221,7 @@ class Warehouse:
         """Connect to the warehouse in the catalog"""
         creds = PyIcebergCatalogCredentials()
         creds.uri = str(self.server.catalog_endpoint())
+        creds.project_id = self.server.settings.project_id
         creds.warehouse = self.name
         creds.oauth2_server_uri = str(self.server.token_endpoint)
         creds.client_id = self.server.settings.openid_client_id
@@ -326,12 +315,7 @@ def server(access_token: str) -> Server:
 
 
 @pytest.fixture(scope="session")
-def project() -> uuid.UUID:
-    return uuid.UUID("{00000000-0000-0000-0000-000000000000}")
-
-
-@pytest.fixture(scope="session")
-def warehouse(server: Server, project: uuid.UUID) -> Generator:
+def warehouse(server: Server) -> Generator:
     if not settings.warehouse_name:
         raise ValueError("Empty 'warehouse_name' is not allowed.")
 
@@ -349,7 +333,9 @@ def warehouse(server: Server, project: uuid.UUID) -> Generator:
         minio_client.make_bucket(bucket_name=bucket_name)
         print(f"Bucket {bucket_name} created.")
 
-    warehouse = server.create_warehouse(settings.warehouse_name, project, storage_config)
+    warehouse = server.create_warehouse(
+        settings.warehouse_name, server.settings.project_id, storage_config
+    )
     print(f"Warehouse {warehouse.project_id} created.")
     try:
         yield warehouse
@@ -360,6 +346,8 @@ def warehouse(server: Server, project: uuid.UUID) -> Generator:
             minio_client.remove_bucket(bucket_name=bucket_name)
 
         try:
+            # Allow a brief pause for the test operations to complete
+            time.sleep(1)
             server.purge_warehouse(warehouse)
             server.delete_warehouse(warehouse)
             _remove_bucket(bucket_name)

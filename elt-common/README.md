@@ -13,55 +13,33 @@ Development requires the following tools:
 ### Setting up a Python virtual environment
 
 Once `uv` is installed, create an environment and install the `elt-common`
-package in editable mode using the following command:
+package in editable mode, along with the development dependencies:
 
 ```bash
+> uv venv
+> source .venv/bin/activate
 > uv pip install --editable . --group dev
+```
+
+## Running unit tests
+
+Run the unit tests using `pytest`:
+
+```bash
+> pytest tests/unit_tests
 ```
 
 ## Running end-to-end tests
 
 The end-to-end (e2e) tests for the `pyiceberg` destination require a running Iceberg
 rest catalog to test complete functionality.
-A (`docker-compose`)[./tests/docker-compose.yml] file is provided to both run the
-required services and provide a `python-uv` service for executing test commands.
-Please ensure you have docker and docker compose available on your command line
-before continuing.
+The local, docker-compose-based configuration provided by
+[infra/local/docker-compose.yml](../infra/local/docker-compose.yml) is the easiest way to
+spin up a set of services compatible with running the tests.
+_Note the requirement to edit `/etc/hosts` described in [here](../infra/local/README.md)._
 
-To run the end-to-end tests, from this directory execute
-
-```bash
-> docker compose -f tests/docker-compose.yml run python-uv uv run pytest tests/e2e_tests
-```
-
-When you have finished running the tests run
+Once the compose services are running, execute the e2e tests using `pytest`:
 
 ```bash
-> docker compose -f tests/docker-compose.yml down
+> pytest tests/e2e_tests
 ```
-
-to bring down the dependent services.
-
-### Debugging
-
-Using a debugger to debug the end-to-end tests is more complicated as it requires
-the dependent services to be accessible using their service names from within
-the compose file.
-
-To workaround this the `/etc/hosts` file can be edited to map the service names
-to localhost (127.0.0.1). Open `/etc/hosts` and add
-
-```text
-# docker compose services
-127.0.0.1 minio
-127.0.0.1 keycloak
-127.0.0.1 lakekeeper
-```
-
-Now bring up the services:
-
-```bash
-> docker compose -f tests/docker-compose.yml up -d
-```
-
-and start your debugger as normal.
