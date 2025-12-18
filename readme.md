@@ -7,7 +7,8 @@ aspects of the project.
 
 ## Components
 
-See [AGENTS.md](./AGENTS.md) for an overview of the repository contents.
+See [`docs-devel/src/index.md#repository-overview`](./docs-devel/src/index.md#repository-overview)
+for an overview of the repository contents.
 
 ## License
 

@@ -1,7 +1,5 @@
 # 1. Record architecture decisions
 
-Date: 2024-07-03
-
 ## Status
 
 Accepted
