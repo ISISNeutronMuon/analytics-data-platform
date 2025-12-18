@@ -42,7 +42,7 @@ http:
         - minioconsole-strip-prefix
 
     openfga:
-      entrypoints: web
+      entryPoints: web
       rule: PathPrefix(`/authz`)
       service: openfga
       middlewares:

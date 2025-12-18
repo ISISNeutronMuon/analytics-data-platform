@@ -1,6 +1,6 @@
 # Data Platform Proof-of-Concept
 
-A monorepo containing code to deploy an Data Lakehouse based on
+A monorepo containing code to deploy a Data Lakehouse based on
 [Apache Iceberg](https://iceberg.apache.org/).
 See the [developer documentation](./docs-devel/src/index.md) for more details on the high-level
 aspects of the project.
