@@ -84,6 +84,7 @@ UV_PROJECT_ENVIRONMENT=/opt/uv-venv
 TRINO_USER=superset
 TRINO_PASSWORD=s3cr3t
 TRINO_HTTPS_PORT=8443
+TRINO_CATALOG_STORE=${TRINO_CATALOG_STORE:-file}
 
 ###############################################################################
 # Superset
