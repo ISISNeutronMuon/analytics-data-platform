@@ -72,7 +72,10 @@ class Keycloak:
 
     @property
     def openid_config(self) -> Dict[str, Any]:
-        response = requests.get(self.realm_url + "/.well-known/openid-configuration")
+        response = requests.get(
+            self.realm_url + "/.well-known/openid-configuration",
+            **REQUESTS_DEFAULT_KWARGS,
+        )
         response.raise_for_status()
         return response.json()
 
@@ -224,7 +227,7 @@ class LakekeeperRestV1:
         )
         for warehouse in response.json()["projects"]:
             if warehouse["project-name"] == name:
-                LOGGER.debug(f"Project with name '{name}' exists with'")
+                LOGGER.debug(f"Project with name '{name}' already exists.'")
                 return warehouse["project-id"]
 
         return None
