@@ -16,7 +16,7 @@ An additional entry in `/etc/hosts` on the host machine is required:
 
 Some tools, such as PyIceberg and Superset in the browser, need to access services both outside
 and inside the container network. The `adp-router` service is a Traefik instance that routes
-traffic to match the url layout of the production deployment. By defining the above /etc/hosts
+traffic to match the url layout of the production deployment. By defining the above `/etc/hosts`
 entry a request will hit the router regardless of whether it is inside or outside of the container
 network.
 
@@ -43,7 +43,7 @@ Bring up the services with `docker compose`:
 docker compose up -d
 ```
 
-Service routes:
+Services:
 
 - Keycloak identity provider: http://localhost:50080/auth
   - `master` realm credentials: _admin/admin_
