@@ -42,3 +42,17 @@ It connects to Trino, provides dashboards, charts and exploration tools, and rel
 on central authentication (Keycloak) for SSO.
 
 ## Tools
+The platform uses a small set of data engineering tools to build, orchestrate
+and test ELT pipelines. Two of the primary packages are described below.
+
+### dlt
+
+[dlt](https://dlthub.com/docs/intro) provides an extraction and loading framework for the
+ELT pipelines. It provides connectors for common sources, schema management, and
+incremental loading semantics.
+
+### dbt
+
+[dbt](https://docs.getdbt.com) is used for transforming and modelling tabular data in
+the `silver` and `gold` layers. `dbt` enables SQL-based transformations, version-controlled models,
+testing, documentation, and dependency graphs for data products.
