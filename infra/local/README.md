@@ -28,12 +28,15 @@ To test ELT scripts based on the Python package `dlt`, create and add the follow
 bucket_url = "s3://playground"
 [destination.pyiceberg.credentials]
 uri = "http://localhost:50080/iceberg/catalog"
+project_id = "c4fcd44f-7ce7-4446-9f7c-dcc7ba76dd22"
 warehouse = "playground"
 oauth2_server_uri = "http://localhost:50080/auth/realms/analytics-data-platform/protocol/openid-connect/token"
 client_id = "machine-infra"
 client_secret = "s3cr3t"
 scope = "lakekeeper"
 ```
+
+The values are defined in [`env-local`](./env-local).
 
 ## Start services
 

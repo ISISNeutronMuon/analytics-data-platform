@@ -14,7 +14,7 @@ x-trino-image: &trino-image trinodb/trino:477
 
 # environment
 x-env-file: &env-file
-  - path: ./env-for-testing
+  - path: ./env-local
     required: true
 
 # network
