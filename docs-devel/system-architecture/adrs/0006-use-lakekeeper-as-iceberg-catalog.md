@@ -16,7 +16,7 @@ Several implementations exist within the Iceberg libraries including:
 - Nessie: a transactional catalog that tracks namespaces and tables in a database with git-like version control
 
 The REST catalog requires a server to implement the specification but offers more flexibility without
-have to modify the Iceberg libraries, e.g a query engine using REST doesn't need to be modified to
+having to modify the Iceberg libraries, e.g a query engine using REST doesn't need to be modified to
 switch REST catalog implementations.
 
 ## Decision
@@ -46,7 +46,7 @@ We will choose Lakekeeper as a REST-based catalog server due to:
 
 ## Consequences
 
-Lakekeeper will be the back bone of the data lake and is a relatively new project so there is some
+Lakekeeper will be the backbone of the data lake and is a relatively new project so there is some
 risk that it does not survive.
 The design of Apache Iceberg mitigates the risk of migrating to a new catalog if that becomes
 necessary as the catalog only stores metadata and would not require migrating the data on the object
