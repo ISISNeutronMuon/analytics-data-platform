@@ -1,4 +1,5 @@
 # A development stack to emulate the Lakehouse. This is intended for local development only.
+# See ./README.md
 
 # image versions
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
