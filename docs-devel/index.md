@@ -18,17 +18,17 @@ concept can be valuable to ISIS.
 This repository is a monorepo containing all of the code for the platform. It may be separated out in
 the future.
 
-- [certs]: Certificate request configurations.
-- [infra/local](https://github.com/ISISNeutronMuon/analytics-data-platform/tree/main/infra/local):
-  Docker-compose-based configuration of the system. Used for end-to-end CI tests and local development and exploration.
-- [infra/ansible-docker](https://github.com/ISISNeutronMuon/analytics-data-platform/tree/main/infra/ansible-docker):
-  Ansible roles/playbooks to deploy a version of the system to the STFC cloud.
-- [warehouses](https://github.com/ISISNeutronMuon/analytics-data-platform/tree/main/warehouses):
-  A subdirectory per data warehouse. Each subdirectory contains ELT code to populate the warehouse
-  with data extracted from external data sources and transformed to models for user consumption.
-- [elt-common](https://github.com/ISISNeutronMuon/analytics-data-platform/tree/main/elt-common):
-  A Python package containing common code across the ELT pipelines in the warehouses.
-
+```text
+.
+├── certs/                  # Certificate request configurations used for HTTPS/SSL
+├── elt-common/             # Reusable Python package with common ETL/ELT helpers used by the warehouses
+├── docs/                   # User and developer documentation using MkDocs. See `docs/src` for content used in the published docs site.
+├── infra/
+│   ├── ansible-docker/     # Ansible playbooks/roles to deploy the system to the STFC (OpenStack) cloud.
+│   ├── container-images/   # Container definitions deployed services
+│   └── local/              # docker-compose configuration for a local development environment and end-to-end CI tests.
+└── warehouses/             # One subdirectory per (Lakekeeper) warehouse. Each contains ELT code to extract, transform and load data from external sources into Iceberg tables.
+```
 
 ## Details
 
@@ -37,4 +37,3 @@ Jump to:
 - [System architecture](./system-architecture/index.md)
 - [Data architecture](./data-architecture/index.md)
 - [Deployment](./deployment/index.md)
-- [Development](./development/index.md)
