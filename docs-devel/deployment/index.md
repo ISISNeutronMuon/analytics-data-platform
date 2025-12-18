@@ -37,13 +37,13 @@ where _cloud\_name_ and _ssh\_key_ are described in the [prerequisites section](
 Take a note of the new node ip address and create a new inventory file:
 
 ```sh
-cp inventory-sample.ini inventory.ini
+cp inventory-sample.yml inventory.yml
 ```
 
 Fill in the new Traefik ip address and deploy Traefik:
 
 ```sh
-ansible-playbook -i inventory.ini playbooks/traefik/deploy.yml
+ansible-playbook -i inventory.yml playbooks/traefik/deploy.yml
 ```
 
 Once deployed check the Traefik dashboard is available at `https://<domain>/traefik/dashboard/.`
@@ -53,7 +53,7 @@ The passwords are in Keeper.
 
 Now we deploy the remaining services. The deployment order is important as some
 services depend on others being available. Each service has a single VM with the
-exception of Superset that hosts multiple instances one once machine.
+exception of Superset that hosts multiple instances on a single node.
 
 First create the VMs:
 

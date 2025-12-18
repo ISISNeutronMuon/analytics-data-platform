@@ -1,0 +1,39 @@
+all:
+  vars:
+    ansible_user: <ssh_user>
+    ansible_python_interpreter: /usr/bin/python3
+    ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ubuntu@<floating_ip>"'
+
+traefik:
+  hosts:
+    traefik-1:
+      ansible_host: <floating_ip>
+
+keycloak:
+  hosts:
+    keycloak-1:
+      ansible_host: <keycloak_ip>
+
+lakekeeper:
+  hosts:
+    lakekeeper-1:
+      ansible_host: <lakekeeper_ip>
+
+trino:
+  hosts:
+    trino-1:
+      ansible_host: <trino_ip>
+
+elt:
+  hosts:
+    elt-1:
+      ansible_host: <elt_ip>
+
+superset_accelerator:
+  hosts:
+    superset-accelerator-1:
+      ansible_host: <superset_farm_ip>
+
+superset_farm:
+  children:
+    superset_accelerator:
