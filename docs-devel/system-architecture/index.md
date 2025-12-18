@@ -42,6 +42,7 @@ It connects to Trino, provides dashboards, charts and exploration tools, and rel
 on central authentication (Keycloak) for SSO.
 
 ## Tools
+
 The platform uses a small set of data engineering tools to build, orchestrate
 and test ELT pipelines. Two of the primary packages are described below.
 
@@ -56,3 +57,9 @@ incremental loading semantics.
 [dbt](https://docs.getdbt.com) is used for transforming and modelling tabular data in
 the `silver` and `gold` layers. `dbt` enables SQL-based transformations, version-controlled models,
 testing, documentation, and dependency graphs for data products.
+
+### elt-commmon
+
+[elt-common](../../elt-common) is a our own Python package that provides additional functionality
+built on top of [dlt](#dlt). It is not published to PyPI and must be installed using the git source
+url.
