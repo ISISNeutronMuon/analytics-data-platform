@@ -12,7 +12,7 @@ object storage is provided by the SCD Ceph team.
 
 ## Services
 
-Here we provide an overview of they key services. For details on their deployment configuration
+Here we provide an overview of the key services. For details on their deployment configuration
 see [deployment](../deployment/index.md).
 
 ### Keycloak
@@ -58,8 +58,8 @@ incremental loading semantics.
 the `silver` and `gold` layers. `dbt` enables SQL-based transformations, version-controlled models,
 testing, documentation, and dependency graphs for data products.
 
-### elt-commmon
+### elt-common
 
-[elt-common](../../elt-common) is a our own Python package that provides additional functionality
+[elt-common](../../elt-common) is our own Python package that provides additional functionality
 built on top of [dlt](#dlt). It is not published to PyPI and must be installed using the git source
 url.
