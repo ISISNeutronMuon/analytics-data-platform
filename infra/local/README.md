@@ -6,7 +6,7 @@ complications of ensuring self-signed certificates are trusted correctly across 
 all service containers.
 *Repeat: This configuration should not be used in production.*.
 
-## Set Up
+## One-time setup
 
 An additional entry in `/etc/hosts` on the host machine is required:
 
