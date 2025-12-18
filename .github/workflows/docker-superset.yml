@@ -33,7 +33,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Compute fully qualified image name
         run: echo "FQ_IMAGE_NAME=${{ env.REGISTRY }}/${{ env.ORG_NAME }}/${{ env.IMAGE_NAME }}" >> $GITHUB_ENV
       - name: Log in to the Container registry
