@@ -5,7 +5,7 @@ dlthub_telemetry = false
 
 [[sources.sql_database.tables]]
 name = "Entries"
-incremental_id = "EntryId"
+write_disposition = "merge"
 html_to_markdown_columns = ["AdditionalComment"]
 
 [[sources.sql_database.tables]]
@@ -22,7 +22,7 @@ incremental_id = "LogbookId"
 
 [[sources.sql_database.tables]]
 name = "MoreEntryColumns"
-incremental_id = "MoreEntryColumnId"
+write_disposition = "merge"
 
 [[sources.sql_database.tables]]
 name = "AdditionalColumns"
