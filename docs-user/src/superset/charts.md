@@ -17,12 +17,12 @@ page shown in the image below while the final method skips this page and takes
 you to the empty chart screen for the selected dataset, with the chart type
 set to table.
 
-![Superset chart with no selection](../assets/images/superset/isis-superset-chart-add-no-selection.png)
+![Superset chart with no selection](../images/superset/isis-superset-chart-add-no-selection.png)
 
 We will use a *Line Chart* as an example. Select a dataset and the *Line Chart*
 type then click *Create new chart*.
 
-![Superset empty line chart](../assets/images/superset/isis-superset-line-chart-empty.png)
+![Superset empty line chart](../images/superset/isis-superset-line-chart-empty.png)
 
 You are presented with the line-chart builder page with your chosen dataset
 selected.

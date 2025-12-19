@@ -1,0 +1,10 @@
+[project]
+docs_dir = 'src'
+site_name = 'ISIS Analytics Data Platform'
+site_ur = 'https://analytics.isis.cclrc.ac.uk/docs/'
+site_author = 'ISIS Computing Division'
+site_description = 'Documentation for the ISIS Analytics Data Platform'
+extra_css = ['stylesheets/extra.css']
+
+[project.theme]
+logo = 'images/logo-transparent.svg'

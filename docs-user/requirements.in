@@ -1,2 +1,2 @@
-mkdocs-material==9.6.11
-mkdocs-autorefs==1.4.1
+mkdocs-autorefs~=1.4.3
+zensical==0.0.13
