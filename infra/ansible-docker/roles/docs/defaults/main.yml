@@ -1,3 +1,3 @@
-docs_source_dir: "{{ role_path }}/../../../../docs"
+docs_source_dir: "{{ role_path }}/../../../../docs-user"
 docs_target_dir: /srv/docs
 docs_build_dir_relpath: "_docs-build"

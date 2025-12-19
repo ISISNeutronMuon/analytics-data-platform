@@ -24,4 +24,4 @@ repos:
     rev: v0.20.0
     hooks:
       - id: markdownlint-cli2
-        exclude: '^(?:\.github|docs)(?:/|$)'
+        exclude: '^(?:\.github|docs-user)(?:/|$)'
