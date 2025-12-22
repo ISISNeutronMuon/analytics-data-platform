@@ -16,7 +16,7 @@ from collections.abc import Generator, Iterator, Sequence
 
 import dlt
 from dlt.sources import DltResource
-from dlt.sources.sql_database import sql_database
+from dlt.sources.sql_database import sql_database, sql_table
 from html2text import html2text
 import pyarrow as pa
 
@@ -88,12 +88,23 @@ def opralogwebdb() -> Generator[DltResource]:
         yield resource.with_name(table_info.get("destination_name", table_src_name))
 
 
+@dlt.resource(primary_key="entry_id", write_disposition="merge")
+def entries():
+    resource = sql_table(
+        schema=dlt.config.value,
+        table="Entries",
+        backend="pyarrow",
+        backend_kwargs={"tz": "UTC"},
+    )
+    yield from (resource | html_to_markdown(column_names=["AdditionalComment"]))
+
+
 # ------------------------------------------------------------------------------
 
 if __name__ == "__main__":
     cli_utils.cli_main(
         pipeline_name="opralogweb",
         default_destination="elt_common.dlt_destinations.pyiceberg",
-        data_generator=opralogwebdb,
+        data_generator=entries,
         dataset_name_suffix="opralogweb",
     )
