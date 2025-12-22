@@ -72,6 +72,11 @@ def opralogwebdb() -> Generator[DltResource]:
     for table_info in tables:
         table_src_name = table_info["name"]
         resource = getattr(source, table_src_name)
+        # Apply transformers first or resource hints are lost
+        if "html_to_markdown_columns" in table_info:
+            resource = resource | html_to_markdown(
+                column_names=table_info["html_to_markdown_columns"]
+            )
         if "write_disposition" in table_info:
             resource.apply_hints(
                 write_disposition=table_info["write_disposition"],
@@ -79,10 +84,6 @@ def opralogwebdb() -> Generator[DltResource]:
         if "incremental_id" in table_info:
             resource.apply_hints(
                 incremental=dlt.sources.incremental(table_info["incremental_id"])
-            )
-        if "html_to_markdown_columns" in table_info:
-            resource = resource | html_to_markdown(
-                column_names=table_info["html_to_markdown_columns"]
             )
         yield resource.with_name(table_info.get("destination_name", table_src_name))
 
