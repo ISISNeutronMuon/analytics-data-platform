@@ -112,6 +112,7 @@ def cli_main(
         write_disposition=args.write_disposition,
     )
     LOGGER.debug(pipeline.last_trace.last_extract_info)
+    LOGGER.debug(f"Extracted row counts: {pipeline.last_trace.last_normalize_info.row_counts}")
     LOGGER.debug(pipeline.last_trace.last_load_info)
     LOGGER.info(
         f"Pipeline {pipeline.pipeline_name} completed in {
