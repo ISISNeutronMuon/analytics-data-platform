@@ -1,31 +1,26 @@
-name: End-to-end tests for elt-common package
+name: End-to-end tests for extract and load scripts in the warehouse
 on:
   push:
     branches:
       - "main"
     paths:
-      - ".github/workflows/elt-common_e2e_tests.yml"
-      - "ansible-docker/roles/lakekeeper/files/bootstrap-warehouse.py"
-      - "infra/local/**"
+      - ".github/workflows/warehouses_e2e_tests.yml"
       - "elt-common/**"
+      - "warehouses/accelerator/extract_load/opralogweb/**"
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - ".github/workflows/elt-common_e2e_tests.yml"
-      - "ansible-docker/roles/lakekeeper/files/bootstrap-warehouse.py"
-      - "infra/local/**"
+      - ".github/workflows/warehouses_e2e_tests.yml"
       - "elt-common/**"
+      - "warehouses/accelerator/extract_load/opralogweb/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
-env:
-  TRINO_CATALOG_STORE: memory
-
 jobs:
   test:
-    name: elt-common end-to-end tests
+    name: warehouses end-to-end tests
     runs-on: ubuntu-latest
 
     steps:
@@ -41,9 +36,10 @@ jobs:
         uses: ./.github/actions/run-pytest-with-uv
         with:
           compose-file-path: infra/local/docker-compose.yml
-          pytest-file-or-dir: tests/e2e_tests
+          install-cmd: uv sync --locked --dev --script extract_and_load.py
+          pytest-file-or-dir: tests
           uv-cache-dependency-glob: elt-common/pyproject.toml
-          working-directory: elt-common
+          working-directory: warehouses/accelerator/extract_load/opralogweb
 
       - name: Remove adp-router from /etc/hosts
         shell: bash -l {0}
