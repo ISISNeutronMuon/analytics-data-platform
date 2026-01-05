@@ -42,6 +42,7 @@ jobs:
           working-directory: warehouses/accelerator/extract_load/opralogweb
 
       - name: Remove adp-router from /etc/hosts
+        if: always()
         shell: bash -l {0}
         run: |
           sudo sed -i -e '/adp-router/d' /etc/hosts

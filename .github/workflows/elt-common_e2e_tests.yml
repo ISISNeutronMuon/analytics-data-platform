@@ -46,6 +46,7 @@ jobs:
           working-directory: elt-common
 
       - name: Remove adp-router from /etc/hosts
+        if: always()
         shell: bash -l {0}
         run: |
           sudo sed -i -e '/adp-router/d' /etc/hosts
