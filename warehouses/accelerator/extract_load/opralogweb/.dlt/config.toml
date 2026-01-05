@@ -6,6 +6,10 @@ dlthub_telemetry = false
 [sources.data_writer]
 file_max_items = 100000
 
+[extract]
+# Important that we extract Entries first to find the changed list
+next_item_mode = "fifo"
+
 [normalize]
 workers = 3
 
