@@ -18,12 +18,9 @@ EL_SCRIPT = Path(__file__).parent.parent / "extract_and_load.py"
 @pytest.fixture()
 def fake_source_db():
     with tempfile.TemporaryDirectory() as tmp_dir:
-        try:
-            db_url = f"sqlite:///{tmp_dir}/fake_source.sqlite"
-            create_fake_source_db(db_url)
-            yield db_url
-        finally:
-            shutil.rmtree(tmp_dir)
+        db_url = f"sqlite:///{tmp_dir}/fake_source.sqlite"
+        create_fake_source_db(db_url)
+        yield db_url
 
 
 def run_el_script(fake_source_db, destination_config, pipelines_dir):
