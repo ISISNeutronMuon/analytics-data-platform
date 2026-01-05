@@ -5,9 +5,9 @@ inputs:
   compose-file-path:
     description: If supplied, brings up the services defined in the given docker compose file.
     default: ""
-  install-cmd:
-    description: The uv command to install the project
-    default: "uv sync --locked --all-extras --dev"
+  pyproject-directory:
+    description: Path to the directory containing pyproject.toml
+    required: true
   pytest-file-or-dir:
     description: Path to a file or directory for pytest execution
     required: true
@@ -19,9 +19,6 @@ inputs:
   uv-version:
     description: The version of uv to install e.g., `0.5.0` Defaults to the version in pyproject.toml or 'latest'.
     default: "latest"
-  working-directory:
-    description: Working directory while running pytest
-    required: true
 
 runs:
   using: composite
@@ -44,13 +41,13 @@ runs:
 
     - name: Install the project
       shell: bash -l {0}
-      run: ${{ inputs.install-cmd }}
-      working-directory: ${{ inputs.working-directory }}
+      run: uv sync --locked --all-extras --dev
+      working-directory: ${{ inputs.pyproject-directory }}
 
     - name: Run tests
       shell: bash -l {0}
       run: uv run pytest --durations-min=0.5 --exitfirst "${{ inputs.pytest-file-or-dir }}" --cache-clear
-      working-directory: ${{ inputs.working-directory }}
+      working-directory: ${{ inputs.pyproject-directory }}
 
     - name: Dump Docker Compose logs on failure
       if: failure() && inputs.compose-file-path != ''

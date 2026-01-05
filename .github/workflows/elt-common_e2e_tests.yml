@@ -41,12 +41,11 @@ jobs:
         uses: ./.github/actions/run-pytest-with-uv
         with:
           compose-file-path: infra/local/docker-compose.yml
+          pyproject-directory: elt-common
           pytest-file-or-dir: tests/e2e_tests
           uv-cache-dependency-glob: elt-common/pyproject.toml
-          working-directory: elt-common
 
       - name: Remove adp-router from /etc/hosts
-        if: always()
         shell: bash -l {0}
         run: |
           sudo sed -i -e '/adp-router/d' /etc/hosts
