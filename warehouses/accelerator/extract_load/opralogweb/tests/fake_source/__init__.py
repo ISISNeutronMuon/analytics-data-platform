@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Create a fake Opralog DB"""
 
 import click
@@ -11,7 +10,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import sessionmaker
 
-from opralogmodel import (
+from .opralogmodel import (
     ENTRYID_START,
     get_latest_entry_id,
     metadata as opralogdb,
@@ -101,23 +100,11 @@ def update_and_append_new_records(engine: Engine):
             entry_id += 1
 
 
-@click.command("fake_db")
-@click.argument("db-url")
-@click.option(
-    "--simulate-updates",
-    is_flag=True,
-    help="If supplied, alter old records and add new ones to mirror application updates.",
-)
-def main(db_url, simulate_updates: bool):
-    """Create a fake database stored at the given DB url, e.g. sqlite:///fake_db.sqlite"""
-    logging.basicConfig(level=logging.INFO)
-
-    engine = create_engine(db_url, echo=False)
-    if simulate_updates:
-        update_and_append_new_records(engine)
-    else:
-        create_and_fill(engine)
+def create_fake_source_db(db_url):
+    """Create a fake database stored at the given db_url, e.g. sqlite:///fake_db.sqlite"""
+    create_and_fill(create_engine(db_url, echo=False))
 
 
-if __name__ == "__main__":
-    main()
+def update_fake_source_db(db_url):
+    """Updates a fake database stored at the given db_url, e.g. sqlite:///fake_db.sqlite"""
+    update_and_append_new_records(create_engine(db_url, echo=False))

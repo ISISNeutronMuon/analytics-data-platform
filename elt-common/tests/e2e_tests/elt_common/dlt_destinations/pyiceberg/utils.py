@@ -1,16 +1,9 @@
-from contextlib import contextmanager
 from dataclasses import dataclass
-import os
-from typing import cast, Any, Dict, List, Union
+from typing import Any, Dict, List, Union
 
 import dlt
-from dlt.common.pendulum import pendulum
-from dlt.common.destination import (
-    TDestinationReferenceArg,
-)
 from dlt.common.schema.typing import TTableSchema
-from dlt.common.destination.exceptions import SqlClientNotAvailable
-
+import pendulum
 from pyiceberg.partitioning import PartitionSpec, PartitionField
 from pyiceberg.table.sorting import SortOrder, SortField, SortDirection
 from pyiceberg.transforms import (
@@ -21,114 +14,14 @@ from pyiceberg.transforms import (
     HourTransform,
 )
 
-from elt_common.dlt_destinations.pyiceberg.pyiceberg import (
-    PyIcebergClient,
-)
+from elt_common.dlt_destinations.pyiceberg import iceberg_catalog
+
 from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
     PartitionTrBuilder,
     SortOrderBuilder,
     PartitionTransformation,
     SortOrderSpecification,
 )
-
-from e2e_tests.conftest import Warehouse
-
-
-@dataclass
-class PyIcebergDestinationTestConfiguration:
-    """Class for defining test setup for pyiceberg destination."""
-
-    destination: TDestinationReferenceArg = "elt_common.dlt_destinations.pyiceberg"
-
-    def setup(self, warehouse: Warehouse) -> None:
-        """Sets up environment variables for this destination configuration"""
-        server, server_settings = warehouse.server, warehouse.server.settings
-        os.environ["DESTINATION__PYICEBERG__CREDENTIALS__URI"] = str(
-            warehouse.server.catalog_endpoint()
-        )
-        os.environ["DESTINATION__PYICEBERG__CREDENTIALS__PROJECT_ID"] = str(
-            warehouse.server.settings.project_id
-        )
-        os.environ.setdefault("DESTINATION__PYICEBERG__CREDENTIALS__WAREHOUSE", warehouse.name)
-        os.environ.setdefault(
-            "DESTINATION__PYICEBERG__CREDENTIALS__OAUTH2_SERVER_URI",
-            str(server.token_endpoint),
-        )
-        os.environ.setdefault(
-            "DESTINATION__PYICEBERG__CREDENTIALS__CLIENT_ID",
-            server_settings.openid_client_id,
-        )
-        os.environ.setdefault(
-            "DESTINATION__PYICEBERG__CREDENTIALS__CLIENT_SECRET",
-            server_settings.openid_client_secret,
-        )
-        os.environ.setdefault(
-            "DESTINATION__PYICEBERG__CREDENTIALS__SCOPE",
-            server_settings.openid_scope,
-        )
-        os.environ.setdefault("DESTINATION__PYICEBERG__BUCKET_URL", warehouse.bucket_url)
-        # Avoid collisons on table names when the same ones are created/deleted in quick
-        # succession
-        os.environ.setdefault(
-            "DESTINATION__PYICEBERG__TABLE_LOCATION_LAYOUT",
-            "{location_tag}/{dataset_name}/{table_name}",
-        )
-
-    def setup_pipeline(
-        self,
-        warehouse: Warehouse,
-        pipeline_name: str,
-        dataset_name: str = None,
-        dev_mode: bool = False,
-        **kwargs,
-    ) -> dlt.Pipeline:
-        """Convenience method to setup pipeline with this configuration"""
-        self.setup(warehouse)
-        self.active_pipeline = dlt.pipeline(
-            pipeline_name=pipeline_name,
-            pipelines_dir=kwargs.pop("pipelines_dir", None),
-            destination=self.destination,
-            dataset_name=(dataset_name if dataset_name is not None else pipeline_name + "_data"),
-            dev_mode=dev_mode,
-            **kwargs,
-        )
-        return cast(dlt.Pipeline, self.active_pipeline)
-
-    def clean_catalog(self):
-        """Clean the destination catalog of all namespaces and tables"""
-        pipeline = self.active_pipeline
-        if pipeline is None:
-            return
-
-        with pipeline.destination_client() as client:
-            catalog = cast(PyIcebergClient, client).iceberg_catalog
-            for ns_name in catalog.list_namespaces():
-                tables = catalog.list_tables(ns_name)
-                for qualified_table_name in tables:
-                    catalog.purge_table(qualified_table_name)
-                catalog.drop_namespace(ns_name)
-
-    def attach_pipeline(self, pipeline_name: str, **kwargs) -> dlt.Pipeline:
-        """Attach to existing pipeline keeping the dev_mode"""
-        # remember dev_mode from setup_pipeline
-        pipeline = dlt.attach(pipeline_name, **kwargs)
-        return pipeline
-
-    def supports_sql_client(self, pipeline: dlt.Pipeline) -> bool:
-        """Checks if destination supports SQL queries"""
-        try:
-            pipeline.sql_client()
-            return True
-        except SqlClientNotAvailable:
-            return False
-
-    @property
-    def active_pipeline(self) -> dlt.Pipeline | None:
-        return self._active_pipeline
-
-    @active_pipeline.setter
-    def active_pipeline(self, value: dlt.Pipeline):
-        self._active_pipeline = value
 
 
 @dataclass
@@ -321,9 +214,3 @@ def assert_unordered_list_equal(list1: List[Any], list2: List[Any]) -> None:
     assert len(list1) == len(list2), "Lists have different length"
     for item in list1:
         assert item in list2, f"Item {item} not found in list2"
-
-
-@contextmanager
-def iceberg_catalog(pipeline: dlt.Pipeline):
-    with pipeline.destination_client() as client:
-        yield cast(PyIcebergClient, client).iceberg_catalog

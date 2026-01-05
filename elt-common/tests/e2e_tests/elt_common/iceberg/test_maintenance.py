@@ -5,7 +5,7 @@ import re
 from click.testing import CliRunner
 from elt_common.iceberg.trino import TrinoCredentials, TrinoQueryEngine
 from elt_common.iceberg.maintenance import cli, IcebergTableMaintenaceSql
-from e2e_tests.conftest import Warehouse
+from elt_common.testing.lakekeeper import Warehouse
 import pytest
 from pytest_mock import MockerFixture
 

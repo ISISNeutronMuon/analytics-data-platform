@@ -5,24 +5,22 @@ from typing import Any, Dict, List
 
 import dlt
 from dlt.common.schema.utils import loads_table, pipeline_state_table, version_table
+from elt_common.dlt_destinations.pyiceberg import iceberg_catalog
 from elt_common.dlt_destinations.pyiceberg.helpers import (
     namespace_exists as catalog_namespace_exists,
 )
 from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
     pyiceberg_adapter,
 )
+from elt_common.testing.dlt import PyIcebergDestinationTestConfiguration
 import pendulum
 import pytest
 
-
-from e2e_tests.conftest import Warehouse
 from e2e_tests.elt_common.dlt_destinations.pyiceberg.utils import (
     assert_table_has_shape,
     assert_table_has_data,
-    iceberg_catalog,
     partition_test_configs,
     sort_order_test_configs,
-    PyIcebergDestinationTestConfiguration,
     PyIcebergPartitionTestConfiguration,
     PyIcebergSortOrderTestConfiguration,
 )
@@ -58,13 +56,11 @@ def resource_factory(
 
 
 def test_dlt_tables_created(
-    warehouse: Warehouse,
     pipelines_dir: str,
     destination_config: PyIcebergDestinationTestConfiguration,
 ) -> None:
     data = [{"id": 1}]
     pipeline = destination_config.setup_pipeline(
-        warehouse,
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
@@ -91,7 +87,6 @@ def test_dlt_tables_created(
 
 
 def test_explicit_append(
-    warehouse: Warehouse,
     pipelines_dir,
     destination_config: PyIcebergDestinationTestConfiguration,
 ) -> None:
@@ -103,7 +98,6 @@ def test_explicit_append(
         for i in range(10)
     ]
     pipeline = destination_config.setup_pipeline(
-        warehouse,
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
@@ -136,7 +130,6 @@ def test_explicit_append(
 
 
 def test_explicit_replace(
-    warehouse: Warehouse,
     pipelines_dir,
     destination_config: PyIcebergDestinationTestConfiguration,
 ) -> None:
@@ -148,7 +141,6 @@ def test_explicit_replace(
         for i in range(10)
     ]
     pipeline = destination_config.setup_pipeline(
-        warehouse,
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
@@ -186,7 +178,6 @@ def test_explicit_replace(
     ],
 )
 def test_explicit_merge_updates_expected_values(
-    warehouse: Warehouse,
     pipelines_dir,
     destination_config: PyIcebergDestinationTestConfiguration,
     identifier_keys: dict,
@@ -200,7 +191,6 @@ def test_explicit_merge_updates_expected_values(
         for i in range(num_records_first_run)
     ]
     pipeline = destination_config.setup_pipeline(
-        warehouse,
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
@@ -236,7 +226,6 @@ def test_explicit_merge_updates_expected_values(
 
 
 def test_merge_without_primary_or_merge_key_raises_error(
-    warehouse: Warehouse,
     pipelines_dir,
     destination_config: PyIcebergDestinationTestConfiguration,
 ) -> None:
@@ -249,7 +238,6 @@ def test_merge_without_primary_or_merge_key_raises_error(
         for i in range(num_records_first_run)
     ]
     pipeline = destination_config.setup_pipeline(
-        warehouse,
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
@@ -259,7 +247,6 @@ def test_merge_without_primary_or_merge_key_raises_error(
 
 @pytest.mark.parametrize("merge_strategy", ["delete-insert", "scd2"])
 def test_explicit_merge_not_supported_for_strategies_other_than_upsert(
-    warehouse: Warehouse,
     pipelines_dir,
     destination_config: PyIcebergDestinationTestConfiguration,
     merge_strategy,
@@ -272,7 +259,6 @@ def test_explicit_merge_not_supported_for_strategies_other_than_upsert(
         for i in range(10)
     ]
     pipeline = destination_config.setup_pipeline(
-        warehouse,
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
@@ -284,13 +270,11 @@ def test_explicit_merge_not_supported_for_strategies_other_than_upsert(
 
 
 def test_drop_storage(
-    warehouse: Warehouse,
     pipelines_dir,
     destination_config: PyIcebergDestinationTestConfiguration,
 ):
     data = [{"id": i + 1} for i in range(2)]
     pipeline = destination_config.setup_pipeline(
-        warehouse,
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
@@ -305,13 +289,11 @@ def test_drop_storage(
 
 
 def test_sync_state(
-    warehouse: Warehouse,
     pipelines_dir,
     destination_config: PyIcebergDestinationTestConfiguration,
 ):
     data = [{"id": i + 1} for i in range(2)]
     pipeline_1 = destination_config.setup_pipeline(
-        warehouse,
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
@@ -319,7 +301,6 @@ def test_sync_state(
     pipeline_1.run(resource_factory(data))
     shutil.rmtree(pipelines_dir)
     pipeline_2 = destination_config.setup_pipeline(
-        warehouse,
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
@@ -329,7 +310,6 @@ def test_sync_state(
 
 
 def test_expected_datatypes_can_be_loaded(
-    warehouse: Warehouse,
     pipelines_dir,
     destination_config: PyIcebergDestinationTestConfiguration,
 ):
@@ -343,7 +323,6 @@ def test_expected_datatypes_can_be_loaded(
         }
     ]
     pipeline = destination_config.setup_pipeline(
-        warehouse,
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
@@ -358,12 +337,10 @@ def test_expected_datatypes_can_be_loaded(
 
 
 def test_schema_evolution_supported(
-    warehouse: Warehouse,
     pipelines_dir,
     destination_config: PyIcebergDestinationTestConfiguration,
 ):
     pipeline = destination_config.setup_pipeline(
-        warehouse,
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
@@ -386,7 +363,6 @@ def test_schema_evolution_supported(
     ids=lambda x: x.name,
 )
 def test_partition_specs_respected(
-    warehouse: Warehouse,
     pipelines_dir,
     destination_config: PyIcebergDestinationTestConfiguration,
     partition_config: PyIcebergPartitionTestConfiguration,
@@ -398,7 +374,6 @@ def test_partition_specs_respected(
         yield data
 
     pipeline = destination_config.setup_pipeline(
-        warehouse,
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
@@ -426,7 +401,6 @@ def test_partition_specs_respected(
     ids=lambda x: x.name,
 )
 def test_sort_order_specs_respected(
-    warehouse: Warehouse,
     pipelines_dir,
     destination_config: PyIcebergDestinationTestConfiguration,
     sort_order_config: PyIcebergSortOrderTestConfiguration,
@@ -436,7 +410,6 @@ def test_sort_order_specs_respected(
         yield sort_order_config.data
 
     pipeline = destination_config.setup_pipeline(
-        warehouse,
         pipeline_name(inspect.currentframe()),
         pipelines_dir=pipelines_dir,
     )
