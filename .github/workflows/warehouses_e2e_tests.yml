@@ -36,7 +36,7 @@ jobs:
         uses: ./.github/actions/run-pytest-with-uv
         with:
           compose-file-path: infra/local/docker-compose.yml
-          install-cmd: uv sync --locked --dev --script extract_and_load.py
+          install-cmd: uv sync --locked --script extract_and_load.py
           pytest-file-or-dir: tests
           uv-cache-dependency-glob: elt-common/pyproject.toml
           working-directory: warehouses/accelerator/extract_load/opralogweb
