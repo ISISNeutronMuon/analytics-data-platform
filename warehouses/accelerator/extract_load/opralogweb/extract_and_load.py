@@ -30,7 +30,7 @@ SQL_TABLE_KWARGS = dict(
 )
 
 # Pass around extracted EntryIds
-EXTRACTED_ENTRY_IDS: pa.Table = None
+EXTRACTED_ENTRY_IDS: pa.ChunkedArray = None
 
 
 @dlt.source()
