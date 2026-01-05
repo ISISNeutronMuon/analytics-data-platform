@@ -12,10 +12,10 @@ repos:
     hooks:
       # Run the linter.
       - id: ruff-check
-        files: elt-common
+        files: (elt-common|warehouses)
       # Run the formatter.
       - id: ruff-format
-        files: elt-common
+        files: (elt-common|warehouses)
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.11.0.1
     hooks:

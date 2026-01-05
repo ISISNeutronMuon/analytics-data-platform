@@ -2,12 +2,10 @@ import copy
 import os
 from pathlib import Path
 import tempfile
-import shutil
 import subprocess as subp
 import sys
 
 from elt_common.testing.dlt import PyIcebergDestinationTestConfiguration
-from elt_common.testing.lakekeeper import Warehouse
 from fake_source import create_fake_source_db, update_fake_source_db
 
 import pytest
