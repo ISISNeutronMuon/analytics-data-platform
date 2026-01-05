@@ -40,10 +40,11 @@ def opralogwebdb() -> Generator[DltResource]:
       - append-only tables: previous records are never updated, use 'append' write_disposition
       - merge-tables: old records could have been updated, use 'merge' write_disposition
 
-    Both have incremental cursors to only load new or changed records. Unfortuantely
+    Both have incremental cursors to only load new or changed records. Unfortunately
     the MoreEntryColumns table has no 'last changed' column to indicate when old records
     were updated. We use the 'LastChangedDate' column of 'Entries' to find the list of
-    new or updated EntryId values and load these into the
+    new or updated EntryId values and load the MoreEntryColumn records for these Entries
+    into the destination.
     """
 
     tables_append_records = {
