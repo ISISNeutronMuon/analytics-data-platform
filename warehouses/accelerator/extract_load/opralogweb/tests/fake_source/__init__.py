@@ -1,6 +1,5 @@
 """Create a fake Opralog DB"""
 
-import click
 import datetime as dt
 import logging
 
