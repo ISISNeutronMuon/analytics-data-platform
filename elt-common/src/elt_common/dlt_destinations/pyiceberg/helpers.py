@@ -29,6 +29,7 @@ from pyiceberg.types import (
     PrimitiveType,
     StringType,
     TimeType,
+    TimestampType,
     TimestamptzType,
 )
 from pyiceberg.typedef import Identifier
@@ -107,7 +108,10 @@ def dlt_type_to_iceberg(column: TColumnType) -> PrimitiveType:
             raise TypeError(
                 f"Iceberg v1 & v2 does not support timestamps in '{TIMESTAMP_PRECISION_TO_UNIT[9]}' precision."  # type:ignore
             )
-        return TimestamptzType()
+        if column.get("timezone", True):
+            return TimestamptzType()
+        else:
+            return TimestampType()
     elif dlt_type == "binary":
         return BinaryType()
     else:
@@ -137,9 +141,14 @@ def iceberg_to_dlt_type(field: NestedField) -> TColumnType:
         dlt_type["data_type"] = "date"
     elif isinstance(field_type, TimeType):
         dlt_type["data_type"] = "time"
+    elif isinstance(field_type, TimestampType):
+        dlt_type["data_type"] = "timestamp"
+        dlt_type["precision"] = 6
+        dlt_type["timezone"] = False
     elif isinstance(field_type, TimestamptzType):
         dlt_type["data_type"] = "timestamp"
         dlt_type["precision"] = 6
+        dlt_type["timezone"] = True
     elif isinstance(field_type, BinaryType):
         dlt_type["data_type"] = "binary"
     else:

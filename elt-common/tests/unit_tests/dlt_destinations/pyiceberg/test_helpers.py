@@ -25,6 +25,7 @@ def dlt_schema() -> PreparedTableSchema:
         row_id=TColumnSchema(data_type="bigint", nullable=False, primary_key=True),
         entry_name=TColumnSchema(data_type="text", nullable=False),
         entry_timestamp=TColumnSchema(data_type="timestamp", nullable=False),
+        entry_timestamp_notz=TColumnSchema(data_type="timestamp", nullable=False, timezone=False),
         entry_weight=TColumnSchema(data_type="double"),
     )
     return PreparedTableSchema(name="table_name", columns=columns)
@@ -81,6 +82,7 @@ def test_iceberg_field_to_dlt_type_gives_known_types():
     for type_name in (
         "StringType",
         "DoubleType",
+        "TimestampType",
         "TimestamptzType",
         "DateType",
         "TimeType",
@@ -92,6 +94,8 @@ def test_iceberg_field_to_dlt_type_gives_known_types():
         dlt_column = iceberg_to_dlt_type(field_required)
         assert dlt_column.get("data_type") in DLT_DATA_TYPES
         assert not dlt_column.get("nullable")
+        if type_name.startswith("Timestamp"):
+            assert dlt_column.get("timezone") == (type_name == "TimestamptzType")
 
         field_not_required = pyiceberg.types.NestedField(
             1, "name", getattr(pyiceberg.types, type_name)(), required=False
@@ -125,6 +129,7 @@ def test_create_iceberg_schema(dlt_schema: PreparedTableSchema):
         row_id=(pyiceberg.types.LongType, True),
         entry_name=(pyiceberg.types.StringType, True),
         entry_timestamp=(pyiceberg.types.TimestamptzType, True),
+        entry_timestamp_notz=(pyiceberg.types.TimestampType, True),
         entry_weight=(pyiceberg.types.DoubleType, False),
     )
     for field in iceberg_schema.fields:
