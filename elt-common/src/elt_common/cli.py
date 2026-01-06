@@ -21,7 +21,6 @@ LOGGER = logging.getLogger(__name__)
 
 def create_standard_argparser(
     default_destination: TDestinationReferenceArg,
-    default_write_disposition: TWriteDisposition,
     default_loader_file_format: TLoaderFileFormat,
     default_progress: TCollectorArg,
 ) -> argparse.ArgumentParser:
@@ -46,7 +45,7 @@ def create_standard_argparser(
     )
     parser.add_argument(
         "--write-disposition",
-        default=default_write_disposition,
+        default=None,
         choices=typing.get_args(TWriteDisposition),
         help="The write disposition used with dlt.",
     )
@@ -69,7 +68,6 @@ def cli_main(
     data_generator: Any,
     dataset_name_suffix: str,
     *,
-    default_write_disposition: TWriteDisposition = "append",
     default_destination: TDestinationReferenceArg = "filesystem",
     default_loader_file_format: TLoaderFileFormat = "parquet",
     default_progress: TCollectorArg = NULL_COLLECTOR,
@@ -87,7 +85,6 @@ def cli_main(
     """
     args = create_standard_argparser(
         default_destination,
-        default_write_disposition,
         default_loader_file_format,
         default_progress,
     ).parse_args()
@@ -115,6 +112,7 @@ def cli_main(
         write_disposition=args.write_disposition,
     )
     LOGGER.debug(pipeline.last_trace.last_extract_info)
+    LOGGER.debug(f"Extracted row counts: {pipeline.last_trace.last_normalize_info.row_counts}")
     LOGGER.debug(pipeline.last_trace.last_load_info)
     LOGGER.info(
         f"Pipeline {pipeline.pipeline_name} completed in {

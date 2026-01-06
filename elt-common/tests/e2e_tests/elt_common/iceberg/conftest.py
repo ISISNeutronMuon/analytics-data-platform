@@ -1,7 +1,7 @@
 from elt_common.iceberg.maintenance import TrinoCredentials, TrinoQueryEngine
 import pytest
 
-from e2e_tests.conftest import Warehouse
+from elt_common.testing.lakekeeper import Warehouse
 
 
 @pytest.fixture(scope="session")

@@ -3,36 +3,12 @@ log_level = "WARNING" # the system log level of dlt
 # use the dlthub_telemetry setting to enable/disable anonymous usage data reporting, see https://dlthub.com/docs/reference/telemetry
 dlthub_telemetry = false
 
-[sources.sql_database]
-schema = "dbo"
-
-[[sources.sql_database.tables]]
-name = "Entries"
-incremental_id = "EntryId"
-html_to_markdown_columns = ["AdditionalComment"]
-
-[[sources.sql_database.tables]]
-name = "ChapterEntry"
-incremental_id = "LogbookEntryId"
-
-[[sources.sql_database.tables]]
-name = "LogbookChapter"
-incremental_id = "LogbookChapterNo"
-
-[[sources.sql_database.tables]]
-name = "Logbooks"
-incremental_id = "LogbookId"
-
-[[sources.sql_database.tables]]
-name = "MoreEntryColumns"
-incremental_id = "MoreEntryColumnId"
-
-[[sources.sql_database.tables]]
-name = "AdditionalColumns"
-incremental_id = "AdditionalColumnId"
-
 [sources.data_writer]
 file_max_items = 100000
+
+[extract]
+# Important that we extract Entries first to find the changed list
+next_item_mode = "fifo"
 
 [normalize]
 workers = 3
