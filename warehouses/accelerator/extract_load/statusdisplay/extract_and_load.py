@@ -25,6 +25,9 @@ def statusdisplay() -> DltSource:
                 "base_url": dlt.config["sources.base_url"],
             },
             "resources": dlt.config["sources.resources"],
+            "resource_defaults": {
+                "write_disposition": "replace",
+            },
         },
     )
 
@@ -36,5 +39,4 @@ if __name__ == "__main__":
         default_destination="elt_common.dlt_destinations.pyiceberg",
         data_generator=statusdisplay(),
         dataset_name_suffix="statusdisplay",
-        default_write_disposition="replace",
     )

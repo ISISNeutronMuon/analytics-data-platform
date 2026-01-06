@@ -155,7 +155,9 @@ def rdm_data(
         - pendulum.Duration(seconds=ONE_DAY_SECS),
     )
     reader = files | extract_content_and_read()
-    yield from reader
+    yield from reader.apply_hints(
+        write_disposition="merge",
+    )
 
 
 cli_main(
@@ -165,5 +167,4 @@ cli_main(
         rdm_data, partition=PartitionTrBuilder.year("date_time")
     ),
     dataset_name_suffix=PIPELINE_NAME,
-    default_write_disposition="merge",
 )

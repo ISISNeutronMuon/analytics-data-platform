@@ -55,7 +55,8 @@ def equipment_downtime_records_archive() -> DltResource:
             columns={
                 "FaultDate": {"data_type": "text"},
                 "FaultTime": {"data_type": "text"},
-            }
+            },
+            write_disposition="replace",
         )
     )
     return reader
@@ -69,8 +70,15 @@ def edr_equipment_mapping() -> DltResource:
         extract_content=True,
     )
     return (
-        files | read_excel(header=None, names=["equipment_name", "equipment_category"])
-    ).with_name("edr_equipment_mapping")
+        (
+            files
+            | read_excel(header=None, names=["equipment_name", "equipment_category"])
+        )
+        .with_name("edr_equipment_mapping")
+        .apply_hints(
+            write_disposition="replace",
+        )
+    )
 
 
 # We need to set the section in order for dlt to find our named secret.
@@ -87,5 +95,4 @@ if __name__ == "__main__":
         default_destination="elt_common.dlt_destinations.pyiceberg",
         data_generator=resources(),
         dataset_name_suffix="accelerator_sharepoint",
-        default_write_disposition="replace",
     )
