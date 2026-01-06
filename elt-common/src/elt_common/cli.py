@@ -78,7 +78,6 @@ def cli_main(
     :param data_generator: Callable returning a dlt.DltSource or dlt.DltResource
     :param dataset_name_suffix: Suffix part of full dataset name in the destination. The given string is prefixed with
                                 a standard string defined in constants.DATASET_NAME_PREFIX_SRCS
-    :param default_write_disposition: Default mode for dlt write_disposition defaults to "append"
     :param default_destination: Default destination, defaults to "filesystem"
     :param default_loader_file_format: Default dlt loader file format, defaults to "parquet"
     :param default_progress: Default progress reporter, defaults to NULL_COLLECTOR
