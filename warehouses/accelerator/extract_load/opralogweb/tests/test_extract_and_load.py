@@ -29,6 +29,7 @@ def run_el_script(fake_source_db, destination_config, pipelines_dir):
     destination_config.setup(subp_env)
     subp_env["OPRALOGWEB__SOURCES__CREDENTIALS"] = fake_source_db
     subp_env["DLT_DATA_DIR"] = pipelines_dir
+    subp_env["OPRALOGWEB__SOURCES__CHUNK_SIZE"] = "10"  # test chunked loading
     proc = subp.run(
         [sys.executable, EL_SCRIPT], env=subp_env, text=True, stderr=subp.STDOUT
     )

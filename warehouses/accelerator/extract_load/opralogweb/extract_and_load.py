@@ -13,6 +13,7 @@
 # elt-common = { path = "../../../../elt-common" }
 # ///
 from collections.abc import Generator
+from typing import List
 import datetime as dt
 
 import dlt
@@ -26,15 +27,17 @@ import elt_common.cli as cli_utils
 
 OPRALOG_EPOCH = dt.datetime(2017, 4, 25, 0, 0, 0, tzinfo=dt.UTC)
 SQL_TABLE_KWARGS = dict(
-    schema=dlt.config.value, backend="pyarrow", backend_kwargs={"tz": "UTC"}
+    schema=dlt.config.value,
+    backend="pyarrow",
+    backend_kwargs={"tz": "UTC"},
 )
 
 # Pass around extracted EntryIds
-EXTRACTED_ENTRY_IDS: pa.ChunkedArray = None
+EXTRACTED_ENTRY_IDS: List[int] = []
 
 
 @dlt.source()
-def opralogwebdb() -> Generator[DltResource]:
+def opralogwebdb(chunk_size: int = 50000) -> Generator[DltResource]:
     """Opralog usage began in 04/2017. We split tables into two categories:
 
       - append-only tables: previous records are never updated, use 'append' write_disposition
@@ -59,18 +62,19 @@ def opralogwebdb() -> Generator[DltResource]:
             table=name,
             incremental=dlt.sources.incremental(info["cursor"]),
             write_disposition="append",
+            chunk_size=chunk_size,
             **SQL_TABLE_KWARGS,
         )
         yield resource
 
     # Now the Entries table, with incremental cursor, that tells us what EntryIds have been updated
-    yield entries_table()
+    yield entries_table(chunk_size)
 
     # Finally the MoreEntryColumns table based on the loaded EntryIds
-    yield more_entry_columns_table()
+    yield more_entry_columns_table(chunk_size)
 
 
-def entries_table() -> DltResource:
+def entries_table(chunk_size: int) -> DltResource:
     """Return a resource wrapper for the Entries table"""
     resource = sql_table(
         table="Entries",
@@ -80,6 +84,7 @@ def entries_table() -> DltResource:
             primary_key="EntryId",
         ),
         write_disposition={"disposition": "merge", "strategy": "upsert"},
+        chunk_size=chunk_size,
         **SQL_TABLE_KWARGS,
     )
     return resource.add_map(additional_comment_to_markdown).add_map(
@@ -104,23 +109,28 @@ def additional_comment_to_markdown(table: pa.Table) -> pa.Table:
 
 
 def store_extracted_entry_ids(table: pa.Table) -> pa.Table:
+    """Keep track of the extracted EntryId values.
+
+    If there are more records than chunk_size, this will be called once per chunk
+    """
     global EXTRACTED_ENTRY_IDS
 
-    EXTRACTED_ENTRY_IDS = table["EntryId"]
+    EXTRACTED_ENTRY_IDS.extend(table["EntryId"].to_pylist())
 
     return table
 
 
-def more_entry_columns_table() -> DltResource:
+def more_entry_columns_table(chunk_size: int) -> DltResource:
     """Return a resource wrapper for the MoreEntryColumns table"""
 
     def more_entry_columns_query(query: Select, table):
-        return query.filter(table.c.EntryId.in_(EXTRACTED_ENTRY_IDS.to_pylist()))
+        return query.filter(table.c.EntryId.in_(EXTRACTED_ENTRY_IDS))
 
     resource = sql_table(
         table="MoreEntryColumns",
         write_disposition={"disposition": "merge", "strategy": "upsert"},
         query_adapter_callback=more_entry_columns_query,
+        chunk_size=chunk_size,
         **SQL_TABLE_KWARGS,
     )
 
