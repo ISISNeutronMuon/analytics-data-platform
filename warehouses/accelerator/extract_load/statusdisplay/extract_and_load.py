@@ -2,7 +2,7 @@
 # /// script
 # requires-python = "==3.13.*"
 # dependencies = [
-#     "pandas>=2.2.3,<2.3.0",
+#     "pandas",
 #     "elt-common",
 # ]
 #

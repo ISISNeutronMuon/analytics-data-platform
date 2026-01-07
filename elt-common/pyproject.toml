@@ -9,14 +9,15 @@ description = "A set of common utility routines for data pipelines."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "dlt[parquet,s3]~=1.20.0",
-    "pyiceberg~=0.9.1",
+  "dlt[parquet,s3]>=1.20,<2",
+  "pyarrow==21.0.0",          # See https://github.com/ISISNeutronMuon/analytics-data-platform/issues/183
+  "pyiceberg==0.9.1",         # Upgrade when https://github.com/apache/iceberg-python/issues/2544 is fixed
 ]
 
 
 [project.optional-dependencies]
-iceberg-maintenance = ["click~=8.2.1", "sqlalchemy~=2.0.43", "trino~=0.336.0"]
-m365 = ["authlib~=1.6.1", "httpx~=0.28.1", "tenacity~=9.1.2"]
+iceberg-maintenance = ["click>=8.2.1", "sqlalchemy>=2.0.43", "trino>=0.336.0"]
+m365 = ["authlib>=1.6.1", "httpx>=0.28.1", "tenacity>=9.1.2"]
 
 [project.entry-points.pytest11]
 elt_common = "elt_common.testing.fixtures"
@@ -26,15 +27,15 @@ iceberg-maintenance = "elt_common.iceberg.maintenance:cli"
 
 [dependency-groups]
 dev = [
-  "minio~=7.2.16",
-  "prek>=0.1.6",
-  "pydantic-settings~=2.10.1",
-  "pytest~=8.3.5",
-  "pytest-httpx~=0.35.0",
-  "pytest-mock~=3.14.1",
-  "requests~=2.32.3",
-  "requests-mock~=1.12.1",
-  "ruff~=0.11.11",
+  "minio>=7.2.20",
+  "prek>=0.2.27",
+  "pydantic-settings>=2.10.1",
+  "pytest>=9.0.2",
+  "pytest-httpx>=0.36.0",
+  "pytest-mock>=3.15.1",
+  "requests>=2.32.5",
+  "requests-mock>=1.12.1",
+  "ruff>=0.14.10",
 ]
 
 

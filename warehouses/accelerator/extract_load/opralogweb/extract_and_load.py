@@ -3,10 +3,10 @@
 # requires-python = "==3.13.*"
 # dependencies = [
 #     "dlt[sql-database]",
-#     "html2text==2025.4.15",
-#     "pandas~=2.3.1",
+#     "html2text",
+#     "pandas",
 #     "elt-common",
-#     "pymssql~=2.3.4",
+#     "pymssql",
 # ]
 #
 # [tool.uv.sources]

@@ -1,8 +1,8 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "openpyxl>=3.1.5,<3.2",
-#     "pandas>=2.2.3,<2.3.0",
+#     "openpyxl",
+#     "pandas",
 #     "elt-common[m365]",
 # ]
 #
