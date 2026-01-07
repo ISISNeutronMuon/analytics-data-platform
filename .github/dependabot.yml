@@ -5,12 +5,29 @@ updates:
       - "/elt-common"
     schedule:
       interval: "weekly"
+    groups:
+      elt-common-dependencies:
+        applies-to: version-updates
+        patterns:
+          - "*"
     commit-message:
       prefix: "chore(deps): "
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+
   - package-ecosystem: "pip"
     directories:
       - "/warehouses/accelerator/transform/accelerator"
     schedule:
       interval: "weekly"
+    groups:
+      dbt-dependencies:
+        applies-to: version-updates
+        patterns:
+          - "*"
     commit-message:
       prefix: "chore(deps): "
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
