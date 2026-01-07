@@ -9,7 +9,7 @@
 #  File ".../lib/pythonX.XX/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
 #    version = _bcrypt.__about__.__version__
 
-ansible==11.4.0
+ansible==12.2.0
 ansible-lint==25.2.1
 bcrypt==4.0.1
 jmespath==1.0.1
