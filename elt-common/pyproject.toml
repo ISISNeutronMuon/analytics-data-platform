@@ -9,8 +9,9 @@ description = "A set of common utility routines for data pipelines."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "dlt[parquet,s3]~=1.20.0",
-    "pyiceberg~=0.9.1",
+  "dlt[parquet,s3]~=1.20.0",
+  "pyarrow==21.0.0",         # Issue with checksums in pyarrow >= 22.0.0 https://github.com/ISISNeutronMuon/analytics-data-platform/issues/183
+  "pyiceberg~=0.9.1",
 ]
 
 
