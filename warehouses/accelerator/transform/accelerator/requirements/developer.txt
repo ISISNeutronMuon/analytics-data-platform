@@ -34,15 +34,15 @@ daff==1.4.2
     # via dbt-core
 dbt-adapters==1.16.7
     # via dbt-core
-dbt-common==1.30.0
+dbt-common==1.37.2
     # via
     #   dbt-adapters
     #   dbt-core
-dbt-core==1.10.11
+dbt-core==1.11.2
     # via sqlfluff-templater-dbt
 dbt-extractor==0.6.0
     # via dbt-core
-dbt-protos==1.0.348
+dbt-protos==1.0.410
     # via
     #   dbt-adapters
     #   dbt-common
@@ -84,7 +84,7 @@ leather==0.4.0
     # via agate
 markupsafe==3.0.2
     # via jinja2
-mashumaro==3.14
+mashumaro[msgpack]==3.14
     # via
     #   dbt-adapters
     #   dbt-common
