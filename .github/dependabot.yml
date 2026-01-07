@@ -2,6 +2,15 @@ version: 2
 updates:
   - package-ecosystem: "uv"
     directories:
-      - "elt-common"
+      - "/elt-common"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "chore(deps): "
+  - package-ecosystem: "pip"
+    directories:
+      - "/warehouses/accelerator/transform/accelerator"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps): "
