@@ -36,14 +36,15 @@ denormalized as (
 
   where
 
-    staging_logbooks.logbook_name = {{ MCR_LOGBOOK }}
+    staging_entries.logically_deleted = false
+    and staging_entries.fault_date >= from_iso8601_date({{ OPRALOG_EPOCH }})
+    and staging_logbooks.logbook_name = {{ MCR_LOGBOOK }}
     and staging_chapter_entry.logbook_id = staging_chapter_entry.principal_logbook
     and staging_additional_columns.column_title in ('Equipment', 'Group', 'Lost Time', 'Group Leader comments')
     and (
       staging_more_entry_columns.string_data is not null
       or staging_more_entry_columns.number_data is not null
     )
-    and staging_entries.fault_date >= from_iso8601_date({{ OPRALOG_EPOCH }})
 ),
 
 mcr_equipment_downtime as (

@@ -5,11 +5,11 @@ trino_catalog:
     trino:
       type: trino
       method: ldap
-      user: "{{ env_var('DBT_TRINO_USER', 'trino') }}"
-      password: "{{ env_var('DBT_TRINO_PASSWORD', '') }}"
-      http_scheme: "{{ env_var('DBT_TRINO_HTTP_SCHEME', 'http') }}"
-      host: "{{ env_var('DBT_TRINO_HOST', 'analytics.localhost') }}"
-      port: "{{ env_var('DBT_TRINO_PORT', '59088') | int }}"
-      database: "{{ env_var('DBT_TRINO_CATALOG', 'accelerator') }}"
-      schema: "{{ env_var('DBT_TRINO_CATALOG_SCHEMA_PREFIX', 'dev_') }}analytics"
+      user: "{{ env_var('DBT_TRINO_USER') }}"
+      password: "{{ env_var('DBT_TRINO_PASSWORD') }}"
+      http_scheme: "{{ env_var('DBT_TRINO_HTTP_SCHEME') }}"
+      host: "{{ env_var('DBT_TRINO_HOST') }}"
+      port: "{{ env_var('DBT_TRINO_PORT') | int }}"
+      database: "{{ env_var('DBT_TRINO_CATALOG') }}"
+      schema: "{{ env_var('DBT_TRINO_CATALOG_SCHEMA_PREFIX') }}analytics"
       threads: "{{ env_var('DBT_TRINO_THREADS', '8') | int }}"
