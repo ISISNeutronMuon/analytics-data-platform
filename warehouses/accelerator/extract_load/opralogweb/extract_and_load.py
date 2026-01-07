@@ -21,11 +21,11 @@ from dlt.sources import DltResource
 from dlt.sources.sql_database import sql_table
 from html2text import html2text
 import pyarrow as pa
-from sqlalchemy.sql import Select
+import sqlalchemy as sa
 
 import elt_common.cli as cli_utils
 
-OPRALOG_EPOCH = dt.datetime(2017, 4, 25, 0, 0, 0, tzinfo=dt.UTC)
+OPRALOG_EPOCH = dt.datetime(2017, 4, 25, 0, 0, 0)
 SQL_TABLE_KWARGS = dict(
     schema=dlt.config.value,
     backend="pyarrow",
@@ -36,8 +36,19 @@ SQL_TABLE_KWARGS = dict(
 EXTRACTED_ENTRY_IDS: List[int] = []
 
 
+def with_resource_limit(
+    resource: DltResource, limit_max_items: int | None = None
+) -> DltResource:
+    if limit_max_items is not None:
+        resource.add_limit(limit_max_items)
+
+    return resource
+
+
 @dlt.source()
-def opralogwebdb(chunk_size: int = 50000) -> Generator[DltResource]:
+def opralogwebdb(
+    chunk_size: int = 50000, limit_max_items: int | None = None
+) -> Generator[DltResource]:
     """Opralog usage began in 04/2017. We split tables into two categories:
 
       - append-only tables: previous records are never updated, use 'append' write_disposition
@@ -48,6 +59,8 @@ def opralogwebdb(chunk_size: int = 50000) -> Generator[DltResource]:
     were updated. We use the 'LastChangedDate' column of 'Entries' to find the list of
     new or updated EntryId values and load the MoreEntryColumn records for these Entries
     into the destination.
+
+    `chunk_size` and `limit_max_items` are primarily used for testing and debugging
     """
 
     tables_append_records = {
@@ -65,13 +78,13 @@ def opralogwebdb(chunk_size: int = 50000) -> Generator[DltResource]:
             chunk_size=chunk_size,
             **SQL_TABLE_KWARGS,
         )
-        yield resource
+        yield with_resource_limit(resource, limit_max_items)
 
     # Now the Entries table, with incremental cursor, that tells us what EntryIds have been updated
-    yield entries_table(chunk_size)
+    yield with_resource_limit(entries_table(chunk_size), limit_max_items)
 
     # Finally the MoreEntryColumns table based on the loaded EntryIds
-    yield more_entry_columns_table(chunk_size)
+    yield with_resource_limit(more_entry_columns_table(chunk_size), limit_max_items)
 
 
 def entries_table(chunk_size: int) -> DltResource:
@@ -123,7 +136,7 @@ def store_extracted_entry_ids(table: pa.Table) -> pa.Table:
 def more_entry_columns_table(chunk_size: int) -> DltResource:
     """Return a resource wrapper for the MoreEntryColumns table"""
 
-    def more_entry_columns_query(query: Select, table):
+    def more_entry_columns_query(query: sa.Select, table):
         return query.filter(table.c.EntryId.in_(EXTRACTED_ENTRY_IDS))
 
     resource = sql_table(

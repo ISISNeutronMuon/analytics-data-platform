@@ -22,8 +22,7 @@ def test_extract_sharepoint_source_raises_error_without_config(pipeline: dlt.Pip
 
     config_exc = exc.value.exception
     assert isinstance(config_exc, ConfigFieldMissingException)
-    for field in ("tenant_id", "client_id", "client_secret"):
-        assert field in config_exc.fields
+    assert "credentials" in config_exc.fields
 
     # then other config
     with pytest.raises(PipelineStepFailed) as exc:
