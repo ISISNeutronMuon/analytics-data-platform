@@ -1,9 +1,9 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "pandas~=2.3.1",
+#     "pandas",
 #     "elt-common[m365]",
-#     "python-calamine~=0.4.0",
+#     "python-calamine",
 # ]
 #
 # [tool.uv.sources]

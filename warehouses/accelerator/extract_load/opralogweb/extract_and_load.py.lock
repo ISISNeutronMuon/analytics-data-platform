@@ -6,9 +6,9 @@ requires-python = "==3.13.*"
 requirements = [
     { name = "dlt", extras = ["sql-database"] },
     { name = "elt-common", directory = "../../../../elt-common" },
-    { name = "html2text", specifier = "==2025.4.15" },
-    { name = "pandas", specifier = "~=2.3.1" },
-    { name = "pymssql", specifier = "~=2.3.4" },
+    { name = "html2text" },
+    { name = "pandas" },
+    { name = "pymssql" },
 ]
 
 [[package]]
@@ -249,29 +249,29 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "authlib", marker = "extra == 'm365'", specifier = "~=1.6.1" },
-    { name = "click", marker = "extra == 'iceberg-maintenance'", specifier = "~=8.2.1" },
-    { name = "dlt", extras = ["parquet", "s3"], specifier = "~=1.20.0" },
-    { name = "httpx", marker = "extra == 'm365'", specifier = "~=0.28.1" },
+    { name = "authlib", marker = "extra == 'm365'", specifier = ">=1.6.1" },
+    { name = "click", marker = "extra == 'iceberg-maintenance'", specifier = ">=8.2.1" },
+    { name = "dlt", extras = ["parquet", "s3"], specifier = ">=1.20,<2" },
+    { name = "httpx", marker = "extra == 'm365'", specifier = ">=0.28.1" },
     { name = "pyarrow", specifier = "==21.0.0" },
-    { name = "pyiceberg", specifier = "~=0.9.1" },
-    { name = "sqlalchemy", marker = "extra == 'iceberg-maintenance'", specifier = "~=2.0.43" },
-    { name = "tenacity", marker = "extra == 'm365'", specifier = "~=9.1.2" },
-    { name = "trino", marker = "extra == 'iceberg-maintenance'", specifier = "~=0.336.0" },
+    { name = "pyiceberg", specifier = "==0.9.1" },
+    { name = "sqlalchemy", marker = "extra == 'iceberg-maintenance'", specifier = ">=2.0.43" },
+    { name = "tenacity", marker = "extra == 'm365'", specifier = ">=9.1.2" },
+    { name = "trino", marker = "extra == 'iceberg-maintenance'", specifier = ">=0.336.0" },
 ]
 provides-extras = ["iceberg-maintenance", "m365"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "minio", specifier = "~=7.2.16" },
-    { name = "prek", specifier = ">=0.1.6" },
-    { name = "pydantic-settings", specifier = "~=2.10.1" },
-    { name = "pytest", specifier = "~=8.3.5" },
-    { name = "pytest-httpx", specifier = "~=0.35.0" },
-    { name = "pytest-mock", specifier = "~=3.14.1" },
-    { name = "requests", specifier = "~=2.32.3" },
-    { name = "requests-mock", specifier = "~=1.12.1" },
-    { name = "ruff", specifier = "~=0.11.11" },
+    { name = "minio", specifier = ">=7.2.20" },
+    { name = "prek", specifier = ">=0.2.27" },
+    { name = "pydantic-settings", specifier = ">=2.10.1" },
+    { name = "pytest", specifier = ">=9.0.2" },
+    { name = "pytest-httpx", specifier = ">=0.36.0" },
+    { name = "pytest-mock", specifier = ">=3.15.1" },
+    { name = "requests", specifier = ">=2.32.5" },
+    { name = "requests-mock", specifier = ">=1.12.1" },
+    { name = "ruff", specifier = ">=0.14.10" },
 ]
 
 [[package]]
