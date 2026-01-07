@@ -172,10 +172,10 @@ snowplow-tracker==1.1.0
     # via dbt-core
 sqlfluff==3.4.2
     # via
-    #   -r requirements/developer.in
+    #   -r developer.in
     #   sqlfluff-templater-dbt
 sqlfluff-templater-dbt==3.4.2
-    # via -r requirements/developer.in
+    # via -r developer.in
 sqlparse==0.5.3
     # via dbt-core
 tblib==3.1.0
@@ -197,7 +197,7 @@ typing-extensions==4.15.0
     #   typing-inspection
 typing-inspection==0.4.1
     # via pydantic
-urllib3==2.5.0
+urllib3==2.6.0
     # via requests
 zipp==3.23.0
     # via importlib-metadata

@@ -36,7 +36,7 @@ dbt-common==1.37.2
     #   dbt-trino
 dbt-core==1.11.2
     # via
-    #   -r requirements/requirements.in
+    #   -r requirements.in
     #   dbt-trino
 dbt-extractor==0.6.0
     # via dbt-core
@@ -48,7 +48,7 @@ dbt-protos==1.0.410
 dbt-semantic-interfaces==0.9.0
     # via dbt-core
 dbt-trino==1.10.0
-    # via -r requirements/requirements.in
+    # via -r requirements.in
 deepdiff==8.6.1
     # via dbt-common
 idna==3.10
@@ -171,7 +171,7 @@ typing-inspection==0.4.1
     # via pydantic
 tzlocal==5.3.1
     # via trino
-urllib3==2.5.0
+urllib3==2.6.0
     # via requests
 zipp==3.23.0
     # via importlib-metadata
