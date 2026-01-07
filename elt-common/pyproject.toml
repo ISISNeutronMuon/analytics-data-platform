@@ -11,7 +11,7 @@ requires-python = ">=3.13"
 dependencies = [
   "dlt[parquet,s3]>=1.20,<2",
   "pyarrow==21.0.0",          # See https://github.com/ISISNeutronMuon/analytics-data-platform/issues/183
-  "pyiceberg==0.9.1",         # Upgrade when https://github.com/apache/iceberg-python/issues/2544 is fixed
+  "pyiceberg==0.10.0",         # Upgrade when https://github.com/apache/iceberg-python/issues/2544 is fixed
 ]
 
 
