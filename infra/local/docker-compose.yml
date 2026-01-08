@@ -8,7 +8,7 @@ x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.10.0
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
 x-minio-mc-image: &minio-mc-image quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
 x-postgres-image: &postgres-image postgres:16.9-bookworm
-x-superset-image: &superset-image ghcr.io/martyngigg/adp-superset-forked:901412e
+x-superset-image: &superset-image ghcr.io/isisneutronmuon/analytics-data-platform-superset:a4f0e8011f34785d759269dceedfa2693db81c19
 x-traefik-image: &traefik-image traefik:v3.5.3
 x-trino-image: &trino-image trinodb/trino:477
 
