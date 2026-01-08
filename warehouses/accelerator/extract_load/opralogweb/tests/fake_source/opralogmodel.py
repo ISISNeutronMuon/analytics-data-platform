@@ -1,16 +1,15 @@
 """Define tables that look like Opralog tables. They contain only the data we are interested in."""
 
-import datetime as dt
 import logging
 
 from sqlalchemy import (
     Column,
-    DateTime,
     Float,
     Integer,
     MetaData,
     String,
     Text,
+    TIMESTAMP,
     and_,
 )
 from sqlalchemy.orm import declarative_base, Session
@@ -84,9 +83,10 @@ class Entries(ModelBase):
     __tablename__ = "Entries"
 
     EntryId = Column(Integer, primary_key=True, nullable=False)
-    EntryTimestamp = Column(DateTime, nullable=False)
+    EntryTimestamp = Column(TIMESTAMP(timezone=False), nullable=False)
     AdditionalComment = Column(Text)
-    LastChangedDate = Column(DateTime, nullable=False)
+    LastChangedDate = Column(TIMESTAMP(timezone=False), nullable=False)
+    LogicallyDeleted = Column(Text, nullable=False)
 
 
 class AdditionalColumns(ModelBase):
@@ -104,16 +104,6 @@ class MoreEntryColumns(ModelBase):
     ColData = Column(String)
     NumberValue = Column(Float)
     AdditionalColumnId = Column(Integer)
-
-
-class LogbookEntryChanges(ModelBase):
-    __tablename__ = "LogbookEntryChanges"
-
-    ChangeId = Column(Integer, primary_key=True, nullable=False)
-    ChangedDate = Column(DateTime)
-    LogbookId = Column(Integer)
-    ChangeType = Column(String)
-    EntryId = Column(Integer, nullable=False)
 
 
 def get_latest_entry_id(session: Session) -> int | None:
@@ -154,6 +144,7 @@ def insert_downtime_record(
         EntryTimestamp=record["EntryTimestamp"],
         AdditionalComment=f"<p>{record['AdditionalComment']}</p>",
         LastChangedDate=record["EntryTimestamp"],
+        LogicallyDeleted="N",
     )
     session.add(next_entry)
     session.add_all(
@@ -195,23 +186,11 @@ def insert_downtime_record(
         )
     )
 
-    # insert a changelog entry
-    session.add(
-        LogbookEntryChanges(
-            ChangedDate=record["EntryTimestamp"],
-            LogbookId=logbook_id,
-            ChangeType="Entry modified",
-            EntryId=next_entry_id,
-        )
-    )
-
     return next_entry_id  # type: ignore
 
 
 @commit_or_rollback
-def update_downtime_record(
-    session: Session, logbook_name: str, entry_id: int, record: dict
-):
+def update_downtime_record(session: Session, entry_id: int, record: dict):
     """Wrapper to insert the relevant records into the tables to make a new logbook entry"""
     # Make edits
     entry = session.execute(
@@ -229,17 +208,3 @@ def update_downtime_record(
         )
     ).scalar_one()
     more_entry_columns.NumberValue = record["Lost Time"]
-
-    # Record in change log
-    logbook_id = session.execute(
-        select(Logbooks.LogbookId).where(Logbooks.LogbookName == logbook_name)
-    ).scalar_one()
-
-    session.add(
-        LogbookEntryChanges(
-            ChangedDate=dt.datetime.now(),
-            LogbookId=logbook_id,
-            ChangeType="Entry modified",
-            EntryId=entry_id,
-        )
-    )

@@ -73,7 +73,6 @@ def update_and_append_new_records(engine: Engine):
         entry_id = ENTRYID_START + 10
         update_downtime_record(
             session,
-            MCR_LOG_NAME,
             entry_id,
             record={
                 "AdditionalComment": f"Comment {entry_id} updated.",
