@@ -159,17 +159,6 @@ WEBDRIVER_BASEURL_USER_FRIENDLY = (
 #####
 
 #####
-# Theming.
-# Workaround missing brand logo: https://github.com/apache/superset/pull/34935. Once merged this can
-# be removed.
-THEME_DEFAULT = {
-    "token": {
-        "brandLogoUrl": f"{os.environ.get('SUPERSET_APP_ROOT', '')}/static/assets/images/superset-logo-horiz.png",
-    }
-}
-
-
-#####
 # Misc features
 # fmt: off
 FEATURE_FLAGS = {

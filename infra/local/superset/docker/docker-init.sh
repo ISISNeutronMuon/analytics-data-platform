@@ -46,5 +46,5 @@ echo_step "Complete" "Setting up roles and perms"
 echo_step "Starting" "Setting up Iceberg catalog connection"
 superset set-database-uri \
   --database_name "$SUPERSET_DB_SCHEMA_NAME" \
-  --uri "trino://$TRINO_USER:$TRINO_PASSWORD@$ROUTER_HOSTNAME_INTERNAL:$TRINO_HTTPS_PORT/$SUPERSET_DB_SCHEMA_NAME?engine_params={\"verify\": false}"
+  --uri "trino://$TRINO_USER:$TRINO_PASSWORD@$ROUTER_HOSTNAME_INTERNAL:$TRINO_HTTPS_PORT/$SUPERSET_DB_SCHEMA_NAME?verify=false"
 echo_step "Complete" "Setting up Iceberg catalog connection"
