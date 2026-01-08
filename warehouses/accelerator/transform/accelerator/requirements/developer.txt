@@ -197,7 +197,7 @@ typing-extensions==4.15.0
     #   typing-inspection
 typing-inspection==0.4.1
     # via pydantic
-urllib3==2.6.0
+urllib3==2.6.3
     # via requests
 zipp==3.23.0
     # via importlib-metadata
