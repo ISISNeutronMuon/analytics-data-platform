@@ -65,13 +65,6 @@ class PyIcebergDestinationTestConfiguration:
             "DESTINATION__PYICEBERG__CREDENTIALS__SCOPE",
             server_settings.openid_scope,
         )
-        environ.setdefault("DESTINATION__PYICEBERG__BUCKET_URL", self.warehouse.bucket_url)
-        # Avoid collisons on table names when the same ones are created/deleted in quick
-        # succession
-        environ.setdefault(
-            "DESTINATION__PYICEBERG__TABLE_LOCATION_LAYOUT",
-            "{location_tag}/{dataset_name}/{table_name}",
-        )
 
     def setup_pipeline(
         self,
