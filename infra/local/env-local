@@ -4,10 +4,7 @@
 ROUTER_HOSTNAME_EXTERNAL=localhost
 ROUTER_HOSTNAME_INTERNAL=adp-router
 ROUTER_PORT_HTTP=50080
-# These details are also present in
-#  - lakekeeper/bootstrap-warehouse.json
-#  - trino/etc/catalog/playground.properties (the name of the file matches the ADP_WORKSPACE_NAME value)
-# and will need to be adjusted there if the values change
+# These details are also present in files under the ./warehouses/ directory
 ADP_SUPERUSER=adpsuperuser
 ADP_SUPERUSER_PASS=adppassword
 ADP_PROJECT_ID=c4fcd44f-7ce7-4446-9f7c-dcc7ba76dd22

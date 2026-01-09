@@ -2,7 +2,7 @@
   "catalogs": [
     {
       "user": "superset",
-      "catalog": "playground",
+      "catalog": ".*",
       "allow": "read-only"
     },
     {

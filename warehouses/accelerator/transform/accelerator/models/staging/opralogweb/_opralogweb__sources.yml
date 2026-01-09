@@ -2,6 +2,7 @@ version: 2
 
 sources:
   - name: src_opralogweb
+    database: "{{ env_var('DBT_SOURCES_DATABASE', 'dev_isis_raw') }}"
     tables:
       - name: entries
       - name: chapter_entry
