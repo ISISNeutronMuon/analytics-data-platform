@@ -1,6 +1,7 @@
 from collections.abc import MutableMapping
 from dataclasses import dataclass
 import os
+import time
 from typing import List
 
 import dlt
@@ -92,3 +93,5 @@ class PyIcebergDestinationTestConfiguration:
             for qualified_table_name in tables:
                 catalog.purge_table(qualified_table_name)
             catalog.drop_namespace(ns_name)
+        # allow a brief moment for cleanup tasks to complete
+        time.sleep(0.1)

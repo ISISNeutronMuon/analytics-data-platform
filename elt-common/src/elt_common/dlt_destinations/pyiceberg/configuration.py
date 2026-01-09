@@ -61,19 +61,12 @@ class IcebergClientConfiguration(DestinationClientDwhConfiguration):
     catalog_type: Literal["rest"] = "rest"
     credentials: PyIcebergCatalogCredentials = None  # type: ignore
 
-    bucket_url: Optional[str] = None  # type: ignore
-    # possible placeholders: {dataset_name}, {table_name}, {location_tag}
-    # requires bucket_url
-    table_location_layout: Optional[str] = None  # type: ignore
-
     @property
     def connection_properties(self) -> Dict[str, str]:
         """Returns a mapping of connection properties to pass to the catalog constructor"""
         return self.credentials.as_dict() if self.credentials is not None else {}
 
     def on_resolved(self) -> None:
-        self.normalize_bucket_url()
-
         # Check we have the minimum number of required authentication properties
         # if any are supplied
         auth_props = {
@@ -86,11 +79,6 @@ class IcebergClientConfiguration(DestinationClientDwhConfiguration):
             raise DestinationTerminalException(
                 f"Missing required configuration value(s) for authentication: {list(name for name, value in auth_props.items() if value is None)}"
             )
-
-    def normalize_bucket_url(self) -> None:
-        """Normalizes bucket_url, i.e. removes any trailing slashes"""
-        if self.bucket_url is not None:
-            self.bucket_url = self.bucket_url.rstrip("/")
 
     def fingerprint(self) -> str:
         """Returns a fingerprint of a connection string."""
