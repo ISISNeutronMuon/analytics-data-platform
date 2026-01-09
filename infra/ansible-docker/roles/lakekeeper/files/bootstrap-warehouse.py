@@ -1,7 +1,8 @@
 # /// script
 # requires-python = "==3.13.*"
 # dependencies = [
-#      "click~=8.3.0",
+#     "boto3~=1.42.24",
+#     "click~=8.3.0",
 #     "requests~=2.32.5",
 # ]
 # ///
@@ -17,6 +18,8 @@ from pathlib import Path
 import logging
 from typing import Any, Dict, Callable, Iterable, Sequence
 
+import boto3
+import botocore.exceptions
 import click
 import requests
 
@@ -33,23 +36,6 @@ REQUESTS_TIMEOUT_DEFAULT = 60.0
 REQUESTS_DEFAULT_KWARGS: Dict[str, Any] = {
     "timeout": REQUESTS_TIMEOUT_DEFAULT,
 }
-
-
-def _request_with_auth(
-    method: Callable, url: str, access_token: str | None, **kwargs
-) -> requests.Response:
-    """Make an authenticated request to the given url.
-
-    A non-success response raises a requests.RequestException"""
-    headers = kwargs.pop("headers", {})
-    headers.update({"Authorization": f"Bearer {access_token}"} if access_token else {})
-    response = method(url, headers=headers, **REQUESTS_DEFAULT_KWARGS, **kwargs)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as exc:
-        LOGGER.debug(f"request failed: {response.content.decode('utf-8')}")
-        raise exc
-    return response
 
 
 @dataclasses.dataclass
@@ -258,7 +244,10 @@ class LakekeeperRestV1:
         return False
 
     def create_warehouse(self, project_id: str, warehouse_config: Dict[str, Any]):
-        """Create a warehouse in the server with the given profile"""
+        """Create a warehouse in the server with the given profile.
+
+        If the bucket does not exist it is created.
+        """
         warehouse_name = warehouse_config["warehouse-name"]
         if self.warehouse_exists(project_id, warehouse_name):
             LOGGER.info(
@@ -267,6 +256,9 @@ class LakekeeperRestV1:
             return
 
         LOGGER.info(f"Creating warehouse '{warehouse_name}' in '{project_id}'")
+        _ensure_s3_bucket_exists(
+            warehouse_config["storage-credential"], warehouse_config["storage-profile"]
+        )
         warehouse_config["project-id"] = project_id
         _request_with_auth(
             requests.post,
@@ -298,6 +290,39 @@ class CredentialsParamType(click.ParamType):
                 param,
                 ctx,
             )
+
+
+def _request_with_auth(
+    method: Callable, url: str, access_token: str | None, **kwargs
+) -> requests.Response:
+    """Make an authenticated request to the given url.
+
+    A non-success response raises a requests.RequestException"""
+    headers = kwargs.pop("headers", {})
+    headers.update({"Authorization": f"Bearer {access_token}"} if access_token else {})
+    response = method(url, headers=headers, **REQUESTS_DEFAULT_KWARGS, **kwargs)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as exc:
+        LOGGER.debug(f"request failed: {response.content.decode('utf-8')}")
+        raise exc
+    return response
+
+
+def _ensure_s3_bucket_exists(
+    storage_credential: Dict[str, Any], storage_profile: Dict[str, Any]
+):
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=storage_credential["aws-access-key-id"],
+        aws_secret_access_key=storage_credential["aws-secret-access-key"],
+        endpoint_url=storage_profile["endpoint"],
+    )
+    try:
+        s3.create_bucket(Bucket=storage_profile["bucket"])
+    except botocore.exceptions.ClientError as exc:
+        if exc.response["Error"]["Code"] != "EntityAlreadyExists":
+            raise
 
 
 @click.command()
