@@ -58,11 +58,12 @@ class IcebergClientConfiguration(DestinationClientDwhConfiguration):
         default="pyiceberg", init=False, repr=False, compare=False
     )  # type: ignore[misc]
 
-    bucket_url: str = None  # type: ignore
     catalog_type: Literal["rest"] = "rest"
     credentials: PyIcebergCatalogCredentials = None  # type: ignore
 
+    bucket_url: Optional[str] = None  # type: ignore
     # possible placeholders: {dataset_name}, {table_name}, {location_tag}
+    # requires bucket_url
     table_location_layout: Optional[str] = None  # type: ignore
 
     @property
@@ -88,7 +89,8 @@ class IcebergClientConfiguration(DestinationClientDwhConfiguration):
 
     def normalize_bucket_url(self) -> None:
         """Normalizes bucket_url, i.e. removes any trailing slashes"""
-        self.bucket_url = self.bucket_url.rstrip("/")
+        if self.bucket_url is not None:
+            self.bucket_url = self.bucket_url.rstrip("/")
 
     def fingerprint(self) -> str:
         """Returns a fingerprint of a connection string."""
