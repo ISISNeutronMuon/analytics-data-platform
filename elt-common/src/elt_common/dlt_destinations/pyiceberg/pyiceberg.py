@@ -21,7 +21,6 @@ from dlt.common.destination.typing import PreparedTableSchema
 from dlt.common.destination.utils import resolve_merge_strategy, resolve_replace_strategy
 from dlt.common.schema import Schema, TColumnSchema, TSchemaTables, TTableSchemaColumns
 from dlt.common.schema.typing import TPartialTableSchema, TWriteDisposition
-from dlt.common.utils import uniq_id
 
 from dlt.common.libs.pyarrow import pyarrow as pa
 import pyarrow.parquet as pq
@@ -301,19 +300,6 @@ class PyIcebergClient(JobClientBase, WithStateSync):
         if not prepared_table["columns"]:
             return None
 
-        # Most catalogs purge files as background tasks so if tables of the
-        # same identifier are created/deleted in tight loops, e.g. in tests,
-        # then the same location can produce invalid location errors.
-        # The location_tag can be used to set to unique string to avoid this
-        if self.config.table_location_layout is not None:
-            location = f"{self.config.bucket_url}/" + self.config.table_location_layout.format(  # type: ignore
-                dataset_name=self.dataset_name,
-                table_name=table_name.rstrip("/"),
-                location_tag=uniq_id(6),
-            )
-        else:
-            location = None
-
         catalog = self.iceberg_catalog
         table_id = self.make_qualified_table_name(table_name)
         required_iceberg_schema = create_iceberg_schema(prepared_table)
@@ -341,7 +327,6 @@ class PyIcebergClient(JobClientBase, WithStateSync):
                 required_iceberg_schema,
                 partition_spec=partition_spec,
                 sort_order=sort_order,
-                location=location,
             )
 
         return prepared_table
