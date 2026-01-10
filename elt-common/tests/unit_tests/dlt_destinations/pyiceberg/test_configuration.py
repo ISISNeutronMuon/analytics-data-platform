@@ -13,26 +13,9 @@ from elt_common.dlt_destinations.pyiceberg.configuration import (
 def test_initial_iceberg_config_state_defaults_to_rest():
     default_config = IcebergClientConfiguration()
 
-    assert default_config.bucket_url is None
     assert default_config.catalog_type == "rest"
-    assert default_config.table_location_layout is None
     assert default_config.credentials is None
     assert default_config.connection_properties == {}
-
-
-def test_bucket_url_trimmed_of_trailing_slash_when_resolved():
-    config = resolve.resolve_configuration(
-        IcebergClientConfiguration(),
-        explicit_value={
-            "bucket_url": "s3://mybucket/",
-            "dataset_name": "mydataset",
-            "credentials": {
-                "uri": "http://catalog_host/catalog",
-            },
-        },
-    )
-
-    assert config.bucket_url == "s3://mybucket"
 
 
 def _auth_arg_combinations():
