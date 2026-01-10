@@ -45,7 +45,7 @@ def resource_factory(
     if kwargs:
         decorator = dlt.resource(**kwargs)
     else:
-        decorator = dlt.resource
+        decorator = dlt.resource()
 
     @decorator
     def data_items():
