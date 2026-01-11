@@ -1,6 +1,7 @@
 from collections.abc import MutableMapping
 from dataclasses import dataclass
 import os
+import time
 from typing import List
 
 import dlt
@@ -65,13 +66,6 @@ class PyIcebergDestinationTestConfiguration:
             "DESTINATION__PYICEBERG__CREDENTIALS__SCOPE",
             server_settings.openid_scope,
         )
-        environ.setdefault("DESTINATION__PYICEBERG__BUCKET_URL", self.warehouse.bucket_url)
-        # Avoid collisons on table names when the same ones are created/deleted in quick
-        # succession
-        environ.setdefault(
-            "DESTINATION__PYICEBERG__TABLE_LOCATION_LAYOUT",
-            "{location_tag}/{dataset_name}/{table_name}",
-        )
 
     def setup_pipeline(
         self,
@@ -99,3 +93,5 @@ class PyIcebergDestinationTestConfiguration:
             for qualified_table_name in tables:
                 catalog.purge_table(qualified_table_name)
             catalog.drop_namespace(ns_name)
+        # allow a brief moment for cleanup tasks to complete
+        time.sleep(0.1)

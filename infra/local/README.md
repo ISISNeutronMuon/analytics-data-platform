@@ -24,9 +24,6 @@ To test ELT scripts based on the Python package `dlt`, create and add the follow
 `$HOME/.dlt/secrets.toml`:
 
 ```toml
-[destination.pyiceberg]
-bucket_url = "s3://playground"
-
 [destination.pyiceberg.credentials]
 uri = "http://localhost:50080/iceberg/catalog"
 project_id = "c4fcd44f-7ce7-4446-9f7c-dcc7ba76dd22"
