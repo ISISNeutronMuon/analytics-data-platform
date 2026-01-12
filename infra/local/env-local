@@ -7,8 +7,12 @@ ROUTER_PORT_HTTP=50080
 # These details are also present in files under the ./warehouses/ directory
 ADP_SUPERUSER=adpsuperuser
 ADP_SUPERUSER_PASS=adppassword
-ADP_PROJECT_ID=c4fcd44f-7ce7-4446-9f7c-dcc7ba76dd22
-ADP_WORKSPACE_NAME=playground
+
+###############################################################################
+# UV
+###############################################################################
+UV_LINK_MODE=copy
+UV_PROJECT_ENVIRONMENT=/opt/uv-venv
 
 ###############################################################################
 # Postgres image
@@ -18,6 +22,7 @@ POSTGRES_PASSWORD=$ADP_SUPERUSER_PASS
 PGPASSWORD=$POSTGRES_PASSWORD
 POSTGRES_DATABASE=unused
 SHARED_DB__HOST=shared-database
+SHARED_DB__PORT=5432
 
 ###############################################################################
 # Keycloak
@@ -44,7 +49,7 @@ MINIO_BROWSER_REDIRECT_URL=http://$ROUTER_HOSTNAME_EXTERNAL:$ROUTER_PORT_HTTP/mi
 ###############################################################################
 SHARED_DB__OPENFGA_DB_NAME=openfga
 OPENFGA_DATASTORE_ENGINE=postgres
-OPENFGA_DATASTORE_URI=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$SHARED_DB__HOST:5432/$SHARED_DB__OPENFGA_DB_NAME?sslmode=disable
+OPENFGA_DATASTORE_URI=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$SHARED_DB__HOST:$SHARED_DB__PORT/$SHARED_DB__OPENFGA_DB_NAME?sslmode=disable
 OPENFGA_DATASTORE_MAX_OPEN_CONNS=50
 OPENFGA_DATASTORE_MAX_IDLE_CONNS=50
 OPENFGA_CACHE_CONTROLLER_ENABLED=true
@@ -57,8 +62,8 @@ OPENFGA_PLAYGROUND_ENABLED=false
 ###############################################################################
 SHARED_DB__LAKEKEEPER_DB_NAME=lakekeeper
 LAKEKEEPER__PG_ENCRYPTION_KEY=This-is-NOT-Secure!
-LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@shared-database:5432/$SHARED_DB__LAKEKEEPER_DB_NAME
-LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@shared-database:5432/$SHARED_DB__LAKEKEEPER_DB_NAME
+LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$SHARED_DB__HOST:$SHARED_DB__PORT/$SHARED_DB__LAKEKEEPER_DB_NAME
+LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$SHARED_DB__HOST:$SHARED_DB__PORT/$SHARED_DB__LAKEKEEPER_DB_NAME
 LAKEKEEPER__ENABLE_DEFAULT_PROJECT=false
 LAKEKEEPER__OPENID_PROVIDER_URI=$KEYCLOAK_REALM_INTERNAL
 LAKEKEEPER__OPENID_ADDITIONAL_ISSUERS=$KEYCLOAK_REALM_EXTERNAL
@@ -70,9 +75,8 @@ LAKEKEEPER__UI__OPENID_PROVIDER_URI=$KEYCLOAK_REALM_EXTERNAL
 LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
 LAKEKEEPER__UI__OPENID_SCOPE="lakekeeper openid profile email"
 
-# Bootstrapping
-UV_LINK_MODE=copy
-UV_PROJECT_ENVIRONMENT=/opt/uv-venv
+# New project ID
+ADP_LAKEKEEPER_PROJECT_ID=c4fcd44f-7ce7-4446-9f7c-dcc7ba76dd22
 
 ###############################################################################
 # Trino
@@ -91,7 +95,7 @@ SUPERSET_DB_HOST=shared-database
 SUPERSET_DB_USER=$ADP_SUPERUSER
 SUPERSET_DB_PASSWORD=$ADP_SUPERUSER_PASS
 SUPERSET_DB_NAME=$SHARED_DB__SUPERSET_DB_NAME
-SUPERSET_DB_SCHEMA_NAME=$ADP_WORKSPACE_NAME
+SUPERSET_DB_SCHEMA_NAME=local
 SUPERSET_DB_PORT=5432
 SUPERSET_DB_DIALECT=postgresql
 
@@ -114,8 +118,7 @@ FLASK_DEBUG=False
 SUPERSET_LOG_LEVEL=info
 SUPERSET_ENV=development
 SUPERSET_PORT=8088
-# Needs to match traefik rule in traefik-dynamic.yml
-SUPERSET_APP_ROOT=/workspace/$SUPERSET_DB_SCHEMA_NAME
+SUPERSET_APP_ROOT=/workspace/localdev
 
 # Make sure you set this to a unique secure random value on production
 SUPERSET_SECRET_KEY=0123456789

@@ -298,7 +298,7 @@ services:
         for name in dev_isis_raw dev_isis_cleaned; do
           uv run /opt/work/bootstrap-warehouse.py \
           --project-name "$$KC_REALM_NAME" \
-          --new-project-id "$$ADP_PROJECT_ID" \
+          --new-project-id "$$ADP_LAKEKEEPER_PROJECT_ID" \
           --keycloak-url "$$KEYCLOAK_URL_INTERNAL" \
           --keycloak-realm "$$KC_REALM_NAME" \
           --bootstrap-credentials "machine-infra:s3cr3t" \
