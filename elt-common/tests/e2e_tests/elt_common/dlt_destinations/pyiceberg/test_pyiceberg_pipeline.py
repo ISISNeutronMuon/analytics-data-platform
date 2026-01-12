@@ -14,6 +14,7 @@ from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
 )
 from elt_common.testing.dlt import PyIcebergDestinationTestConfiguration
 import pendulum
+from pyiceberg.types import DoubleType, StringType
 import pytest
 
 from e2e_tests.elt_common.dlt_destinations.pyiceberg.utils import (
@@ -423,3 +424,44 @@ def test_sort_order_specs_respected(
     with iceberg_catalog(pipeline) as catalog:
         table = catalog.load_table((pipeline.dataset_name, "sort_order_data"))
         assert table.sort_order() == sort_order_config.expected_spec
+
+
+def test_evolve_schema_new_columns(
+    pipelines_dir,
+    destination_config: PyIcebergDestinationTestConfiguration,
+):
+    data_start = [{"id": 1, "summary": "Summary 1"}]
+    pipeline = destination_config.setup_pipeline(
+        pipeline_name(inspect.currentframe()),
+        pipelines_dir=pipelines_dir,
+    )
+    pipeline.run(resource_factory(data_start))
+    # data_items now has 4 columns (including the 2 _dlt columns added for lineage tracking)
+
+    data_evolved = [
+        {
+            "id": 2,
+            "summary": "Summary 2",
+            "additional_comment": "Additional Comment 2",
+            "double_value": 5.1,
+        }
+    ]
+    pipeline.run(resource_factory(data_evolved))
+
+    with iceberg_catalog(pipeline) as catalog:
+        dest_table_evolved = catalog.load_table((pipeline.dataset_name, "data_items"))
+
+    dest_schema_evolved = dest_table_evolved.schema()
+    assert isinstance(dest_schema_evolved.find_field("additional_comment").field_type, StringType)
+    assert isinstance(dest_schema_evolved.find_field("double_value").field_type, DoubleType)
+    assert len(dest_schema_evolved.columns) == 6
+
+    dest_scan = dest_table_evolved.scan()
+    assert dest_scan.count() == 2
+    dest_arrow = dest_scan.to_arrow()
+    new_columns_data = dest_arrow.sort_by("id").select(("id", "additional_comment", "double_value"))
+
+    assert new_columns_data.to_pylist() == [
+        {"id": 1, "additional_comment": None, "double_value": None},
+        {"id": 2, "additional_comment": "Additional Comment 2", "double_value": 5.1},
+    ]
