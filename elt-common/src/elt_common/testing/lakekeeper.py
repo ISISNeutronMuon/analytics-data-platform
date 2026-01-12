@@ -10,7 +10,7 @@ import requests
 import tenacity
 
 from elt_common.dlt_destinations.pyiceberg.helpers import create_catalog
-from elt_common.dlt_destinations.pyiceberg.configuration import PyIcebergCatalogCredentials
+from elt_common.dlt_destinations.pyiceberg.configuration import PyIcebergRestCatalogCredentials
 
 from . import DEFAULT_RETRY_ARGS, Endpoint, Settings
 
@@ -102,7 +102,7 @@ class Warehouse:
 
     def connect(self) -> PyIcebergCatalog:
         """Connect to the warehouse in the catalog"""
-        creds = PyIcebergCatalogCredentials()
+        creds = PyIcebergRestCatalogCredentials()
         creds.uri = str(self.server.catalog_endpoint())
         creds.project_id = self.server.settings.project_id
         creds.warehouse = self.name
