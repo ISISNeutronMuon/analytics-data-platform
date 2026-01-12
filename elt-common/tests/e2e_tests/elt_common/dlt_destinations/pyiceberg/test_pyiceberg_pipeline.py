@@ -458,10 +458,42 @@ def test_evolve_schema_new_columns(
 
     dest_scan = dest_table_evolved.scan()
     assert dest_scan.count() == 2
+
     dest_arrow = dest_scan.to_arrow()
     new_columns_data = dest_arrow.sort_by("id").select(("id", "additional_comment", "double_value"))
-
     assert new_columns_data.to_pylist() == [
         {"id": 1, "additional_comment": None, "double_value": None},
         {"id": 2, "additional_comment": "Additional Comment 2", "double_value": 5.1},
+    ]
+
+
+def test_evolve_schema_columns_removed(
+    pipelines_dir,
+    destination_config: PyIcebergDestinationTestConfiguration,
+):
+    data_start = [{"id": 1, "summary": "Summary 1", "double_value": 2.0}]
+    pipeline = destination_config.setup_pipeline(
+        pipeline_name(inspect.currentframe()),
+        pipelines_dir=pipelines_dir,
+    )
+    pipeline.run(resource_factory(data_start))
+    # data_items now has 5 columns (including the 2 _dlt columns added for lineage tracking)
+
+    data_evolved = [{"id": 2, "summary": "Summary 2"}]
+    pipeline.run(resource_factory(data_evolved))
+    with iceberg_catalog(pipeline) as catalog:
+        dest_table_evolved = catalog.load_table((pipeline.dataset_name, "data_items"))
+
+    # schema maintains old column to keep old data
+    dest_schema_evolved = dest_table_evolved.schema()
+    assert len(dest_schema_evolved.columns) == 5
+
+    dest_scan = dest_table_evolved.scan()
+    assert dest_scan.count() == 2
+
+    dest_arrow = dest_scan.to_arrow()
+    columns_data = dest_arrow.sort_by("id").select(("id", "summary", "double_value"))
+    assert columns_data.to_pylist() == [
+        {"id": 1, "summary": "Summary 1", "double_value": 2.0},
+        {"id": 2, "summary": "Summary 2", "double_value": None},
     ]
