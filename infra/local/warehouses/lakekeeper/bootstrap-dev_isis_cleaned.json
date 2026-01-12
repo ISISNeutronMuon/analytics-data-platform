@@ -1,0 +1,22 @@
+{
+  "warehouse-name": "dev_isis_cleaned",
+  "storage-credential": {
+    "type": "s3",
+    "aws-access-key-id": "adpsuperuser",
+    "aws-secret-access-key": "adppassword",
+    "credential-type": "access-key"
+  },
+  "storage-profile": {
+    "type": "s3",
+    "bucket": "dev-isis-cleaned",
+    "key-prefix": "",
+    "endpoint": "http://adp-router:59000",
+    "region": "local-01",
+    "path-style-access": true,
+    "sts-enabled": false,
+    "flavor": "s3-compat"
+  },
+  "delete-profile": {
+    "type": "hard"
+  }
+}

@@ -27,7 +27,7 @@ To test ELT scripts based on the Python package `dlt`, create and add the follow
 [destination.pyiceberg.credentials]
 uri = "http://localhost:50080/iceberg/catalog"
 project_id = "c4fcd44f-7ce7-4446-9f7c-dcc7ba76dd22"
-warehouse = "playground"
+warehouse = "dev_isis_raw"
 oauth2_server_uri = "http://localhost:50080/auth/realms/analytics-data-platform/protocol/openid-connect/token"
 client_id = "machine-infra"
 client_secret = "s3cr3t"
@@ -49,7 +49,7 @@ local_catalog:
       port: 58443
       http_scheme: https
       cert: false
-      database: playground
+      database: dev_isis_cleaned
       schema: analytics
       threads: 8
 ```
@@ -71,6 +71,6 @@ Services:
    - `analytics-data-platform` realm credentials: *adpsuperuser/adppassword*
 - Lakekeeper iceberg catalog UI: <http://localhost:50080/iceberg/ui>.
    - Use the same credentials as the `analytics-data-platform` realm
-- Superset BI tool: <http://localhost:50080/workspace/playground>.
+- Superset BI tool: <http://localhost:50080/workspace/localdev>.
    - Use the same credentials as the `analytics-data-platform` realm
 - Trino endpoint: <https://localhost:58443> (note the https as this is required by Trino. You may need to use an "--insecure" flag)

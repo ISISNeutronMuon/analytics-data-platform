@@ -216,21 +216,6 @@ services:
       - "minio_data:/data"
     networks: *local-networks
 
-  minio-bootstrap:
-    container_name: local-lakehouse-minio-bootstrap
-    depends_on:
-      minio:
-        condition: service_healthy
-    image: *minio-mc-image
-    env_file: *env-file
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        /usr/bin/mc alias set minio http://minio:59000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
-        /usr/bin/mc mb --ignore-existing minio/playground
-    networks: *local-networks
-
   #########################################################
   # OpenFGA - Permissioning
   #########################################################
@@ -283,8 +268,6 @@ services:
         condition: service_healthy
       keycloak-bootstrap:
         condition: service_completed_successfully
-      minio-bootstrap:
-        condition: service_completed_successfully
       shared-database-bootstrap:
         condition: service_completed_successfully
     volumes:
@@ -312,10 +295,10 @@ services:
       - /bin/bash
       - -c
       - |
-        for name in playground; do
+        for name in dev_isis_raw dev_isis_cleaned; do
           uv run /opt/work/bootstrap-warehouse.py \
           --project-name "$$KC_REALM_NAME" \
-          --new-project-id "$$ADP_PROJECT_ID" \
+          --new-project-id "$$ADP_LAKEKEEPER_PROJECT_ID" \
           --keycloak-url "$$KEYCLOAK_URL_INTERNAL" \
           --keycloak-realm "$$KC_REALM_NAME" \
           --bootstrap-credentials "machine-infra:s3cr3t" \
@@ -323,7 +306,7 @@ services:
           --server-admin "$$ADP_SUPERUSER" \
           --additional-user trino:s3cr3t \
           --log-level=DEBUG \
-          --warehouse-json-file "/opt/work/bootstrap-$$name.json" \
+          --warehouse-json-file "/opt/work/warehouses/bootstrap-$$name.json" \
           "http://lakekeeper:8181"
         done
     restart: "no"
@@ -332,7 +315,7 @@ services:
         condition: service_healthy
     volumes:
       - "../ansible-docker/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py"
-      - "./lakekeeper/bootstrap-playground.json:/opt/work/bootstrap-playground.json:ro"
+      - "./warehouses/lakekeeper:/opt/work/warehouses:ro"
       - *certs-volume
     networks: *local-networks
 
@@ -357,6 +340,7 @@ services:
       retries: 2
     volumes:
       - "./trino/etc:/etc/trino"
+      - "./warehouses/trino:/etc/trino/catalog"
       - *certs-volume
     networks: *local-networks
 
