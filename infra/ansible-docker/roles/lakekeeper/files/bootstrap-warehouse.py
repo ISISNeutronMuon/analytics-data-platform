@@ -303,9 +303,9 @@ def _request_with_auth(
     response = method(url, headers=headers, **REQUESTS_DEFAULT_KWARGS, **kwargs)
     try:
         response.raise_for_status()
-    except requests.exceptions.HTTPError as exc:
+    except requests.exceptions.HTTPError:
         LOGGER.debug(f"request failed: {response.content.decode('utf-8')}")
-        raise exc
+        raise
     return response
 
 
@@ -321,7 +321,8 @@ def _ensure_s3_bucket_exists(
     try:
         s3.create_bucket(Bucket=storage_profile["bucket"])
     except botocore.exceptions.ClientError as exc:
-        if exc.response["Error"]["Code"] != "EntityAlreadyExists":
+        code = str(exc.response.get("Error", {}).get("Code", ""))
+        if code in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
             raise
 
 
