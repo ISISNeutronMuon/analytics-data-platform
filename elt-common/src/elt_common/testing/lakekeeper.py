@@ -5,22 +5,23 @@ from typing import Callable, Generator
 import uuid
 
 import pyarrow as pa
-from pyiceberg.catalog import Catalog as PyIcebergCatalog
+from pyiceberg.catalog import Catalog as PyIcebergCatalog, load_catalog
 import requests
 import tenacity
 
-from elt_common.dlt_destinations.pyiceberg.helpers import create_catalog
-from elt_common.dlt_destinations.pyiceberg.configuration import PyIcebergCatalogCredentials
+from elt_common.dlt_destinations.pyiceberg.configuration import PyIcebergRestCatalogCredentials
 
 from . import DEFAULT_RETRY_ARGS, Endpoint, Settings
+
+DEFAULT_REQUESTS_TIMEOUT = 10.0
 
 
 class Server:
     """Wraps a Lakekeeper instance. It is assumed that the instance is bootstrapped."""
 
-    def __init__(self, access_token: str, settings: Settings):
-        self.access_token = access_token
+    def __init__(self, settings: Settings):
         self.settings = settings
+        self.access_token = access_token(settings)
 
     @property
     def token_endpoint(self) -> Endpoint:
@@ -42,7 +43,9 @@ class Server:
     def warehouse_endpoint(self, *, version: int = 1) -> Endpoint:
         return self.management_endpoint(version=version) + "/warehouse"
 
-    def create_warehouse(self, name: str, project_id: str, storage_config: dict) -> "Warehouse":
+    def create_warehouse(
+        self, name: str, project_id: str, storage_config: dict
+    ) -> "RestCatalogWarehouse":
         """Create a warehouse in this server"""
 
         payload = {
@@ -65,7 +68,7 @@ class Server:
         warehouse_id = response.json()["warehouse-id"]
         print(f"Created warehouse {name} with ID {warehouse_id}")
 
-        return Warehouse(
+        return RestCatalogWarehouse(
             self,
             name,
             uuid.UUID(warehouse_id),
@@ -73,12 +76,12 @@ class Server:
         )
 
     @tenacity.retry(**DEFAULT_RETRY_ARGS)
-    def purge_warehouse(self, warehouse: "Warehouse") -> None:
+    def purge_warehouse(self, warehouse: "RestCatalogWarehouse") -> None:
         """Purge all of the data in the given warehouse"""
         warehouse.purge()
 
     @tenacity.retry(**DEFAULT_RETRY_ARGS)
-    def delete_warehouse(self, warehouse: "Warehouse") -> None:
+    def delete_warehouse(self, warehouse: "RestCatalogWarehouse") -> None:
         """Purge all of the data in the given warehouse and delete it"""
         response = self._request_with_auth(
             requests.delete, self.warehouse_endpoint() + f"/{str(warehouse.project_id)}"
@@ -89,12 +92,12 @@ class Server:
         """Make a request, adding in the auth token"""
         headers = kwargs.setdefault("headers", {})
         headers.update({"Authorization": f"Bearer {self.access_token}"})
-        kwargs.setdefault("timeout", 10.0)
+        kwargs.setdefault("timeout", DEFAULT_REQUESTS_TIMEOUT)
         return requests_method(url=str(url), **kwargs)
 
 
 @dataclasses.dataclass
-class Warehouse:
+class RestCatalogWarehouse:
     server: Server
     name: str
     project_id: uuid.UUID
@@ -102,7 +105,7 @@ class Warehouse:
 
     def connect(self) -> PyIcebergCatalog:
         """Connect to the warehouse in the catalog"""
-        creds = PyIcebergCatalogCredentials()
+        creds = PyIcebergRestCatalogCredentials()
         creds.uri = str(self.server.catalog_endpoint())
         creds.project_id = self.server.settings.project_id
         creds.warehouse = self.name
@@ -110,7 +113,7 @@ class Warehouse:
         creds.client_id = self.server.settings.openid_client_id
         creds.client_secret = self.server.settings.openid_client_secret
         creds.scope = self.server.settings.openid_scope
-        return create_catalog(name="default", **creds.as_dict())
+        return load_catalog(name="default", **creds.as_dict())
 
     @contextmanager
     def create_test_tables(
@@ -165,3 +168,28 @@ class Warehouse:
             for table_id in catalog.list_tables(ns):
                 catalog.purge_table(table_id)
             catalog.drop_namespace(ns)
+
+
+@tenacity.retry(**DEFAULT_RETRY_ARGS)
+def access_token(settings: Settings) -> str:
+    response = requests.post(
+        token_endpoint(settings),
+        data={
+            "grant_type": "client_credentials",
+            "client_id": settings.openid_client_id,
+            "client_secret": settings.openid_client_secret,
+            "scope": settings.openid_scope,
+        },
+        timeout=DEFAULT_REQUESTS_TIMEOUT,
+    )
+    response.raise_for_status()
+    return response.json()["access_token"]
+
+
+def token_endpoint(settings: Settings) -> str:
+    response = requests.get(
+        str(settings.openid_provider_uri + "/.well-known/openid-configuration"),
+        timeout=DEFAULT_REQUESTS_TIMEOUT,
+    )
+    response.raise_for_status()
+    return response.json()["token_endpoint"]

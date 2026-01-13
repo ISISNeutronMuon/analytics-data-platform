@@ -14,7 +14,8 @@ from dlt.common.destination import (
 )
 from dlt.common.runtime.run_context import RunContext
 
-from .lakekeeper import Warehouse
+from .sqlcatalog import SqlCatalogWarehouse
+from .lakekeeper import RestCatalogWarehouse
 
 
 def configure_dlt_for_testing():
@@ -34,7 +35,7 @@ def configure_dlt_for_testing():
 class PyIcebergDestinationTestConfiguration:
     """Class for defining test setup for pyiceberg destination."""
 
-    warehouse: Warehouse
+    warehouse: SqlCatalogWarehouse | RestCatalogWarehouse
     destination: TDestinationReferenceArg = "elt_common.dlt_destinations.pyiceberg"
 
     def setup(self, environ: MutableMapping = os.environ) -> None:
@@ -42,30 +43,39 @@ class PyIcebergDestinationTestConfiguration:
 
         Defaults to to os.environ
         """
-        server, server_settings = self.warehouse.server, self.warehouse.server.settings
-        environ["DESTINATION__PYICEBERG__CREDENTIALS__URI"] = str(
-            self.warehouse.server.catalog_endpoint()
-        )
-        environ["DESTINATION__PYICEBERG__CREDENTIALS__PROJECT_ID"] = str(
-            self.warehouse.server.settings.project_id
-        )
-        environ.setdefault("DESTINATION__PYICEBERG__CREDENTIALS__WAREHOUSE", self.warehouse.name)
-        environ.setdefault(
-            "DESTINATION__PYICEBERG__CREDENTIALS__OAUTH2_SERVER_URI",
-            str(server.token_endpoint),
-        )
-        environ.setdefault(
-            "DESTINATION__PYICEBERG__CREDENTIALS__CLIENT_ID",
-            server_settings.openid_client_id,
-        )
-        environ.setdefault(
-            "DESTINATION__PYICEBERG__CREDENTIALS__CLIENT_SECRET",
-            server_settings.openid_client_secret,
-        )
-        environ.setdefault(
-            "DESTINATION__PYICEBERG__CREDENTIALS__SCOPE",
-            server_settings.openid_scope,
-        )
+        if isinstance(self.warehouse, SqlCatalogWarehouse):
+            environ["DESTINATION__PYICEBERG__CATALOG_TYPE"] = "sql"
+            environ["DESTINATION__PYICEBERG__CREDENTIALS__URI"] = self.warehouse.uri
+            environ["DESTINATION__PYICEBERG__CREDENTIALS__WAREHOUSE"] = (
+                self.warehouse.warehouse_path
+            )
+        else:
+            server, server_settings = self.warehouse.server, self.warehouse.server.settings
+            environ["DESTINATION__PYICEBERG__CREDENTIALS__URI"] = str(
+                self.warehouse.server.catalog_endpoint()
+            )
+            environ["DESTINATION__PYICEBERG__CREDENTIALS__PROJECT_ID"] = str(
+                self.warehouse.server.settings.project_id
+            )
+            environ.setdefault(
+                "DESTINATION__PYICEBERG__CREDENTIALS__WAREHOUSE", self.warehouse.name
+            )
+            environ.setdefault(
+                "DESTINATION__PYICEBERG__CREDENTIALS__OAUTH2_SERVER_URI",
+                str(server.token_endpoint),
+            )
+            environ.setdefault(
+                "DESTINATION__PYICEBERG__CREDENTIALS__CLIENT_ID",
+                server_settings.openid_client_id,
+            )
+            environ.setdefault(
+                "DESTINATION__PYICEBERG__CREDENTIALS__CLIENT_SECRET",
+                server_settings.openid_client_secret,
+            )
+            environ.setdefault(
+                "DESTINATION__PYICEBERG__CREDENTIALS__SCOPE",
+                server_settings.openid_scope,
+            )
 
     def setup_pipeline(
         self,

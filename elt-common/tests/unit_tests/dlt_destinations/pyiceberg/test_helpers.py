@@ -4,8 +4,6 @@ from dlt.common.schema.typing import TColumnSchema
 from elt_common.dlt_destinations.pyiceberg.helpers import (
     PARTITION_HINT,
     PartitionTrBuilder,
-    RestCatalog,
-    create_catalog,
     create_iceberg_schema,
     create_partition_spec,
     dlt_type_to_iceberg,
@@ -13,6 +11,7 @@ from elt_common.dlt_destinations.pyiceberg.helpers import (
     namespace_exists,
     transforms,
 )
+from pyiceberg.catalog.rest import RestCatalog
 from pyiceberg.exceptions import NoSuchNamespaceError as PyIcebergNoSuchNamespaceError
 import pyiceberg.types
 import pytest
@@ -29,14 +28,6 @@ def dlt_schema() -> PreparedTableSchema:
         entry_weight=TColumnSchema(data_type="double"),
     )
     return PreparedTableSchema(name="table_name", columns=columns)
-
-
-def test_create_catalog_passes_properties_to_catalog_impl(mocker: MockerFixture):
-    patched_catalog = mocker.patch("elt_common.dlt_destinations.pyiceberg.helpers.RestCatalog")
-    name, properties = "unit_test_catalog", {"a": 1, "c": 3}
-    create_catalog(name, **properties)
-
-    patched_catalog.assert_called_once_with(name, **properties)
 
 
 def test_namespace_exists_returns_true_if_load_namespace_properties_succeeds(mocker: MockerFixture):

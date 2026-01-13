@@ -1,7 +1,7 @@
 import dataclasses
-from typing import Dict, Literal, Final, Optional, TypeAlias
+from typing import Dict, Literal, Final, Optional, TypeAlias, Type
 
-from dlt.common.configuration import configspec
+from dlt.common.configuration import configspec, resolve_type
 from dlt.common.configuration.specs import CredentialsConfiguration
 from dlt.common.destination.client import DestinationClientDwhConfiguration
 from dlt.common.destination.exceptions import DestinationTerminalException
@@ -27,7 +27,9 @@ class PyIcebergRestCatalogCredentials(CredentialsConfiguration):
         """Return the credentials as a dictionary suitable for the Catalog constructor"""
         # Map variable names to property names
         # client_id & secret need to be combined
-        properties = {"credential": self.client_credential()} if self.client_id else {}
+        properties = {"type": "rest"}
+        if self.client_id:
+            properties.update({"credential": self.client_credential()})
 
         field_aliases: Dict[str, str] = {
             "access_delegation": f"{CATALOG_HEADER_PREFIX}x-iceberg-access-delegation",
@@ -48,29 +50,11 @@ class PyIcebergRestCatalogCredentials(CredentialsConfiguration):
     def client_credential(self) -> str:
         return f"{self.client_id}:{self.client_secret}"
 
-
-PyIcebergCatalogCredentials: TypeAlias = PyIcebergRestCatalogCredentials
-
-
-@configspec(init=False)
-class IcebergClientConfiguration(DestinationClientDwhConfiguration):
-    destination_type: Final[str] = dataclasses.field(
-        default="pyiceberg", init=False, repr=False, compare=False
-    )  # type: ignore[misc]
-
-    catalog_type: Literal["rest"] = "rest"
-    credentials: PyIcebergCatalogCredentials = None  # type: ignore
-
-    @property
-    def connection_properties(self) -> Dict[str, str]:
-        """Returns a mapping of connection properties to pass to the catalog constructor"""
-        return self.credentials.as_dict() if self.credentials is not None else {}
-
     def on_resolved(self) -> None:
         # Check we have the minimum number of required authentication properties
         # if any are supplied
         auth_props = {
-            prop: getattr(self.credentials, prop)
+            prop: getattr(self, prop)
             for prop in ("oauth2_server_uri", "client_id", "client_secret")
         }
 
@@ -79,6 +63,50 @@ class IcebergClientConfiguration(DestinationClientDwhConfiguration):
             raise DestinationTerminalException(
                 f"Missing required configuration value(s) for authentication: {list(name for name, value in auth_props.items() if value is None)}"
             )
+
+
+@configspec(init=False)
+class PyIcebergSqlCatalogCredentials(CredentialsConfiguration):
+    uri: str = None  # type: ignore
+    warehouse: str = None  # type: ignore
+
+    def as_dict(self) -> Dict[str, str]:
+        """Return the credentials as a dictionary suitable for the Catalog constructor"""
+        return {"type": "sql", "uri": self.uri, "warehouse": self.warehouse}
+
+    def on_resolved(self) -> None:
+        pass
+
+
+PyIcebergCatalogCredentials: TypeAlias = (
+    PyIcebergRestCatalogCredentials | PyIcebergSqlCatalogCredentials
+)
+
+
+@configspec(init=False)
+class IcebergClientConfiguration(DestinationClientDwhConfiguration):
+    destination_type: Final[str] = dataclasses.field(  # type: ignore[misc]
+        default="pyiceberg", init=False, repr=False, compare=False
+    )
+
+    catalog_type: Literal["rest", "sql"] = "rest"
+    credentials: PyIcebergCatalogCredentials = None  # type: ignore
+
+    @resolve_type("credentials")
+    def resolve_credentials_type(self) -> Type[CredentialsConfiguration]:
+        return (
+            PyIcebergRestCatalogCredentials
+            if self.catalog_type == "rest"
+            else PyIcebergSqlCatalogCredentials
+        )
+
+    @property
+    def connection_properties(self) -> Dict[str, str]:
+        """Returns a mapping of connection properties to pass to the catalog constructor"""
+        return self.credentials.as_dict() if self.credentials is not None else {}
+
+    def on_resolved(self) -> None:
+        return self.credentials.on_resolved()
 
     def fingerprint(self) -> str:
         """Returns a fingerprint of a connection string."""

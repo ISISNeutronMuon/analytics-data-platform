@@ -24,6 +24,7 @@ from dlt.common.schema.typing import TPartialTableSchema, TWriteDisposition
 
 from dlt.common.libs.pyarrow import pyarrow as pa
 import pyarrow.parquet as pq
+from pyiceberg.catalog import load_catalog
 from pyiceberg.expressions import AlwaysTrue, And, EqualTo
 from pyiceberg.table import Table as PyIcebergTable
 
@@ -31,7 +32,6 @@ from elt_common.dlt_destinations.pyiceberg.configuration import (
     IcebergClientConfiguration,
 )
 from elt_common.dlt_destinations.pyiceberg.helpers import (
-    create_catalog,
     create_iceberg_schema,
     create_partition_spec,
     create_sort_order,
@@ -78,7 +78,7 @@ class PyIcebergClient(JobClientBase, WithStateSync):
         super().__init__(schema, config, capabilities)
         self.dataset_name = self.config.normalize_dataset_name(self.schema)
         self.config = config
-        self.iceberg_catalog = create_catalog(name="default", **config.connection_properties)
+        self.iceberg_catalog = load_catalog(name="default", **config.connection_properties)
         self.type_mapper = cast(PyIcebergTypeMapper, self.capabilities.get_type_mapper())
 
     # ----- JobClientBase -----

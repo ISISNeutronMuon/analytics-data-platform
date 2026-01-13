@@ -34,10 +34,16 @@ class Endpoint:
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="tests_",
+        env_prefix="elt_common_testing_",
     )
 
-    # iceberg catalog
+    # iceberg catalog type: 'sql' or 'rest'
+    catalog_type: str = "sql"
+
+    # common settings
+    warehouse_name: str = "e2e_tests"
+
+    # rest catalog settings
     # The default values assume the docker-compose.yml in the infra/local has been used.
     # These are provided for the convenience of easily running a debugger without having
     # to set up remote debugging
@@ -53,7 +59,6 @@ class Settings(BaseSettings):
     openid_client_secret: str = "s3cr3t"
     openid_scope: str = "lakekeeper"
     project_id: str = "c4fcd44f-7ce7-4446-9f7c-dcc7ba76dd22"
-    warehouse_name: str = "e2e_tests"
 
     # trino
     trino_http_scheme: str = "https"

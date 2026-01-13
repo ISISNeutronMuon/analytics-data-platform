@@ -1,4 +1,4 @@
-name: End-to-end tests for extract and load scripts in the warehouse
+name: End-to-end extract and load tests
 on:
   push:
     branches:
@@ -24,7 +24,7 @@ env:
 
 jobs:
   test:
-    name: warehouses end-to-end tests
+    name: test
     runs-on: ubuntu-latest
 
     steps:

@@ -3,7 +3,6 @@ from typing import Dict, Final, Union
 from dlt.common.destination.typing import PreparedTableSchema
 from dlt.common.schema.typing import TColumnType, TTableSchemaColumns
 from pyiceberg.catalog import Catalog
-from pyiceberg.catalog.rest import RestCatalog
 from pyiceberg.partitioning import (
     UNPARTITIONED_PARTITION_SPEC,
     PartitionField,
@@ -46,17 +45,6 @@ UNIT_TO_TIMESTAMP_PRECISION: Dict[str, int] = {v: k for k, v in TIMESTAMP_PRECIS
 ###############################################################################
 # Catalog
 ###############################################################################
-
-
-def create_catalog(name: str, **properties: str) -> Catalog:
-    """Create an Iceberg catalog
-
-    Args:
-        name: Name to identify the catalog.
-        properties: Properties that are passed along to the configuration.
-    """
-
-    return RestCatalog(name, **properties)
 
 
 def namespace_exists(catalog: Catalog, namespace: Union[str, Identifier]) -> bool:
