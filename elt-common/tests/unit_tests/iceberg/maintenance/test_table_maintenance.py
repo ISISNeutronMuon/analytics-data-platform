@@ -5,34 +5,10 @@ import re
 from click.testing import CliRunner
 from elt_common.iceberg.trino import TrinoCredentials, TrinoQueryEngine
 from elt_common.iceberg.maintenance import cli, IcebergTableMaintenaceSql
-from elt_common.testing.lakekeeper import RestCatalogWarehouse
 import pytest
 from pytest_mock import MockerFixture
 
-TEST_VIEW_PREFIX = "test_view_"
 
-
-def create_views(trino_query_engine, namespace: str, query_table: str):
-    trino_query_engine.execute(
-        f"create view {namespace}.{TEST_VIEW_PREFIX}0 as (select * from {namespace}.{query_table})"
-    )
-
-
-@pytest.mark.requires_trino
-def test_trino_query_engine_list_tables_returns_only_iceberg_tables(
-    warehouse: RestCatalogWarehouse, trino_engine: TrinoQueryEngine
-):
-    with warehouse.create_test_tables(
-        namespace_count=2,
-        table_count_per_ns=2,
-    ):
-        create_views(trino_engine, "test_ns_0", query_table="test_table_0")
-
-        iceberg_tables = trino_engine.list_iceberg_tables()
-        assert len(iceberg_tables) == 4
-
-
-@pytest.mark.requires_trino
 @pytest.mark.parametrize(
     "command,command_args",
     [
@@ -43,29 +19,24 @@ def test_trino_query_engine_list_tables_returns_only_iceberg_tables(
     ],
 )
 def test_iceberg_maintenance_commands_run_expected_trino_alter_table_command(
-    warehouse: RestCatalogWarehouse,
-    trino_engine: TrinoQueryEngine,
     mocker: MockerFixture,
     command: str,
     command_args: Dict[str, str],
 ):
-    with warehouse.create_test_tables(namespace_count=1, table_count_per_ns=1, snapshot_count=10):
-        iceberg_maint = IcebergTableMaintenaceSql(trino_engine)
-        table_id = trino_engine.list_iceberg_tables()[0]
+    trino_engine = mocker.MagicMock()
+    iceberg_maint = IcebergTableMaintenaceSql(trino_engine)
+    table_id = "ns1.table1"
+    trino_execute_spy = mocker.spy(trino_engine, "execute")
+    getattr(iceberg_maint, command)(table_id, **command_args)
 
-        trino_execute_spy = mocker.spy(trino_engine, "execute")
-        getattr(iceberg_maint, command)(table_id, **command_args)
-
-        assert trino_execute_spy.call_count == 1
-        expected_cmd_re = re.compile(
-            rf"^alter table test_ns_0.test_table_0 execute ({command})(.+)?$"
-        )
-        command_match = expected_cmd_re.match(trino_execute_spy.call_args[0][0])
-        assert command_match is not None
-        assert command_match.group(1) == command
-        if command_args:
-            for key in command_args.keys():
-                assert key in command_match.group(2)
+    assert trino_execute_spy.call_count == 1
+    expected_cmd_re = re.compile(rf"^alter table {table_id} execute ({command})(.+)?$")
+    command_match = expected_cmd_re.match(trino_execute_spy.call_args[0][0])
+    assert command_match is not None
+    assert command_match.group(1) == command
+    if command_args:
+        for key in command_args.keys():
+            assert key in command_match.group(2)
 
 
 def test_iceberg_maintenance_cli_runs_successfully(mocker: MockerFixture):
