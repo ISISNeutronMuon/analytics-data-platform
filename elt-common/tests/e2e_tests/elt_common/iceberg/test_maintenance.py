@@ -68,7 +68,6 @@ def test_iceberg_maintenance_commands_run_expected_trino_alter_table_command(
                 assert key in command_match.group(2)
 
 
-@pytest.mark.requires_trino
 def test_iceberg_maintenance_cli_runs_successfully(mocker: MockerFixture):
     mock_from_env = mocker.patch.object(TrinoCredentials, "from_env", spec=TrinoCredentials)
     mock_from_env.return_value = TrinoCredentials("host", "1234", "catalog", "user", "password")
@@ -89,7 +88,6 @@ def test_iceberg_maintenance_cli_runs_successfully(mocker: MockerFixture):
     assert mock_trino_execute.call_count == 8
 
 
-@pytest.mark.requires_trino
 def test_iceberg_maintenance_cli_raises_error_on_invalid_retention_format():
     runner = CliRunner()
 

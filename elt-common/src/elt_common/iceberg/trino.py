@@ -20,8 +20,8 @@ class TrinoCredentials:
     host: str
     port: str
     catalog: str
-    user: str
-    password: str
+    user: str | None
+    password: str | None
     http_scheme: str = "https"
 
     @classmethod
@@ -104,10 +104,15 @@ class TrinoQueryEngine:
 
     # private
     def _create_engine(self, credentials: TrinoCredentials) -> Engine:
+        if credentials.user is None or credentials.password is None:
+            auth = BasicAuthentication("trino", "")
+        else:
+            auth = BasicAuthentication(credentials.user, credentials.password)
+
         return create_engine(
             self.url,
             connect_args={
-                "auth": BasicAuthentication(credentials.user, credentials.password),
+                "auth": auth,
                 "http_scheme": credentials.http_scheme,
                 "verify": False,
             },
