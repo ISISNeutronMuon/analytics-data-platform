@@ -57,7 +57,7 @@ decorator==5.2.1
     #   openstacksdk
 dogpile-cache==1.4.0
     # via openstacksdk
-filelock==3.20.1
+filelock==3.20.3
     # via ansible-lint
 idna==3.10
     # via requests
