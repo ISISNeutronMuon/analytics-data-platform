@@ -1,4 +1,4 @@
-name: Unit tests for elt-common package
+name: Tests for elt-common
 on:
   push:
     branches:
@@ -18,10 +18,11 @@ concurrency:
 
 env:
   PYTHON_VERSION: 3.13
+  UV_VERSION: latest
 
 jobs:
   test:
-    name: elt-common unit tests
+    name: test
     runs-on: ubuntu-slim
 
     steps:
