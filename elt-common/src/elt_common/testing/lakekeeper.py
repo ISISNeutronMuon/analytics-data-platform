@@ -13,6 +13,8 @@ from elt_common.dlt_destinations.pyiceberg.configuration import PyIcebergRestCat
 
 from . import DEFAULT_RETRY_ARGS, Endpoint, Settings
 
+DEFAULT_REQUESTS_TIMEOUT = 10.0
+
 
 class Server:
     """Wraps a Lakekeeper instance. It is assumed that the instance is bootstrapped."""
@@ -90,7 +92,7 @@ class Server:
         """Make a request, adding in the auth token"""
         headers = kwargs.setdefault("headers", {})
         headers.update({"Authorization": f"Bearer {self.access_token}"})
-        kwargs.setdefault("timeout", 10.0)
+        kwargs.setdefault("timeout", DEFAULT_REQUESTS_TIMEOUT)
         return requests_method(url=str(url), **kwargs)
 
 
@@ -168,12 +170,7 @@ class RestCatalogWarehouse:
             catalog.drop_namespace(ns)
 
 
-def token_endpoint(settings: Settings) -> str:
-    response = requests.get(str(settings.openid_provider_uri + "/.well-known/openid-configuration"))
-    response.raise_for_status()
-    return response.json()["token_endpoint"]
-
-
+@tenacity.retry(**DEFAULT_RETRY_ARGS)
 def access_token(settings: Settings) -> str:
     response = requests.post(
         token_endpoint(settings),
@@ -183,6 +180,16 @@ def access_token(settings: Settings) -> str:
             "client_secret": settings.openid_client_secret,
             "scope": settings.openid_scope,
         },
+        timeout=DEFAULT_REQUESTS_TIMEOUT,
     )
     response.raise_for_status()
     return response.json()["access_token"]
+
+
+def token_endpoint(settings: Settings) -> str:
+    response = requests.get(
+        str(settings.openid_provider_uri + "/.well-known/openid-configuration"),
+        timeout=DEFAULT_REQUESTS_TIMEOUT,
+    )
+    response.raise_for_status()
+    return response.json()["token_endpoint"]
