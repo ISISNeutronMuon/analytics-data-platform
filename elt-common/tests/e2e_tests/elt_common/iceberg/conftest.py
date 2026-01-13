@@ -1,11 +1,11 @@
 from elt_common.iceberg.maintenance import TrinoCredentials, TrinoQueryEngine
 import pytest
 
-from elt_common.testing.lakekeeper import Warehouse
+from elt_common.testing.lakekeeper import RestCatalogWarehouse
 
 
 @pytest.fixture(scope="session")
-def trino_engine(warehouse: Warehouse):
+def trino_engine(warehouse: RestCatalogWarehouse):
     server = warehouse.server
     server_settings = server.settings
     creds = TrinoCredentials(
