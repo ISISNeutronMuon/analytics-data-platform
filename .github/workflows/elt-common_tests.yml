@@ -1,0 +1,46 @@
+name: Unit tests for elt-common package
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - ".github/workflows/elt-common_tests.yml"
+      - "elt-common/**"
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - ".github/workflows/elt-common_tests.yml"
+      - "elt-common/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: 3.13
+
+jobs:
+  test:
+    name: elt-common unit tests
+    runs-on: ubuntu-slim
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: false
+          cache-dependency-glob: elt-common/pyproject.toml
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install the project
+        shell: bash -l {0}
+        run: uv sync --locked --all-extras --dev
+        working-directory: elt-common
+
+      - name: Run tests
+        shell: bash -l {0}
+        run: uv run pytest --durations-min=0.5 --exitfirst tests/ --cache-clear
+        working-directory: elt-common
