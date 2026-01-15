@@ -1,0 +1,55 @@
+---
+- name: Get info on OpenFGA container
+  community.docker.docker_container_info:
+    name: "{{ openfga_container_name }}"
+  register: result
+
+- name: Stop OpenFGA instance
+  community.docker.docker_container:
+    name: "{{ openfga_container_name }}"
+    state: absent
+
+- name: Run OpenFGA migrations
+  community.docker.docker_container:
+    name: "{{ openfga_container_name }}_migrate"
+    image: "{{ openfga_image }}"
+    command: migrate
+    state: started
+    cleanup: true
+    detach: false
+    restart_policy: no
+    recreate: true
+    env: &openfga_env
+      #
+      OPENFGA_DATASTORE_ENGINE="{{ openfga_database_engine }}"
+      OPENFGA_DATASTORE_URI="{{ openfga_database_engine }}://{{ openfga_database_user }}:{{ openfga_database_password }}@{{ openfga_database_host }}:{{ openfga_database_port }}{{ openfga_database_options }}"
+      OPENFGA_DATASTORE_MAX_OPEN_CONNS="{{ openfga_datastore_max_open_conns }}"
+      OPENFGA_DATASTORE_MAX_IDLE_CONNS=50
+      OPENFGA_CACHE_CONTROLLER_ENABLED=true
+      OPENFGA_CHECK_QUERY_CACHE_ENABLED=true
+      OPENFGA_CHECK_ITERATOR_CACHE_ENABLED=true
+      OPENFGA_PLAYGROUND_ENABLED=false
+    networks:
+      - name: "{{ openfga_container_network }}"
+    comparisons:
+      networks: strict
+      env: strict
+
+- name: Start OpenFGA container
+  community.docker.docker_container:
+    name: "{{ openfga_container_name }}"
+    image: "{{ openfga_image }}"
+    command: run
+    state: started
+    cleanup: true
+    detach: true
+    restart_policy: unless-stopped
+    recreate: true
+    published_ports:
+      - "{{ openfga_http_port }}:8080"
+    env: *openfga_env
+    networks:
+      - name: "{{ openfga_container_network }}"
+    comparisons:
+      networks: strict
+      env: strict
