@@ -1,0 +1,79 @@
+---
+# ceph-mount
+cephfs_mount_export_path: "{{ vault_cephfs_export_path }}"
+cephfs_mount_mount_path: "/mnt/lakehouse_data"
+cephfs_mount_access_name: isis
+cephfs_mount_access_secret: "{{ vault_cephfs_access_secret }}"
+
+# docker
+docker_daemon_options:
+  mtu: 1450
+  registry-mirrors: ["https://dockerhub.stfc.ac.uk"]
+
+docker_users:
+  - "{{ openstack_vm_user }}"
+
+# domains
+top_level_domain: analytics.isis.cclrc.ac.uk
+
+# keycloak
+keycloak_http_port: 8080
+keycloak_http_management_port: 9000
+keycloak_base_path: /auth
+keycloak_url: "https://{{ top_level_domain }}{{ keycloak_base_path }}"
+keycloak_realm: "isis"
+keycloak_realm_url_isis: "{{ keycloak_url }}/realms/{{ keycloak_realm }}"
+keycloak_token_endpoint_url_isis: "{{ keycloak_realm_url_isis }}/protocol/openid-connect/token"
+
+# lakekeeper
+lakekeeper_http_port: 8181
+lakekeeper_base_path: /iceberg
+lakekeeper_url: "https://{{ top_level_domain }}{{ lakekeeper_base_path }}"
+lakekeeper_catalog:
+  uri: "{{ lakekeeper_url }}/catalog"
+  warehouses:
+    accelerator:
+      storage:
+        bucket_name: isis-dataarchitecture-prototypes-warehouse-accelerator
+        key_prefix: ""
+
+# openstack
+openstack_image: ubuntu-noble-24.04-nogui
+openstack_python_interpreter: /usr/bin/python3
+openstack_apt_keys:
+  - url: https://dl.igtf.net/distribution/igtf/current/GPG-KEY-EUGridPMA-RPM-4
+    filename: eugridpma-rpm-4.asc
+
+# pip
+pip_install_packages:
+  - name: docker
+    extra_args: --break-system-packages
+
+# s3
+s3_endpoint: https://s3.echo.stfc.ac.uk
+s3_region: echo-01 # not used but can be required by apis
+s3_access_key_id: "{{ vault_echo_access_id }}"
+s3_access_secret: "{{ vault_echo_access_secret }}"
+
+# stfc
+
+stfc_ldap_server: "{{ vault_stfc_ldap_server }}"
+stfc_ca_cert: "{{ vault_stfc_ca_cert }}"
+
+# superset
+superset_url_prefix: /workspace
+superset_instances:
+  superset_accelerator:
+    app_root: "{{ superset_url_prefix }}/accelerator"
+    http_port: 8088
+
+# trino
+trino_http_port: 8060
+trino_https_port: 8444
+trino_superset_username: superset
+trino_ingestion_username: ingestion
+trino_users:
+  - username: "{{ trino_superset_username }}"
+    password: "{{ vault_trino_superset_passwd }}"
+  - username: "{{ trino_ingestion_username }}"
+    password: "{{ vault_trino_ingestion_passwd }}"
