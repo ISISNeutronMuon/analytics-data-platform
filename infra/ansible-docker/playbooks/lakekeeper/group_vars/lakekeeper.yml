@@ -13,6 +13,13 @@ openstack_security_group_rules:
 openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
 
 # Deployment configuration
+# OpenFGA
+openfga_database_host: "{{ vault_db_host }}"
+openfga_database_name: "{{ vault_openfga_database_name }}"
+openfga_database_user: "{{ vault_openfga_database_user }}"
+openfga_database_passwd: "{{ vault_openfga_database_passwd }}"
+
+# Lakekeeper
 lakekeeper_container_network: lakekeeper
 
 lakekeeper_metadb_host: "{{ vault_db_host }}"

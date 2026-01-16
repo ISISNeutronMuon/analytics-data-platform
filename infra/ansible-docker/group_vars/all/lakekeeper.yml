@@ -10,7 +10,3 @@ lakekeeper_catalog:
       storage:
         bucket_name: isis-dataarchitecture-prototypes-warehouse-accelerator
         key_prefix: ""
-    # management:
-    #   storage:
-    #     bucket_name: isis-dataarchitecture-prototypes-warehouse-management
-    #     key_prefix: ""
