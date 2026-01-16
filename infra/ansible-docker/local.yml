@@ -1,0 +1,41 @@
+all:
+  vars:
+    ansible_user: ubuntu
+    ansible_python_interpreter: /usr/bin/python3
+
+traefik:
+  hosts:
+    traefik-1:
+      ansible_host: 192.168.42.96
+
+keycloak:
+  hosts:
+    keycloak-1:
+      ansible_host: 192.168.42.122
+
+lakekeeper:
+  hosts:
+    lakekeeper-1:
+      ansible_host: 127.0.0.1
+      ansible_port: 55827
+      ansible_user: dmn58364
+      ansible_ssh_private_key_file: /Users/dmn58364/.lima/_config/user
+
+trino:
+  hosts:
+    trino-1:
+      ansible_host: 192.168.42.211
+
+elt:
+  hosts:
+    elt-1:
+      ansible_host: 192.168.42.250
+
+superset_accelerator:
+  hosts:
+    superset-accelerator-1:
+      ansible_host: 192.168.42.81
+
+superset_farm:
+  children:
+    superset_accelerator:
