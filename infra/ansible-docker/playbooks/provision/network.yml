@@ -1,0 +1,7 @@
+---
+- name: Provision network resources
+  import_playbook: impl/provision_openstack_network.yml
+  vars:
+    config_files:
+      - "configs/{{ vm_env }}/vault.yml"
+      - "configs/{{ vm_env }}/network.yml"

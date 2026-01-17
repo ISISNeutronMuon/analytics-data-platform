@@ -1,0 +1,7 @@
+---
+- name: Provision VM for Traefik
+  import_playbook: impl/provision_openstack_vm.yml
+  vars:
+    config_files:
+      - "configs/{{ vm_env }}/vault.yml"
+      - "configs/{{ vm_env }}/traefik.yml"

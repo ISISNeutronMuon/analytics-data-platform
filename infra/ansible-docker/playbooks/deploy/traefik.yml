@@ -1,0 +1,11 @@
+---
+- name: Configure traefik
+  hosts: traefik
+  roles:
+    - role: system_configure
+    - role: geerlingguy.pip
+      become: true
+    - role: docker_configure
+    - role: docs
+      become: true
+    - role: traefik

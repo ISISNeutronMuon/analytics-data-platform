@@ -1,8 +1,0 @@
----
-- name: Configure prerequisites
-  hosts: datasources
-  roles:
-    - role: cephfs_mount
-    - role: geerlingguy.pip
-      become: true
-    - role: docker_configure

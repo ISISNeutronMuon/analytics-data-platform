@@ -1,0 +1,8 @@
+---
+# openstack
+openstack_vm_user: "{{ vault_openstack_vm_user }}"
+openstack_image: ubuntu-noble-24.04-nogui
+openstack_python_interpreter: /usr/bin/python3
+openstack_apt_keys:
+  - url: https://dl.igtf.net/distribution/igtf/current/GPG-KEY-EUGridPMA-RPM-4
+    filename: eugridpma-rpm-4.asc

@@ -1,0 +1,21 @@
+# The following variables are required on the command line:
+#  - openstack_cloud_name: Name of the cloud in ~/.config/clouds.yaml
+#  - openstack_key_name: Name of the SSH key to add allowed to the deployed VM
+
+- name: Read shared configuration
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - ansible.builtin.include_vars:
+        dir: "configs/shared"
+    - ansible.builtin.include_vars:
+        file: "{{ item }}"
+      loop: "{{ config_files }}"
+
+- name: Provision VM
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - role: security_group_create
+    - role: vm_create

@@ -1,0 +1,19 @@
+---
+openstack_server_name: ueiuuiwui-keycloak
+openstack_flavor: l3.micro
+openstack_security_group_name: keycloak
+openstack_security_group_description: Ingress to keycloak ports
+openstack_security_group_rules:
+  - direction: ingress
+    ether_type: IPv4
+    protocol: tcp
+    port_range_min: "{{ keycloak_http_port }}"
+    port_range_max: "{{ keycloak_http_port }}"
+  - direction: ingress
+    ether_type: IPv4
+    protocol: tcp
+    port_range_min: "{{ keycloak_http_management_port }}"
+    port_range_max: "{{ keycloak_http_management_port }}"
+openstack_security_groups: [default, "{{ openstack_security_group_name }}"]
+openstack_virtual_network: "{{ vault_lakehouse_network_qa }}"
+openstack_reverse_proxy_fip: "{{ vault_reverse_proxy_fip_qa }}"

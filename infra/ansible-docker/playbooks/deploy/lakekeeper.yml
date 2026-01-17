@@ -1,0 +1,9 @@
+---
+- name: Configure Lakekeeper to act as an Iceberg catalog
+  hosts: lakekeeper
+  roles:
+    - role: system_configure
+    - role: docker_configure
+    # Run OpenFGA on the same node until it needs its own
+    - role: openfga
+    - role: lakekeeper

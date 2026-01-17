@@ -1,0 +1,4 @@
+- import_playbook: keycloak.yml
+- import_playbook: lakekeeper.yml
+- import_playbook: trino.yml
+- import_playbook: superset.yml

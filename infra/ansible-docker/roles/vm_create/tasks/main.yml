@@ -1,12 +1,12 @@
 ---
 - name: Ensure cloud server is present
   openstack.cloud.server:
-    name: "{{ openstack_server_name }}{{ openstack_server_name_suffix | default('') }}"
+    name: "{{ openstack_server_name }}"
     cloud: "{{ openstack_cloud_name }}"
     flavor: "{{ openstack_flavor }}"
     image: "{{ openstack_image }}"
     key_name: "{{ openstack_key_name }}"
-    network: "{{ openstack_virtual_network.name | default('Internal') }}"
+    network: "{{ openstack_virtual_network.name }}"
     auto_floating_ip: false
     security_groups: "{{ openstack_security_groups | default(['default']) }}"
     timeout: 200
@@ -37,14 +37,3 @@
 - name: Display IP address of VM
   ansible.builtin.debug:
     msg: "{{ openstack_server_name }}: {{ vm_ip_address }}"
-
-- name: Wait for connection
-  ansible.builtin.wait_for_connection:
-    timeout: 300
-  delegate_to: "{{ vm_ip_address }}"
-
-- name: Ensuring VM is configured
-  include_role:
-    name: system_configure
-    apply:
-      delegate_to: "{{ vm_ip_address }}"
