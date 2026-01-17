@@ -1,6 +1,6 @@
 openstack_flavor: l3.nano
 openstack_server_name: traefik
-openstack_server_fip: "{{ openstack_reverse_proxy_fip }}"
+openstack_server_fip: "{{ vault_lakehouse_fip }}"
 openstack_security_group_name: traefik
 openstack_security_group_description: Ingress to traefik ports
 openstack_security_group_rules:

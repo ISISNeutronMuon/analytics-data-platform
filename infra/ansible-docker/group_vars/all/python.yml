@@ -1,4 +1,0 @@
----
-pip_install_packages:
-  - name: docker
-    extra_args: --break-system-packages

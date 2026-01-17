@@ -1,0 +1,5 @@
+---
+- name: Provision VM for keycloak
+  import_playbook: openstack_vm.yml
+  vars:
+    config_file: "configs/qa/keycloak.yml"

@@ -29,7 +29,7 @@ Create a node for Traefik (also acts as an SSH jump node):
 ansible-playbook \
   -e openstack_cloud_name=<cloud_name> \
   -e openstack_key_name=<ssh_key> \
-  -e vm_config_file=$PWD/playbooks/traefik/group_vars/traefik.yml
+  -e vm_config_file=$PWD/inventories/qa/group_vars/traefik.yml
   playbooks/cloud/vm_create.yml
 ```
 
@@ -43,7 +43,7 @@ cp inventory-sample.yml inventory.yml
 Fill in the new Traefik ip address and deploy Traefik:
 
 ```sh
-ansible-playbook -i inventory.yml playbooks/traefik/deploy.yml
+ansible-playbook -i inventory.yml playbooks/deploy-traefik.yml
 ```
 
 Once deployed check the Traefik dashboard is available at `https://<domain>/traefik/dashboard/.`
@@ -62,14 +62,14 @@ for svc in keycloak lakekeeper trino elt; do
   ansible-playbook \
     -e openstack_cloud_name=<cloud_name> \
     -e openstack_key_name=<ssh_key> \
-    -e vm_config_file=$PWD/playbooks/$svc/group_vars/$svc.yml
+    -e vm_config_file=$PWD/inventories/qa/group_vars/$svc.yml
     playbooks/cloud/vm_create.yml
 done
 # Now Superset
 ansible-playbook \
   -e openstack_cloud_name=<cloud_name> \
   -e openstack_key_name=<ssh_key> \
-  -e vm_config_file=$PWD/playbooks/superset/vm_vars.yml
+  -e vm_config_file=$PWD/inventories/qa/group_vars/superset/all.yml
   playbooks/cloud/vm_create.yml
 ```
 
@@ -78,8 +78,8 @@ Gather the new ip addresses of each VM and fill in the appropriate section of th
 Now deploy the services:
 
 ```sh
-for svc in keycloak lakekeeper trino elt superset; do
-  ansible-playbook -i inventory.yml playbooks/$svc/deploy.yml
+for svc in traefik keycloak lakekeeper trino elt superset; do
+  ansible-playbook -i inventory.yml playbooks/deploy-$svc.yml
 done
 ```
 
