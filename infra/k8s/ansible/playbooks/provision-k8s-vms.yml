@@ -1,0 +1,33 @@
+- name: Provision VM on openstack cloud
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    vm_configs:
+      - name: k8s-proxy
+        flavor: l3.nano
+        image: "{{ vm_common.image }}"
+        network: "{{ vm_common.network }}"
+      - name: k8s-control
+        flavor: l3.nano
+        image: "{{ vm_common.image }}"
+        network: "{{ vm_common.network }}"
+    vm_common:
+      image: ubuntu-noble-24.04-nogui
+      network: Internal
+    vm_state: present
+    sdk_log_level: INFO
+  tasks:
+    - openstack.cloud.server:
+        cloud: "{{ openstack_cloud }}"
+        key_name: "{{ openstack_key }}"
+        name: "{{ item.name }}"
+        flavor: "{{ item.flavor }}"
+        image: "{{ item.image }}"
+        network: "{{ item.network }}"
+        auto_floating_ip: false
+        timeout: 200
+        state: "{{ vm_state }}"
+        sdk_log_level: "{{ sdk_log_level }}"
+      with_items:
+        - "{{ vm_configs }}"

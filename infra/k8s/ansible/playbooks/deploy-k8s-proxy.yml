@@ -1,0 +1,12 @@
+---
+- name: Configure proxy node
+  hosts: proxy
+  tasks:
+    - include_tasks: tasks/base.yml
+    - name: Install "kubectl" with snap
+      become: true
+      community.general.snap:
+        name: kubectl
+        channel: "{{ k8s_version }}/stable"
+        classic: true
+        state: present
