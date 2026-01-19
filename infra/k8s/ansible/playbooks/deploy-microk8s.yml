@@ -1,0 +1,28 @@
+---
+- name: Install K8s distribution
+  hosts: control:workers
+  tasks:
+    - include_tasks: tasks/base.yml
+    - name: Install Microk8s
+      become: true
+      community.general.snap:
+        name: microk8s
+        channel: "{{ k8s_version }}/stable"
+        classic: true
+        state: present
+    - name: Adding ansible user to microk8s group
+      become: true
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: microk8s
+        append: true
+    - name: Detect users home directory
+      ansible.builtin.shell: echo $HOME
+      register: user_home
+    - name: Creating kube caching directory
+      ansible.builtin.file:
+        path: "{{ user_home.stdout }}/.kube"
+        state: directory
+        mode: "0700"
+    - name: Reboot
+      ansible.builtin.reboot:
