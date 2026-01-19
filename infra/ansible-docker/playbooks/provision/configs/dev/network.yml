@@ -1,0 +1,4 @@
+---
+openstack_vm_user: "{{ vault_openstack_vm_user }}"
+openstack_router: "{{ vault_openstack_router }}"
+openstack_virtual_network: "{{ vault_openstack_virtual_network }}"

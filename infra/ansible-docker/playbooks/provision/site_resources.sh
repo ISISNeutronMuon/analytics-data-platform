@@ -14,6 +14,6 @@ if [ ! -d "$PLAYBOOKS_DIR" ]; then
 fi
 
 # The order of the resources is important - don't use a glob
-for resource in network traefik keycloak lakekeeper; do
+for resource in network traefik keycloak; do
   ansible-playbook "$@" $PLAYBOOKS_DIR/$resource.yml || exit 1
 done

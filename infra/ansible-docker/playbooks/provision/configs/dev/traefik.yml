@@ -1,0 +1,13 @@
+openstack_flavor: l3.nano
+openstack_server_name: traefik-dev
+openstack_virtual_network: "{{ vault_openstack_virtual_network }}"
+openstack_server_fip: "{{ vault_openstack_floating_ip }}"
+openstack_security_group_name: traefik
+openstack_security_group_description: Ingress to traefik ports
+openstack_security_group_rules:
+  - direction: ingress
+    ether_type: IPv4
+    protocol: tcp
+    port_range_min: "{{ trino_https_port }}"
+    port_range_max: "{{ trino_https_port }}"
+openstack_security_groups: [default, "traefik", "HTTP", "HTTPS"]
