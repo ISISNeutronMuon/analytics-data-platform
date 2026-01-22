@@ -4,5 +4,4 @@
   roles:
     - role: cephfs_mount
     - role: docker_configure
-    - role: postgres
     - role: keycloak
