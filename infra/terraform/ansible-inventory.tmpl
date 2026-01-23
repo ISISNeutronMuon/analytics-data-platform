@@ -1,0 +1,9 @@
+[all:vars]
+ansible_user=${ vm_user }
+ansible_python_interpreter=${ python_interpreter }
+ansible_ssh_common_args='-o ProxyCommand="ssh -W %h:%p -q ${ vm_user }@${ floating_ip }"'
+
+%{ for index, group in ansible_groups ~}
+[${ansible_groups[index]}]
+${ansible_ips[index]}
+%{ endfor ~}
