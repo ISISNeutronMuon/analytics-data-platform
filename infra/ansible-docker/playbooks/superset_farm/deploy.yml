@@ -6,6 +6,7 @@
 - name: Configure prerequisites
   hosts: superset_accelerator
   roles:
+    - role: base_configure
     - role: geerlingguy.pip
       become: true
     - role: docker_configure

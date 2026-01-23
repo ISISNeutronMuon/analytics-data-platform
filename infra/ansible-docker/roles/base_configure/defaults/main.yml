@@ -1,0 +1,3 @@
+---
+base_configure_timezone: "Europe/London"
+base_configure_package_update: true

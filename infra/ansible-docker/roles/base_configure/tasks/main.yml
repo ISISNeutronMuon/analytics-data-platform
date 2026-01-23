@@ -2,7 +2,7 @@
 - name: Check if APT keys exist
   ansible.builtin.stat:
     path: "/etc/apt/trusted.gpg.d/{{ item.filename }}"
-  loop: "{{ system_configure_additional_apt_keys }}"
+  loop: "{{ base_configure_additional_apt_keys }}"
   register: file_stats
 
 - name: Fetch missing apt GPG keys
@@ -27,7 +27,7 @@
 - name: Set timezone
   become: true
   community.general.timezone:
-    name: "{{ system_configure_timezone }}"
+    name: "{{ base_configure_timezone }}"
 
 - name: Ensure VM is configured
   include_role:

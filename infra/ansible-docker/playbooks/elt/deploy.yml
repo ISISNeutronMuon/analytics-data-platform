@@ -17,6 +17,7 @@
 - name: Configure ELT instance
   hosts: elt
   roles:
+    - role: base_configure
     - role: robertdebock.logrotate
       become: true
   tasks:

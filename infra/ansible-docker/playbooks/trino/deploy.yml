@@ -2,6 +2,7 @@
 - name: Configure trino
   hosts: trino
   roles:
+    - role: base_configure
     - role: cephfs_mount
     - role: geerlingguy.pip
       become: true
