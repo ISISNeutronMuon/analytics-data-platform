@@ -79,7 +79,7 @@
         "--http-enabled=true",
         "--hostname=https://{{ top_level_domain }}{{ keycloak_base_path }}",
         "--proxy-headers=xforwarded",
-        "--proxy-trusted-addresses={{ openstack_reverse_proxy_fip }},127.0.0.0/8",
+        "--proxy-trusted-addresses={{ reverse_proxy_external_ip }},127.0.0.0/8",
         "--log-level=INFO",
       ]
     healthcheck:

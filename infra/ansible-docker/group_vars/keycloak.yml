@@ -1,7 +1,7 @@
 ---
 keycloak_http_port: 8080
 keycloak_http_management_port: 9000
-keycloak_base_path: /auth
+keycloak_base_path: /authn
 keycloak_url: "https://{{ top_level_domain }}{{ keycloak_base_path }}"
 keycloak_realm: "isis"
 keycloak_realm_url_isis: "{{ keycloak_url }}/realms/{{ keycloak_realm }}"

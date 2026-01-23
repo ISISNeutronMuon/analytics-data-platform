@@ -72,11 +72,14 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_ingress" {
 resource "openstack_compute_instance_v2" "vm" {
   for_each = var.instance_configs
 
-  name            = each.key
-  flavor_name     = each.value.flavor_name
-  image_name      = each.value.image_name
-  key_pair        = each.value.key_pair
-  security_groups = concat(["default"], each.value.additional_security_groups)
+  name        = each.key
+  flavor_name = each.value.flavor_name
+  image_name  = each.value.image_name
+  key_pair    = each.value.key_pair
+  security_groups = concat(
+    ["default"],
+    each.value.additional_security_groups != null ? each.value.additional_security_groups : []
+  )
 
   network {
     name = var.network_name
@@ -105,5 +108,5 @@ resource "local_file" "ansible_inventory" {
       ansible_ips        = [for vm in openstack_compute_instance_v2.vm : vm.access_ip_v4]
     }
   )
-  filename = "${var.ansible_inventory_filename}"
+  filename = var.ansible_inventory_filename
 }

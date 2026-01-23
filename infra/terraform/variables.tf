@@ -5,18 +5,18 @@ variable "cloud_name" {
 
 variable "vm_user" {
   description = "Name of the vm user automatically provisioned by the cloud and used by Ansible."
-  type = string
+  type        = string
 }
 
 variable "python_interpreter_path" {
   description = "Path to the Python interpreter for Ansible."
-  type = string
-  default = "/usr/bin/python3"
+  type        = string
+  default     = "/usr/bin/python3"
 }
 
 variable "external_network_id" {
   description = "Id of the existing External network on the cloud"
-  type = string
+  type        = string
 }
 
 variable "network_name" {
@@ -42,7 +42,7 @@ variable "instance_configs" {
     flavor_name                = string
     image_name                 = string
     key_pair                   = string
-    additional_security_groups = list(string)
+    additional_security_groups = optional(list(string))
   }))
 
 }

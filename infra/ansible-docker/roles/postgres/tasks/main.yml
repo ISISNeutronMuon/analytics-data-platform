@@ -35,7 +35,7 @@
   become: true
   ansible.builtin.template:
     src: init-catalog-dbs.sh.j2
-    dest: "{{ postgres_docker_initdb_path }}/init-catalogs-dbs.sh"
+    dest: "{{ postgres_docker_initdb_path }}/init-dbs.sh"
     mode: "u=rwx,g=rwx,o=r"
 
 - name: Ensure Postgresql container is running
@@ -46,10 +46,11 @@
     state: started
     cleanup: true
     detach: true
+    network_mode: host
     restart_policy: unless-stopped
-    published_ports:
-      - "{{ postgres_db_port }}:5432"
-    env: POSTGRES_USER="{{ postgres_db_user }}"
+    env:
+      #
+      POSTGRES_USER="{{ postgres_db_user }}"
       POSTGRES_PASSWORD_FILE=/secrets/postgres-passwd
     volumes:
       - "{{ postgres_db_data_path }}:/var/lib/postgresql/data"

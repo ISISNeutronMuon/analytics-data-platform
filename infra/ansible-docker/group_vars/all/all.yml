@@ -14,7 +14,7 @@ docker_daemon_options:
   registry-mirrors: ["https://dockerhub.stfc.ac.uk"]
 
 docker_users:
-  - "{{ openstack_vm_user }}"
+  - "{{ vault_openstack_vm_user }}"
 
 pip_install_packages:
   - name: docker

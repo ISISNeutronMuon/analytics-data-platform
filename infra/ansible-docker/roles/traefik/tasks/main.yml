@@ -31,12 +31,12 @@
     mode: "u=r,o=,g="
   loop:
     - {
-        filename: "{{ traefik_certs_root }}/cert__analytics_isis_cclrc_ac_uk.pem",
-        content: "{{ vault_tls_cert__analytics_isis_cclrc_ac_uk }}",
+        filename: "{{ traefik_certs_root }}/cert__domain.pem",
+        content: "{{ vault_tls_cert }}",
       }
     - {
-        filename: "{{ traefik_certs_root }}/key__analytics_isis_cclrc_ac_uk.pem",
-        content: "{{ vault_tls_key__analytics_isis_cclrc_ac_uk }}",
+        filename: "{{ traefik_certs_root }}/key__domain.pem",
+        content: "{{ vault_tls_key }}",
       }
   loop_control:
     loop_var: traefik_tls

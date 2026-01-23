@@ -1,6 +1,6 @@
 ---
-postgres_image: ghcr.io/cloudnative-pg/postgresql:16.3-bookworm
+postgres_db_data_path: /var/postgres/data
 postgres_db_port: 5432
-postgres_db_data_path: /data/postgres
 postgres_db_user: postgres
-postgres_docker_initdb_path: /config/postgres/docker-entrypoint-initdb.d
+postgres_docker_initdb_path: /var/postgres/docker-entrypoint-initdb.d
+postgres_image: ghcr.io/cloudnative-pg/postgresql:16.9-bookworm

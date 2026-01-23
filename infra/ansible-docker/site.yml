@@ -1,0 +1,17 @@
+---
+- name: Deploy traefik
+  hosts: traefik
+  roles:
+    - role: base_configure
+    - role: geerlingguy.pip
+      become: true
+    - role: docker_configure
+    - role: docs
+      become: true
+    - role: traefik
+
+- name: Deploy postgres (if required)
+  hosts: postgres
+  roles:
+    - role: base_configure
+    - role: docker_configure
