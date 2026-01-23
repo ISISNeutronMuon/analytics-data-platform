@@ -1,6 +1,4 @@
 ---
-- ansible.builtin.include_tasks: ../../../tasks/ensure_openstack_apt_keys.yml
-
 - name: Ensure all packages are up to date
   become: true
   ansible.builtin.apt:

@@ -1,0 +1,29 @@
+---
+system_configure_additional_apt_keys:
+  - url: https://dl.igtf.net/distribution/igtf/current/GPG-KEY-EUGridPMA-RPM-4
+    filename: eugridpma-rpm-4.asc
+system_configure_timezone: "Europe/London"
+
+cephfs_mount_export_path: "{{ vault_cephfs_export_path }}"
+cephfs_mount_mount_path: "/mnt/lakehouse_data"
+cephfs_mount_access_name: "{{ vault_cephfs_access_name }}"
+cephfs_mount_access_secret: "{{ vault_cephfs_access_secret }}"
+
+docker_daemon_options:
+  mtu: 1450
+  registry-mirrors: ["https://dockerhub.stfc.ac.uk"]
+
+docker_users:
+  - "{{ openstack_vm_user }}"
+
+pip_install_packages:
+  - name: docker
+    extra_args: --break-system-packages
+
+s3_endpoint: https://s3.echo.stfc.ac.uk
+s3_region: echo-01 # not used but can be required by apis
+s3_access_key_id: "{{ vault_echo_access_id }}"
+s3_access_secret: "{{ vault_echo_access_secret }}"
+
+stfc_ldap_server: "{{ vault_stfc_ldap_server }}"
+stfc_ca_cert: "{{ vault_stfc_ca_cert }}"

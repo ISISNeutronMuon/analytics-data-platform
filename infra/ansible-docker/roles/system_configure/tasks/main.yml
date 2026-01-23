@@ -1,6 +1,20 @@
 ---
-- name: Ensure APT key is available
-  ansible.builtin.include_tasks: ../../../tasks/ensure_openstack_apt_keys.yml
+- name: Check if APT keys exist
+  ansible.builtin.stat:
+    path: "/etc/apt/trusted.gpg.d/{{ item.filename }}"
+  loop: "{{ system_configure_additional_apt_keys }}"
+  register: file_stats
+
+- name: Fetch missing apt GPG keys
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ file_stat.item.url }}"
+    dest: "/etc/apt/trusted.gpg.d/{{ file_stat.item.filename }}"
+    mode: 644
+  when: not file_stat.stat.exists
+  loop: "{{ file_stats.results }}"
+  loop_control:
+    loop_var: file_stat
 
 - name: Ensure timezones are available
   become: true

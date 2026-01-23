@@ -1,7 +1,0 @@
----
-docker_daemon_options:
-  mtu: 1450
-  registry-mirrors: ["https://dockerhub.stfc.ac.uk"]
-
-docker_users:
-  - "{{ openstack_vm_user }}"

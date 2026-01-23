@@ -1,2 +1,3 @@
 ---
 top_level_domain: analytics.isis.cclrc.ac.uk
+openstack_reverse_proxy_fip: 130.246.214.124
