@@ -30,4 +30,4 @@ where `[SERVER_NAME]` should be replaced by the domain name of the server.
 
 The certificate authority will return the certificate chain in a variety of different formats and
 combinations. For use with our Traefik proxy select the "Certificate (w/ issuer after), PEM encoded"
-bundle.
+bundle. Update the relevant Ansible vault with the new content.
