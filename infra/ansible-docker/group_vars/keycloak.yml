@@ -6,3 +6,9 @@ keycloak_url: "https://{{ top_level_domain }}{{ keycloak_base_path }}"
 keycloak_realm: "isis"
 keycloak_realm_url_isis: "{{ keycloak_url }}/realms/{{ keycloak_realm }}"
 keycloak_token_endpoint_url_isis: "{{ keycloak_realm_url_isis }}/protocol/openid-connect/token"
+
+keycloak_db_dbname: keycloak
+keycloak_db_user: "{{ vault_postgres_db_user }}"
+keycloak_db_passwd: "{{ vault_postgres_db_passwd }}"
+keycloak_bootstrap_admin_passwd: "{{ vault_keycloak_bootstrap_admin_passwd }}"
+keycloak_java_keystore_passwd: "{{ vault_keycloak_java_keystore_passwd }}"

@@ -16,3 +16,10 @@
     - role: base_configure
     - role: docker_configure
     - role: postgres
+
+- name: Deploy Keycloak
+  hosts: keycloak
+  roles:
+    - role: base_configure
+    - role: docker_configure
+    - role: keycloak

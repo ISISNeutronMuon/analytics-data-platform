@@ -65,8 +65,7 @@
       KC_DB_URL: "jdbc:postgresql://{{ vault_db_host }}:{{ vault_db_port }}/{{ keycloak_db_dbname }}"
       KC_DB_USERNAME: "{{ keycloak_db_user }}"
       KC_DB_PASSWORD: "{{ keycloak_db_passwd }}"
-    networks:
-      - name: "{{ keycloak_container_network }}"
+    network_mode: host
     volumes:
       - "{{ keycloak_working_dir }}/certs/stfc-ca.pem:/opt/keycloak/conf/truststores/stfc-ca.pem:ro"
     comparisons:

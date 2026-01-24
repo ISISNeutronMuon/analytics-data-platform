@@ -1,7 +1,0 @@
----
-docker_configure_container_network: "{{ keycloak_container_network }}"
-keycloak_db_dbname: "{{ vault_keycloak_db_name }}"
-keycloak_db_user: "{{ vault_keycloak_db_user }}"
-keycloak_db_passwd: "{{ vault_keycloak_db_passwd }}"
-keycloak_bootstrap_admin_passwd: "{{ vault_keycloak_bootstrap_admin_passwd }}"
-keycloak_java_keystore_passwd: "{{ vault_keycloak_java_keystore_passwd }}"
