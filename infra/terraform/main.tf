@@ -24,7 +24,6 @@ resource "openstack_networking_subnet_v2" "subnet" {
   network_id  = openstack_networking_network_v2.network.id
   cidr        = var.network_subnet_cidr
   ip_version  = 4
-  enable_dhcp = false
 }
 
 resource "openstack_networking_router_v2" "router" {
@@ -104,8 +103,11 @@ resource "local_file" "ansible_inventory" {
       vm_user            = var.vm_user
       python_interpreter = var.python_interpreter_path
       floating_ip        = var.floating_ip_info.floating_ip
-      ansible_groups     = [for vm in openstack_compute_instance_v2.vm : vm.name]
-      ansible_ips        = [for vm in openstack_compute_instance_v2.vm : vm.access_ip_v4]
+      ansible_groups = [
+        for vm in openstack_compute_instance_v2.vm :
+        var.instance_configs[vm.name].ansible_group
+      ]
+      ansible_ips = [for vm in openstack_compute_instance_v2.vm : vm.access_ip_v4]
     }
   )
   filename = var.ansible_inventory_filename

@@ -42,6 +42,7 @@ variable "instance_configs" {
     flavor_name                = string
     image_name                 = string
     key_pair                   = string
+    ansible_group              = string
     additional_security_groups = optional(list(string))
   }))
 

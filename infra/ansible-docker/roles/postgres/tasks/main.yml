@@ -34,7 +34,7 @@
 - name: Create docker initdb script
   become: true
   ansible.builtin.template:
-    src: init-catalog-dbs.sh.j2
+    src: init-dbs.sh.j2
     dest: "{{ postgres_docker_initdb_path }}/init-dbs.sh"
     mode: "u=rwx,g=rwx,o=r"
 
@@ -56,7 +56,5 @@
       - "{{ postgres_db_data_path }}:/var/lib/postgresql/data"
       - /secrets:/secrets:ro
       - "{{ postgres_docker_initdb_path }}:/docker-entrypoint-initdb.d"
-    networks:
-      - name: "{{ docker_configure_container_network | default('bridge') }}"
     comparisons:
       networks: strict
