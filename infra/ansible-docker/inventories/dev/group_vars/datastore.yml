@@ -3,3 +3,6 @@ postgres_db_user: "{{ vault_postgres_db_user }}"
 postgres_db_passwd: "{{ vault_postgres_db_passwd }}"
 postgres_db_names:
   - keycloak
+
+minio_root_user: "{{ vault_minio_root_user }}"
+minio_root_password: "{{ vault_minio_root_passwd }}"

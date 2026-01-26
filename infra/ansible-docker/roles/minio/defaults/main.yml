@@ -1,0 +1,6 @@
+---
+minio_image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+minio_api_port: 9000
+minio_console_port: 9001
+minio_console_base_path: /minio-ui
+minio_working_dir: /var/minio

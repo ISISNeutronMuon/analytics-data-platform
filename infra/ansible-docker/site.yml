@@ -7,11 +7,12 @@
       become: true
     - role: traefik
 
-- name: Deploy postgres (if required)
-  hosts: postgres
+- name: Deploy data services (if required)
+  hosts: datastore
   roles:
     - role: base
     - role: postgres
+    - role: minio
 
 - name: Deploy Keycloak
   hosts: keycloak

@@ -28,6 +28,10 @@ entryPoints:
     address: ":443"
   trino_tls:
     address: ":{{ trino_https_port }}"
+{% if 'datastore' in groups %}
+  minio_tls:
+    address: ":{{ minio_api_port }}"
+{% endif %}
 
 providers:
   file:

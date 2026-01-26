@@ -1,0 +1,7 @@
+---
+top_level_domain: analytics.isis.cclrc.ac.uk
+
+s3_endpoint: https://s3.echo.stfc.ac.uk
+s3_region: echo-01 # not used but can be required by apis
+s3_access_key_id: "{{ vault_echo_access_id }}"
+s3_access_secret: "{{ vault_echo_access_secret }}"

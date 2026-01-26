@@ -1,0 +1,33 @@
+---
+- name: Create MinIO working directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ minio_working_dir }}/data"
+    state: directory
+    mode: "u=rwx,g=rx,o=rx"
+
+- name: Ensure MinIO container is running
+  community.docker.docker_container:
+    name: minio
+    image: "{{ minio_image }}"
+    command:
+      [
+        "server",
+        "/data",
+        "--address",
+        ":{{ minio_api_port }}",
+        "--console-address",
+        ":{{ minio_console_port }}",
+      ]
+    state: healthy
+    cleanup: true
+    detach: true
+    network_mode: host
+    restart_policy: unless-stopped
+    env:
+      #
+      MINIO_ROOT_USER={{ minio_root_user }}
+      MINIO_ROOT_PASSWORD={{ minio_root_password }}
+      MINIO_BROWSER_REDIRECT_URL=https://{{ top_level_domain }}/{{ minio_console_base_path }}
+    volumes:
+      - "{{ minio_working_dir }}/data:/data"

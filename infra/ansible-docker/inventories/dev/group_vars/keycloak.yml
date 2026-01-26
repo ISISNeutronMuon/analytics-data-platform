@@ -1,6 +1,6 @@
 ---
 keycloak_db_dbname: keycloak
-keycloak_db_host: "{{ groups['postgres'][0] }}"
+keycloak_db_host: "{{ groups['datastore'][0] }}"
 keycloak_db_port: 5432
 keycloak_db_user: "{{ vault_postgres_db_user }}"
 keycloak_db_passwd: "{{ vault_postgres_db_passwd }}"
