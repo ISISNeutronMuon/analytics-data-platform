@@ -2,7 +2,7 @@
 - name: Check if APT keys exist
   ansible.builtin.stat:
     path: "/etc/apt/trusted.gpg.d/{{ item.filename }}"
-  loop: "{{ base_configure_additional_apt_keys }}"
+  loop: "{{ base_additional_apt_keys }}"
   register: file_stats
 
 - name: Fetch missing apt GPG keys
@@ -27,8 +27,20 @@
 - name: Set timezone
   become: true
   community.general.timezone:
-    name: "{{ base_configure_timezone }}"
+    name: "{{ base_timezone }}"
 
-- name: Ensure VM is configured
+- name: Apply package updates
   include_role:
     name: packages_update
+
+- name: Install Python packages
+  ansible.builtin.include_role:
+    name: geerlingguy.pip
+    apply:
+      become: true
+
+- name: Install Docker
+  ansible.builtin.include_role:
+    name: geerlingguy.docker
+    apply:
+      become: true

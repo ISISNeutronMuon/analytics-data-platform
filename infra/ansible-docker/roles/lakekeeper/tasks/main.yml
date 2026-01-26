@@ -35,14 +35,12 @@
       LAKEKEEPER__PG_ENCRYPTION_KEY="{{ lakekeeper_metadb_encryption_key }}"
       LAKEKEEPER__PG_DATABASE_URL_READ="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
       LAKEKEEPER__PG_DATABASE_URL_WRITE="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
-      LAKEKEEPER__OPENID_PROVIDER_URI="http://{{ top_level_domain }}/auth/realms/{{ keycloak_realm }}"
+      LAKEKEEPER__OPENID_PROVIDER_URI="{{ keycloak_realm_url }}"
       LAKEKEEPER__OPENID_AUDIENCE="lakekeeper"
       LAKEKEEPER__UI__OPENID_CLIENT_ID="lakekeeper"
       RUST_LOG="error"
-    networks:
-      - name: "{{ lakekeeper_container_network }}"
+    network_mode: host
     comparisons:
-      networks: strict
       env: strict
 
 - name: Start Lakekeeper container
@@ -62,13 +60,12 @@
       LAKEKEEPER__PG_ENCRYPTION_KEY="{{ lakekeeper_metadb_encryption_key }}"
       LAKEKEEPER__PG_DATABASE_URL_READ="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
       LAKEKEEPER__PG_DATABASE_URL_WRITE="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
-      LAKEKEEPER__OPENID_PROVIDER_URI="http://{{ top_level_domain }}/auth/realms/{{ keycloak_realm }}"
+      LAKEKEEPER__OPENID_PROVIDER_URI="{{ keycloak_realm_url }}"
       LAKEKEEPER__OPENID_AUDIENCE="lakekeeper"
       LAKEKEEPER__UI__OPENID_CLIENT_ID="lakekeeper"
-      LAKEKEEPER__UI__OPENID_PROVIDER_URI="http://{{ top_level_domain }}/auth/realms/{{ keycloak_realm }}"
+      LAKEKEEPER__UI__OPENID_PROVIDER_URI="{{ keycloak_realm_url }}"
       RUST_LOG="error"
-    networks:
-      - name: "{{ lakekeeper_container_network }}"
+    network_mode: host
     comparisons:
       networks: strict
       env: strict
@@ -108,7 +105,7 @@
         "run",
         "/opt/work/bootstrap-warehouse.py",
         "--keycloak-url {{ keycloak_url }}",
-        "--keycloak-realm {{ keycloak_realm }}",
+        "--keycloak-realm {{ keycloak_realm_name }}",
         "--bootstrap-credentials ansible:{{ vault_keycloak_client_secret_ansible }}",
         "--token-scope lakekeeper",
         "--log-level {{ lakekeeper_bootstrap_log_level }}",
@@ -125,8 +122,7 @@
       #
       UV_LINK_MODE=copy
       UV_PROJECT_ENVIRONMENT=/opt/uv-venv
-    networks:
-      - name: "{{ lakekeeper_container_network }}"
+    network_mode: host
     volumes:
       - "{{ lakekeeper_working_dir }}:/opt/work"
   loop: "{{ warehouse_json_files.results | map(attribute='dest') | list }}"

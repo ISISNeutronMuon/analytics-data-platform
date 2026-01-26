@@ -1,7 +1,6 @@
 ---
 lakekeeper_bootstrap_log_level: INFO
 lakekeeper_container_name: lakekeeper
-lakekeeper_container_network: lakekeeper
 lakekeeper_image: quay.io/lakekeeper/catalog:v0.10.0
 lakekeeper_http_port: 8181
 lakekeeper_working_dir: /var/lakekeeper

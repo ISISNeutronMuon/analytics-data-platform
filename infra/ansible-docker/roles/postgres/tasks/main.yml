@@ -1,4 +1,15 @@
 ---
+- name: Install Python psycopg2 package
+  ansible.builtin.include_role:
+    name: geerlingguy.pip
+    apply:
+      become: true
+      vars:
+        pip_install_packages:
+          - name: psycopg2-binary
+            version: ">=2.5.1"
+            extra_args: --break-system-packages
+
 - name: Ensure postgres data directory exists
   become: true
   ansible.builtin.file:
@@ -24,26 +35,12 @@
     group: root
     mode: "u=r,g=r,o=r"
 
-- name: Ensure docker initdb directory exists
-  become: true
-  ansible.builtin.file:
-    path: "{{ postgres_docker_initdb_path }}"
-    state: directory
-    mode: "u=rwx,g=rx,o=rx"
-
-- name: Create docker initdb script
-  become: true
-  ansible.builtin.template:
-    src: init-dbs.sh.j2
-    dest: "{{ postgres_docker_initdb_path }}/init-dbs.sh"
-    mode: "u=rwx,g=rwx,o=r"
-
 - name: Ensure Postgresql container is running
   become: true
   community.docker.docker_container:
     name: postgres
     image: "{{ postgres_image }}"
-    state: started
+    state: healthy
     cleanup: true
     detach: true
     network_mode: host
@@ -55,6 +52,16 @@
     volumes:
       - "{{ postgres_db_data_path }}:/var/lib/postgresql/data"
       - /secrets:/secrets:ro
-      - "{{ postgres_docker_initdb_path }}:/docker-entrypoint-initdb.d"
-    comparisons:
-      networks: strict
+
+# The postgresql_ping check doesn't seem to be enough to check that postgres is ready
+# to create a database. Instead just try until we succeed
+- name: Ensure required databases exist
+  become: true
+  community.postgresql.postgresql_db:
+    name: "{{ item }}"
+    login_host: localhost
+    login_user: "{{ postgres_db_user }}"
+    login_password: "{{ postgres_db_passwd }}"
+  loop: "{{ postgres_db_names }}"
+  retries: 5
+  delay: 2

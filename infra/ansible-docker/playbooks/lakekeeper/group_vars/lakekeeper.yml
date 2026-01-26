@@ -1,5 +1,4 @@
 ---
-docker_configure_container_network: "{{ lakekeeper_container_network }}"
 lakekeeper_metadb_host: "{{ vault_db_host }}"
 lakekeeper_metadb_port: "{{ vault_db_port }}"
 lakekeeper_metadb_name: "{{ vault_lakekeeper_metadb_name }}"

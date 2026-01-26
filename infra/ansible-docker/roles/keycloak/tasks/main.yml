@@ -1,19 +1,19 @@
 ---
-- name: Ensure Keycloak working directory exists
+- name: Create Keycloak working directory
   become: true
   ansible.builtin.file:
     path: "{{ keycloak_working_dir }}"
     state: directory
     mode: "u=rwx,g=rx,o=rx"
 
-- name: Ensure certificates directory exists
+- name: Create certificates directory
   become: true
   ansible.builtin.file:
     path: "{{ keycloak_working_dir }}/certs"
     state: directory
     mode: "u=rwx,g=rx,o=rx"
 
-- name: Ensure certificates are present
+- name: Copy certificates
   become: true
   no_log: true
   ansible.builtin.copy:
@@ -27,8 +27,7 @@
   loop_control:
     loop_var: certificate
 
-- name: Ensure Dockerfile is up to date
-  become: true
+- name: Generate Dockerfile for optimized build
   ansible.builtin.template:
     src: "{{ template_file.src }}"
     dest: "{{ keycloak_working_dir }}/{{ template_file.dest }}"
@@ -38,18 +37,54 @@
   loop_control:
     loop_var: template_file
 
-- name: Ensure optimized Keycloak image is built
-  become: true
+- name: Build optimized Keycloak image
   community.docker.docker_image_build:
     name: "{{ keycloak_image_optimized_name }}"
     path: "{{ keycloak_working_dir }}"
     rebuild: always
 
-- name: Ensure Keycloak container is running
-  become: true
+- name: Bootstrap Keycloak admin
+  no_log: "{{ not (keycloak_bootstrap_logging | default(false)) }}"
+  community.docker.docker_container:
+    name: keycloak_bootstrap
+    image: "{{ keycloak_image_optimized_name }}"
+    command:
+      [
+        "bootstrap-admin",
+        "user",
+        "--username={{ keycloak_bootstrap_admin_user }}",
+        "--password:env=KC_BOOTSTRAP_ADMIN_PASSWORD",
+        "--optimized",
+        "--no-prompt",
+      ]
+    state: started
+    cleanup: true
+    detach: false
+    restart_policy: "no"
+    recreate: true
+    env:
+      # comment to keep formatter moving this up one line
+      KC_BOOTSTRAP_ADMIN_PASSWORD: "{{ keycloak_bootstrap_admin_passwd }}"
+      KC_DB_URL: "jdbc:postgresql://{{ keycloak_db_host }}:{{ keycloak_db_port }}/keycloak"
+      KC_DB_USERNAME: "{{ keycloak_db_user }}"
+      KC_DB_PASSWORD: "{{ keycloak_db_passwd }}"
+    network_mode: host
+  when: keycloak_bootstrap_admin
+
+- name: Run Keycloak
   community.docker.docker_container:
     name: keycloak
     image: "{{ keycloak_image_optimized_name }}"
+    command:
+      [
+        "start",
+        "--optimized",
+        "--http-enabled=true",
+        "--hostname=https://{{ top_level_domain }}{{ keycloak_base_path }}",
+        "--proxy-headers=xforwarded",
+        "--proxy-trusted-addresses=127.0.0.0/8",
+        "--log-level=INFO",
+      ]
     state: started
     cleanup: true
     detach: true
@@ -57,8 +92,6 @@
     recreate: true
     env:
       # comment to keep formatter moving this up one line
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: "{{ keycloak_bootstrap_admin_passwd }}"
       KC_DB_URL: "jdbc:postgresql://{{ keycloak_db_host }}:{{ keycloak_db_port }}/keycloak"
       KC_DB_USERNAME: "{{ keycloak_db_user }}"
       KC_DB_PASSWORD: "{{ keycloak_db_passwd }}"
@@ -67,16 +100,6 @@
       - "{{ keycloak_working_dir }}/certs/stfc-ca.pem:/opt/keycloak/conf/truststores/stfc-ca.pem:ro"
     comparisons:
       env: strict
-    command:
-      [
-        "start",
-        "--optimized",
-        "--http-enabled=true",
-        "--hostname=https://{{ top_level_domain }}{{ keycloak_base_path }}",
-        "--proxy-headers=xforwarded",
-        "--proxy-trusted-addresses={{ reverse_proxy_external_ip }},127.0.0.0/8",
-        "--log-level=INFO",
-      ]
     healthcheck:
       test: "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"
       interval: 5s
