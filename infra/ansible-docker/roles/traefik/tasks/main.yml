@@ -60,18 +60,9 @@
     recreate: true
     restart_policy: unless-stopped
     network_mode: host
-    mounts:
-      - type: bind
-        source: "{{ traefik_certs_root }}/cert__analytics_isis_cclrc_ac_uk.pem"
-        target: /certs/cert__analytics_isis_cclrc_ac_uk.pem
-        read_only: true
-      - type: bind
-        source: "{{ traefik_certs_root }}/key__analytics_isis_cclrc_ac_uk.pem"
-        target: /certs/key__analytics_isis_cclrc_ac_uk.pem
-        read_only: true
     volumes:
       - "{{ traefik_config_root }}/{{ traefik_etc_path_relative }}:/etc/traefik"
-      - "{{ traefik_certs_root }}:/certs"
+      - "{{ traefik_certs_root }}:/certs:ro"
       - "{{ traefik_config_root }}/logs/traefik:/var/log/traefik"
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /etc/localtime:/etc/localtime:ro

@@ -13,7 +13,7 @@ http:
   middlewares:
     dashboardauth:
       basicauth:
-        users: admin:$2y$10$xRntwpemRqOvRaDz6kLt1ed3d5JcHZSjTdlO3tCiKmnN42hdrQsA6
+        users: admin:{{ traefik_admin_passwd | password_hash('bcrypt', rounds=10, ident='2y') }}
     traefik-strip-prefix:
       stripPrefix:
         prefixes:

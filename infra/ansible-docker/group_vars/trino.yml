@@ -1,6 +1,5 @@
 ---
 trino_http_port: 8060
-trino_https_port: 8443
 
 trino_superset_username: superset
 trino_ingestion_username: ingestion

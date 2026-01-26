@@ -16,6 +16,13 @@ docker_daemon_options:
 docker_users:
   - "{{ vault_openstack_vm_user }}"
 
+keycloak_base_path: /authn
+keycloak_http_port: 8080
+keycloak_http_management_port: 9000
+keycloak_realm_name: "isis-analytics-data-platform"
+keycloak_realm_url: "{{ keycloak_url }}/realms/{{ keycloak_realm }}"
+keycloak_url: "https://{{ top_level_domain }}{{ keycloak_base_path }}"
+
 pip_install_packages:
   - name: docker
     extra_args: --break-system-packages
@@ -27,3 +34,6 @@ s3_access_secret: "{{ vault_echo_access_secret }}"
 
 stfc_ldap_server: "{{ vault_stfc_ldap_server }}"
 stfc_ca_cert: "{{ vault_stfc_ca_cert }}"
+
+# Trino: shared
+trino_https_port: 8443

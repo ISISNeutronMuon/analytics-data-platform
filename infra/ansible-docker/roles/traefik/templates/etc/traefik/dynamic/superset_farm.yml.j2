@@ -1,3 +1,4 @@
+{% if 'superset_farm' in groups %}
 http:
   routers:
   {% for instance_name, props in superset_instances.items() %}
@@ -15,3 +16,4 @@ http:
         servers:
           - url: "http://{{ hostvars[groups[instance_name][0]]['ansible_host'] }}:{{ props.http_port }}"
   {% endfor %}
+{% endif %}

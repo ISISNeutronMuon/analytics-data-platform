@@ -1,35 +1,23 @@
-{%- set base_paths = {lakekeeper_base_path:  hostvars[groups['lakekeeper'][0]]['ansible_host']} %}
-{% if 'lakekeeper_preview' in groups %}
-{%- set _ = base_paths.update({lakekeeper_base_path + '-preview': hostvars[groups['lakekeeper_preview'][0]]['ansible_host']}) -%}
-{% endif %}
-
+{% if 'lakekeeper' in groups %}
 http:
   routers:
-    {% for base_path, server_name in base_paths.items() %}
-    {%- set santized_name = base_path.replace('/', '_') -%}
-    {{ santized_name }}:
+    lakeeeper:
       entryPoints: websecure
-      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ base_path }}`)
-      service: {{ santized_name }}
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ lakekeeper_base_path }}`)
+      service: lakekeeper
       middlewares:
-        - {{ santized_name }}-strip-prefix
+        - lakekeeper-strip-prefix
       tls: {}
-    {% endfor %}
 
   middlewares:
-    {% for base_path, server_name in base_paths.items() %}
-    {%- set santized_name = base_path.replace('/', '_') -%}
-    {{ santized_name }}-strip-prefix:
+    lakekeeper-strip-prefix:
       stripPrefix:
         prefixes:
-          - "{{ base_path }}"
-    {% endfor %}
+          - "{{ lakekeeper_base_path }}"
 
   services:
-    {% for base_path, ip_addr in base_paths.items() %}
-    {%- set santized_name = base_path.replace('/', '_') -%}
-    {{ santized_name }}:
+    lakekeeper:
       loadBalancer:
         servers:
-          - url: "http://{{ ip_addr }}:{{ lakekeeper_http_port }}"
-    {% endfor %}
+          - url: "http://{{ groups['lakekeeper'][0] }}:{{ lakekeeper_http_port }}"
+{% endif %}

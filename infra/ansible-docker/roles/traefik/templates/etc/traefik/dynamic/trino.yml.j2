@@ -1,3 +1,4 @@
+{% if 'trino' in groups %}
 http:
   routers:
     trino:
@@ -11,3 +12,4 @@ http:
       loadBalancer:
         servers:
           - url: "http://{{ hostvars[groups['trino'][0]]['ansible_host'] }}:{{ trino_http_port }}"
+{% endif %}

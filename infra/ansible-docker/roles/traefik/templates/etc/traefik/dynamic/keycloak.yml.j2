@@ -1,3 +1,4 @@
+{% if 'keycloak' in groups %}
 http:
   routers:
     # TLS
@@ -19,4 +20,5 @@ http:
     keycloak:
       loadBalancer:
         servers:
-          - url: "http://{{ hostvars[groups['keycloak'][0]]['ansible_host'] }}:{{ keycloak_http_port }}"
+          - url: "http://{{ groups['keycloak'][0] }}:{{ keycloak_http_port }}"
+{% endif %}
