@@ -19,3 +19,9 @@
   roles:
     - role: base
     - role: keycloak
+
+- name: Deploy Lakekeeper
+  hosts: lakekeeper
+  roles:
+    - role: base
+    - role: lakekeeper

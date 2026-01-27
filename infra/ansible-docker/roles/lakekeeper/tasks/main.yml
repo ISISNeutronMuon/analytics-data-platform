@@ -10,11 +10,6 @@
   loop_control:
     loop_var: warehouse
 
-- name: Get info on lakekeeper container
-  community.docker.docker_container_info:
-    name: "{{ lakekeeper_container_name }}"
-  register: result
-
 - name: Stop Lakekeeper instance
   community.docker.docker_container:
     name: "{{ lakekeeper_container_name }}"
@@ -35,9 +30,6 @@
       LAKEKEEPER__PG_ENCRYPTION_KEY="{{ lakekeeper_metadb_encryption_key }}"
       LAKEKEEPER__PG_DATABASE_URL_READ="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
       LAKEKEEPER__PG_DATABASE_URL_WRITE="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
-      LAKEKEEPER__OPENID_PROVIDER_URI="{{ keycloak_realm_url }}"
-      LAKEKEEPER__OPENID_AUDIENCE="lakekeeper"
-      LAKEKEEPER__UI__OPENID_CLIENT_ID="lakekeeper"
       RUST_LOG="error"
     network_mode: host
     comparisons:
@@ -53,17 +45,16 @@
     detach: true
     restart_policy: unless-stopped
     recreate: true
-    published_ports:
-      - "{{ lakekeeper_http_port }}:8181"
     env:
       #
       LAKEKEEPER__PG_ENCRYPTION_KEY="{{ lakekeeper_metadb_encryption_key }}"
       LAKEKEEPER__PG_DATABASE_URL_READ="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
       LAKEKEEPER__PG_DATABASE_URL_WRITE="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
       LAKEKEEPER__OPENID_PROVIDER_URI="{{ keycloak_realm_url }}"
-      LAKEKEEPER__OPENID_AUDIENCE="lakekeeper"
-      LAKEKEEPER__UI__OPENID_CLIENT_ID="lakekeeper"
+      LAKEKEEPER__OPENID_AUDIENCE="{{ lakekeeper_openid_audience }}"
+      LAKEKEEPER__UI__OPENID_CLIENT_ID="{{ lakekeeper_ui_openid_client_id }}"
       LAKEKEEPER__UI__OPENID_PROVIDER_URI="{{ keycloak_realm_url }}"
+      LAKEKEEPER__UI__OPENID_SCOPE="{{ lakekeeper_ui_openid_scope }}"
       RUST_LOG="error"
     network_mode: host
     comparisons:
@@ -84,7 +75,7 @@
     dest: "{{ lakekeeper_working_dir }}/bootstrap-warehouse.py"
     mode: "0755"
 
-- name: Generate warehouse template(s)
+- name: Generate warehouse templates
   become: true
   ansible.builtin.template:
     src: bootstrap-warehouse.json.j2
@@ -95,24 +86,21 @@
     loop_var: warehouse
   register: warehouse_json_files
 
-- name: Ensure Lakekeeper is bootstrapped
+- name: Bootstrap Lakekeeper
   community.docker.docker_container:
     name: "{{ lakekeeper_container_name }}_bootstrap"
     image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
-    command:
-      [
-        "uv",
-        "run",
-        "/opt/work/bootstrap-warehouse.py",
-        "--keycloak-url {{ keycloak_url }}",
-        "--keycloak-realm {{ keycloak_realm_name }}",
-        "--bootstrap-credentials ansible:{{ vault_keycloak_client_secret_ansible }}",
-        "--token-scope lakekeeper",
-        "--log-level {{ lakekeeper_bootstrap_log_level }}",
-        "--server-admin {{ vault_lakekeeper_admin_user }}",
-        "--warehouse-json-file",
-        "{{ warehouse_json_file | replace(lakekeeper_working_dir, '/opt/work') }}",
-      ]
+    command: |
+      uv run
+      /opt/work/bootstrap-warehouse.py
+      --keycloak-url {{ keycloak_url }}
+      --keycloak-realm {{ keycloak_realm.name }}
+      --bootstrap-credentials {{ lakekeeper_bootstrap_credentials }}
+      --token-scope {{ lakekeeper_openid_audience }}
+      --log-level {{ lakekeeper_bootstrap_log_level }}
+      --server-admin {{ lakekeeper_bootstrap_admin_user }}
+      --warehouse-json-file {{ warehouse_json_file | replace(lakekeeper_working_dir, '/opt/work') }}
+      http://localhost:{{ lakekeeper_http_port }}
     state: started
     cleanup: true
     detach: false

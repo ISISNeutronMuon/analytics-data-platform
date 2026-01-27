@@ -10,7 +10,7 @@
             version: ">=2.5.1"
             extra_args: --break-system-packages
 
-- name: Ensure postgres data directory exists
+- name: Create postgres data directory exists
   become: true
   ansible.builtin.file:
     path: "{{ postgres_db_data_path }}"
@@ -19,14 +19,14 @@
     group: 999
     mode: "u=rwx,g=rx,o=rx"
 
-- name: Ensure secrets directory exists
+- name: Create secrets directory exists
   become: true
   ansible.builtin.file:
     path: /secrets
     state: directory
     mode: "u=rwx,g=rx,o=rx"
 
-- name: Ensure postgres secrets are available
+- name: Create postgres secrets
   become: true
   ansible.builtin.copy:
     dest: /secrets/postgres-passwd
@@ -35,7 +35,7 @@
     group: root
     mode: "u=r,g=r,o=r"
 
-- name: Ensure Postgresql container is running
+- name: Run Postgresql
   become: true
   community.docker.docker_container:
     name: postgres
@@ -55,7 +55,7 @@
 
 # The postgresql_ping check doesn't seem to be enough to check that postgres is ready
 # to create a database. Instead just try until we succeed
-- name: Ensure required databases exist
+- name: Create required databases
   become: true
   community.postgresql.postgresql_db:
     name: "{{ item }}"

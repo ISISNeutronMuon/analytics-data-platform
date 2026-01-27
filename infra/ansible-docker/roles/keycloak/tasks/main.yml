@@ -1,4 +1,15 @@
 ---
+# This is a hacky way so we can reuse the Keycloak auth_ vars
+- ansible.builtin.debug:
+    msg: ""
+  vars: &keycloak_auth_vars
+    auth_client_id: admin-cli
+    auth_keycloak_url: "{{ keycloak_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_bootstrap_admin_user }}"
+    auth_password: "{{ keycloak_bootstrap_admin_passwd }}"
+  when: false
+
 - name: Create Keycloak working directory
   become: true
   ansible.builtin.file:
@@ -28,6 +39,7 @@
     loop_var: certificate
 
 - name: Generate Dockerfile for optimized build
+  become: true
   ansible.builtin.template:
     src: "{{ template_file.src }}"
     dest: "{{ keycloak_working_dir }}/{{ template_file.dest }}"
@@ -42,6 +54,12 @@
     name: "{{ keycloak_image_optimized_name }}"
     path: "{{ keycloak_working_dir }}"
     rebuild: always
+
+- name: Stop Keycloak (for bootstrapping)
+  community.docker.docker_container:
+    name: keycloak
+    state: absent
+  when: keycloak_bootstrap_admin
 
 - name: Bootstrap Keycloak admin
   no_log: "{{ not (keycloak_bootstrap_logging | default(false)) }}"
@@ -83,9 +101,9 @@
         "--hostname=https://{{ top_level_domain }}{{ keycloak_base_path }}",
         "--proxy-headers=xforwarded",
         "--proxy-trusted-addresses=127.0.0.0/8",
-        "--log-level=INFO",
+        "--log-level={{ keycloak_log_level }}",
       ]
-    state: started
+    state: healthy
     cleanup: true
     detach: true
     restart_policy: unless-stopped
@@ -105,3 +123,11 @@
       interval: 5s
       timeout: 2s
       retries: 15
+
+- ansible.builtin.import_tasks: setup-ldap.yml
+  vars:
+    target_realm: master
+
+- ansible.builtin.import_tasks: setup-realm.yml
+  vars:
+    target_realm: "{{ keycloak_realm.name }}"

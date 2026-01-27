@@ -1,4 +1,13 @@
 keycloak_bootstrap_admin: false
 keycloak_image: quay.io/keycloak/keycloak:26.3
 keycloak_image_optimized_name: keycloak_optimized
+keycloak_log_level: INFO
 keycloak_working_dir: /var/keycloak
+
+# Every client will have this set of default scopes
+keycloak_client_default_scopes_minimum:
+  ["web-origins", "acr", "profile", "roles", "basic", "email"]
+# Every client will have this set of optional scopes plus those defined
+# by 'optional_scopes_additional' for each client
+keycloak_client_optional_scopes_minimum:
+  ["address", "phone", "offline_access", "organization", "microprofile-jwt"]

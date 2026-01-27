@@ -19,9 +19,11 @@ docker_users:
 keycloak_base_path: /authn
 keycloak_http_port: 8080
 keycloak_http_management_port: 9000
-keycloak_realm_name: "isis-analytics-data-platform"
-keycloak_realm_url: "{{ keycloak_url }}/realms/{{ keycloak_realm }}"
 keycloak_url: "https://{{ top_level_domain }}{{ keycloak_base_path }}"
+keycloak_realm:
+  name: "isis-analytics-data-platform"
+  display_name: "ISIS Analytics Data Platform"
+keycloak_realm_url: "{{ keycloak_url }}/realms/{{ keycloak_realm.name }}"
 
 pip_install_packages:
   - name: docker

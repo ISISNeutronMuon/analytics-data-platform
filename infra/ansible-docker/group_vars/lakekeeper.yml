@@ -2,6 +2,9 @@
 lakekeeper_http_port: 8181
 lakekeeper_base_path: /iceberg
 lakekeeper_url: "https://{{ top_level_domain }}{{ lakekeeper_base_path }}"
+lakekeeper_ui_openid_client_id: "lakekeeper"
+lakekeeper_openid_audience: lakekeeper
+lakekeeper_ui_openid_scope: "lakekeeper openid profile email"
 
 lakekeeper_catalog:
   uri: "{{ lakekeeper_url }}/catalog"

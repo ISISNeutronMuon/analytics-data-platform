@@ -1,0 +1,43 @@
+---
+# Eveything is assigned to the realm defined by keycloak_realm.name in all/all.yml
+keycloak_client_scopes:
+  - name: lakekeeper
+    protocol: "openid-connect"
+    protocol_mappers:
+      - name: "lakekeeper audience mapper"
+        protocol: "openid-connect"
+        protocolMapper: "oidc-audience-mapper"
+        config:
+          "id.token.claim": false
+          "introspection.token.claim": true
+          "access.token.claim": true
+          "included.custom.audience": "lakekeeper"
+
+keycloak_clients:
+  - client_id: lakekeeper-ui
+    name: "Lakekeeper catalog UI"
+    protocol: "openid-connect"
+    public_client: true
+    redirect_uris:
+      - "https://{{ top_level_domain }}/*"
+    standard_flow_enabled: true
+    implicit_flow_enabled: false
+    direct_access_grants_enabled: false
+    service_accounts_enabled: false
+    authorization_services_enabled: false
+    optional_client_scopes_additional: ["lakekeeper"]
+    attributes:
+      access.token.lifespan: 7200
+  - client_id: ansible
+    name: "Ansible client"
+    protocol: "openid-connect"
+    public_client: false
+    secret: "{{ vault_keycloak_client_secret_ansible }}"
+    standard_flow_enabled: false
+    implicit_flow_enabled: false
+    direct_access_grants_enabled: false
+    service_accounts_enabled: true
+    authorization_services_enabled: false
+    optional_client_scopes_additional: ["lakekeeper"]
+    attributes:
+      access.token.lifespan: 300
