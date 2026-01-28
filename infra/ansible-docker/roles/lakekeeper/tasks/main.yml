@@ -98,7 +98,6 @@
       --bootstrap-credentials {{ lakekeeper_bootstrap_credentials }}
       --token-scope {{ lakekeeper_openid_audience }}
       --log-level {{ lakekeeper_bootstrap_log_level }}
-      --server-admin {{ lakekeeper_bootstrap_admin_user }}
       --warehouse-json-file {{ warehouse_json_file | replace(lakekeeper_working_dir, '/opt/work') }}
       http://localhost:{{ lakekeeper_http_port }}
     state: started
