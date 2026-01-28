@@ -47,6 +47,8 @@
     optional_client_scopes: "{{ keycloak_client_optional_scopes_minimum + item.optional_client_scopes_additional }}"
     attributes: "{{ item.attributes }}"
   loop: "{{ keycloak_clients }}"
+  loop_control:
+    label: "{{ item.client_id }}"
 
 - ansible.builtin.import_tasks: setup-ldap.yml
   vars:

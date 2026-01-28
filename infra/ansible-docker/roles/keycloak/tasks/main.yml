@@ -1,15 +1,4 @@
 ---
-# This is a hacky way so we can reuse the Keycloak auth_ vars
-- ansible.builtin.debug:
-    msg: ""
-  vars: &keycloak_auth_vars
-    auth_client_id: admin-cli
-    auth_keycloak_url: "{{ keycloak_url }}"
-    auth_realm: master
-    auth_username: "{{ keycloak_bootstrap_admin_user }}"
-    auth_password: "{{ keycloak_bootstrap_admin_passwd }}"
-  when: false
-
 - name: Create Keycloak working directory
   become: true
   ansible.builtin.file:
@@ -55,12 +44,6 @@
     path: "{{ keycloak_working_dir }}"
     rebuild: always
 
-- name: Stop Keycloak (for bootstrapping)
-  community.docker.docker_container:
-    name: keycloak
-    state: absent
-  when: keycloak_bootstrap_admin
-
 - name: Bootstrap Keycloak admin
   no_log: "{{ not (keycloak_bootstrap_logging | default(false)) }}"
   community.docker.docker_container:
@@ -86,8 +69,6 @@
       KC_DB_URL: "jdbc:postgresql://{{ keycloak_db_host }}:{{ keycloak_db_port }}/keycloak"
       KC_DB_USERNAME: "{{ keycloak_db_user }}"
       KC_DB_PASSWORD: "{{ keycloak_db_passwd }}"
-    network_mode: host
-  when: keycloak_bootstrap_admin
 
 - name: Run Keycloak
   community.docker.docker_container:
@@ -123,10 +104,6 @@
       interval: 5s
       timeout: 2s
       retries: 15
-
-- ansible.builtin.import_tasks: setup-ldap.yml
-  vars:
-    target_realm: master
 
 - ansible.builtin.import_tasks: setup-realm.yml
   vars:

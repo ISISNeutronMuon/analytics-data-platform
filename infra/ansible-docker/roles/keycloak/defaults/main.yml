@@ -1,4 +1,3 @@
-keycloak_bootstrap_admin: false
 keycloak_image: quay.io/keycloak/keycloak:26.3
 keycloak_image_optimized_name: keycloak_optimized
 keycloak_log_level: INFO
