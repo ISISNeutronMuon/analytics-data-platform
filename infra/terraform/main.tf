@@ -73,8 +73,8 @@ resource "openstack_compute_instance_v2" "vm" {
 
   name        = each.key
   flavor_name = each.value.flavor_name
-  image_name  = each.value.image_name
-  key_pair    = each.value.key_pair
+  image_name  = var.vm_image
+  key_pair    = var.vm_key_pair
   security_groups = concat(
     ["default"],
     each.value.additional_security_groups != null ? each.value.additional_security_groups : []

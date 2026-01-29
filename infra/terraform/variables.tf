@@ -7,6 +7,15 @@ variable "vm_user" {
   description = "Name of the vm user automatically provisioned by the cloud and used by Ansible."
   type        = string
 }
+variable "vm_image" {
+  description = "Name of the vm image."
+  type        = string
+}
+
+variable "vm_key_pair" {
+  description = "Name of the keypair to add to the machine"
+  type        = string
+}
 
 variable "python_interpreter_path" {
   description = "Path to the Python interpreter for Ansible."
@@ -40,8 +49,6 @@ variable "instance_configs" {
   description = "Map of instance configurations where the key defines the name. The instance is attached to the network defined by 'network_name'"
   type = map(object({
     flavor_name                = string
-    image_name                 = string
-    key_pair                   = string
     ansible_group              = string
     additional_security_groups = optional(list(string))
   }))
