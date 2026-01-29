@@ -31,3 +31,9 @@
   roles:
     - base
     - trino
+
+- name: Deploy Superset instances
+  hosts: superset_farm
+  roles:
+    - base
+    - superset_farm

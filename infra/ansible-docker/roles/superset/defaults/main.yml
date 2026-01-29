@@ -1,6 +1,0 @@
----
-superset_working_dir: "/var/{{ superset_instance_name }}"
-
-# app
-superset_flask_debug: true
-superset_env_name: qa

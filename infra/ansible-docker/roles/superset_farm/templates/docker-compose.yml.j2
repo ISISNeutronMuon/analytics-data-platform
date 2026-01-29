@@ -1,4 +1,4 @@
-x-superset-image: &superset-image {{ superset_container_image }}
+x-superset-image: &superset-image {{ superset_farm_container_image }}
 x-superset-user: &superset-user root
 x-superset-depends-on: &superset-depends-on
   redis:
@@ -7,17 +7,17 @@ x-superset-env: &superset-env
   - path: docker/.env # default
     required: true
 x-superset-volumes: &superset-volumes
-  - {{ superset_working_dir }}/docker/docker-init.sh:/app/docker/docker-init.sh:ro
-  - {{ superset_working_dir }}/docker/pythonpath:/app/docker/pythonpath:ro
+  - {{ instance_work_dir }}/docker/docker-init.sh:/app/docker/docker-init.sh:ro
+  - {{ instance_work_dir }}/docker/pythonpath:/app/docker/pythonpath:ro
   - superset_home:/app/superset_home
-  - {{ superset_working_dir }}/certs:/certs:ro
+  - {{ instance_work_dir }}/certs:/certs:ro
 x-networks: &superset-networks
-  - {{ superset_instance_name }}
+  - {{ instance.key }}
 
 
 services:
   redis:
-    container_name: {{ superset_instance_name }}_cache
+    container_name: {{ instance.key }}_cache
     env_file: *superset-env
     image: redis:7
     restart: unless-stopped
@@ -26,14 +26,14 @@ services:
     networks: *superset-networks
 
   superset:
-    container_name: {{ superset_instance_name }}_app
+    container_name: {{ instance.key }}_app
     env_file: *superset-env
     image: *superset-image
     command: [ "/app/docker/docker-bootstrap.sh", "app-gunicorn" ]
     user: *superset-user
     restart: unless-stopped
     ports:
-      - {{ superset_http_port }}:8088
+      - {{ instance.value.http_port }}:8088
     depends_on:
       <<: *superset-depends-on
       superset-init:
@@ -42,7 +42,7 @@ services:
     networks: *superset-networks
 
   superset-init:
-    container_name: {{ superset_instance_name }}_init
+    container_name: {{ instance.key }}_init
     env_file: *superset-env
     image: *superset-image
     command: [ "/app/docker/docker-init.sh" ]
@@ -54,7 +54,7 @@ services:
     networks: *superset-networks
 
   superset-worker:
-    container_name: {{ superset_instance_name }}_worker
+    container_name: {{ instance.key }}_worker
     env_file: *superset-env
     image: *superset-image
     command: [ "/app/docker/docker-bootstrap.sh", "worker" ]
@@ -74,7 +74,7 @@ services:
         ]
 
   superset-worker-beat:
-    container_name: {{ superset_instance_name }}_worker_beat
+    container_name: {{ instance.key }}_worker_beat
     env_file: *superset-env
     image: *superset-image
     command: [ "/app/docker/docker-bootstrap.sh", "beat" ]
@@ -94,6 +94,6 @@ volumes:
   superset_home:
 
 networks:
-  {{ superset_instance_name }}:
+  {{ instance.key }}:
     driver_opts:
       com.docker.network.driver.mtu: "{{ docker_daemon_options.mtu }}"

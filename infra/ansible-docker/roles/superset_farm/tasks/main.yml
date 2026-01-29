@@ -1,0 +1,7 @@
+---
+- name: Setup Superset instances
+  ansible.builtin.include_tasks: ./setup-instance.yml
+  loop: "{{ superset_farm_instances | dict2items }}"
+  loop_control:
+    loop_var: instance
+    label: "{{ instance.key }}"
