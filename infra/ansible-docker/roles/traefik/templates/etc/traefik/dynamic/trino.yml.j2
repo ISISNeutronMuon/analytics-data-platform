@@ -11,5 +11,5 @@ http:
     trino:
       loadBalancer:
         servers:
-          - url: "http://{{ hostvars[groups['trino'][0]]['ansible_host'] }}:{{ trino_http_port }}"
+          - url: "http://{{ groups['trino'][0] }}:{{ trino_http_port }}"
 {% endif %}

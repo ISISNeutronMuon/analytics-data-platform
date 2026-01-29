@@ -40,10 +40,10 @@
       LAKEKEEPER__PG_DATABASE_URL_READ="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
       LAKEKEEPER__PG_DATABASE_URL_WRITE="postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
       LAKEKEEPER__OPENID_PROVIDER_URI="{{ keycloak_realm_url }}"
-      LAKEKEEPER__OPENID_AUDIENCE="{{ lakekeeper_openid_audience }}"
-      LAKEKEEPER__UI__OPENID_CLIENT_ID="{{ lakekeeper_ui_openid_client_id }}"
+      LAKEKEEPER__OPENID_AUDIENCE=lakekeeper
       LAKEKEEPER__UI__OPENID_PROVIDER_URI="{{ keycloak_realm_url }}"
-      LAKEKEEPER__UI__OPENID_SCOPE="{{ lakekeeper_ui_openid_scope }}"
+      LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper-ui
+      LAKEKEEPER__UI__OPENID_SCOPE="lakekeeper openid profile email"
       RUST_LOG="error"
     network_mode: host
     comparisons:
@@ -86,7 +86,7 @@
       --keycloak-url {{ keycloak_url }}
       --keycloak-realm {{ keycloak_realm.name }}
       --bootstrap-credentials {{ lakekeeper_bootstrap_credentials }}
-      --token-scope {{ lakekeeper_openid_audience }}
+      --token-scope lakekeeper
       --log-level {{ lakekeeper_bootstrap_log_level }}
       --warehouse-json-file {{ warehouse_json_file | replace(lakekeeper_working_dir, '/opt/work') }}
       http://localhost:{{ lakekeeper_http_port }}

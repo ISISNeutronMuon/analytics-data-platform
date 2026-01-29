@@ -1,10 +1,2 @@
 ---
-trino_http_port: 8060
-
-trino_superset_username: superset
-trino_ingestion_username: ingestion
-trino_users:
-  - username: "{{ trino_superset_username }}"
-    password: "{{ vault_trino_superset_passwd }}"
-  - username: "{{ trino_ingestion_username }}"
-    password: "{{ vault_trino_ingestion_passwd }}"
+trino_users: "{{ vault_trino_users }}"

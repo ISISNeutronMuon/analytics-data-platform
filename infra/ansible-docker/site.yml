@@ -25,3 +25,9 @@
   roles:
     - role: base
     - role: lakekeeper
+
+- name: Deploy Trino
+  hosts: trino
+  roles:
+    - base
+    - trino

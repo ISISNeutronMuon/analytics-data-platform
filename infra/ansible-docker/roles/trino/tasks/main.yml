@@ -34,18 +34,6 @@
   loop_control:
     loop_var: trino_template
 
-- name: Ensure isis catalog is enabled
-  become: true
-  ansible.builtin.template:
-    src: "{{ trino_template }}"
-    dest: "{{ trino_working_dir }}/{{ trino_template | trim('.j2') }}"
-    mode: "u=rw,g=r,o=r"
-  loop:
-    - etc/catalog/isis.properties.j2
-  loop_control:
-    loop_var: trino_template
-  when: trino_enable_isis_catalog | default(False)
-
 - name: Generate Trino catalog property files
   become: true
   ansible.builtin.copy:
@@ -56,8 +44,8 @@
       iceberg.rest-catalog.warehouse={{ warehouse_name }}
       iceberg.rest-catalog.vended-credentials-enabled=false
       iceberg.rest-catalog.security=OAUTH2
-      iceberg.rest-catalog.oauth2.server-uri={{ keycloak_token_endpoint_url_isis }}
-      iceberg.rest-catalog.oauth2.credential={{ vault_trino_catalog_client_id }}:{{ vault_trino_catalog_client_secret }}
+      iceberg.rest-catalog.oauth2.server-uri={{ keycloak_realm_url }}/protocol/openid-connect/token
+      iceberg.rest-catalog.oauth2.credential=trino:{{ vault_keycloak_client_secret_trino }}
       iceberg.rest-catalog.oauth2.scope=lakekeeper offline_access
       # Our S3 implementation does not have STS enabled so we need to provide
       # S3 credentials too
@@ -82,26 +70,26 @@
 
 - name: Ensure Trino passwords are available
   become: true
+  no_log: "{{ not (trino_passwords_logging | default(false)) }}"
   ansible.builtin.lineinfile:
     path: "{{ trino_working_dir }}/creds/trino.pass"
-    regexp: "^{{ user.username }}"
-    line: "{{ user.username }}:{{ user.password | password_hash('bcrypt', rounds=10, ident='2y') }}"
+    regexp: "^{{ user.key }}"
+    line: "{{ user.key }}:{{ user.value.password | password_hash('bcrypt', rounds=10, ident='2y') }}"
     state: present
     create: true
     owner: root
     group: root
     mode: u=rw,g=r,o=r
-  loop: "{{ trino_users }}"
+  loop: "{{ trino_users | dict2items }}"
   loop_control:
     loop_var: user
-  no_log: true
+    label: "{{ user.key }}"
 
 - name: Ensure Trino container is running
-  become: true
   community.docker.docker_container:
     name: trino
     image: "{{ trino_image }}"
-    state: started
+    state: healthy
     detach: true
     recreate: true
     restart: true

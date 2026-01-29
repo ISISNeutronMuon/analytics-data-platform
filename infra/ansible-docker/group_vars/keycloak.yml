@@ -14,6 +14,34 @@ keycloak_client_scopes:
           "included.custom.audience": "lakekeeper"
 
 keycloak_clients:
+  # confidential clients
+  - client_id: ansible
+    name: "Ansible client"
+    protocol: "openid-connect"
+    public_client: false
+    secret: "{{ vault_keycloak_client_secret_ansible }}"
+    standard_flow_enabled: false
+    implicit_flow_enabled: false
+    direct_access_grants_enabled: false
+    service_accounts_enabled: true
+    authorization_services_enabled: false
+    optional_client_scopes_additional: ["lakekeeper"]
+    attributes:
+      access.token.lifespan: 300
+  - client_id: trino
+    name: "Trino client"
+    protocol: "openid-connect"
+    public_client: false
+    secret: "{{ vault_keycloak_client_secret_trino }}"
+    standard_flow_enabled: false
+    implicit_flow_enabled: false
+    direct_access_grants_enabled: false
+    service_accounts_enabled: true
+    authorization_services_enabled: false
+    optional_client_scopes_additional: ["lakekeeper"]
+    attributes:
+      access.token.lifespan: 600
+  # public clients
   - client_id: lakekeeper-ui
     name: "Lakekeeper catalog UI"
     protocol: "openid-connect"
@@ -28,16 +56,3 @@ keycloak_clients:
     optional_client_scopes_additional: ["lakekeeper"]
     attributes:
       access.token.lifespan: 7200
-  - client_id: ansible
-    name: "Ansible client"
-    protocol: "openid-connect"
-    public_client: false
-    secret: "{{ vault_keycloak_client_secret_ansible }}"
-    standard_flow_enabled: false
-    implicit_flow_enabled: false
-    direct_access_grants_enabled: false
-    service_accounts_enabled: true
-    authorization_services_enabled: false
-    optional_client_scopes_additional: ["lakekeeper"]
-    attributes:
-      access.token.lifespan: 300

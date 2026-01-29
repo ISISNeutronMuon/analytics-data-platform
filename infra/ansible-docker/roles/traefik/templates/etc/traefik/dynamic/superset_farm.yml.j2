@@ -14,6 +14,6 @@ http:
   {{ instance_name }}:
       loadBalancer:
         servers:
-          - url: "http://{{ hostvars[groups[instance_name][0]]['ansible_host'] }}:{{ props.http_port }}"
+          - url: "http://{{ groups[instance_name][0] }}:{{ props.http_port }}"
   {% endfor %}
 {% endif %}
