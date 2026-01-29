@@ -1,15 +1,4 @@
 ---
-- name: Ensure S3 buckets exist
-  amazon.aws.s3_bucket:
-    name: "{{ warehouse.value.storage.bucket_name }}"
-    endpoint_url: "{{ s3_endpoint }}"
-    access_key: "{{ s3_access_key_id }}"
-    secret_key: "{{ s3_access_secret }}"
-    ceph: true
-  loop: "{{ lakekeeper_catalog.warehouses | dict2items }}"
-  loop_control:
-    loop_var: warehouse
-
 - name: Stop Lakekeeper instance
   community.docker.docker_container:
     name: "{{ lakekeeper_container_name }}"
@@ -93,6 +82,7 @@
     command: |
       uv run
       /opt/work/bootstrap-warehouse.py
+      --project-name "{{ lakekeeper_project_name }}"
       --keycloak-url {{ keycloak_url }}
       --keycloak-realm {{ keycloak_realm.name }}
       --bootstrap-credentials {{ lakekeeper_bootstrap_credentials }}

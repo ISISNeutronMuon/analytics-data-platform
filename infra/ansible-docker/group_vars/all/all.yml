@@ -25,6 +25,10 @@ keycloak_realm:
   display_name: "ISIS Analytics Data Platform"
 keycloak_realm_url: "{{ keycloak_url }}/realms/{{ keycloak_realm.name }}"
 
+lakekeeper_base_path: /iceberg
+lakekeeper_http_port: 8181
+lakekeeper_project_name: "ISIS Analytics Data Platform"
+
 pip_install_packages:
   - name: docker
     extra_args: --break-system-packages

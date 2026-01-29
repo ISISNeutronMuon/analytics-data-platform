@@ -29,8 +29,6 @@ LOGGER_FILENAME = f"{Path(__file__).name}.log"
 LOGGER_FORMAT = "%(asctime)s|%(message)s"
 
 KEYCLOAK_MACHINE_USER_PREFIX = "service-account-"
-LAKEKEEPER_PROJECT_ID_DEFAULT = "00000000-0000-0000-0000-000000000000"
-LAKEKEEPER_PROJECT_NAME_DEFAULT = "Default Project"
 OIDC_PREFIX = "oidc~"
 REQUESTS_TIMEOUT_DEFAULT = 60.0
 REQUESTS_DEFAULT_KWARGS: Dict[str, Any] = {
@@ -178,45 +176,14 @@ class LakekeeperRestV1:
         )
         return response.json()["bootstrapped"]
 
-    def get_or_create_project(
-        self, name: str, new_project_id: str | None = None
-    ) -> str:
-        """Get the ID of a project with the given name or create one if it does not exist."""
-        project_id = self.get_project(name)
-        if project_id is None:
-            project_id = self.create_project(name, new_project_id)
-
-        return project_id
-
-    def create_project(self, name: str, new_project_id: str | None = None):
-        """Create a new project, optionally specifying the ID"""
-        payload = {"project-name": name}
-        if new_project_id is not None:
-            payload["project-id"] = new_project_id
+    def rename_default_project(self, project_name: str):
         response = _request_with_auth(
             requests.post,
-            url=self.management_url + "/project",
+            url=self.management_url + "/project/rename",
             access_token=self.access_token,
-            json=payload,
+            json={"new-name": project_name},
         )
         response.raise_for_status()
-        project_id = response.json()["project-id"]
-        LOGGER.debug(f"Project '{name}' created with id '{project_id}'.")
-        return project_id
-
-    def get_project(self, name: str) -> str | None:
-        """Get a project by name"""
-        response = _request_with_auth(
-            requests.get,
-            self.management_url + "/project-list",
-            self.access_token,
-        )
-        for warehouse in response.json()["projects"]:
-            if warehouse["project-name"] == name:
-                LOGGER.debug(f"Project with name '{name}' already exists.'")
-                return warehouse["project-id"]
-
-        return None
 
     def provision_user(self, access_token: str):
         """Provision a user through the /catalog/v1/config endpoint
@@ -230,12 +197,11 @@ class LakekeeperRestV1:
             # but the user is provisioned internally.
             pass
 
-    def warehouse_exists(self, project_id: str, warehouse_name: str) -> bool:
+    def warehouse_exists(self, warehouse_name: str) -> bool:
         response = _request_with_auth(
             requests.get,
             self.management_url + "/warehouse",
             self.access_token,
-            headers={"x-project-id": project_id},
         )
         for warehouse in response.json()["warehouses"]:
             if warehouse["name"] == warehouse_name:
@@ -243,23 +209,22 @@ class LakekeeperRestV1:
 
         return False
 
-    def create_warehouse(self, project_id: str, warehouse_config: Dict[str, Any]):
+    def create_warehouse(self, warehouse_config: Dict[str, Any]):
         """Create a warehouse in the server with the given profile.
 
         If the bucket does not exist it is created.
         """
         warehouse_name = warehouse_config["warehouse-name"]
-        if self.warehouse_exists(project_id, warehouse_name):
+        if self.warehouse_exists(warehouse_name):
             LOGGER.info(
                 f"Warehouse '{warehouse_name}' already exists. Skipping warehouse creation."
             )
             return
 
-        LOGGER.info(f"Creating warehouse '{warehouse_name}' in '{project_id}'")
+        LOGGER.info(f"Creating warehouse '{warehouse_name}'")
         _ensure_s3_bucket_exists(
             warehouse_config["storage-credential"], warehouse_config["storage-profile"]
         )
-        warehouse_config["project-id"] = project_id
         _request_with_auth(
             requests.post,
             self.management_url + "/warehouse",
@@ -322,7 +287,7 @@ def _ensure_s3_bucket_exists(
         s3.create_bucket(Bucket=storage_profile["bucket"])
     except botocore.exceptions.ClientError as exc:
         code = str(exc.response.get("Error", {}).get("Code", ""))
-        if code in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
+        if code not in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
             raise
 
 
@@ -330,12 +295,7 @@ def _ensure_s3_bucket_exists(
 @click.argument("lakekeeper-url")
 @click.option(
     "--project-name",
-    default=LAKEKEEPER_PROJECT_NAME_DEFAULT,
     help="Project name other than the default",
-)
-@click.option(
-    "--new-project-id",
-    help="An optional project ID for the new project. Default is a newly generated one.",
 )
 @click.option("--keycloak-url", help="Base endpoint of Keycloak")
 @click.option("--keycloak-realm", help="Realm name to retrieve access token")
@@ -361,7 +321,6 @@ def _ensure_s3_bucket_exists(
 def main(
     lakekeeper_url: str,
     project_name: str,
-    new_project_id: str | None,
     keycloak_url: str | None,
     keycloak_realm: str | None,
     bootstrap_credentials: Credential | None,
@@ -413,7 +372,9 @@ def main(
     server = LakekeeperRestV1(lakekeeper_url, access_token)
     server.bootstrap()
 
-    project_id = server.get_or_create_project(project_name, new_project_id)
+    if project_name is not None:
+        server.rename_default_project(project_name)
+
     if server_admin is not None and identity_provider is not None:
         # Server admins are human users and will be provisioned the first time they log in
         server.assign_permissions(
@@ -422,7 +383,10 @@ def main(
         )
         server.assign_permissions(
             identity_provider.oidc_ids(server_admin, server.access_token),
-            entities={"server": ["admin"], f"project/{project_id}": ["project_admin"]},
+            entities={
+                "server": ["admin"],
+                "project": ["project_admin"],
+            },
         )
 
     if additional_user is not None and identity_provider is not None:
@@ -437,7 +401,7 @@ def main(
         LOGGER.debug(f"Creating warehouse using file: {warehouse_json_file}")
         with open(warehouse_json_file) as fp:
             warehouse_json = json.load(fp)
-            server.create_warehouse(project_id, warehouse_json)
+            server.create_warehouse(warehouse_json)
 
 
 if __name__ == "__main__":
