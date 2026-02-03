@@ -36,7 +36,7 @@ dbt-common==1.37.2
     #   dbt-trino
 dbt-core==1.11.2
     # via
-    #   -r requirements/requirements.in
+    #   -r requirements.in
     #   dbt-trino
 dbt-extractor==0.6.0
     # via dbt-core
@@ -48,7 +48,7 @@ dbt-protos==1.0.410
 dbt-semantic-interfaces==0.9.0
     # via dbt-core
 dbt-trino==1.10.1
-    # via -r requirements/requirements.in
+    # via -r requirements.in
 deepdiff==8.6.1
     # via dbt-common
 idna==3.10
@@ -77,7 +77,7 @@ lz4==4.4.4
     # via trino
 markupsafe==3.0.2
     # via jinja2
-mashumaro==3.14
+mashumaro[msgpack]==3.14
     # via
     #   dbt-adapters
     #   dbt-common
@@ -100,7 +100,7 @@ pathspec==0.12.1
     # via
     #   dbt-common
     #   dbt-core
-protobuf==6.32.0
+protobuf==6.33.5
     # via
     #   dbt-adapters
     #   dbt-common
