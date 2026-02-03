@@ -1,0 +1,20 @@
+---
+- name: Create redis working directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ redis_work_dir }}"
+    state: directory
+    mode: "u=rwx,g=rx,o=rx"
+
+- name: Run Redis
+  become: true
+  community.docker.docker_container:
+    name: redis
+    image: "{{ redis_image }}"
+    command:
+      ["redis-server", "--port", "{{ redis_port }}", "--bind", "127.0.0.1 -::1"]
+    state: healthy
+    cleanup: true
+    detach: true
+    network_mode: host
+    restart_policy: unless-stopped

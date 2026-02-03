@@ -6,8 +6,8 @@ x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
 x-openfga-image: &openfga-image openfga/openfga:v1.10
 x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.11.1
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
-x-minio-mc-image: &minio-mc-image quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
 x-postgres-image: &postgres-image postgres:16.9-bookworm
+x-redis-image: &redis-image redis:8.4-bookworm
 x-superset-image: &superset-image ghcr.io/isisneutronmuon/analytics-data-platform-superset:a4f0e8011f34785d759269dceedfa2693db81c19
 x-traefik-image: &traefik-image traefik:v3.5.3
 x-trino-image: &trino-image trinodb/trino:477
@@ -352,7 +352,7 @@ services:
       - superset
     container_name: local-lakehouse-superset-redis
     env_file: *env-file
-    image: redis:8
+    image: *redis-image
     restart: unless-stopped
     volumes:
       - shared_redis_data:/data

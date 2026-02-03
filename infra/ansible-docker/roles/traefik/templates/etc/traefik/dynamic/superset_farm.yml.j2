@@ -1,7 +1,7 @@
 {% if 'superset_farm' in groups %}
 http:
   routers:
-  {% for instance_name, props in superset_instances.items() %}
+  {% for instance_name, props in superset_farm_instances.items() %}
   {{ instance_name }}:
       entryPoints: websecure
       rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ props.app_root }}`)
@@ -10,10 +10,10 @@ http:
   {% endfor %}
 
   services:
-  {% for instance_name, props in superset_instances.items() %}
+  {% for instance_name, props in superset_farm_instances.items() %}
   {{ instance_name }}:
       loadBalancer:
         servers:
-          - url: "http://{{ groups[instance_name][0] }}:{{ props.http_port }}"
+          - url: "http://{{ groups['superset_farm'][0] }}:{{ props.http_port }}"
   {% endfor %}
 {% endif %}

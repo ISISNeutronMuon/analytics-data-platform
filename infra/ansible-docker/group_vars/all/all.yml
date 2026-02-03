@@ -46,3 +46,17 @@ stfc_ca_cert: "{{ vault_stfc_ca_cert }}"
 # Trino: shared
 trino_http_port: 8060
 trino_https_port: 8443
+
+# Superset shared
+superset_farm_url_prefix: /workspace
+superset_farm_instances:
+  accelerator:
+    app_root: "{{ superset_farm_url_prefix }}/accelerator"
+    env_name: production
+    flask_debug: false
+    http_port: 8088
+    secret_key: "{{ vault_superset_accelerator_secret_key }}"
+    users_yaml: "{{ vault_superset_accelerator_users_yaml }}"
+    analytic_dbs:
+      - name: accelerator
+        db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/accelerator"

@@ -1,3 +1,4 @@
 ---
-superset_farm_container_image: ghcr.io/martyngigg/adp-superset-forked:901412e
+superset_farm_certs_dir: /var/certs
+superset_farm_image: ghcr.io/martyngigg/adp-superset-forked:901412e
 superset_farm_work_dir_prefix: /var/superset_farm

@@ -36,4 +36,5 @@
   hosts: superset_farm
   roles:
     - base
+    - redis
     - superset_farm

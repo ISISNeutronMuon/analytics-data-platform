@@ -1,4 +1,13 @@
 ---
+- name: Create a new DB schema ("{{ instance.key }}")
+  community.postgresql.postgresql_schema:
+    login_host: "{{ superset_farm_metadb_host }}"
+    login_db: "{{ superset_farm_metadb_name }}"
+    login_user: "{{ superset_farm_metadb_user }}"
+    login_password: "{{ superset_farm_metadb_passwd }}"
+    name: "{{ instance.key }}"
+    comment: "Superset schema for {{ instance.key }}"
+
 - ansible.builtin.set_fact:
     instance_work_dir: "{{ superset_farm_work_dir_prefix }}/{{ instance.key }}"
 
@@ -16,6 +25,7 @@
     src: ./
     dest: "{{ instance_work_dir }}"
     archive: false
+    checksum: true
     recursive: true
     delete: true
 
@@ -26,7 +36,6 @@
     dest: "{{ instance_work_dir }}/{{ superset_template.dest }}"
     mode: "{{ superset_template.mode|default('u=rw,g=r,o=r') }}"
   loop:
-    - { src: docker-compose.yml.j2, dest: docker-compose.yml }
     - {
         src: superset-cli.sh.j2,
         dest: superset-cli.sh,
@@ -43,36 +52,59 @@
 
 - name: Ensure superset_config.yml exists
   become: true
-  no_log: true
   ansible.builtin.copy:
     dest: "{{ instance_work_dir }}/docker/pythonpath/superset_config.yml"
-    content: "{{ superset_config_yaml | to_nice_yaml }}"
+    content: "{{ instance.value.users_yaml | to_nice_yaml }}"
     mode: "u=rw,g=r,o=r"
 
-- name: Ensure certificates directory exists
+- name: Run Superset ("{{ instance.key }}")
   become: true
-  ansible.builtin.file:
-    path: "{{ instance_work_dir }}/certs"
-    state: directory
-    mode: "u=rwx,g=rx,o=rx"
+  community.docker.docker_container:
+    name: "superset-{{ instance.key }}"
+    image: "{{ superset_farm_image }}"
+    command: ["/app/docker/docker-bootstrap.sh", "app-gunicorn"]
+    env_file: &superset-env-file "{{ instance_work_dir }}/docker/.env"
+    volumes: &superset-volumes
+      - "{{ instance_work_dir }}/docker/docker-init.sh:/app/docker/docker-init.sh:ro"
+      - "{{ instance_work_dir }}/docker/pythonpath:/app/docker/pythonpath:ro"
+      - "{{ superset_farm_certs_dir }}:/certs:ro"
+    state: healthy
+    healthy_wait_timeout: 120
+    recreate: true
+    cleanup: true
+    detach: true
+    network_mode: host
+    restart_policy: on-failure
+    restart_retries: 3
 
-- name: Ensure certificates are present
+- name: Run Superset init ("{{ instance.key }}")
   become: true
-  no_log: true
-  ansible.builtin.copy:
-    dest: "{{ instance_work_dir }}/certs/{{ certificate.filename }}"
-    content: "{{ certificate.content }}"
-    owner: root
-    group: root
-    mode: "u=r,o=,g="
-  loop:
-    - { filename: stfc-ca.pem, content: "{{ stfc_ca_cert }}" }
-  loop_control:
-    loop_var: certificate
-# - name: Run Superset services
-#   become: true
-#   community.docker.docker_compose_v2:
-#     project_src: "{{ instance_work_dir }}"
-#     pull: always
-#     recreate: always
-#     state: present
+  community.docker.docker_container:
+    name: "superset-{{ instance.key }}-init"
+    image: "{{ superset_farm_image }}"
+    command: ["/app/docker/docker-init.sh"]
+    env_file: *superset-env-file
+    volumes: *superset-volumes
+    state: started
+    recreate: true
+    cleanup: true
+    detach: false
+    network_mode: host
+    restart_policy: on-failure
+    restart_retries: 3
+
+- name: Run Superset worker ("{{ instance.key }}")
+  become: true
+  community.docker.docker_container:
+    name: "superset-{{ instance.key }}-worker"
+    image: "{{ superset_farm_image }}"
+    command: ["/app/docker/docker-bootstrap.sh", "worker"]
+    env_file: *superset-env-file
+    volumes: *superset-volumes
+    network_mode: host
+    state: started
+    recreate: true
+    cleanup: true
+    detach: true
+    restart_policy: on-failure
+    restart_retries: 3

@@ -36,7 +36,6 @@ SQLALCHEMY_DATABASE_URI = (
 )
 if SUPERSET_DB_SCHEMA_NAME:
     SQLALCHEMY_DATABASE_URI += f"?options=-c%20search_path={SUPERSET_DB_SCHEMA_NAME}"
-#####
 
 #####
 # Auth

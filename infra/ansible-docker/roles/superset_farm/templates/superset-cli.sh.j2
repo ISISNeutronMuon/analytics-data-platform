@@ -1,6 +1,6 @@
 #!/bin/bash
 # Thin wrapper around superset command
-CONTAINER_IMAGE={{ superset_farm_container_image }}
+CONTAINER_IMAGE={{ superset_farm_image }}
 SUPERSET_CONFIG_MOUNT={{ instance_work_dir }}/docker/pythonpath
 ENV_FILE={{ instance_work_dir }}/docker/.env
 

@@ -1,4 +1,36 @@
 ---
+- name: Ensure certificates directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ superset_farm_certs_dir }}"
+    state: directory
+    mode: "u=rwx,g=rx,o=rx"
+
+- name: Ensure certificates are present
+  become: true
+  no_log: true
+  ansible.builtin.copy:
+    dest: "{{ superset_farm_certs_dir }}/{{ certificate.filename }}"
+    content: "{{ certificate.content }}"
+    owner: root
+    group: root
+    mode: "u=r,o=r,g=r"
+  loop:
+    - { filename: stfc-ca.pem, content: "{{ stfc_ca_cert }}" }
+  loop_control:
+    loop_var: certificate
+
+- name: Install Python psycopg2 package on host
+  ansible.builtin.include_role:
+    name: geerlingguy.pip
+    apply:
+      become: true
+      vars:
+        pip_install_packages:
+          - name: psycopg2-binary
+            version: ">=2.5.1"
+            extra_args: --break-system-packages
+
 - name: Setup Superset instances
   ansible.builtin.include_tasks: ./setup-instance.yml
   loop: "{{ superset_farm_instances | dict2items }}"

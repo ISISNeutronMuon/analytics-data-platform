@@ -161,6 +161,8 @@ CACHE_CONFIG = dict(**COMMON_CACHE_CONFIG, CACHE_KEY_PREFIX="superset_metadata_c
 DATA_CACHE_CONFIG = dict(
     **COMMON_CACHE_CONFIG, CACHE_KEY_PREFIX="superset_charting_data_cache"
 )
+# FAB rate limiter
+RATELIMIT_STORAGE_URI = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
 # SQL Lab
 RESULTS_BACKEND = RedisCache(
     host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, key_prefix="superset_results_backend"
