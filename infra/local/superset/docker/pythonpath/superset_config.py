@@ -103,27 +103,21 @@ AUTH_ROLES_SYNC_AT_LOGIN = True
 # Caching layer
 REDIS_HOST = os.getenv("REDIS_HOST", "redis")
 REDIS_PORT = os.getenv("REDIS_PORT", "6379")
-
-CACHE_CONFIG = {
+REDIS_DB = int(os.getenv("REDIS_DB", "0"))
+COMMON_CACHE_CONFIG = {
     "CACHE_TYPE": "RedisCache",
     "CACHE_DEFAULT_TIMEOUT": 300,
-    "CACHE_KEY_PREFIX": "superset_metadata_cache",
     "CACHE_REDIS_HOST": REDIS_HOST,
     "CACHE_REDIS_PORT": REDIS_PORT,
+    "CACHE_REDIS_DB": REDIS_DB,
 }
-DATA_CACHE_CONFIG = {
-    "CACHE_TYPE": "RedisCache",
-    "CACHE_DEFAULT_TIMEOUT": 300,
-    "CACHE_KEY_PREFIX": "superset_charting_data_cache",
-    "CACHE_REDIS_HOST": REDIS_HOST,
-    "CACHE_REDIS_PORT": REDIS_PORT,
-}
-#####
-
-#####
-# SQL Lab
+CACHE_CONFIG = dict(**COMMON_CACHE_CONFIG, CACHE_KEY_PREFIX="superset_metadata_cache")
+DATA_CACHE_CONFIG = dict(
+    **COMMON_CACHE_CONFIG, CACHE_KEY_PREFIX="superset_charting_data_cache"
+)
+# SQL lab
 RESULTS_BACKEND = RedisCache(
-    host=REDIS_HOST, port=REDIS_PORT, key_prefix="superset_results_backend"
+    host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, key_prefix="superset_results_backend"
 )
 SQLLAB_CTAS_NO_LIMIT = True
 
@@ -131,9 +125,9 @@ SQLLAB_CTAS_NO_LIMIT = True
 #####
 # Celery
 class CeleryConfig:
-    broker_url = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
+    broker_url = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
     imports = ("superset.sql_lab",)
-    result_backend = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
+    result_backend = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
     worker_prefetch_multiplier = 1
     task_acks_late = False
     beat_schedule = {

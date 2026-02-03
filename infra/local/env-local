@@ -98,6 +98,7 @@ SUPERSET_DB_DIALECT=postgresql
 # Caching layer (match service name and port in compose file)
 REDIS_HOST=superset-redis
 REDIS_PORT=6379
+REDIS_DB=1
 
 # Admin user
 SUPERSET_ADMIN_USER=superset_admin
