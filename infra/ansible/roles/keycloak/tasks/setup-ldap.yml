@@ -38,7 +38,6 @@
           is.mandatory.in.ldap: false
           attribute.force.default: true
           is.binary.attribute: false
-          read.only": true
           read.only: true
           write.only: false
     remove_unspecified_mappers: false
