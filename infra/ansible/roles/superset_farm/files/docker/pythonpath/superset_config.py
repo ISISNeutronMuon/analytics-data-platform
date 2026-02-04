@@ -212,11 +212,10 @@ THEME_DEFAULT = {
 # Misc features
 # fmt: off
 FEATURE_FLAGS = {
-    "ALERT_REPORTS": True,
+    "ALERT_REPORTS": False,
     "ENABLE_TEMPLATE_PROCESSING": True,
     "TAGGING_SYSTEM": True
 }
 # fmt: on
-ALERT_REPORTS_NOTIFICATION_DRY_RUN = True
 SQLLAB_CTAS_NO_LIMIT = True
 #####
