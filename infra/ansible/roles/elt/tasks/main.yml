@@ -76,7 +76,9 @@
   ansible.builtin.file:
     path: "{{ elt_secrets_root_dir }}/{{ warehouse.name }}"
     state: directory
-    mode: "u=rwx,g=rx,o=rx"
+    mode: "u=rwx,g=,o="
+    owner: "{{ ansible_env['USER'] }}"
+    group: "{{ ansible_env['USER'] }}"
   loop: "{{ elt_warehouses }}"
   loop_control:
     loop_var: warehouse
@@ -88,7 +90,10 @@
   ansible.builtin.template:
     src: ./secrets/envvars.j2
     dest: "{{ elt_secrets_root_dir }}/{{ warehouse.name }}/envvars"
-    mode: "u=rwx,g=r,o=r"
+    mode: "u=r,g=,o="
+    owner: "{{ ansible_env['USER'] }}"
+    group: "{{ ansible_env['USER'] }}"
+
   loop: "{{ elt_warehouses }}"
   loop_control:
     loop_var: warehouse
