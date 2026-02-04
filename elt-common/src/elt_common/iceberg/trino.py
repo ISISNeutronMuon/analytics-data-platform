@@ -31,7 +31,10 @@ class TrinoCredentials:
             key = f"{env_prefix}{field.name.upper()}"
             val = os.getenv(key)
             if val is not None:
-                return field.type(val)
+                try:
+                    return field.type(val)  # type: ignore
+                except TypeError:
+                    return val
             elif field.default is not dataclasses.MISSING:
                 return field.default
             elif getattr(field, "default_factory", dataclasses.MISSING) is not dataclasses.MISSING:
