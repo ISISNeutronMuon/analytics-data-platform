@@ -24,7 +24,7 @@
   ansible.builtin.file:
     path: /secrets
     state: directory
-    mode: "u=rwx,g=rx,o=rx"
+    mode: "u=rwx,g=,o="
 
 - name: Create postgres secrets
   become: true
