@@ -1,7 +1,7 @@
 {% if 'lakekeeper' in groups %}
 http:
   routers:
-    lakeeeper:
+    lakeeper:
       entryPoints: websecure
       rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ lakekeeper_base_path }}`)
       service: lakekeeper
