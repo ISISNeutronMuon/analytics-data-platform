@@ -1,4 +1,4 @@
 ---
 superset_farm_certs_dir: /var/certs
-superset_farm_image: ghcr.io/martyngigg/adp-superset-forked:901412e
+superset_farm_image: ghcr.io/isisneutronmuon/analytics-data-platform-superset:a4f0e8011f34785d759269dceedfa2693db81c19
 superset_farm_work_dir_prefix: /var/superset_farm
