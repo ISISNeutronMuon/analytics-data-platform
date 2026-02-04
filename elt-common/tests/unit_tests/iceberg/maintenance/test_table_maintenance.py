@@ -1,10 +1,13 @@
 from typing import Dict
 import re
 
-
 from click.testing import CliRunner
-from elt_common.iceberg.trino import TrinoCredentials, TrinoQueryEngine
-from elt_common.iceberg.maintenance import cli, IcebergTableMaintenaceSql
+from elt_common.iceberg.maintenance import (
+    cli,
+    IcebergTableMaintenaceSql,
+    TrinoCredentials,
+)
+from elt_common.iceberg.trino import TrinoQueryEngine
 import pytest
 from pytest_mock import MockerFixture
 
@@ -40,8 +43,19 @@ def test_iceberg_maintenance_commands_run_expected_trino_alter_table_command(
 
 
 def test_iceberg_maintenance_cli_runs_successfully(mocker: MockerFixture):
-    mock_from_env = mocker.patch.object(TrinoCredentials, "from_env", spec=TrinoCredentials)
-    mock_from_env.return_value = TrinoCredentials("host", "1234", "catalog", "user", "password")
+    mock_credentials_instance = mocker.MagicMock(spec=TrinoCredentials)
+    mock_credentials_instance.model_dump.return_value = {
+        "host": "localhost",
+        "port": 8080,
+        "catalog": "test_catalog",
+        "user": "test_user",
+        "password": "default",
+    }
+    mocker.patch.object(
+        TrinoCredentials,
+        "__new__",
+        return_value=mock_credentials_instance,
+    )
     mock_trino_list_tables = mocker.patch.object(
         TrinoQueryEngine, "list_iceberg_tables", spec=TrinoQueryEngine
     )
@@ -54,7 +68,7 @@ def test_iceberg_maintenance_cli_runs_successfully(mocker: MockerFixture):
     assert result.stderr == ""
     assert result.exit_code == 0
 
-    mock_from_env.assert_called_once()
+    mock_credentials_instance.model_dump.assert_called_once()
     # 4 calls per table, 1 per routine
     assert mock_trino_execute.call_count == 8
 
