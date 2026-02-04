@@ -1,7 +1,0 @@
----
-lakekeeper_metadb_host: "{{ vault_db_host }}"
-lakekeeper_metadb_port: "{{ vault_db_port }}"
-lakekeeper_metadb_name: "{{ vault_lakekeeper_metadb_name }}"
-lakekeeper_metadb_user: "{{ vault_lakekeeper_metadb_user }}"
-lakekeeper_metadb_passwd: "{{ vault_lakekeeper_metadb_passwd }}"
-lakekeeper_metadb_encryption_key: "{{ vault_lakekeeper_metadb_encryption_key }}"

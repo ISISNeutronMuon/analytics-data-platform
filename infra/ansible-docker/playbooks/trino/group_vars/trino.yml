@@ -1,4 +1,0 @@
----
-trino_data_path: "{{ cephfs_mount_mount_path }}/live/trino/data"
-trino_jvm_xmx: 48G
-trino_shared_secret: "{{ vault_trino_shared_secret }}"
