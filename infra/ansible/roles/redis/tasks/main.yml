@@ -12,8 +12,13 @@
     name: redis
     image: "{{ redis_image }}"
     command:
-      ["redis-server", "--port", "{{ redis_port }}", "--bind", "127.0.0.1 -::1"]
+      ["redis-server", "--port", "{{ redis_port }}", "--bind", "127.0.0.1 ::1"]
     state: healthy
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     cleanup: true
     detach: true
     network_mode: host
