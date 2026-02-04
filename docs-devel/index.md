@@ -24,7 +24,7 @@ the future.
 ├── elt-common/             # Reusable Python package with common ETL/ELT helpers used by the warehouses
 ├── docs/                   # User and developer documentation using MkDocs. See `docs/src` for content used in the published docs site.
 ├── infra/
-│   ├── ansible-docker/     # Ansible playbooks/roles to deploy the system to the STFC (OpenStack) cloud.
+│   ├── ansible/            # Ansible playbooks/roles to deploy the system to the STFC (OpenStack) cloud.
 │   ├── container-images/   # Container definitions deployed services
 │   └── local/              # docker-compose configuration for a local development environment and end-to-end CI tests.
 └── warehouses/             # One subdirectory per (Lakekeeper) warehouse. Each contains ELT code to extract, transform and load data from external sources into Iceberg tables.

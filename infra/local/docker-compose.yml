@@ -313,7 +313,7 @@ services:
       lakekeeper:
         condition: service_healthy
     volumes:
-      - "../ansible-docker/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py"
+      - "../ansible/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py"
       - "./warehouses/lakekeeper:/opt/work/warehouses:ro"
       - *certs-volume
     networks: *local-networks
