@@ -4,4 +4,4 @@ lakekeeper_metadb_name: lakekeeper
 lakekeeper_metadb_user: "{{ vault_postgres_db_user }}"
 lakekeeper_metadb_passwd: "{{ vault_postgres_db_passwd }}"
 lakekeeper_metadb_encryption_key: "{{ vault_lakekeeper_metadb_encryption_key }}"
-lakekeeper_bootstrap_credentials: "ansible:{{ vault_keycloak_client_secret['ansible'] }}"
+lakekeeper_bootstrap_credentials: "ansible:{{ vault_keycloak_client_secrets['ansible'] }}"
