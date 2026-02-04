@@ -61,6 +61,10 @@ instance_configs = {
     ansible_group              = "superset_farm"
     additional_security_groups = ["superset_farm-dev"]
   }
+  "elt-dev" = {
+    flavor_name                = "l3.nano"
+    ansible_group              = "elt"
+  }
 }
 floating_ip_info = {
   vm_name     = "traefik-dev"

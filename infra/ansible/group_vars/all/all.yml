@@ -16,6 +16,10 @@ docker_daemon_options:
 docker_users:
   - "{{ vault_openstack_vm_user }}"
 
+logrotate_frequency: weekly
+logrotate_keep: 30
+logrotate_compress: true
+
 keycloak_base_path: /authn
 keycloak_http_port: 8080
 keycloak_http_management_port: 9000
@@ -43,11 +47,11 @@ pip_install_packages:
 stfc_ldap_server: "{{ vault_stfc_ldap_server }}"
 stfc_ca_cert: "{{ vault_stfc_ca_cert }}"
 
-# Trino: shared
+# trino
 trino_http_port: 8060
 trino_https_port: 8443
 
-# Superset shared
+# Superset
 superset_farm_url_prefix: /workspace
 superset_farm_instances:
   accelerator:
@@ -60,3 +64,30 @@ superset_farm_instances:
     analytic_dbs:
       - name: accelerator
         db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/accelerator"
+
+# elt
+elt_warehouses:
+  - name: accelerator
+    github_org: ISISNeutronMuon
+    github_repo: analytics-data-platform
+    sub_dir: warehouses/accelerator
+    sources:
+      - name: statusdisplay
+        hour: 1
+        minute: 45
+        dbt_args: "--select 'models/staging/statusdisplay'"
+      - name: accelerator_sharepoint
+        hour: 2
+        minute: 2
+        dbt_args: "--select 'models/staging/accelerator_sharepoint'"
+      - name: opralogweb
+        hour: 2
+        minute: 11
+        dbt_args: "--select '+models/operations' --exclude '+models/operations/power_consumption.sql'"
+      - name: electricity_sharepoint
+        hour: "*"
+        minute: 5
+        dbt_args: "--select '+models/operations/power_consumption.sql'"
+    maintenance:
+      state: present
+elt_threads: 16

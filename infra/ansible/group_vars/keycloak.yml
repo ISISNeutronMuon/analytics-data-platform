@@ -19,7 +19,7 @@ keycloak_clients:
     name: "Ansible client"
     protocol: "openid-connect"
     public_client: false
-    secret: "{{ vault_keycloak_client_secret_ansible }}"
+    secret: "{{ vault_keycloak_client_secrets['ansible'] }}"
     standard_flow_enabled: false
     implicit_flow_enabled: false
     direct_access_grants_enabled: false
@@ -32,7 +32,20 @@ keycloak_clients:
     name: "Trino client"
     protocol: "openid-connect"
     public_client: false
-    secret: "{{ vault_keycloak_client_secret_trino }}"
+    secret: "{{ vault_keycloak_client_secrets['trino'] }}"
+    standard_flow_enabled: false
+    implicit_flow_enabled: false
+    direct_access_grants_enabled: false
+    service_accounts_enabled: true
+    authorization_services_enabled: false
+    optional_client_scopes_additional: ["lakekeeper"]
+    attributes:
+      access.token.lifespan: 600
+  - client_id: elt
+    name: "ELT services client"
+    protocol: "openid-connect"
+    public_client: false
+    secret: "{{ vault_keycloak_client_secrets['elt'] }}"
     standard_flow_enabled: false
     implicit_flow_enabled: false
     direct_access_grants_enabled: false
