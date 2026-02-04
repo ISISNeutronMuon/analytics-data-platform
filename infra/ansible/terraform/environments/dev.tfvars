@@ -1,7 +1,7 @@
 # general
 vm_user = "ubuntu"
-vm_image = "ubuntu-noble-24.04-nogui"
 vm_key_pair = "martyngigg"
+vm_image = "ubuntu-noble-24.04-nogui"
 
 # networking
 network_name        = "lakehouse-dev"
@@ -25,7 +25,7 @@ security_groups = {
     ports_ingress = [8060]
   },
   "superset_farm-dev" = {
-    ports_ingress = [8088, 8089]
+    ports_ingress = [8088]
   }
 }
 
