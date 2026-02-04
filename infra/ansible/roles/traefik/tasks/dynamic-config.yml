@@ -1,0 +1,32 @@
+---
+- name: Create temporary build directory for dynamic configurations
+  ansible.builtin.tempfile:
+    state: directory
+  register: traefik_dynamic_confs_tempdir
+
+- name: Regenerate new Traefik dynamic configuration (staging location)
+  become: true
+  ansible.builtin.template:
+    src: "{{ traefik_template }}"
+    dest: "{{ traefik_dynamic_confs_tempdir.path }}/{{ traefik_template | basename | replace('.j2', '') }}"
+    mode: "u=rw,g=r,o=r"
+  with_fileglob: "templates/{{ traefik_etc_dynamic_path_relative }}/*.j2"
+  loop_control:
+    loop_var: traefik_template
+
+- name: Synchronize new dynamic configuration
+  become: true
+  ansible.posix.synchronize:
+    use_ssh_args: true
+    src: "{{ traefik_dynamic_confs_tempdir.path }}/"
+    dest: "{{ traefik_config_root }}/{{ traefik_etc_dynamic_path_relative }}/"
+    archive: false
+    checksum: true
+    recursive: true
+    delete: true
+  delegate_to: "{{ inventory_hostname }}"
+
+- name: Remove temporary build directory for dynamic configurations
+  ansible.builtin.file:
+    path: "{{ traefik_dynamic_confs_tempdir.path }}"
+    state: absent
