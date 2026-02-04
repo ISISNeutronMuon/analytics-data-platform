@@ -141,7 +141,7 @@
 
 - name: Ensure Iceberg table maintenance jobs exist
   ansible.builtin.cron:
-    name: iceberg-maintenance
+    name: "iceberg-maintenance-{{ warehouse.name }}"
     state: "{{ warehouse.maintenance.state }}"
     hour: 3
     minute: 2
