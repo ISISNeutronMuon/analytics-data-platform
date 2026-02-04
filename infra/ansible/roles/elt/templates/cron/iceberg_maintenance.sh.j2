@@ -3,13 +3,22 @@ set -euo pipefail
 
 # Constants
 ELT_SECRETS=${ELT_SECRETS:?}
-ELT_COMMON_GIT_URL=${ELT_COMMON_GIT_URL:-https://github.com/ISISNeutronMuon/analytics-data-platform.git}
-UV_GIT_REF="git+${ELT_COMMON_GIT_URL}#subdirectory=elt-common"
+ELT_GIT_REF=${ELT_GIT_REF:-main}
+
+# arguments
+if [ $# -eq 0  ]; then
+  echo "Usage $0 <git_url>"
+  exit 1
+fi
+
+git_url=$1
+shift 1
 
 # Read secrets
 set -o allexport; source $ELT_SECRETS; set +o allexport
 
 # Run maintenance tasks on all tables
+uv_git_ref="git+${git_url}@${ELT_GIT_REF}#subdirectory=elt-common"
 uvx \
-  --with "${UV_GIT_REF}[iceberg-maintenance]" \
+  --with "${uv_git_ref}[iceberg-maintenance]" \
   python -m elt_common.iceberg.maintenance $*

@@ -45,7 +45,7 @@
       iceberg.rest-catalog.vended-credentials-enabled=false
       iceberg.rest-catalog.security=OAUTH2
       iceberg.rest-catalog.oauth2.server-uri={{ keycloak_realm_url }}/protocol/openid-connect/token
-      iceberg.rest-catalog.oauth2.credential=trino:{{ vault_keycloak_client_secret_trino }}
+      iceberg.rest-catalog.oauth2.credential=trino:{{ vault_keycloak_client_secrets['trino'] }}
       iceberg.rest-catalog.oauth2.scope=lakekeeper offline_access
       # Our S3 implementation does not have STS enabled so we need to provide
       # S3 credentials too
@@ -60,6 +60,21 @@
   loop: "{{ lakekeeper_catalog.warehouses.keys() }}"
   loop_control:
     loop_var: warehouse_name
+
+- name: Generate Trino access rules JSON
+  become: true
+  ansible.builtin.copy:
+    content: |
+      {{ trino_rules | to_json(indent=4) }}
+    dest: "{{ trino_working_dir }}/etc/rules.json"
+    mode: "u=rw,g=r,o=r"
+  vars:
+    trino_rules:
+      catalogs:
+        [
+          { "user": "elt", "catalog": "(.*)", "allow": "all" },
+          { "user": "superset", "catalog": "(.*)", "allow": "read-only" },
+        ]
 
 - name: Ensure credentials directory exists
   become: true
