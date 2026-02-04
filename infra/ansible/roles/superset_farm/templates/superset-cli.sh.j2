@@ -8,5 +8,7 @@ docker run \
   --rm \
   --env-file $ENV_FILE \
   --volume ${SUPERSET_CONFIG_MOUNT}:/app/docker/pythonpath:ro \
+  --interactive \
+  --tty \
   ${CONTAINER_IMAGE} \
   superset $*
