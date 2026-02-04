@@ -4,7 +4,7 @@
   ansible.builtin.file:
     path: "{{ traefik_dir.path }}"
     state: directory
-    mode: "u=rwx,g=rx,o=rx"
+    mode: "{{ traefik_dir.mode }}"
     owner: "root"
     group: "root"
   loop:
