@@ -23,6 +23,7 @@ class TrinoCredentials:
     user: str | None
     password: str | None
     http_scheme: str = "https"
+    verify: bool = True
 
     @classmethod
     def from_env(cls, env_prefix: str) -> "TrinoCredentials":
@@ -30,7 +31,7 @@ class TrinoCredentials:
             key = f"{env_prefix}{field.name.upper()}"
             val = os.getenv(key)
             if val is not None:
-                return val
+                return field.type(val)
             elif field.default is not dataclasses.MISSING:
                 return field.default
             elif getattr(field, "default_factory", dataclasses.MISSING) is not dataclasses.MISSING:
@@ -114,6 +115,6 @@ class TrinoQueryEngine:
             connect_args={
                 "auth": auth,
                 "http_scheme": credentials.http_scheme,
-                "verify": False,
+                "verify": credentials.verify,
             },
         )
