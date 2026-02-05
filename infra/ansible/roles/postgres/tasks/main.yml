@@ -17,13 +17,15 @@
     state: directory
     owner: 26
     group: 999
-    mode: "u=rwx,g=rx,o=rx"
+    mode: "u=rwx,g=,o="
 
 - name: Create secrets directory exists
   become: true
   ansible.builtin.file:
     path: /secrets
     state: directory
+    owner: 26
+    group: 999
     mode: "u=rwx,g=,o="
 
 - name: Create postgres secrets
