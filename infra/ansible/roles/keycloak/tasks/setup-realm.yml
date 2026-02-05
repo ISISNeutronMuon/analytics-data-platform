@@ -1,0 +1,55 @@
+---
+# This is a hacky way so we can reuse the Keycloak auth_ vars
+- ansible.builtin.debug:
+    msg: ""
+  vars: &keycloak_auth_vars
+    auth_client_id: admin-cli
+    auth_keycloak_url: "{{ keycloak_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_bootstrap_admin_user }}"
+    auth_password: "{{ keycloak_bootstrap_admin_passwd }}"
+  when: false
+
+- name: Create Keycloak realm
+  community.general.keycloak_realm:
+    <<: *keycloak_auth_vars
+    realm: "{{ keycloak_realm.name }}"
+    display_name: "{{ keycloak_realm.display_name }}"
+    state: present
+    enabled: true
+
+- name: Create client scopes
+  community.general.keycloak_clientscope:
+    <<: *keycloak_auth_vars
+    realm: "{{ keycloak_realm.name }}"
+    name: "{{ item.name }}"
+    protocol: "{{ item.protocol }}"
+    protocol_mappers: "{{ item.protocol_mappers }}"
+    state: present
+  loop: "{{ keycloak_client_scopes }}"
+
+- name: Create service user clients
+  community.general.keycloak_client:
+    <<: *keycloak_auth_vars
+    realm: "{{ keycloak_realm.name }}"
+    client_id: "{{ item.client_id }}"
+    name: "{{ item.name }}"
+    protocol: "{{ item.protocol }}"
+    public_client: "{{ item.public_client }}"
+    secret: "{{ item.secret | default('') }}"
+    redirect_uris: "{{ item.redirect_uris | default([]) }}"
+    standard_flow_enabled: "{{ item.standard_flow_enabled }}"
+    implicit_flow_enabled: "{{ item.implicit_flow_enabled }}"
+    direct_access_grants_enabled: "{{ item.direct_access_grants_enabled }}"
+    service_accounts_enabled: "{{ item.service_accounts_enabled }}"
+    authorization_services_enabled: "{{ item.authorization_services_enabled }}"
+    default_client_scopes: "{{ keycloak_client_default_scopes_minimum }}"
+    optional_client_scopes: "{{ keycloak_client_optional_scopes_minimum + item.optional_client_scopes_additional }}"
+    attributes: "{{ item.attributes }}"
+  loop: "{{ keycloak_clients }}"
+  loop_control:
+    label: "{{ item.client_id }}"
+
+- ansible.builtin.import_tasks: setup-ldap.yml
+  vars:
+    target_realm: "{{ keycloak_realm.name }}"

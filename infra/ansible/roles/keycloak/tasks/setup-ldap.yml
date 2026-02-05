@@ -1,0 +1,47 @@
+---
+- name: Connect to LDAP
+  community.general.keycloak_user_federation:
+    auth_client_id: admin-cli
+    auth_keycloak_url: "{{ keycloak_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_bootstrap_admin_user }}"
+    auth_password: "{{ keycloak_bootstrap_admin_passwd }}"
+    realm: "{{ target_realm }}"
+    name: "STFC LDAP"
+    state: present
+    provider_id: ldap
+    connection_timeout: 20
+    config:
+      enabled: true
+      editMode: READ_ONLY
+      importEnabled: true
+      syncRegistrations: false
+      vendor: "Active Directory"
+      # this is the mail in AD but using 'mail' gives a lookup error in Keycloak as some users don't have that set
+      usernameLDAPAttribute: userPrincipalName
+      rdnLDAPAttribute: cn
+      uuidLDAPAttribute: objectGUID
+      userObjectClasses: "person, organizationalPerson, user"
+      connectionUrl: "{{ vault_keycloak_ldap_connection_url }}"
+      usersDn: "OU=FBU,DC=fed,DC=cclrc,DC=ac,DC=uk"
+      authType: none
+      searchScope: 1
+      validatePasswordPolicy: false
+      trustEmail: true
+      useTruststoreSpi: ldapsOnly
+    mappers:
+      - name: "first name"
+        providerId: "user-attribute-ldap-mapper"
+        config:
+          ldap.attribute: givenName
+          user.model.attribute: firstName
+          is.mandatory.in.ldap: false
+          attribute.force.default: true
+          is.binary.attribute: false
+          read.only: true
+          write.only: false
+    remove_unspecified_mappers: false
+  # The resource can be slow to create. The ansible role successfully creates it but then can generate
+  # a 404 trying to retrieve the new id that is not quite registered yet. Retry to avoid this.
+  retries: 3
+  delay: 1

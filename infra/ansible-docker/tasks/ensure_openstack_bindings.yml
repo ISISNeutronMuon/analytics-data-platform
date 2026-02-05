@@ -1,6 +1,0 @@
-- name: Ensure Python openstack bindings are present
-  ansible.builtin.pip:
-    name:
-      - "python-openstackclient=={{ openstackclient_version }}"
-      - "python-octaviaclient=={{ octaviaclient_version }}"
-    state: present

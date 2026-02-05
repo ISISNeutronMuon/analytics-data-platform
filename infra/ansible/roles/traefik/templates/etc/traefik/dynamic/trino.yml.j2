@@ -1,0 +1,15 @@
+{% if 'trino' in groups %}
+http:
+  routers:
+    trino:
+      entryPoints: trino_tls
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`/`)
+      service: trino
+      tls: {}
+
+  services:
+    trino:
+      loadBalancer:
+        servers:
+          - url: "http://{{ groups['trino'][0] }}:{{ trino_http_port }}"
+{% endif %}

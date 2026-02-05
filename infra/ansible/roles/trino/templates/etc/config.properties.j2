@@ -1,0 +1,16 @@
+coordinator=true
+node-scheduler.include-coordinator=true
+
+catalog.management=static
+transaction.idle-timeout=8h
+
+discovery.uri=http://localhost:{{ trino_http_port }}
+http-server.http.port={{ trino_http_port }}
+http-server.process-forwarded=true
+
+http-server.authentication.type=PASSWORD
+internal-communication.shared-secret={{ trino_shared_secret }}
+
+web-ui.preview.enabled=true
+
+sql.forced-session-time-zone=UTC

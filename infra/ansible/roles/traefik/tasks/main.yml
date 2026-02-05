@@ -1,0 +1,8 @@
+---
+- ansible.builtin.import_tasks: static-config.yml
+  when: not (traefik_container_only | default(False))
+
+- ansible.builtin.import_tasks: container.yml
+
+- ansible.builtin.import_tasks: dynamic-config.yml
+  when: not (traefik_container_only | default(False))

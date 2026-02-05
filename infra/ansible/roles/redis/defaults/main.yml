@@ -1,0 +1,4 @@
+---
+redis_work_dir: /var/redis
+redis_image: redis:8.4-bookworm
+redis_port: 6379

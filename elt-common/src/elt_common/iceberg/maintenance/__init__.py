@@ -2,13 +2,27 @@ import logging
 from typing import Sequence
 
 import click
-from elt_common.iceberg.trino import TrinoCredentials, TrinoQueryEngine
+from elt_common.iceberg.trino import TrinoQueryEngine
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-ENV_PREFIX = "ELT_COMMON_ICEBERG_MAINT_TRINO_"
+
+ENV_PREFIX = ""
 LOG_FORMAT = "%(asctime)s:%(module)s:%(levelname)s:%(message)s"
 LOG_FORMAT_DATE = "%Y-%m-%dT%H:%M:%S"
 
 LOGGER = logging.getLogger(__name__)
+
+
+class TrinoCredentials(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix=ENV_PREFIX)
+
+    host: str
+    port: str
+    catalog: str
+    user: str | None
+    password: str | None
+    http_scheme: str = "https"
+    verify: bool = True
 
 
 class IcebergTableMaintenaceSql:
@@ -66,7 +80,8 @@ def cli(table: Sequence[str], retention_threshold: str, log_level: str):
     )
     LOGGER.setLevel(log_level)
 
-    trino = TrinoQueryEngine(TrinoCredentials.from_env(ENV_PREFIX))
+    trino_creds = TrinoCredentials()  # type: ignore
+    trino = TrinoQueryEngine(**trino_creds.model_dump(mode="python"))
     iceberg_maintenance = IcebergTableMaintenaceSql(trino)
 
     if not table:

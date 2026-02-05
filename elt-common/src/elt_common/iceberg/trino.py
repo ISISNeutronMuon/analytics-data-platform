@@ -1,7 +1,5 @@
 import contextlib
-import dataclasses
 import logging
-import os
 import re
 from typing import Sequence
 
@@ -15,33 +13,6 @@ from trino.auth import BasicAuthentication
 LOGGER = logging.getLogger(__name__)
 
 
-@dataclasses.dataclass
-class TrinoCredentials:
-    host: str
-    port: str
-    catalog: str
-    user: str | None
-    password: str | None
-    http_scheme: str = "https"
-
-    @classmethod
-    def from_env(cls, env_prefix: str) -> "TrinoCredentials":
-        def _get_env(field: dataclasses.Field):
-            key = f"{env_prefix}{field.name.upper()}"
-            val = os.getenv(key)
-            if val is not None:
-                return val
-            elif field.default is not dataclasses.MISSING:
-                return field.default
-            elif getattr(field, "default_factory", dataclasses.MISSING) is not dataclasses.MISSING:
-                return field.default_factory()  # type: ignore
-            else:
-                raise KeyError(f"Missing required environment variable: {key}")
-
-        kwargs = {f.name: _get_env(f) for f in dataclasses.fields(cls)}
-        return cls(**kwargs)
-
-
 class TrinoQueryEngine:
     @property
     def engine(self) -> Engine:
@@ -51,10 +22,19 @@ class TrinoQueryEngine:
     def url(self) -> str:
         return self._url
 
-    def __init__(self, credentials: TrinoCredentials):
+    def __init__(
+        self,
+        host: str,
+        port: str,
+        catalog: str,
+        user: str,
+        password: str,
+        http_scheme="https",
+        verify=True,
+    ):
         """Initlialize an object and create an Engine"""
-        self._url = f"trino://{credentials.host}:{credentials.port}/{credentials.catalog}"
-        self._engine = self._create_engine(credentials)
+        self._url = f"trino://{host}:{port}/{catalog}"
+        self._engine = self._create_engine(user, password, http_scheme=http_scheme, verify=verify)
 
     def execute(self, stmt: str, connection: Connection | None = None):
         """Execute a SQL statement and return the results.
@@ -103,17 +83,13 @@ class TrinoQueryEngine:
             raise ValueError(f"Invalid retention threshold format: {retention_threshold}")
 
     # private
-    def _create_engine(self, credentials: TrinoCredentials) -> Engine:
-        if credentials.user is None or credentials.password is None:
+    def _create_engine(self, user: str, password: str, **connect_args) -> Engine:
+        if user is None or password is None:
             auth = BasicAuthentication("trino", "")
         else:
-            auth = BasicAuthentication(credentials.user, credentials.password)
+            auth = BasicAuthentication(user, password)
 
         return create_engine(
             self.url,
-            connect_args={
-                "auth": auth,
-                "http_scheme": credentials.http_scheme,
-                "verify": False,
-            },
+            connect_args=dict(auth=auth, **connect_args),
         )

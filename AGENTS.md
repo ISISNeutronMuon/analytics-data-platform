@@ -33,8 +33,8 @@ common developer tasks.
 
 ## Cloud deployment
 
-- Use the Ansible playbooks in `infra/ansible-docker/` together with the
-  `inventory*.yml` files. See the `infra/ansible-docker/readme.md` for role and
+- Use the Ansible playbooks in `infra/ansible/` together with the
+  `inventories/**` files. See the `infra/ansible/readme.md` for role and
   variable guidance.
 
 ## Pull Request Guidelines
@@ -55,7 +55,7 @@ common developer tasks.
 - Docker resource issues: the local compose stack can be resource heavy. Ensure
   Docker Desktop has enough CPU/memory.
 - Ansible role errors: ensure you have required galaxy roles (see
-  `infra/ansible-docker/ansible-galaxy-requirements.yaml`) and the correct Python
+  `infra/ansible/ansible-galaxy-requirements.yaml`) and the correct Python
   and Ansible versions installed.
 
 ## Where to go next

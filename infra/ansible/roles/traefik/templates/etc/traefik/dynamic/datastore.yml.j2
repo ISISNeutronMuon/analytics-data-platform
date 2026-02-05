@@ -1,0 +1,33 @@
+{% if 'datastore' in groups %}
+http:
+  routers:
+    minioapi:
+      entryPoints: minio_tls
+      rule: Host(`{{ top_level_domain }}`)
+      service: minioapi
+      tls: {}
+
+    minioconsole:
+      entryPoints: websecure
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ minio_console_base_path }}`)
+      service: minioconsole
+      middlewares:
+        - minioconsole-strip-prefix
+      tls: {}
+
+  middlewares:
+    minioconsole-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "{{ minio_console_base_path }}"
+
+  services:
+    minioapi:
+      loadBalancer:
+        servers:
+          - url: "http://{{ groups['datastore'][0] }}:{{ minio_api_port }}"
+    minioconsole:
+      loadBalancer:
+        servers:
+          - url: "http://{{ groups['datastore'][0] }}:{{ minio_console_port }}"
+{% endif %}

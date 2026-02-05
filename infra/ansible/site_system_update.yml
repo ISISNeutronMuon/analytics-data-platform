@@ -1,0 +1,27 @@
+---
+- name: Disable Traefik during updates
+  hosts: traefik
+  vars:
+    traefik_container_only: true
+    traefik_container_state: absent
+  roles:
+    - role: traefik
+
+# Skip Traefik as it serves as a jumphost
+- name: Apply system package updates (except Traefik)
+  hosts: all:!traefik
+  roles:
+    - role: packages_update
+
+- name: Apply system package updates (Traefik)
+  hosts: traefik
+  roles:
+    - role: packages_update
+
+- name: Enable Traefik during updates
+  hosts: traefik
+  vars:
+    traefik_container_only: true
+    traefik_container_state: started
+  roles:
+    - role: traefik

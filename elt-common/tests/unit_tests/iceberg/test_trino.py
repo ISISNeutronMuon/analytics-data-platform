@@ -8,9 +8,10 @@ from pytest_mock import MockerFixture
 def test_trino_query_engine_list_tables_returns_only_iceberg_tables(
     mocker: MockerFixture,
 ):
-    mock_creds = mocker.MagicMock()
     mocker.patch.object(TrinoQueryEngine, "_create_engine", mocker.MagicMock())
-    trino = TrinoQueryEngine(mock_creds)
+    trino = TrinoQueryEngine(
+        host="localhost", port="8088", catalog="default", user="test_user", password="default"
+    )
     trino_execute_spy = mocker.spy(trino, "execute")
 
     trino.list_iceberg_tables()

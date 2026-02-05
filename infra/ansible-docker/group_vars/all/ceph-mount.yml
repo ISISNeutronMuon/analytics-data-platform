@@ -1,5 +1,0 @@
----
-cephfs_mount_export_path: "{{ vault_cephfs_export_path }}"
-cephfs_mount_mount_path: "/mnt/lakehouse_data"
-cephfs_mount_access_name: isis
-cephfs_mount_access_secret: "{{ vault_cephfs_access_secret }}"

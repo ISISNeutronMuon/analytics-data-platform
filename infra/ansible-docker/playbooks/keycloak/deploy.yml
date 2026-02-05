@@ -1,7 +1,0 @@
----
-- name: Configure Keycloak to act as an identity provider
-  hosts: keycloak
-  roles:
-    - role: cephfs_mount
-    - role: docker_configure
-    - role: keycloak

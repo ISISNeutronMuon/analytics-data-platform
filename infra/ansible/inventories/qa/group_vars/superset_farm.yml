@@ -1,0 +1,6 @@
+---
+superset_farm_metadb_host: "{{ vault_db_host }}"
+superset_farm_metadb_name: "{{ vault_superset_farm_metadb_name }}"
+superset_farm_metadb_port: 5432
+superset_farm_metadb_user: "{{ vault_superset_farm_metadb_user }}"
+superset_farm_metadb_passwd: "{{ vault_superset_farm_metadb_passwd }}"

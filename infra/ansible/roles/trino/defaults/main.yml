@@ -1,0 +1,7 @@
+---
+trino_http_port: 8060
+trino_https_port: 8443
+trino_image: trinodb/trino:477
+trino_jvm_xmx: 4G
+trino_shared_secret: ""
+trino_working_dir: /var/trino

@@ -1,0 +1,6 @@
+---
+superset_farm_metadb_host: "{{ groups['datastore'][0] }}"
+superset_farm_metadb_name: superset_farm
+superset_farm_metadb_port: 5432
+superset_farm_metadb_user: "{{ vault_postgres_db_user }}"
+superset_farm_metadb_passwd: "{{ vault_postgres_db_passwd }}"

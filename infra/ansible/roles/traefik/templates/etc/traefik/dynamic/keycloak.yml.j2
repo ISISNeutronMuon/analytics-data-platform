@@ -1,0 +1,24 @@
+{% if 'keycloak' in groups %}
+http:
+  routers:
+    # TLS
+    keycloak:
+      entryPoints: websecure
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ keycloak_base_path }}`)
+      service: keycloak
+      middlewares:
+        - keycloak-strip-prefix
+      tls: {}
+
+  middlewares:
+    keycloak-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "{{ keycloak_base_path }}"
+
+  services:
+    keycloak:
+      loadBalancer:
+        servers:
+          - url: "http://{{ groups['keycloak'][0] }}:{{ keycloak_http_port }}"
+{% endif %}

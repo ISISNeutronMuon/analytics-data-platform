@@ -1,0 +1,49 @@
+---
+- name: Ensure Traefik directories exist
+  become: true
+  ansible.builtin.file:
+    path: "{{ traefik_dir.path }}"
+    state: directory
+    mode: "{{ traefik_dir.mode }}"
+    owner: "root"
+    group: "root"
+  loop:
+    - {
+        path: "{{ traefik_config_root }}/{{ traefik_etc_dynamic_path_relative }}",
+        mode: "u=rwx,g=rx,o=rx",
+      }
+    - {
+        path: "{{ traefik_config_root }}/logs/traefik",
+        mode: "u=rwx,g=rx,o=rx",
+      }
+    - { path: "{{ traefik_certs_root }}", mode: "u=rwx,g=,o=" }
+  loop_control:
+    loop_var: traefik_dir
+
+- name: Ensure TLS certifcates are present
+  become: true
+  no_log: true
+  ansible.builtin.copy:
+    dest: "{{ traefik_tls.filename }}"
+    content: "{{ traefik_tls.content }}"
+    owner: root
+    group: root
+    mode: "u=r,o=,g="
+  loop:
+    - {
+        filename: "{{ traefik_certs_root }}/cert__domain.pem",
+        content: "{{ vault_tls_cert }}",
+      }
+    - {
+        filename: "{{ traefik_certs_root }}/key__domain.pem",
+        content: "{{ vault_tls_key }}",
+      }
+  loop_control:
+    loop_var: traefik_tls
+
+- name: Regenerate Traefik static configuration
+  become: true
+  ansible.builtin.template:
+    src: "templates/{{ traefik_etc_path_relative }}/traefik.yml.j2"
+    dest: "{{ traefik_config_root }}/{{ traefik_etc_path_relative }}/traefik.yml"
+    mode: "u=rw,g=r,o=r"

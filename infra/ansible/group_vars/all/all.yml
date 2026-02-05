@@ -1,0 +1,93 @@
+---
+base_additional_apt_keys:
+  - url: https://dl.igtf.net/distribution/igtf/current/GPG-KEY-EUGridPMA-RPM-4
+    filename: eugridpma-rpm-4.asc
+base_timezone: "Europe/London"
+
+cephfs_mount_export_path: "{{ vault_cephfs_export_path }}"
+cephfs_mount_mount_path: "/mnt/lakehouse_data"
+cephfs_mount_access_name: "{{ vault_cephfs_access_name }}"
+cephfs_mount_access_secret: "{{ vault_cephfs_access_secret }}"
+
+docker_daemon_options:
+  mtu: 1450
+  registry-mirrors: ["https://dockerhub.stfc.ac.uk"]
+
+docker_users:
+  - "{{ vault_openstack_vm_user }}"
+
+logrotate_frequency: weekly
+logrotate_keep: 30
+logrotate_compress: true
+
+keycloak_base_path: /authn
+keycloak_http_port: 8080
+keycloak_http_management_port: 9000
+keycloak_url: "https://{{ top_level_domain }}{{ keycloak_base_path }}"
+keycloak_realm:
+  name: "isis-analytics-data-platform"
+  display_name: "ISIS Analytics Data Platform"
+keycloak_realm_url: "{{ keycloak_url }}/realms/{{ keycloak_realm.name }}"
+
+lakekeeper_base_path: /iceberg
+lakekeeper_http_port: 8181
+lakekeeper_project_name: "ISIS Analytics Data Platform"
+lakekeeper_catalog:
+  uri: "https://{{ top_level_domain }}{{ lakekeeper_base_path }}/catalog"
+  warehouses:
+    accelerator:
+      storage:
+        bucket_name: isis-dataarchitecture-prototypes-warehouse-accelerator
+        key_prefix: ""
+
+pip_install_packages:
+  - name: docker
+    extra_args: --break-system-packages
+
+stfc_ldap_server: "{{ vault_stfc_ldap_server }}"
+stfc_ca_cert: "{{ vault_stfc_ca_cert }}"
+
+# trino
+trino_http_port: 8060
+trino_https_port: 8443
+
+# Superset
+superset_farm_url_prefix: /workspace
+superset_farm_instances:
+  accelerator:
+    app_root: "{{ superset_farm_url_prefix }}/accelerator"
+    env_name: production
+    flask_debug: false
+    http_port: 8088
+    secret_key: "{{ vault_superset_accelerator_secret_key }}"
+    users_yaml: "{{ vault_superset_accelerator_users_yaml }}"
+    analytic_dbs:
+      - name: accelerator
+        db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/accelerator"
+
+# elt
+elt_warehouses:
+  - name: accelerator
+    github_org: ISISNeutronMuon
+    github_repo: analytics-data-platform
+    sub_dir: warehouses/accelerator
+    sources:
+      - name: statusdisplay
+        hour: 1
+        minute: 45
+        dbt_args: "--select 'models/staging/statusdisplay'"
+      - name: accelerator_sharepoint
+        hour: 2
+        minute: 2
+        dbt_args: "--select 'models/staging/accelerator_sharepoint'"
+      - name: opralogweb
+        hour: 2
+        minute: 11
+        dbt_args: "--select '+models/operations' --exclude '+models/operations/power_consumption.sql'"
+      - name: electricity_sharepoint
+        hour: "*"
+        minute: 5
+        dbt_args: "--select '+models/operations/power_consumption.sql'"
+    maintenance:
+      state: present
+elt_threads: 16

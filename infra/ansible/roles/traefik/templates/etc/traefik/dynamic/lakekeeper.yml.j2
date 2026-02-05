@@ -1,0 +1,23 @@
+{% if 'lakekeeper' in groups %}
+http:
+  routers:
+    lakeeper:
+      entryPoints: websecure
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ lakekeeper_base_path }}`)
+      service: lakekeeper
+      middlewares:
+        - lakekeeper-strip-prefix
+      tls: {}
+
+  middlewares:
+    lakekeeper-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "{{ lakekeeper_base_path }}"
+
+  services:
+    lakekeeper:
+      loadBalancer:
+        servers:
+          - url: "http://{{ groups['lakekeeper'][0] }}:{{ lakekeeper_http_port }}"
+{% endif %}

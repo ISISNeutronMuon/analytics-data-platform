@@ -2,12 +2,25 @@
 
 The following resources are required before deployment can proceed:
 
+- [OpenTofu](#terraformopentofu)
 - [Python environment configured for running Ansible](#python-environment)
 - [Ansible vault password](#ansible-vault)
 - [Openstack clouds.yaml](#openstack-api--vm-credentials)
 - [A shared filesystem through a Manila share](#manila-share)
 - [Object storage](#object-store)
 - [Networking](#networking)
+
+## Terraform/OpenTofu
+
+[Terraform](https://developer.hashicorp.com/terraform) is used to provision resources on an Openstack
+cloud. See the resources definitions in [terraform](../../infra/ansible/terraform/).
+
+*Note: Terraform no longer has an open-source license. [OpenTofu](https://opentofu.org/) is a*
+*drop-in replacement supported by CNCF, the `terraform` command can be replaced by `tofu`*
+*wherever it appears in external documentation.*
+
+- Install OpenTofu using their documented method for your platform: <https://opentofu.org/docs/intro/install/>
+- Run `tofu init` in the `../../infra/ansible/terraform/` directory.
 
 ## Python environment
 
@@ -46,40 +59,40 @@ stored locally in a `<repo_root>/ansible/.vault_pass` file. **Do not share this 
 
 ## Manila share
 
-_Used for: Persistent storage for running system services, e.g. database data. Not used for user data._
+*Used for: Persistent storage for running system services, e.g. database data. Not used for user data.*
 
 A Manila/CephFS share of at least 5TB is required. Once a quota has been assigned to the project:
 
-- Create a new share, under _Project->Share->Shares_, and mark it private.
-- Click on the share, make note of the _Export locations.Path_ value.
+- Create a new share, under *Project->Share->Shares*, and mark it private.
+- Click on the share, make note of the *Export locations.Path* value.
 - Edit the `vault_cephfs_export_path` variable to match the value from the previous step.
-- On the main _Shares_ page click the down arrow on the side of the _EDIT SHARE_
-  button and go to _Manage Rules_.
+- On the main *Shares* page click the down arrow on the side of the *EDIT SHARE*
+  button and go to *Manage Rules*.
 - Add a new rule and once created make note of the _Access Key` value.
 - Edit the `vault_cephfs_access_secret` variable to match the value from the previous step.
 
 ## Object store
 
-_Used for: Persistent storage of user data._
+*Used for: Persistent storage of user data.*
 
 This is currently expected to be configured to use the Echo object store.
 The S3 endpoint is configured through the `s3_endpoint` ansible variable
-in `<repo_root>/ansible/group_vars/all/s3.yml`.
+in [infra/ansible](inventories/qa/group_vars/all/all.yml).
 
 An access key and secret are configured in the vault. They cannot be managed through
 the Openstack web interface, instead new keys and secrets are created using the
 `openstack ec2 credentials` command.
 
-In the `<repo_root>/ansible` directory run `uv run openstack --os-cloud=<cloud_name> ec2 credentials create`
+In the [infra/ansible](../../infra/ansible) directory run `uv run openstack --os-cloud=<cloud_name> ec2 credentials create`
 to create a new access key/secret pair. Update the Ansible vault accordingly.
 
 ## Networking
 
-A floating IP is required for the Traefik load balancer node.
+Requirements:
 
-Using the web interface create one from _Project->Network->Floating IPs_, using _ALLOCATE IP TO PROJECT_, ensuring
-a description is provided.
-
-Update the value of `openstack_reverse_proxy_fip` in `<repo_root>/ansible/group_vars/all/openstack.yml`.
-The `openstack_reverse_proxy_fip` value must match the value configured
-in the DNS record for the domain defined in `<repo_root>/ansible/group_vars/all/domains.yml`
+- floating IP:
+   - Using the web interface create one from *Project->Network->Floating IPs*,
+    using *ALLOCATE IP TO PROJECT*, ensuring a description is provided.
+   - Place the value in the Terraform [environments tf vars file](../../infra/ansible/terraform/environments).
+- DNS record pointing at the above floating IP
+   - Place the value in [inventories/dev/group_vars/all/all.yml](../../infra/ansible/inventories/dev/group_vars/all/all.yml).

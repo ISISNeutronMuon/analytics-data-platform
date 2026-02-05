@@ -1,0 +1,8 @@
+---
+keycloak_db_host: "{{ vault_db_host }}"
+keycloak_db_port: 5432
+keycloak_db_dbname: "{{ vault_keycloak_db_name }}"
+keycloak_db_user: "{{ vault_keycloak_db_user }}"
+keycloak_db_passwd: "{{ vault_keycloak_db_passwd }}"
+keycloak_bootstrap_admin_user: "{{ vault_keycloak_bootstrap_admin_user }}"
+keycloak_bootstrap_admin_passwd: "{{ vault_keycloak_bootstrap_admin_passwd }}"

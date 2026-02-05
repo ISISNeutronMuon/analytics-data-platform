@@ -1,0 +1,28 @@
+# Metadata DB
+SUPERSET_DB_DIALECT=postgresql
+SUPERSET_DB_HOST={{ superset_farm_metadb_host }}
+SUPERSET_DB_USER={{ superset_farm_metadb_user }}
+SUPERSET_DB_PASSWORD={{ superset_farm_metadb_passwd }}
+SUPERSET_DB_NAME={{ superset_farm_metadb_name }}
+SUPERSET_DB_PORT={{ superset_farm_metadb_port }}
+SUPERSET_DB_SCHEMA_NAME={{ instance.key }}
+
+# Caching
+REDIS_HOST={{ superset_farm_redis_host }}
+REDIS_PORT={{ superset_farm_redis_port }}
+
+# Environment/development settings
+PYTHONPATH=/app/docker/pythonpath
+SCARF_ANALYTICS=false
+FLASK_DEBUG={{ instance.value.flask_debug }}
+SUPERSET_LOG_LEVEL={{ "DEBUG" if instance.value.flask_debug else "INFO" }}
+SUPERSET_ENV={{ instance.value.env_name }}
+SUPERSET_PORT={{ instance.value.http_port }}
+SUPERSET_APP_ROOT={{ instance.value.app_root }}
+
+# Make sure you set this to a unique secure random value on production
+SUPERSET_SECRET_KEY={{ instance.value.secret_key }}
+
+# Auth
+LDAP_SERVER={{ stfc_ldap_server }}
+LDAP_CACERTFILE=/certs/stfc-ca.pem

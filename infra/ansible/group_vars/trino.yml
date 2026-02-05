@@ -1,0 +1,2 @@
+---
+trino_users: "{{ vault_trino_users }}"

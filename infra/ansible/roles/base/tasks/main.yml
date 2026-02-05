@@ -1,0 +1,46 @@
+---
+- name: Check if APT keys exist
+  ansible.builtin.stat:
+    path: "/etc/apt/trusted.gpg.d/{{ item.filename }}"
+  loop: "{{ base_additional_apt_keys }}"
+  register: file_stats
+
+- name: Fetch missing apt GPG keys
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ file_stat.item.url }}"
+    dest: "/etc/apt/trusted.gpg.d/{{ file_stat.item.filename }}"
+    mode: 644
+  when: not file_stat.stat.exists
+  loop: "{{ file_stats.results }}"
+  loop_control:
+    loop_var: file_stat
+
+- name: Ensure timezones are available
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+      - tzdata
+    state: present
+
+- name: Set timezone
+  become: true
+  community.general.timezone:
+    name: "{{ base_timezone }}"
+
+- name: Apply package updates
+  include_role:
+    name: packages_update
+
+- name: Install Python packages
+  ansible.builtin.include_role:
+    name: geerlingguy.pip
+    apply:
+      become: true
+
+- name: Install Docker
+  ansible.builtin.include_role:
+    name: geerlingguy.docker
+    apply:
+      become: true

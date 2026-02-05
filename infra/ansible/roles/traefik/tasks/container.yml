@@ -1,0 +1,19 @@
+---
+- name: Set Traefik container state {{ traefik_container_state | default('started')}}
+  become: true
+  community.docker.docker_container:
+    name: traefik
+    image: "{{ traefik_image }}"
+    state: "{{ traefik_container_state | default('started') }}"
+    cleanup: true
+    detach: true
+    restart: true
+    recreate: true
+    restart_policy: unless-stopped
+    network_mode: host
+    volumes:
+      - "{{ traefik_config_root }}/{{ traefik_etc_path_relative }}:/etc/traefik"
+      - "{{ traefik_certs_root }}:/certs:ro"
+      - "{{ traefik_config_root }}/logs/traefik:/var/log/traefik"
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/localtime:/etc/localtime:ro

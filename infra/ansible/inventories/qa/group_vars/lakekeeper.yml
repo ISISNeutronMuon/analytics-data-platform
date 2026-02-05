@@ -1,0 +1,7 @@
+---
+lakekeeper_metadb_host: "{{ vault_db_host }}"
+lakekeeper_metadb_name: "{{ vault_lakekeeper_metadb_name }}"
+lakekeeper_metadb_user: "{{ vault_lakekeeper_metadb_user }}"
+lakekeeper_metadb_passwd: "{{ vault_lakekeeper_metadb_passwd }}"
+lakekeeper_metadb_encryption_key: "{{ vault_lakekeeper_metadb_encryption_key }}"
+lakekeeper_bootstrap_credentials: "ansible:{{ vault_keycloak_client_secrets['ansible'] }}"
