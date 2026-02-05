@@ -1,0 +1,49 @@
+---
+- name: Stop OpenFGA instance
+  community.docker.docker_container:
+    name: openfga
+    state: absent
+
+- name: Run OpenFGA migrations
+  community.docker.docker_container:
+    name: openfga_migrate
+    image: "{{ openfga_image }}"
+    command: migrate
+    state: started
+    cleanup: true
+    detach: false
+    restart_policy: no
+    recreate: true
+    env: &openfga_env #
+      OPENFGA_DATASTORE_ENGINE: "{{ openfga_database_engine }}"
+      OPENFGA_DATASTORE_URI: "{{ openfga_database_engine }}://{{ openfga_database_user }}:{{ openfga_database_passwd }}@{{ openfga_database_host }}:{{ openfga_database_port }}/{{ openfga_database_name }}{{ openfga_database_options }}"
+    comparisons:
+      env: strict
+
+- name: Start OpenFGA container
+  community.docker.docker_container:
+    name: openfga
+    image: "{{ openfga_image }}"
+    command: run
+    state: started
+    cleanup: true
+    detach: true
+    restart_policy: unless-stopped
+    recreate: true
+    env:
+      <<: *openfga_env
+      OPENFGA_GRPC_ADDR: "0.0.0.0:{{ openfga_grpc_port }}"
+      OPENFGA_DATASTORE_MAX_OPEN_CONNS: "{{ openfga_database_max_open_conns |string }}"
+      OPENFGA_DATASTORE_MAX_IDLE_CONNS: "{{ openfga_database_max_idle_conns | string }}"
+      OPENFGA_CACHE_CONTROLLER_ENABLED: "{{ openfga_cache_controller_enabled | string }}"
+      OPENFGA_CHECK_QUERY_CACHE_ENABLED: "{{ openfga_check_iterator_cache_enabled | string }}"
+      OPENFGA_CHECK_ITERATOR_CACHE_ENABLED: "{{ openfga_check_iterator_cache_enabled |string }}"
+      OPENFGA_PLAYGROUND_ENABLED: "{{ openfga_playground_enabled |string }}"
+    network_mode: host
+    comparisons:
+      env: strict
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/grpc_health_probe", "-addr=localhost:8081"]
+      interval: 10s
+      timeout: 30s
+      retries: 3

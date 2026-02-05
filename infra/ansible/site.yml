@@ -24,6 +24,7 @@
   hosts: lakekeeper
   roles:
     - role: base
+    - role: openfga
     - role: lakekeeper
 
 - name: Deploy Trino

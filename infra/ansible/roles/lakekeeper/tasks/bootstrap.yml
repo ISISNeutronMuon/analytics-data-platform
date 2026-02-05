@@ -1,0 +1,23 @@
+---
+- name: Fetch an access token
+  ansible.builtin.uri:
+    url: "{{ keycloak_realm_url }}/protocol/openid-connect/token"
+    method: POST
+    body:
+      grant_type: client_credentials
+      client_id: ansible
+      client_secret: "{{ vault_keycloak_client_secrets['ansible'] }}"
+    body_format: form-urlencoded
+  register: response
+
+- name: Bootstrap Lakekeeper using machine user
+  ansible.builtin.uri:
+    url: "{{ lakekeeper_catalog.management_uri }}/v1/bootstrap"
+    method: POST
+    body:
+      "accept-terms-of-use": true
+      "is-operator": true
+    body_format: json
+    headers:
+      Authorization: "Bearer {{ response.json['access_token'] }}"
+    follow_redirects: all

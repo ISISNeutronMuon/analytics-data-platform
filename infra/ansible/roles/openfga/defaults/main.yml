@@ -1,0 +1,16 @@
+---
+openfga_image: openfga/openfga:v1.11.2
+openfga_grpc_port: 8081
+
+# database
+openfga_database_engine: postgres
+openfga_database_port: 5432
+openfga_database_max_open_conns: 50
+openfga_database_max_idle_conns: 25
+openfga_database_options: "?sslmode=disable"
+
+# general configuration
+openfga_cache_controller_enabled: true
+openfga_check_query_cache_enabled: true
+openfga_check_iterator_cache_enabled: true
+openfga_playground_enabled: false

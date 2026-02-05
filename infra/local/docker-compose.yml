@@ -3,7 +3,7 @@
 
 # image versions
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
-x-openfga-image: &openfga-image openfga/openfga:v1.10
+x-openfga-image: &openfga-image openfga/openfga:v1.11.2
 x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.11.1
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
 x-postgres-image: &postgres-image postgres:16.9-bookworm
@@ -303,7 +303,6 @@ services:
           --bootstrap-credentials "machine-infra:s3cr3t" \
           --token-scope lakekeeper \
           --server-admin "$$ADP_SUPERUSER" \
-          --additional-user trino:s3cr3t \
           --log-level=DEBUG \
           --warehouse-json-file "/opt/work/warehouses/bootstrap-$$name.json" \
           "http://lakekeeper:8181"
