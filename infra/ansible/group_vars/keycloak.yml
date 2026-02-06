@@ -55,8 +55,8 @@ keycloak_clients:
     attributes:
       access.token.lifespan: 600
   # public clients
-  - client_id: lakekeeper-ui
-    name: "Lakekeeper catalog UI"
+  - client_id: lakekeeper-api
+    name: "Lakekeeper API"
     protocol: "openid-connect"
     public_client: true
     redirect_uris:
