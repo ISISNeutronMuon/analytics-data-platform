@@ -1,0 +1,20 @@
+---
+- name: Start Lakekeeper
+  community.docker.docker_container:
+    name: "{{ lakekeeper_container_name }}"
+    image: "{{ lakekeeper_image }}"
+    command: serve
+    state: started
+    cleanup: true
+    detach: true
+    restart_policy: unless-stopped
+    recreate: true
+    env: "{{ lakekeeper_shared_env | combine(_extra_env, recursive=true) }}"
+    network_mode: host
+    comparisons:
+      env: strict
+  vars:
+    _extra_env:
+      LAKEKEEPER__UI__OPENID_PROVIDER_URI: "{{ keycloak_realm_url }}"
+      LAKEKEEPER__UI__OPENID_CLIENT_ID: lakekeeper-api
+      LAKEKEEPER__UI__OPENID_SCOPE: "lakekeeper openid profile email"

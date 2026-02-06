@@ -1,20 +1,9 @@
 ---
-- name: Stop Lakekeeper instance
-  community.docker.docker_container:
-    name: lakekeeper
-    state: absent
+- ansible.builtin.import_tasks: prepare-keycloak.yml
 
-- name: Run Lakekeeper migrations
-  community.docker.docker_container:
-    name: lakekeeper_migrate
-    image: "{{ lakekeeper_image }}"
-    command: migrate
-    state: started
-    cleanup: true
-    detach: false
-    restart_policy: no
-    recreate: true
-    env: &lakekeeper_env
+- ansible.builtin.set_fact:
+    lakekeeper_container_name: lakekeeper
+    lakekeeper_shared_env:
       LAKEKEEPER__PG_ENCRYPTION_KEY: "{{ lakekeeper_metadb_encryption_key }}"
       LAKEKEEPER__PG_DATABASE_URL_READ: "postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
       LAKEKEEPER__PG_DATABASE_URL_WRITE: "postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
@@ -23,32 +12,12 @@
       LAKEKEEPER__AUTHZ_BACKEND: openfga
       LAKEKEEPER__OPENFGA__ENDPOINT: http://localhost:8081
       RUST_LOG: "error"
-    network_mode: host
-    comparisons:
-      env: strict
 
-- name: Start Lakekeeper container
-  community.docker.docker_container:
-    name: lakekeeper
-    image: "{{ lakekeeper_image }}"
-    command: serve
-    state: started
-    cleanup: true
-    detach: true
-    restart_policy: unless-stopped
-    recreate: true
-    env:
-      <<: *lakekeeper_env
-      LAKEKEEPER__UI__OPENID_PROVIDER_URI: "{{ keycloak_realm_url }}"
-      LAKEKEEPER__UI__OPENID_CLIENT_ID: lakekeeper-ui
-      LAKEKEEPER__UI__OPENID_SCOPE: "lakekeeper openid profile email"
-      RUST_LOG: info
-    network_mode: host
-    comparisons:
-      env: strict
+- ansible.builtin.import_tasks: migrate.yml
 
-- name: Bootstrap Lakekeeper
-  ansible.builtin.import_tasks: bootstrap.yml
+- ansible.builtin.import_tasks: start.yml
+
+- ansible.builtin.import_tasks: bootstrap.yml
 # - name: Ensure Lakekeeper working directory exists
 #   become: true
 #   ansible.builtin.file:
