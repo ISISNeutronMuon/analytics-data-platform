@@ -20,7 +20,7 @@ logrotate_frequency: weekly
 logrotate_keep: 30
 logrotate_compress: true
 
-keycloak_base_path: /authn
+keycloak_base_path: /auth
 keycloak_http_port: 8080
 keycloak_http_management_port: 9000
 keycloak_url: "https://{{ top_level_domain }}{{ keycloak_base_path }}"
