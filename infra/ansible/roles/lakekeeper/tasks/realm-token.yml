@@ -1,0 +1,13 @@
+---
+- name: Fetch an access token for machine user in user realm
+  ansible.builtin.uri:
+    url: "{{ keycloak_realm_url }}/protocol/openid-connect/token"
+    method: POST
+    body:
+      grant_type: client_credentials
+      client_id: ansible
+      client_secret: "{{ vault_keycloak_client_secrets['ansible'] }}"
+      scope: "lakekeeper"
+    body_format: form-urlencoded
+  register: _realm_token
+  when: _realm_token is not defined

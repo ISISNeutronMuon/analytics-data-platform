@@ -1,14 +1,13 @@
 ---
-- name: Fetch an access token
+- ansible.builtin.include_tasks: realm-token.yml
+
+- name: Get Lakekeeper bootstrap info
   ansible.builtin.uri:
-    url: "{{ keycloak_realm_url }}/protocol/openid-connect/token"
-    method: POST
-    body:
-      grant_type: client_credentials
-      client_id: ansible
-      client_secret: "{{ vault_keycloak_client_secrets['ansible'] }}"
-    body_format: form-urlencoded
-  register: response
+    url: "{{ lakekeeper_catalog.management_uri }}/v1/info"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ _realm_token.json['access_token'] }}"
+  register: bootstrap_info
 
 - name: Bootstrap Lakekeeper using machine user
   ansible.builtin.uri:
@@ -19,5 +18,7 @@
       "is-operator": true
     body_format: json
     headers:
-      Authorization: "Bearer {{ response.json['access_token'] }}"
-    follow_redirects: all
+      Authorization: "Bearer {{ _realm_token.json['access_token'] }}"
+  when: not bootstrap_info.json['bootstrapped']
+  register: this
+  failed_when: this.status not in (200, 204)

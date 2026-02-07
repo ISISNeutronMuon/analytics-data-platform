@@ -4,7 +4,7 @@
     name: "{{ lakekeeper_container_name }}"
     image: "{{ lakekeeper_image }}"
     command: serve
-    state: started
+    state: healthy
     cleanup: true
     detach: true
     restart_policy: unless-stopped
@@ -13,6 +13,11 @@
     network_mode: host
     comparisons:
       env: strict
+    healthcheck:
+      test: ["CMD", "/home/nonroot/lakekeeper", "healthcheck"]
+      interval: 10s
+      timeout: 30s
+      retries: 3
   vars:
     _extra_env:
       LAKEKEEPER__UI__OPENID_PROVIDER_URI: "{{ keycloak_realm_url }}"

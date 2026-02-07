@@ -1,7 +1,6 @@
 ---
-- ansible.builtin.import_tasks: prepare-keycloak.yml
-
-- ansible.builtin.set_fact:
+- name: Set Lakekeeper facts
+  ansible.builtin.set_fact:
     lakekeeper_container_name: lakekeeper
     lakekeeper_shared_env:
       LAKEKEEPER__PG_ENCRYPTION_KEY: "{{ lakekeeper_metadb_encryption_key }}"
@@ -11,13 +10,20 @@
       LAKEKEEPER__OPENID_AUDIENCE: lakekeeper
       LAKEKEEPER__AUTHZ_BACKEND: openfga
       LAKEKEEPER__OPENFGA__ENDPOINT: http://localhost:8081
-      RUST_LOG: "error"
+      RUST_LOG: "{{ lakekeeper_log_level }}"
 
 - ansible.builtin.import_tasks: migrate.yml
 
 - ansible.builtin.import_tasks: start.yml
 
 - ansible.builtin.import_tasks: bootstrap.yml
+
+- ansible.builtin.import_tasks: server-admin.yml
+  when: lakekeeper_admin_user is defined
+
+- ansible.builtin.debug:
+    msg: Skipping Lakekeeper permission assignment. Missing 'lakekeeper_admin_user' variable definition.
+  when: lakekeeper_admin_user is not defined
 # - name: Ensure Lakekeeper working directory exists
 #   become: true
 #   ansible.builtin.file:
