@@ -38,7 +38,7 @@
     url: "{{ lakekeeper_catalog.management_uri }}/v1/permissions/{{ permission.entity }}/assignments"
     method: GET
     headers:
-      Authorization: "Bearer {{ _realm_token.json['access_token'] }}"
+      Authorization: "Bearer {{ _realm_token }}"
   register: _assignments_info
 
 - name: Set Lakekeeper server admin
@@ -50,7 +50,7 @@
       writes:
         [{ "type": "{{ permission.grant }}", "user": "{{ oidc_user_id }}" }]
     headers:
-      Authorization: "Bearer {{ _realm_token.json['access_token'] }}"
+      Authorization: "Bearer {{ _realm_token }}"
   when: "{'type': permission.grant, 'user': oidc_user_id} not in _assignments_info.json['assignments']"
   register: this
   failed_when: this.status not in (200, 204)
