@@ -1,5 +1,5 @@
 ---
-lakekeeper_log_level: INFO
+lakekeeper_log_level: ERROR
 lakekeeper_image: quay.io/lakekeeper/catalog:v0.11.1
 lakekeeper_http_port: 8181
 lakekeeper_working_dir: /var/lakekeeper
