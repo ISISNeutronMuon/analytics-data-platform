@@ -24,6 +24,11 @@
 - ansible.builtin.debug:
     msg: Skipping Lakekeeper permission assignment. Missing 'lakekeeper_admin_user' variable definition.
   when: lakekeeper_admin_user is not defined
+
+- ansible.builtin.include_tasks: warehouse.yml
+  loop: "{{ lakekeeper_catalog.warehouses | dict2items }}"
+  loop_control:
+    loop_var: warehouse
 # - name: Ensure Lakekeeper working directory exists
 #   become: true
 #   ansible.builtin.file:

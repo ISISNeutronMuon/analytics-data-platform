@@ -27,9 +27,11 @@
 
 - ansible.builtin.set_fact:
     oidc_user_id: "oidc~{{ keycloak_user_lookup.json[0]['id'] }}"
-    permission:
-      entity: server
-      grant: admin
+    permissions:
+      - entity: server
+        grant: admin
+      - entity: project
+        grant: project_admin
 
 - ansible.builtin.include_tasks: realm-token.yml
 
@@ -40,6 +42,9 @@
     headers:
       Authorization: "Bearer {{ _realm_token }}"
   register: _assignments_info
+  loop: "{{ permissions }}"
+  loop_control:
+    loop_var: permission
 
 - name: Set Lakekeeper server admin
   ansible.builtin.uri:
@@ -51,6 +56,9 @@
         [{ "type": "{{ permission.grant }}", "user": "{{ oidc_user_id }}" }]
     headers:
       Authorization: "Bearer {{ _realm_token }}"
-  when: "{'type': permission.grant, 'user': oidc_user_id} not in _assignments_info.json['assignments']"
-  register: this
-  failed_when: this.status not in (200, 204)
+    status_code: [200, 201, 204]
+  when: "{'type': permission.grant, 'user': oidc_user_id} not in _assignments_info.results[index].json['assignments']"
+  loop: "{{ permissions }}"
+  loop_control:
+    loop_var: permission
+    index_var: index
