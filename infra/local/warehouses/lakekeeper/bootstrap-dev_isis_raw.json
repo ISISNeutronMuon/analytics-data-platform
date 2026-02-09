@@ -18,5 +18,10 @@
   },
   "delete-profile": {
     "type": "hard"
+  },
+  "permissions": {
+    "service-account-trino": [
+      "select"
+    ]
   }
 }

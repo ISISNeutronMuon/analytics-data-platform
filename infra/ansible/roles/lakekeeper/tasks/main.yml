@@ -1,7 +1,6 @@
 ---
-- name: Set Lakekeeper facts
+- name: Set Lakekeeper shared facts
   ansible.builtin.set_fact:
-    lakekeeper_container_name: lakekeeper
     lakekeeper_shared_env:
       LAKEKEEPER__PG_ENCRYPTION_KEY: "{{ lakekeeper_metadb_encryption_key }}"
       LAKEKEEPER__PG_DATABASE_URL_READ: "postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
@@ -17,69 +16,3 @@
 - ansible.builtin.import_tasks: start.yml
 
 - ansible.builtin.import_tasks: bootstrap.yml
-
-- ansible.builtin.import_tasks: server-admin.yml
-  when: lakekeeper_admin_user is defined
-
-- ansible.builtin.debug:
-    msg: Skipping Lakekeeper permission assignment. Missing 'lakekeeper_admin_user' variable definition.
-  when: lakekeeper_admin_user is not defined
-
-- ansible.builtin.include_tasks: warehouse.yml
-  loop: "{{ lakekeeper_catalog.warehouses | dict2items }}"
-  loop_control:
-    loop_var: warehouse
-# - name: Ensure Lakekeeper working directory exists
-#   become: true
-#   ansible.builtin.file:
-#     path: "{{ lakekeeper_working_dir }}"
-#     state: directory
-#     mode: "0755"
-# - name: Copy bootstrap script
-#   become: true
-#   ansible.builtin.copy:
-#     src: bootstrap-warehouse.py
-#     dest: "{{ lakekeeper_working_dir }}/bootstrap-warehouse.py"
-#     mode: "0755"
-
-# - name: Generate warehouse templates
-#   become: true
-#   ansible.builtin.template:
-#     src: bootstrap-warehouse.json.j2
-#     dest: "{{ lakekeeper_working_dir }}/bootstrap-warehouse-{{ warehouse.name }}.json"
-#     mode: "0644"
-#   loop: "{{ lakekeeper_catalog.warehouses | dict2items(key_name='name') }}"
-#   loop_control:
-#     loop_var: warehouse
-#   register: warehouse_json_files
-
-# - name: Bootstrap Lakekeeper
-#   community.docker.docker_container:
-#     name: "{{ lakekeeper_container_name }}_bootstrap"
-#     image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
-#     command: >-
-#       uv run
-#       /opt/work/bootstrap-warehouse.py
-#       --project-name "{{ lakekeeper_project_name }}"
-#       --keycloak-url {{ keycloak_url }}
-#       --keycloak-realm {{ keycloak_realm.name }}
-#       --bootstrap-credentials {{ lakekeeper_bootstrap_credentials }}
-#       --token-scope lakekeeper
-#       --log-level {{ lakekeeper_bootstrap_log_level }}
-#       --warehouse-json-file {{ warehouse_json_file | replace(lakekeeper_working_dir, '/opt/work') }}
-#       http://localhost:{{ lakekeeper_http_port }}
-#     state: started
-#     cleanup: true
-#     detach: false
-#     restart_policy: no
-#     recreate: true
-#     env:
-#       #
-#       UV_LINK_MODE=copy
-#       UV_PROJECT_ENVIRONMENT=/opt/uv-venv
-#     network_mode: host
-#     volumes:
-#       - "{{ lakekeeper_working_dir }}:/opt/work"
-#   loop: "{{ warehouse_json_files.results | map(attribute='dest') | list }}"
-#   loop_control:
-#     loop_var: warehouse_json_file

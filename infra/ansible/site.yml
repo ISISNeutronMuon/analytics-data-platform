@@ -11,8 +11,10 @@
   hosts: datastore
   roles:
     - base
-    - postgres
-    - minio
+    - role: postgres
+      tags: [postgres]
+    - role: minio
+      tags: [minio]
 
 - name: Deploy Keycloak
   hosts: keycloak
