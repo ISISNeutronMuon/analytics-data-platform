@@ -18,7 +18,8 @@
   vars:
     lakekeeper_bootstrap:
       warehouse_permissions:
-        "service-account-trino": ["select"]
+        "service-account-trino": ["select", "create", "modify"]
+        "service-account-elt": ["select", "create", "modify"]
   ansible.builtin.template:
     src: bootstrap-warehouse.json.j2
     dest: "{{ lakekeeper_working_dir }}/bootstrap-warehouse-{{ warehouse.name }}.json"
