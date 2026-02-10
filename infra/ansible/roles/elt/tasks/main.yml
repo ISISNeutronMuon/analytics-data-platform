@@ -95,8 +95,9 @@
 
 - ansible.builtin.include_tasks: elt_cron_tasks.yml
   vars:
-    warehouse_name: "{{ warehouse.subdir.split('/')[-1] }}"
-  loop: "{{ elt_jobs }}"
+    warehouse_name: "{{ warehouse.key }}"
+    elt_jobs: "{{ warehouse.value.elt_jobs }}"
+  loop: "{{ lakekeeper_catalog.warehouses | dict2items }}"
   loop_control:
     loop_var: warehouse
     label: "{{ warehouse_name }}"
