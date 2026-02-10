@@ -54,5 +54,5 @@
     minute: 2
     job: >
       NO_COLOR=1 UV_NO_PROGRESS=1 ELT_SECRETS={{ elt_secrets_root_dir }}/{{ warehouse_name }}/envvars
-      {{ elt_cron_root_dir }}/iceberg_maintenance.sh
+      {{ elt_cron_root_dir }}/iceberg_maintenance.sh https://github.com/{{ warehouse.github_org }}/{{ warehouse.github_repo }}.git
       > {{ elt_cron_logs_root_dir }}/{{ warehouse_name }}/iceberg_maintenance-$(date +\%Y\%m\%d_\%H\%M\%S).log 2>&1
