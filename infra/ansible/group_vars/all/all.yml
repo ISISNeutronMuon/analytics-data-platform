@@ -34,7 +34,6 @@ lakekeeper_http_port: 8181
 lakekeeper_project_name: "ISIS Analytics Data Platform"
 lakekeeper_catalog:
   catalog_uri: "https://{{ top_level_domain }}{{ lakekeeper_base_path }}/catalog"
-  management_uri: "https://{{ top_level_domain }}{{ lakekeeper_base_path }}/management"
   warehouses:
     accelerator:
       storage:
