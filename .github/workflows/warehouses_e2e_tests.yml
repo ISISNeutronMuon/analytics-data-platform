@@ -5,12 +5,14 @@ on:
       - "main"
     paths:
       - ".github/workflows/warehouses_e2e_tests.yml"
+      - "infra/ansible/roles/lakekeeper/files/bootstrap-warehouse.py"
       - "elt-common/**"
       - "warehouses/accelerator/extract_load/opralogweb/**"
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
       - ".github/workflows/warehouses_e2e_tests.yml"
+      - "infra/ansible/roles/lakekeeper/files/bootstrap-warehouse.py"
       - "elt-common/**"
       - "warehouses/accelerator/extract_load/opralogweb/**"
 

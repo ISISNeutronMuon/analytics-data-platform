@@ -48,7 +48,7 @@
     state: started
     cleanup: true
     detach: false
-    restart_policy: no
+    restart_policy: "no"
     recreate: true
     env:
       #

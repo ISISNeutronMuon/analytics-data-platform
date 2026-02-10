@@ -240,29 +240,35 @@ def create_oauth2_session(
 
 @click.command()
 @click.argument("lakekeeper-url")
+@click.option("--lakekeeper-project-name", required=True, help="Project name")
+@click.option("--keycloak-url", required=True, help="Base endpoint of Keycloak")
 @click.option(
-    "--lakekeeper-project-name",
-    help="Project name",
+    "--keycloak-user-realm", required=True, help="User realm for Lakekeeper users."
 )
-@click.option("--keycloak-url", help="Base endpoint of Keycloak")
-@click.option("--keycloak-user-realm", help="User realm for Lakekeeper users.")
 @click.option(
     "--keycloak-admin-credentials",
     type=TwoTupleParamType(),
+    required=True,
     help="Credentials for a user who has admin access to the KC master realm",
 )
 @click.option(
     "--bootstrap-credentials",
     type=TwoTupleParamType(),
+    required=True,
     help="Credentials for user who will bootstrap lakekeeper",
 )
-@click.option("--token-scope", help="Additional scopes for required for token")
+@click.option(
+    "--token-scope", required=True, help="Additional scopes for required for token"
+)
 @click.option(
     "--server-admin",
+    required=True,
     multiple=True,
     help="Human users assigned as server/project admin for UI access. Value should be username. Options can be provided multiple times.",
 )
-@click.option("--warehouse-json-file", help="JSON file for creating a warehouse")
+@click.option(
+    "--warehouse-json-file", required=True, help="JSON file for creating a warehouse"
+)
 @click.option("-l", "--log-level", default="INFO", show_default=True)
 def main(
     lakekeeper_url: str,
