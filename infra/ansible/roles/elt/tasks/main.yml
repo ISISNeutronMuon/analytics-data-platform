@@ -69,38 +69,7 @@
     dest: "{{ ansible_env['HOME'] }}/.dlt/config.toml"
     mode: "u=rwx,g=r,o=r"
 
-# ---------- secrets ----------
-- name: Ensure secrets directories exist
-  become: true
-  no_log: "{{ not (elt_enable_logs | default(False)) }}"
-  ansible.builtin.file:
-    path: "{{ elt_secrets_root_dir }}/{{ warehouse.name }}"
-    state: directory
-    mode: "u=rwx,g=,o="
-    owner: "{{ ansible_env['USER'] }}"
-    group: "{{ ansible_env['USER'] }}"
-  loop: "{{ elt_warehouses }}"
-  loop_control:
-    loop_var: warehouse
-    label: warehouse.name
-
-- name: Generate secrets
-  become: true
-  no_log: "{{ not (elt_enable_logs | default(False)) }}"
-  ansible.builtin.template:
-    src: ./secrets/envvars.j2
-    dest: "{{ elt_secrets_root_dir }}/{{ warehouse.name }}/envvars"
-    mode: "u=r,g=,o="
-    owner: "{{ ansible_env['USER'] }}"
-    group: "{{ ansible_env['USER'] }}"
-
-  loop: "{{ elt_warehouses }}"
-  loop_control:
-    loop_var: warehouse
-    label: "{{ warehouse.name }}"
-
-# ---------- ELT jobs ----------
-- name: Set ELT job variables
+- name: Set shared ELT job variables
   ansible.builtin.set_fact:
     elt_git_clone_dir: "{{ ansible_env['HOME'] }}/var/git"
     elt_cron_root_dir: "{{ ansible_env['HOME'] }}/var/cron"
@@ -118,37 +87,16 @@
     dest: "{{ elt_cron_root_dir }}/elt_task.sh"
     mode: "u=rwx,g=rx,o=rx"
 
-- name: Ensure cron logs directory exists
-  ansible.builtin.file:
-    path: "{{ elt_cron_logs_root_dir }}/{{ warehouse.name }}"
-    state: directory
-    mode: "u=rwx,g=rx,o=rx"
-  loop: "{{ elt_warehouses }}"
-  loop_control:
-    loop_var: warehouse
-
-- ansible.builtin.include_tasks: elt_cron_tasks.yml
-  loop: "{{ elt_warehouses }}"
-  loop_control:
-    loop_var: warehouse
-
-# ---------- Iceberg maintenance jobs ----------
-- name: Create/update Iceberg maintenance script template
+- name: Create Iceberg maintenance script
   ansible.builtin.template:
     src: ./cron/iceberg_maintenance.sh.j2
     dest: "{{ elt_cron_root_dir }}/iceberg_maintenance.sh"
     mode: "u=rwx,g=rx,o=rx"
 
-- name: Ensure Iceberg table maintenance jobs exist
-  ansible.builtin.cron:
-    name: "iceberg-maintenance-{{ warehouse.name }}"
-    state: "{{ warehouse.maintenance.state }}"
-    hour: 3
-    minute: 2
-    job: >
-      NO_COLOR=1 UV_NO_PROGRESS=1 ELT_SECRETS={{ elt_secrets_root_dir }}/{{ warehouse.name }}/envvars
-      {{ elt_cron_root_dir }}/iceberg_maintenance.sh
-      > {{ elt_cron_logs_root_dir }}/{{ warehouse.name }}/iceberg_maintenance-$(date +\%Y\%m\%d_\%H\%M\%S).log 2>&1
-  loop: "{{ elt_warehouses }}"
+- ansible.builtin.include_tasks: elt_cron_tasks.yml
+  vars:
+    warehouse_name: "{{ warehouse.subdir.split('/')[-1] }}"
+  loop: "{{ elt_jobs }}"
   loop_control:
     loop_var: warehouse
+    label: "{{ warehouse_name }}"

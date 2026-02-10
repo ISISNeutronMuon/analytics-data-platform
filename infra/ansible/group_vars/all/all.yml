@@ -66,11 +66,10 @@ superset_farm_instances:
         db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/accelerator"
 
 # elt
-elt_warehouses:
-  - name: accelerator
-    github_org: ISISNeutronMuon
+elt_jobs:
+  - github_org: ISISNeutronMuon
     github_repo: analytics-data-platform
-    sub_dir: warehouses/accelerator
+    subdir: warehouses/accelerator_ops
     sources:
       - name: statusdisplay
         hour: 1
