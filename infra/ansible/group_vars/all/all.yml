@@ -62,8 +62,8 @@ superset_farm_instances:
     secret_key: "{{ vault_superset_accelerator_secret_key }}"
     users_yaml: "{{ vault_superset_accelerator_users_yaml }}"
     analytic_dbs:
-      - name: accelerator
-        db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/accelerator"
+      - name: accelerator_ops
+        db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/accelerator_ops"
 
 # elt
 elt_jobs:

@@ -6,7 +6,7 @@ from elt_common.iceberg.trino import TrinoQueryEngine
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-ENV_PREFIX = ""
+ENV_PREFIX = "ELT_COMMON_ICEBERG_MAINT_TRINO__"
 LOG_FORMAT = "%(asctime)s:%(module)s:%(levelname)s:%(message)s"
 LOG_FORMAT_DATE = "%Y-%m-%dT%H:%M:%S"
 
