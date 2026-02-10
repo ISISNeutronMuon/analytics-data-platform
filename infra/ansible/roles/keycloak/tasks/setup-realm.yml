@@ -50,6 +50,16 @@
   loop_control:
     label: "{{ item.client_id }}"
 
-- ansible.builtin.import_tasks: setup-ldap.yml
+- name: Grant machine user permission to view users in the realm
+  community.general.keycloak_user_rolemapping:
+    <<: *keycloak_auth_vars
+    realm: "{{ keycloak_realm.name }}"
+    client_id: realm-management
+    target_username: service-account-ansible
+    roles:
+      - name: view-users
+
+- name: Setup LDAP
+  ansible.builtin.import_tasks: setup-ldap.yml
   vars:
     target_realm: "{{ keycloak_realm.name }}"

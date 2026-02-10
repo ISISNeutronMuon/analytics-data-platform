@@ -28,12 +28,14 @@ Deploy the services using Ansible:
 
 ```bash
 > cd infra/ansible
-> ansible-playbook -i inventories/<dev|qa>/inventory.ini site.yml
+> ansible-playbook -i inventories/<dev|qa>/inventory.ini site.yml -e lakekeeper_admin_user=<admin_email>
 ```
+
+The `-e lakekeeper_admin_user=<admin_email>` argument is only required the first time Lakekeeper is deployed.
 
 Once deployed the services are available at:
 
-- Keycloak: <https://\domain\>/iceberg>
-- Lakekeeper: <https://\<domain\>/authn>
+- Keycloak: <https://\domain\>/auth>
+- Lakekeeper: <https://\<domain\>/iceberg>
 - Superset instances:
    - <https://\<domain\>/workspace/accelerator>

@@ -144,37 +144,14 @@ $KC_ADM create clients \
 ####################
 # Users
 ####################
-uid_adp_superuser=$($KC_ADM create users \
+$KC_ADM create users \
     --target-realm "$target_realm" \
     --set username="$ADP_SUPERUSER" \
     --set firstName=Super \
     --set lastName=User \
     --set email=adpsuperuser@dev.com \
-    --set enabled=true \
-    --id)
+    --set enabled=true
 $KC_ADM set-password \
   --target-realm "$target_realm" \
   --username "$ADP_SUPERUSER" \
   --new-password "$ADP_SUPERUSER_PASS"
-
-####################
-# Roles/Groups
-####################
-admin_role=adp_platform_admins
-gid_admins=$(\
-  $KC_ADM create groups \
-    --target-realm "$target_realm" \
-    --set name="$admin_role" \
-    --id)
-$KC_ADM update \
-  --target-realm "$target_realm" \
-  users/"$uid_adp_superuser"/groups/"$gid_admins"
-
-$KC_ADM create roles \
-    --target-realm "$target_realm" \
-    --set name="$admin_role" \
-    --id
-$KC_ADM add-roles \
-  --target-realm "$target_realm" \
-  --gname "$admin_role" \
-  --rolename "$admin_role"

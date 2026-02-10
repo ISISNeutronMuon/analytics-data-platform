@@ -1,4 +1,10 @@
 ---
+openfga_database_host: "{{ groups['datastore'][0] }}"
+openfga_database_port: 5432
+openfga_database_name: openfga
+openfga_database_user: "{{ vault_postgres_db_user }}"
+openfga_database_passwd: "{{ vault_postgres_db_passwd }}"
+
 lakekeeper_metadb_host: "{{ groups['datastore'][0] }}"
 lakekeeper_metadb_name: lakekeeper
 lakekeeper_metadb_user: "{{ vault_postgres_db_user }}"

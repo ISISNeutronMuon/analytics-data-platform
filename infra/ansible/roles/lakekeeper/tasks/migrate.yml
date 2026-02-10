@@ -1,0 +1,20 @@
+---
+- name: Stop Lakekeeper instance
+  community.docker.docker_container:
+    name: "{{ lakekeeper_container_name }}"
+    state: absent
+
+- name: Run Lakekeeper migrations
+  community.docker.docker_container:
+    name: "{{ lakekeeper_container_name }}_migrate"
+    image: "{{ lakekeeper_image }}"
+    command: migrate
+    state: started
+    cleanup: true
+    detach: false
+    restart_policy: no
+    recreate: true
+    env: "{{ lakekeeper_shared_env }}"
+    network_mode: host
+    comparisons:
+      env: strict
