@@ -58,15 +58,17 @@ class LakekeeperRestV1:
         response = self._auth_session.get(
             self.management_url + f"/permissions/{entity}/assignments",
         )
+        response.raise_for_status()
         if any(map(lambda x: x["user"] == oidc_id, response.json()["assignments"])):
             LOGGER.debug(
                 f"Grants already assigned for entity '{entity}'. Skipping assignment."
             )
         else:
-            self._auth_session.post(
+            response = self._auth_session.post(
                 url=self.management_url + f"/permissions/{entity}/assignments",
                 json={"writes": [{"type": grant, "user": oidc_id} for grant in grants]},
             )
+            response.raise_for_status()
 
     def bootstrap(self):
         """Bootstrap the lakekeeper instance using the given access_token.
@@ -90,14 +92,15 @@ class LakekeeperRestV1:
 
     def is_bootstrapped(self) -> bool:
         response = self._auth_session.get(self.management_url + "/info")
+        response.raise_for_status()
         return response.json()["bootstrapped"]
 
     def rename_default_project(self, project_name: str):
         response = self._auth_session.get(
             self.management_url + "/project",
         )
-        LOGGER.debug(f"Current project info: {response.json()}")
         response.raise_for_status()
+        LOGGER.debug(f"Current project info: {response.json()}")
 
         if response.json()["project-name"] != project_name:
             LOGGER.info(f"Renaming project to '{project_name}'")
@@ -312,14 +315,17 @@ def main(
         warehouse_json = json.load(fp)
         # Permissions are not part of the spec to create the warehouse.
         # Remove and deal with them separately
-        permissions = warehouse_json.pop("permissions")
+        permissions = warehouse_json.pop("permissions", None)
         warehouse_id = server.create_warehouse(warehouse_json)
 
     # Warehouse access
-    for username, user_permissions in permissions.items():
-        server.assign_grants(
-            oidc_user_id(kcadm, username), f"warehouse/{warehouse_id}", user_permissions
-        )
+    if permissions is not None:
+        for username, user_permissions in permissions.items():
+            server.assign_grants(
+                oidc_user_id(kcadm, username),
+                f"warehouse/{warehouse_id}",
+                user_permissions,
+            )
 
 
 if __name__ == "__main__":
