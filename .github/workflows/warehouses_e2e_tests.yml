@@ -7,14 +7,14 @@ on:
       - ".github/workflows/warehouses_e2e_tests.yml"
       - "infra/ansible/roles/lakekeeper/files/bootstrap-warehouse.py"
       - "elt-common/**"
-      - "warehouses/accelerator/extract_load/opralogweb/**"
+      - "warehouses/accelerator_ops/extract_load/opralogweb/**"
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
       - ".github/workflows/warehouses_e2e_tests.yml"
       - "infra/ansible/roles/lakekeeper/files/bootstrap-warehouse.py"
       - "elt-common/**"
-      - "warehouses/accelerator/extract_load/opralogweb/**"
+      - "warehouses/accelerator_ops/extract_load/opralogweb/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
@@ -55,7 +55,7 @@ jobs:
       - name: Install script dependencies
         shell: bash -l {0}
         run: |
-          uv sync --active --script warehouses/accelerator/extract_load/opralogweb/extract_and_load.py
+          uv sync --active --script warehouses/accelerator_ops/extract_load/opralogweb/extract_and_load.py
 
       - name: Install test dependencies
         shell: bash -l {0}
@@ -67,7 +67,7 @@ jobs:
         shell: bash -l {0}
         run: |
           pytest --durations-min=0.5 --exitfirst tests --cache-clear
-        working-directory: warehouses/accelerator/extract_load/opralogweb
+        working-directory: warehouses/accelerator_ops/extract_load/opralogweb
 
       - name: Remove adp-router from /etc/hosts
         if: always()
