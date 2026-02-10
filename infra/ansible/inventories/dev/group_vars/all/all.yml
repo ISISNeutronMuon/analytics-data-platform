@@ -9,3 +9,5 @@ s3_endpoint: "https://{{ top_level_domain }}:{{ minio_api_port }}"
 s3_region: minio # not used but can be required by apis
 s3_access_key_id: "{{ vault_minio_root_user }}"
 s3_access_secret: "{{ vault_minio_root_passwd }}"
+
+lakekeeper_bucket_prefix: warehouse-

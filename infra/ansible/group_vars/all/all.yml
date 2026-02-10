@@ -35,9 +35,9 @@ lakekeeper_project_name: "ISIS Analytics Data Platform"
 lakekeeper_catalog:
   catalog_uri: "https://{{ top_level_domain }}{{ lakekeeper_base_path }}/catalog"
   warehouses:
-    accelerator:
+    accelerator_ops:
       storage:
-        bucket_name: isis-dataarchitecture-prototypes-warehouse-accelerator
+        bucket_name: "{{ lakekeeper_bucket_prefix }}accelerator-ops"
         key_prefix: ""
 
 pip_install_packages:
