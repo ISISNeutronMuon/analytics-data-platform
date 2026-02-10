@@ -35,7 +35,7 @@ The `-e lakekeeper_admin_user=<admin_email>` argument is only required the first
 
 Once deployed the services are available at:
 
-- Keycloak: <https://\domain\>/iceberg>
-- Lakekeeper: <https://\<domain\>/authn>
+- Keycloak: <https://\domain\>/auth>
+- Lakekeeper: <https://\<domain\>/iceberg>
 - Superset instances:
    - <https://\<domain\>/workspace/accelerator>
