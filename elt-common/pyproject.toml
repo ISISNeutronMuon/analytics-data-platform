@@ -16,7 +16,12 @@ dependencies = [
 
 
 [project.optional-dependencies]
-iceberg-maintenance = ["click>=8.2.1", "sqlalchemy>=2.0.43", "trino>=0.336.0"]
+iceberg-maintenance = [
+  "click>=8.2.1",
+  "sqlalchemy>=2.0.43",
+  "trino>=0.336.0",
+  "pydantic_settings>=2.12.0",
+]
 m365 = ["authlib>=1.6.1", "httpx>=0.28.1", "tenacity>=9.1.2"]
 
 [project.entry-points.pytest11]

@@ -6,7 +6,7 @@ from elt_common.iceberg.trino import TrinoQueryEngine
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-ENV_PREFIX = ""
+ENV_PREFIX = "ELT_COMMON_ICEBERG_MAINT_TRINO__"
 LOG_FORMAT = "%(asctime)s:%(module)s:%(levelname)s:%(message)s"
 LOG_FORMAT_DATE = "%Y-%m-%dT%H:%M:%S"
 
@@ -57,7 +57,7 @@ class IcebergTableMaintenaceSql:
             return f"alter table {table_identifier} execute {cmd}"
 
         self._query_engine.validate_table_identifier(table_identifier)
-        LOGGER.info(f"Executing maintenance command '{cmd}' on table '{table_identifier}'.")
+        LOGGER.debug(f"Executing maintenance command '{cmd}' on table '{table_identifier}'.")
         with self._query_engine.engine.connect() as conn:
             self._query_engine.execute(_sql_stmt(), connection=conn)
 
@@ -87,6 +87,7 @@ def cli(table: Sequence[str], retention_threshold: str, log_level: str):
     if not table:
         table = trino.list_iceberg_tables()
     for table_id in table:
+        LOGGER.info(f"Running iceberg maintenance operations on {table_id}")
         try:
             iceberg_maintenance.optimize(table_id)
             iceberg_maintenance.optimize_manifests(table_id)

@@ -3,6 +3,7 @@ set -euo pipefail
 
 # Constants
 ELT_SECRETS=${ELT_SECRETS:?}
+ELT_GIT_CLONE_DIR={{ elt_git_clone_dir }}
 ELT_GIT_REF=${ELT_GIT_REF:-main}
 ELT_WRITE_DISPOSITION=${ELT_WRITE_DISPOSITION:-}
 EXTRACT_AND_LOAD_SCRIPT=extract_and_load.py
@@ -14,7 +15,7 @@ function ensure_elt_sources_exist() {
   export GIT_TERMINAL_PROMPT=0
   local git_url=$1
   local git_clone_dir=$2
-  if [ -d "$git_clone_dir" ]; then
+  if [ -d "$git_clone_dir/.git" ]; then
     pushd $git_clone_dir
     git clean -d -x --force
     git reset --hard
@@ -32,26 +33,23 @@ function ensure_elt_sources_exist() {
 # Script arguments - directories are relative to ELT_GIT_DEST
 # As many dbt project directories can be passed as required
 if [ $# -eq 0  ]; then
-  echo "Usage $0 <git_url> <git_clone_dir> <extract_and_load_dir> [dbt_project_dir] [dbt_run_args...]"
+  echo "Usage $0 <git_url> <warehouse_name> <source_name> [dbt_run_args...]"
   exit 1
 fi
 
 git_url=$1
-git_clone_dir=$2
-extract_and_load_dir=$3
-dbt_project_dir=${4:-}
-if [ -n "$dbt_project_dir" ]; then
-  shift 4
-else
-  shift 3
-fi
+warehouse_name=$2
+source_name=$3
+shift 3
 
 # Read secrets
 set -o allexport; source $ELT_SECRETS; set +o allexport
 
 # Extraction
-ensure_elt_sources_exist $git_url $git_clone_dir
-cd $git_clone_dir/$extract_and_load_dir
+ensure_elt_sources_exist $git_url $ELT_GIT_CLONE_DIR
+warehouse_dir=$ELT_GIT_CLONE_DIR/warehouses/$warehouse_name
+extract_and_load_dir=$warehouse_dir/extract_load/$source_name
+cd $extract_and_load_dir
 dlt_write_disposition=
 if [ -n "$ELT_WRITE_DISPOSITION" ]; then
   dlt_write_disposition="--write-disposition $ELT_WRITE_DISPOSITION"
@@ -65,8 +63,9 @@ uv run \
 
 
 # Transform
-if [ -n "$dbt_project_dir" ]; then
-  cd $git_clone_dir/$dbt_project_dir
+dbt_project_dir=$warehouse_dir/transform
+if [ -d "$dbt_project_dir" ]; then
+  cd $dbt_project_dir
   uv venv
   uv pip install -r requirements/$DBT_REQUIREMENTS_TXT
   uv run dbt deps
