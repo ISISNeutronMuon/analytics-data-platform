@@ -16,7 +16,7 @@
     recreate: true
     env: &openfga_env #
       OPENFGA_DATASTORE_ENGINE: "{{ openfga_database_engine }}"
-      OPENFGA_DATASTORE_URI: "{{ openfga_database_engine }}://{{ openfga_database_user }}:{{ openfga_database_passwd }}@{{ openfga_database_host }}:{{ openfga_database_port }}/{{ openfga_database_name }}{{ openfga_database_options }}"
+      OPENFGA_DATASTORE_URI: "{{ openfga_database_engine }}://{{ openfga_database_user }}:{{ openfga_database_passwd }}@{{ openfga_database_host }}:{{ openfga_database_port }}/{{ openfga_database_name }}{{ openfga_database_options | default('?sslmode=disable') }}"
     comparisons:
       env: strict
 
@@ -36,7 +36,7 @@
       OPENFGA_DATASTORE_MAX_OPEN_CONNS: "{{ openfga_database_max_open_conns |string }}"
       OPENFGA_DATASTORE_MAX_IDLE_CONNS: "{{ openfga_database_max_idle_conns | string }}"
       OPENFGA_CACHE_CONTROLLER_ENABLED: "{{ openfga_cache_controller_enabled | string }}"
-      OPENFGA_CHECK_QUERY_CACHE_ENABLED: "{{ openfga_check_iterator_cache_enabled | string }}"
+      OPENFGA_CHECK_QUERY_CACHE_ENABLED: "{{ openfga_check_query_cache_enabled | string }}"
       OPENFGA_CHECK_ITERATOR_CACHE_ENABLED: "{{ openfga_check_iterator_cache_enabled |string }}"
       OPENFGA_PLAYGROUND_ENABLED: "{{ openfga_playground_enabled |string }}"
     network_mode: host

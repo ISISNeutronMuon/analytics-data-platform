@@ -52,8 +52,8 @@
     recreate: true
     env:
       #
-      UV_LINK_MODE=copy
-      UV_PROJECT_ENVIRONMENT=/opt/uv-venv
+      UV_LINK_MODE: copy
+      UV_PROJECT_ENVIRONMENT: /opt/uv-venv
     network_mode: host
     volumes:
       - "{{ lakekeeper_working_dir }}:/opt/work"
