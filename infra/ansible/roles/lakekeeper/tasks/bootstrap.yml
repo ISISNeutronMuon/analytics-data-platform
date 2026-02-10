@@ -27,6 +27,7 @@
   loop: "{{ lakekeeper_catalog.warehouses | dict2items(key_name='name') }}"
   loop_control:
     loop_var: warehouse
+    label: "{{ warehouse.name }}"
   register: warehouse_json_files
 
 - name: Bootstrap Lakekeeper
