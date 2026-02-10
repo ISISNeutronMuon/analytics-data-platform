@@ -87,7 +87,7 @@ def cli(table: Sequence[str], retention_threshold: str, log_level: str):
     if not table:
         table = trino.list_iceberg_tables()
     for table_id in table:
-        LOGGER.info(f"Running iceberg maintenance operations on {table}")
+        LOGGER.info(f"Running iceberg maintenance operations on {table_id}")
         try:
             iceberg_maintenance.optimize(table_id)
             iceberg_maintenance.optimize_manifests(table_id)
