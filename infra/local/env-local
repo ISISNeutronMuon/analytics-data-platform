@@ -74,6 +74,7 @@ LAKEKEEPER__UI__OPENID_PROVIDER_URI=$KEYCLOAK_REALM_EXTERNAL
 LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
 LAKEKEEPER__UI__OPENID_SCOPE="lakekeeper openid profile email"
 
+WAREHOUSE_NAME=playground
 ###############################################################################
 # Trino
 ###############################################################################
@@ -115,7 +116,7 @@ FLASK_DEBUG=False
 SUPERSET_LOG_LEVEL=info
 SUPERSET_ENV=development
 SUPERSET_PORT=8088
-SUPERSET_APP_ROOT=/workspace/localdev
+SUPERSET_APP_ROOT=/workspace/$WAREHOUSE_NAME
 
 # Make sure you set this to a unique secure random value on production
 SUPERSET_SECRET_KEY=0123456789

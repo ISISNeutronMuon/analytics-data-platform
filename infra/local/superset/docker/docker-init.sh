@@ -45,6 +45,6 @@ echo_step "Complete" "Setting up roles and perms"
 # Create a database connection
 echo_step "Starting" "Setting up Iceberg catalog connection"
 superset set-database-uri \
-  --database_name "dev_isis_cleaned" \
-  --uri "trino://$TRINO_USER:$TRINO_PASSWORD@$ROUTER_HOSTNAME_INTERNAL:$TRINO_HTTPS_PORT/dev_isis_cleaned?verify=false"
+  --database_name "$WAREHOUSE_NAME" \
+  --uri "trino://$TRINO_USER:$TRINO_PASSWORD@$ROUTER_HOSTNAME_INTERNAL:$TRINO_HTTPS_PORT/$WAREHOUSE_NAME?verify=false"
 echo_step "Complete" "Setting up Iceberg catalog connection"
