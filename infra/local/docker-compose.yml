@@ -295,8 +295,7 @@ services:
       - /bin/bash
       - -c
       - |
-        for name in dev_isis_raw dev_isis_cleaned; do
-          uv run /opt/work/bootstrap-warehouse.py \
+        uv run /opt/work/bootstrap-warehouse.py \
           --lakekeeper-project-name "$$KC_REALM_NAME" \
           --keycloak-url "$$KEYCLOAK_URL_INTERNAL" \
           --keycloak-admin-credentials "$$KC_BOOTSTRAP_ADMIN_USERNAME:$$KC_BOOTSTRAP_ADMIN_PASSWORD" \
@@ -305,9 +304,8 @@ services:
           --token-scope lakekeeper \
           --server-admin "$$ADP_SUPERUSER" \
           --log-level=DEBUG \
-          --warehouse-json-file "/opt/work/warehouses/bootstrap-$$name.json" \
-          "http://lakekeeper:8181"
-        done
+          --warehouse-json-file "/opt/work/warehouses/$$WAREHOUSE_NAME.json" \
+        "http://lakekeeper:8181"
     restart: "no"
     depends_on:
       lakekeeper:

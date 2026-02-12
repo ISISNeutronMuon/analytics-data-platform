@@ -1,5 +1,5 @@
 {
-  "warehouse-name": "dev_isis_cleaned",
+  "warehouse-name": "playground",
   "storage-credential": {
     "type": "s3",
     "aws-access-key-id": "adpsuperuser",
