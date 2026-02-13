@@ -1,5 +1,5 @@
 models:
-  - name: int_cycle_phases_without_target
+  - name: cycles
     description: >
       Each record defines a phase of an ISIS cycle, disregarding any target information
     columns:

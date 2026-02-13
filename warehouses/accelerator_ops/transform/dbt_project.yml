@@ -1,7 +1,7 @@
-name: accelerator
+name: accelerator_ops
 version: "1.0.0"
 
-profile: "trino_catalog"
+profile: "accelerator_ops_catalog"
 
 flags:
   require_certificate_validation: True
@@ -20,15 +20,13 @@ clean-targets: # directories to be removed by `dbt clean`
 models:
   +file_format: parquet
   +materialized: view
-  accelerator:
+  accelerator_ops:
     # The full schema name of the final tables is "{target_schema}_"{custom_schema}"
     #   - 'target_schema' is defined in profiles.yml
     #   - 'custom_schema' is defined for each collection of models below
     # See https://docs.getdbt.com/docs/build/custom-schemas
     staging:
       +schema: staging
-    intermediate:
-      +schema: intermediate
     operations:
       +schema: operations
       +materialized: table
