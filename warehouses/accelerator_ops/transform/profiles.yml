@@ -1,7 +1,6 @@
-trino_catalog:
+accelerator_ops_catalog:
   target: trino
   outputs:
-    # The defaults are configured to target the local, docker-based setup in infra/local
     trino:
       type: trino
       method: ldap
