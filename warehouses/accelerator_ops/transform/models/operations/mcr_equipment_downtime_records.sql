@@ -126,5 +126,5 @@ equipment_category_col as (
 
 )
 
--- add order by clause for iceberg table sorting crterion
+-- add order by clause for iceberg table sorting criterion
 select * from equipment_category_col order by fault_occurred_at asc
