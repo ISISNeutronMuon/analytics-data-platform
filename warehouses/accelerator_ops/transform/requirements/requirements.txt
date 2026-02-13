@@ -150,7 +150,7 @@ six==1.17.0
     #   python-dateutil
 snowplow-tracker==1.1.0
     # via dbt-core
-sqlparse==0.5.3
+sqlparse==0.5.4
     # via dbt-core
 text-unidecode==1.3
     # via python-slugify
