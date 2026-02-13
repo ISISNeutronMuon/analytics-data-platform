@@ -15,8 +15,6 @@ records_opralogweb as ( select * from {{ ref('stg_opralogweb__mcr_equipment_down
 
 equipment_name_mappings as ( select * from {{ ref('stg_accelerator_sharepoint__edr_equipment_mapping') }} ),
 
-cycles_start_end as ( select * from {{ ref('int_cycles_start_end') }} ),
-
 records_sharepoint_with_cycle_phase_col as (
 
   select
@@ -52,7 +50,7 @@ records_opralogweb_after_sharepoint_joined_with_cycles as (
     r.managers_comments
 
   from records_opralogweb r
-  left join {{ ref("int_cycle_phases_without_target") }} c on r.fault_occurred_at between c.started_at and c.ended_at
+  left join {{ ref("cycles") }} c on r.fault_occurred_at between c.started_at and c.ended_at
   where fault_occurred_at > (select max(fault_occurred_at) from records_sharepoint_with_cycle_phase_col)
 ),
 

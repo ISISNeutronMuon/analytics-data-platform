@@ -27,8 +27,6 @@ models:
     # See https://docs.getdbt.com/docs/build/custom-schemas
     staging:
       +schema: staging
-    intermediate:
-      +schema: intermediate
     operations:
       +schema: operations
       +materialized: table
