@@ -4,7 +4,8 @@ Currently hardcoded for PEARL.
 """
 
 from dataclasses import dataclass
-from pathlib import Path
+import datetime as dt
+from typing import Any, Dict, Sequence, Tuple
 
 from mantid.simpleapi import (
     Load,
@@ -13,38 +14,74 @@ from mantid.simpleapi import (
     CropWorkspace,
     DeleteWorkspace,
 )
-import numpy as np
+
+Range = Tuple[float, float]
 
 
 @dataclass
-class InstrumentInfo:
+class BeamlineInfo:
     incident_monitor_spectrum: int
+    crop_x: Range
+    fit_args: Dict[str, Any]
+    peak_centre_accepted_range: Range
+    skip_runs: Sequence
 
 
 @dataclass
-class FitResult:
-    run_no: int
+class Run:
+    number: int
+    start_time: dt.datetime
     uamps: float
-    peak_centre: float
-    peak_centre_error: float
-    peak_intensity: float
-    peak_intensity_error: float
 
 
-INSTRUMENT_INFO = {"PEARL": InstrumentInfo(incident_monitor_spectrum=1)}
+@dataclass
+class MonitorPeak:
+    run: Run
+    centre: float
+    centre_error: float
+    intensity: float
+    intensity_error: float
+
+
+BEAMLINE_INFO = {
+    "PEARL": BeamlineInfo(
+        incident_monitor_spectrum=1,
+        crop_x=(1100, 19990),
+        fit_args={
+            "Function": "name=Gaussian,Height=19.2327,\
+                    PeakCentre=4843.8,Sigma=1532.64,\
+                    constraints=(4600<PeakCentre<5200,1100<Sigma<1900);\
+                    name=FlatBackground,A0=16.6099,ties=(A0=16.6099)",
+            "StartX": 3800,
+            "EndX": 6850,
+        },
+        peak_centre_accepted_range=(4600.0, 5200.0),
+        skip_runs=(95382,),
+    )
+}
+FIT_DEFAULT_ARGS = {
+    "MaxIterations": 1000,
+    "CreateOutput": True,
+    "OutputCompositeMembers": True,
+    "Normalise": True,
+}
 
 
 def remove_fit_workspaces(fit_ws_prefix: str):
+    """Clean up workspaces as a result of Fit algorithm"""
     DeleteWorkspace(f"{fit_ws_prefix}_Parameters")
     DeleteWorkspace(f"{fit_ws_prefix}_Workspace")
     DeleteWorkspace(f"{fit_ws_prefix}_NormalisedCovarianceMatrix")
 
 
-def run_fit(beamline: str, run_no: int) -> FitResult | None:
+def fit_monitor_peak(
+    beamline: str, beamline_info: BeamlineInfo, run_no: int
+) -> MonitorPeak | None:
+    """Fit the peak in monitor spectrum"""
     file_hint = f"{beamline.upper()}{run_no}"
     monitor_ws = Load(
         Filename=file_hint,
-        SpectrumList=[INSTRUMENT_INFO[beamline].incident_monitor_spectrum],
+        SpectrumList=[beamline_info.incident_monitor_spectrum],
     )
     run = monitor_ws.getRun()
     pcharge = run.getProtonCharge()
@@ -55,37 +92,32 @@ def run_fit(beamline: str, run_no: int) -> FitResult | None:
     NormaliseByCurrent(InputWorkspace=monitor_ws, OutputWorkspace=monitor_ws)
     monitor_ws = CropWorkspace(
         InputWorkspace=monitor_ws,
-        Xmin=1100,
-        Xmax=19990,
+        Xmin=beamline_info.crop_x[0],
+        Xmax=beamline_info.crop_x[1],
     )
     # Some constraints included to precent divergence
     fit_ws_prefix = str(monitor_ws) + "_fit"
     fit_output = Fit(
-        Function="name=Gaussian,Height=19.2327,\
-                    PeakCentre=4843.8,Sigma=1532.64,\
-                    constraints=(4600<PeakCentre<5200,1100<Sigma<1900);\
-                    name=FlatBackground,A0=16.6099,ties=(A0=16.6099)",
         InputWorkspace=monitor_ws,
-        MaxIterations=1000,
-        CreateOutput=True,
         Output=fit_ws_prefix,
-        OutputCompositeMembers=True,
-        StartX=3800,
-        EndX=6850,
-        Normalise=True,
+        **FIT_DEFAULT_ARGS,
+        **beamline_info.fit_args,
     )
     paramTable = fit_output.OutputParameters
     #  This catches some fits where the fit constraints are ignored,
     #   allowing the peak to fall far outside the nominal range
     peak_centre = paramTable.column(1)[1]
-    if peak_centre > 4600.0 and peak_centre < 5200.0:
-        result = FitResult(
-            run_no,
-            pcharge,
-            peak_centre=paramTable.column(1)[1],
-            peak_centre_error=paramTable.column(2)[1],
-            peak_intensity=paramTable.column(1)[0],
-            peak_intensity_error=paramTable.column(2)[0],
+    if (
+        peak_centre > beamline_info.peak_centre_accepted_range[0]
+        and peak_centre < beamline_info.peak_centre_accepted_range[1]
+    ):
+        run = Run(run_no, run.startTime().to_datetime64(), pcharge)
+        result = MonitorPeak(
+            run,
+            centre=paramTable.column(1)[1],
+            centre_error=paramTable.column(2)[1],
+            intensity=paramTable.column(1)[0],
+            intensity_error=paramTable.column(2)[0],
         )
     else:
         result = None
