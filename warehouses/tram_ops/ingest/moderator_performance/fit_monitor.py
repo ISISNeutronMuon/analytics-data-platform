@@ -4,7 +4,6 @@ Currently hardcoded for PEARL.
 """
 
 from dataclasses import dataclass
-import datetime as dt
 import json
 from pathlib import Path
 from typing import Any, Dict, Sequence, Tuple
@@ -13,7 +12,6 @@ from mantid.simpleapi import (
     Load,
     NormaliseByCurrent,
     Fit,
-    CropWorkspace,
     DeleteWorkspace,
 )
 import numpy as np
@@ -118,12 +116,8 @@ def fit_monitor_peak(
         return None
 
     NormaliseByCurrent(InputWorkspace=monitor_ws, OutputWorkspace=monitor_ws)
-    monitor_ws = CropWorkspace(
-        InputWorkspace=monitor_ws,
-        Xmin=beamline_info.crop_x[0],
-        Xmax=beamline_info.crop_x[1],
-    )
-    # Some constraints included to precent divergence
+
+    # Some constraints included to prevent divergence
     fit_ws_prefix = str(monitor_ws) + "_fit"
     fit_output = Fit(
         InputWorkspace=monitor_ws,
@@ -132,6 +126,8 @@ def fit_monitor_peak(
         **beamline_info.fit_args,
     )
     paramTable = fit_output.OutputParameters
+    for i in range(paramTable.rowCount()):
+        print(paramTable.row(i))
     #  This catches some fits where the fit constraints are ignored,
     #   allowing the peak to fall far outside the nominal range
     peak_centre = paramTable.column(1)[1]
@@ -156,8 +152,8 @@ def fit_monitor_peak(
 
 
 def fit_monitor_peaks(
-    beamline: str, run_start: int, run_end: int, json_filename: Path | None
-):
+    beamline: str, run_start: int, run_end: int, json_filename: Path | None = None
+) -> Sequence[MonitorPeak]:
     """Fit all monitor peaks for the run range for the given beamline.
 
     If a filename is given the result is saved as a JSON file."""
@@ -174,12 +170,7 @@ def fit_monitor_peaks(
     if json_filename is not None:
         save_json(json_filename, monitor_peaks)
 
+    return monitor_peaks
 
-# fit_monitor_peaks(
-#     "PEARL",
-#     90482,
-#     90483,
-#     json_filename=Path(
-#         f"monitor_peaks-{dt.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
-#     ),
-# )
+
+print(fit_monitor_peaks("PEARL", 90482, 90482))
