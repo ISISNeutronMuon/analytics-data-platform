@@ -2,12 +2,14 @@ from typing import Dict, Final, Union
 
 from dlt.common.destination.typing import PreparedTableSchema
 from dlt.common.schema.typing import TColumnType, TTableSchemaColumns
+from dlt.pipeline import Pipeline
 from pyiceberg.catalog import Catalog
 from pyiceberg.partitioning import (
     UNPARTITIONED_PARTITION_SPEC,
     PartitionField,
     PartitionSpec,
 )
+from pyiceberg.table import Table
 from pyiceberg.table.sorting import (
     UNSORTED_SORT_ORDER,
     SortOrder,
@@ -32,7 +34,7 @@ from pyiceberg.types import (
     TimestamptzType,
 )
 from pyiceberg.typedef import Identifier
-from pyiceberg.exceptions import NoSuchNamespaceError
+from pyiceberg.exceptions import NoSuchNamespaceError, NoSuchIcebergTableError
 
 
 PARTITION_HINT: Final[str] = "x-pyiceberg-partition"
@@ -53,6 +55,20 @@ def namespace_exists(catalog: Catalog, namespace: Union[str, Identifier]) -> boo
         return True
     except NoSuchNamespaceError:
         return False
+
+
+def load_iceberg_table(pipeline: Pipeline, table_name: str) -> Table | None:
+    """Requires a current pipeline context"""
+    table = None
+    with pipeline.destination_client() as client:
+        try:
+            table = getattr(client, "iceberg_catalog").load_table(
+                (pipeline.dataset_name, table_name)
+            )
+        except NoSuchIcebergTableError:
+            pass
+
+    return table
 
 
 ###############################################################################
