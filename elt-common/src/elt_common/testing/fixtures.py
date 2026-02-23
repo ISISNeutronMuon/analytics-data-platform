@@ -18,11 +18,6 @@ from .sqlcatalog import SqlCatalogWarehouse
 
 
 @pytest.fixture(scope="session")
-def settings() -> Settings:
-    return Settings()
-
-
-@pytest.fixture(scope="session")
 def warehouse(settings: Settings) -> Generator:
     if not settings.warehouse_name:
         raise ValueError("Empty 'warehouse_name' is not allowed.")

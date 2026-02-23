@@ -63,10 +63,10 @@ jobs:
           uv pip install --group dev .
         working-directory: elt-common
 
-      - name: Run tests
+      - name: Run tests against REST catalog
         shell: bash -l {0}
         run: |
-          pytest --durations-min=0.5 --exitfirst tests --cache-clear
+          pytest --durations-min=0.5 --exitfirst --catalog-type=rest tests --cache-clear
         working-directory: warehouses/accelerator_ops/extract_load/opralogweb
 
       - name: Remove adp-router from /etc/hosts
