@@ -58,7 +58,6 @@ class Settings(BaseSettings):
     openid_client_id: str = "machine-infra"
     openid_client_secret: str = "s3cr3t"
     openid_scope: str = "lakekeeper"
-    project_id: str = "c4fcd44f-7ce7-4446-9f7c-dcc7ba76dd22"
 
     # trino
     trino_http_scheme: str = "https"

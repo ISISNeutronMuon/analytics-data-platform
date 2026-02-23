@@ -54,9 +54,6 @@ class PyIcebergDestinationTestConfiguration:
             environ["DESTINATION__PYICEBERG__CREDENTIALS__URI"] = str(
                 self.warehouse.server.catalog_endpoint()
             )
-            environ["DESTINATION__PYICEBERG__CREDENTIALS__PROJECT_ID"] = str(
-                self.warehouse.server.settings.project_id
-            )
             environ.setdefault(
                 "DESTINATION__PYICEBERG__CREDENTIALS__WAREHOUSE", self.warehouse.name
             )

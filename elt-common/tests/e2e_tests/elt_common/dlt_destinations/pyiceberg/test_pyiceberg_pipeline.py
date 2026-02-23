@@ -17,7 +17,7 @@ import pendulum
 from pyiceberg.types import DoubleType, StringType
 import pytest
 
-from e2e_tests.elt_common.dlt_destinations.pyiceberg.utils import (
+from tests.e2e_tests.elt_common.dlt_destinations.pyiceberg.utils import (
     assert_table_has_shape,
     assert_table_has_data,
     partition_test_configs,

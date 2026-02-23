@@ -43,13 +43,10 @@ class Server:
     def warehouse_endpoint(self, *, version: int = 1) -> Endpoint:
         return self.management_endpoint(version=version) + "/warehouse"
 
-    def create_warehouse(
-        self, name: str, project_id: str, storage_config: dict
-    ) -> "RestCatalogWarehouse":
+    def create_warehouse(self, name: str, storage_config: dict) -> "RestCatalogWarehouse":
         """Create a warehouse in this server"""
 
         payload = {
-            "project-id": project_id,
             **storage_config,
         }
 
@@ -84,7 +81,7 @@ class Server:
     def delete_warehouse(self, warehouse: "RestCatalogWarehouse") -> None:
         """Purge all of the data in the given warehouse and delete it"""
         response = self._request_with_auth(
-            requests.delete, self.warehouse_endpoint() + f"/{str(warehouse.project_id)}"
+            requests.delete, self.warehouse_endpoint() + f"/{warehouse.warehouse_id}"
         )
         response.raise_for_status()
 
@@ -100,14 +97,13 @@ class Server:
 class RestCatalogWarehouse:
     server: Server
     name: str
-    project_id: uuid.UUID
+    warehouse_id: uuid.UUID
     bucket_url: str
 
     def connect(self) -> PyIcebergCatalog:
         """Connect to the warehouse in the catalog"""
         creds = PyIcebergRestCatalogCredentials()
         creds.uri = str(self.server.catalog_endpoint())
-        creds.project_id = self.server.settings.project_id
         creds.warehouse = self.name
         creds.oauth2_server_uri = str(self.server.token_endpoint)
         creds.client_id = self.server.settings.openid_client_id

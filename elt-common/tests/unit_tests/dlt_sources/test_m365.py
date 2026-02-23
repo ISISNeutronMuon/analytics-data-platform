@@ -12,7 +12,7 @@ from elt_common.dlt_sources.m365 import sharepoint, M365CredentialsResource
 
 import pytest
 from pytest_httpx import HTTPXMock
-from unit_tests.dlt_sources.conftest import SharePointTestSettings
+from tests.unit_tests.dlt_sources.conftest import SharePointTestSettings
 
 
 def test_extract_sharepoint_source_raises_error_without_config(pipeline: dlt.Pipeline):

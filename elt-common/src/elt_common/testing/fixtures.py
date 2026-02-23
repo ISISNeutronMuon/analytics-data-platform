@@ -18,11 +18,6 @@ from .sqlcatalog import SqlCatalogWarehouse
 
 
 @pytest.fixture(scope="session")
-def settings() -> Settings:
-    return Settings()
-
-
-@pytest.fixture(scope="session")
 def warehouse(settings: Settings) -> Generator:
     if not settings.warehouse_name:
         raise ValueError("Empty 'warehouse_name' is not allowed.")
@@ -52,9 +47,7 @@ def warehouse(settings: Settings) -> Generator:
             minio_client.make_bucket(bucket_name=bucket_name)
             print(f"Bucket {bucket_name} created.")
 
-        warehouse = server.create_warehouse(
-            settings.warehouse_name, server.settings.project_id, storage_config
-        )
+        warehouse = server.create_warehouse(settings.warehouse_name, storage_config)
 
         def cleanup_func():
             @tenacity.retry(**DEFAULT_RETRY_ARGS)
@@ -70,7 +63,7 @@ def warehouse(settings: Settings) -> Generator:
 
             except RuntimeError as exc:
                 warnings.warn(
-                    f"Error deleting test warehouse '{str(warehouse.project_id)}'. It may need to be removed manually."
+                    f"Error deleting test warehouse '{str(warehouse.name)}'. It may need to be removed manually."
                 )
                 warnings.warn(f"Error:\n{str(exc)}")
 
