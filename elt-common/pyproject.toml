@@ -10,8 +10,9 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
   "dlt[parquet,s3]>=1.20,<2",
-  "pyarrow==21.0.0",          # See https://github.com/ISISNeutronMuon/analytics-data-platform/issues/183
+  "pyarrow==21.0.0",                 # See https://github.com/ISISNeutronMuon/analytics-data-platform/issues/183
   "pyiceberg[pyiceberg-core]>=0.11",
+  "s3fs<2026.2.0",                   # See https://github.com/ISISNeutronMuon/analytics-data-platform/issues/237
 ]
 
 

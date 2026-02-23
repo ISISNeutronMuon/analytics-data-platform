@@ -454,6 +454,7 @@ dependencies = [
     { name = "dlt", extra = ["parquet", "s3"] },
     { name = "pyarrow" },
     { name = "pyiceberg", extra = ["pyiceberg-core"] },
+    { name = "s3fs" },
 ]
 
 [package.optional-dependencies]
@@ -491,6 +492,7 @@ requires-dist = [
     { name = "pyarrow", specifier = "==21.0.0" },
     { name = "pydantic-settings", marker = "extra == 'iceberg-maintenance'", specifier = ">=2.12.0" },
     { name = "pyiceberg", extras = ["pyiceberg-core"], specifier = ">=0.11" },
+    { name = "s3fs", specifier = "<2026.2.0" },
     { name = "sqlalchemy", marker = "extra == 'iceberg-maintenance'", specifier = ">=2.0.43" },
     { name = "tenacity", marker = "extra == 'm365'", specifier = ">=9.1.2" },
     { name = "trino", marker = "extra == 'iceberg-maintenance'", specifier = ">=0.336.0" },
