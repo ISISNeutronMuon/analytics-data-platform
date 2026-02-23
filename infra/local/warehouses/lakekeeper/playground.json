@@ -8,7 +8,7 @@
   },
   "storage-profile": {
     "type": "s3",
-    "bucket": "dev-isis-cleaned",
+    "bucket": "playground",
     "key-prefix": "",
     "endpoint": "http://adp-router:59000",
     "region": "local-01",
