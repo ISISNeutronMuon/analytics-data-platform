@@ -1,7 +1,7 @@
 """Provides functions to fit a function on the incident monitor to determine the peak centre position."""
 
 from dataclasses import dataclass
-import functools
+import datetime as dt
 from pathlib import Path
 from typing import Any, Dict, Sequence, Tuple, cast
 
@@ -24,7 +24,7 @@ class MonitorFitConfig:
 class Run:
     beamline: str
     run_number: int
-    start_time: str
+    start_time: dt.datetime
     proton_charge_uamps: float
 
 
@@ -111,7 +111,9 @@ def read_monitor(file_path: Path) -> Workspace:
             run_info = Run(
                 _read_dataset(raw_data, "name")[0].decode("utf-8"),
                 int(_read_dataset(raw_data, "run_number")[0]),
-                str(_read_dataset(raw_data, "start_time")[0]),
+                dt.datetime.fromisoformat(
+                    _read_dataset(raw_data, "start_time")[0].decode("utf-8")
+                ),
                 float(_read_dataset(raw_data, "proton_charge")[0]),
             )
             counts = np.array(_read_dataset(raw_data, "monitor_1/data")[0, 0, :])

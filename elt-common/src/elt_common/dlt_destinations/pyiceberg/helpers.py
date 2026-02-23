@@ -34,7 +34,7 @@ from pyiceberg.types import (
     TimestamptzType,
 )
 from pyiceberg.typedef import Identifier
-from pyiceberg.exceptions import NoSuchNamespaceError, NoSuchIcebergTableError
+from pyiceberg.exceptions import NoSuchNamespaceError, NoSuchTableError
 
 
 PARTITION_HINT: Final[str] = "x-pyiceberg-partition"
@@ -65,7 +65,7 @@ def load_iceberg_table(pipeline: Pipeline, table_name: str) -> Table | None:
             table = getattr(client, "iceberg_catalog").load_table(
                 (pipeline.dataset_name, table_name)
             )
-        except NoSuchIcebergTableError:
+        except NoSuchTableError:
             pass
 
     return table
