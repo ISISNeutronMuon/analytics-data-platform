@@ -51,6 +51,10 @@ lakekeeper_project_name: "ISIS Analytics Data Platform"
 lakekeeper_catalog:
   catalog_uri: "https://{{ top_level_domain }}{{ lakekeeper_base_path }}/catalog"
   warehouses:
+    facility_ops:
+      storage:
+        bucket_name: "{{ lakekeeper_bucket_prefix }}facility-ops"
+        key_prefix: ""
     accelerator_ops:
       storage:
         bucket_name: "{{ lakekeeper_bucket_prefix }}accelerator-ops"
@@ -89,3 +93,13 @@ superset_farm_instances:
     analytic_dbs:
       - name: accelerator_ops
         db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/accelerator_ops"
+  tram:
+    app_root: "{{ superset_farm_url_prefix }}/tram"
+    env_name: production
+    flask_debug: false
+    http_port: 8089
+    secret_key: "{{ vault_superset_tram_secret_key }}"
+    users_yaml: "{{ vault_superset_tram_users_yaml }}"
+    analytic_dbs:
+      - name: facility_ops
+        db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/facility_ops"
