@@ -36,7 +36,8 @@ FIT_CONFIGS = {
                 (np.inf, 5200, 1900),
             ),
         },
-        first_run=90482,
+        #        first_run=90482,
+        first_run=125805,
         skip_runs=(95382,),
     )
 }

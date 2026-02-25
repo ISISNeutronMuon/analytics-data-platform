@@ -2,7 +2,7 @@ name: tram_ops
 version: "1.0.0"
 
 # default project points at stack in local/infra
-profile: "infra-local"
+profile: "local"
 
 flags:
   require_certificate_validation: True
