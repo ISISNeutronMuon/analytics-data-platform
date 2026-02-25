@@ -22,14 +22,8 @@
     state: absent
   when: not stat_uv.stat.exists
 
-- name: Find compatible Python version
-  ansible.builtin.command: uv python find --quiet "{{ elt_uv_python_version }}"
-  ignore_errors: true
-  register: uv_python_find
-
 - name: Ensure Python is installed
   ansible.builtin.command: uv python install "{{ elt_uv_python_version }}"
-  when: uv_python_find.rc != 0
 
 # ---------- AWS S3 ----------
 - name: Ensure S3 configuration directory exists
