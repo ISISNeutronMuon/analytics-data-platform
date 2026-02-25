@@ -95,3 +95,4 @@
   loop_control:
     loop_var: warehouse
     label: "{{ warehouse_name }}"
+  when: "warehouse.value.elt_jobs is defined"

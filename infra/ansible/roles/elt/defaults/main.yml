@@ -2,3 +2,4 @@
 elt_secrets_root_dir: /secrets/warehouses
 elt_uv_version: "0.9.29"
 elt_uv_python_version: "3.13"
+elt_cron_jobs_state: present

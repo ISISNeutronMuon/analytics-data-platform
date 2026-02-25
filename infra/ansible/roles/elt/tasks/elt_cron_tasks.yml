@@ -28,7 +28,7 @@
 - name: Create cron jobs for warehouse {{ warehouse_name }}
   ansible.builtin.cron:
     name: "{{ source.name }}"
-    state: "{{ source.state | default('present') }}"
+    state: "{{ source.state | default(elt_cron_jobs_state) }}"
     hour: "{{ source.hour }}"
     minute: "{{ source.minute }}"
     job: >

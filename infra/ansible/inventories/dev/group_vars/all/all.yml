@@ -11,3 +11,5 @@ s3_access_key_id: "{{ vault_minio_root_user }}"
 s3_access_secret: "{{ vault_minio_root_passwd }}"
 
 lakekeeper_bucket_prefix: warehouse-
+
+elt_cron_jobs_state: absent
