@@ -1,4 +1,4 @@
-name: tram_ops
+name: facility_ops
 version: "1.0.0"
 
 # default project points at stack in local/infra
@@ -30,13 +30,15 @@ dispatch: # Use macros from trino_utils in preference. https://hub.getdbt.com/st
 models:
   +file_format: parquet
   +materialized: view
-  tram_ops:
+  facility_ops:
     # The full schema name of the final tables is "{target_schema}_"{custom_schema}"
     #   - 'target_schema' is defined in profiles.yml
     #   - 'custom_schema' is defined for each collection of models below
     # See https://docs.getdbt.com/docs/build/custom-schemas
     staging:
-      +schema: staging
+      tram:
+        +schema: staging_tram
     marts:
-      +schema: marts
       +materialized: table
+      tram:
+        +schema: tram

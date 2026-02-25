@@ -37,7 +37,7 @@ FIT_CONFIGS = {
             ),
         },
         #        first_run=90482,
-        first_run=125805,
+        first_run=125822,
         skip_runs=(95382,),
     )
 }
@@ -163,9 +163,9 @@ def monitor_peaks(
 
 
 if __name__ == "__main__":
-    cli_utils.cli_main(
+    cli_utils.cli_main_v2(
         pipeline_name="moderator_performance",
-        default_destination="elt_common.dlt_destinations.pyiceberg",
+        source_domain="tram",
         data_generator=pyiceberg_adapter(
             monitor_peaks,
             partition=[
@@ -173,5 +173,4 @@ if __name__ == "__main__":
                 PartitionTrBuilder.month("run_start"),
             ],
         ),
-        dataset_name_suffix="moderator_performance",
     )
