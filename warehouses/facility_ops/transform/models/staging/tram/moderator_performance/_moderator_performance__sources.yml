@@ -1,6 +1,6 @@
 version: 2
 
 sources:
-  - name: source_tram_moderator_performance
+  - name: source_beamlines_moderator_performance
     tables:
       - name: monitor_peaks

@@ -1,6 +1,6 @@
 with source as (
 
-    select * from {{ source('source_tram_moderator_performance', 'monitor_peaks') }}
+    select * from {{ source('source_beamlines_moderator_performance', 'monitor_peaks') }}
 
 ),
 
