@@ -1,7 +1,16 @@
-.DS_Store
+# openstack clouds yaml
 clouds.yaml
+
+# secrets, environment variables
 .env
-.venv/
 **/dbt.log
-# ignore secrets, virtual environments and typical python compilation artifacts
 secrets.toml
+
+#  virtual environments
+.venv/
+
+# VSCode settings
+.vscode/
+
+# Mac Finder files
+.DS_Store
