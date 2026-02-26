@@ -5,7 +5,7 @@ It currently requires the ISIS archive to be mounted locally.
 
 import functools
 from pathlib import Path
-from typing import Dict, Sequence
+from typing import Dict, Literal, Sequence
 
 import dlt
 import dlt.common.logger as logger
@@ -17,13 +17,16 @@ from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
 )
 from fit_monitor import (
     MonitorFitConfig,
+    MonitorPeak,
     fit_monitor_peak,
     gaussian_plus_flat,
 )
 import numpy as np
+from pyiceberg.expressions import EqualTo
 import requests
 import xml.etree.ElementTree as ET
 
+RunMode = Literal["backfill", "incremental"]
 
 FIT_CONFIGS = {
     "PEARL": MonitorFitConfig(
@@ -41,33 +44,71 @@ FIT_CONFIGS = {
                 (np.inf, 5200, 1900),
             ),
         },
-        #        first_run=90482,
-        first_run=125822,
+        cycle_start="15_2",
         skip_runs=(95382,),
     )
 }
 
 
-def find_next_runs(
-    journals_base_url: str, beamline: str, skip: Sequence[int], after: int
+def get_fitted_runs(beamline: str, pipeline: dlt.Pipeline) -> Dict[str, Sequence[int]]:
+    """Retrieve the list of run numbers that have already been loaded to the warehouse"""
+    existing_peaks_table = load_iceberg_table(pipeline, "monitor_peaks")
+    if existing_peaks_table is None:
+        logger.debug("Peaks table does not exist. No runs have been loaded.")
+        return {}
+
+    logger.debug("Peaks table exists, finding loaded runs.")
+    fitted_runs = {}
+    c_beamline, c_cycle, c_run_number = "beamline", "cycle_name", "run_number"
+    beamline_peaks = existing_peaks_table.scan(
+        row_filter=EqualTo(c_beamline, beamline),
+        selected_fields=(c_run_number, c_cycle),
+    ).to_arrow()
+    if beamline_peaks.num_rows > 0:
+        cycle_groups = (
+            beamline_peaks.sort_by([(c_run_number, "ascending")])
+            .group_by("c_cycle")
+            .aggregate([(c_cycle, "list")])
+        )
+        fitted_runs = dict(
+            zip(
+                cycle_groups[c_cycle].to_pylist(),
+                cycle_groups[c_run_number].to_pylist(),
+            )
+        )
+    else:
+        logger.debug(f"No runs loaded for '{beamline}'.")
+
+    return fitted_runs
+
+
+def find_available_runs(
+    run_mode: RunMode,
+    journals_base_url: str,
+    beamline: str,
+    cycle_start: str,
+    skip: Sequence[int],
 ) -> Dict[str, Sequence[int]]:
     """Look at journal files to determine the runs that exist.
 
-    Return a map of cycle id to list of runs
+    If the mode=incremental only look at the most recent cycle.
     """
-    logger.debug(f"Finding next runs to process: after={after}, skip={skip}")
+    logger.debug(
+        f"Finding available runs (mode={run_mode}) for {beamline} starting at cycle {cycle_start}"
+    )
     journals_beamline_url = f"{journals_base_url}/ndx{beamline.lower()}"
     journal_main = requests.get(journals_beamline_url + "/journal_main.xml")
     journal_main.raise_for_status()
 
-    # Assume the likely case is old cycles are loaded. Iterate backwards through the cycles
-    # until we hit the range edge
     root = ET.fromstring(journal_main.text)
     journals_cycles = sorted(
         [journalfile.attrib["name"] for journalfile in root.iter("file")], reverse=True
     )
-    next_runs = {}
-    for filename in journals_cycles:
+    if run_mode == "incremental":
+        journals_cycles = [journals_cycles[0]]
+
+    available_runs = {}
+    for filename in journals_cycles:  # reverse iteration
         logger.debug(f"Checking journal {filename}")
         journal_cycle = requests.get(journals_beamline_url + f"/{filename}")
         journal_cycle.raise_for_status()
@@ -83,20 +124,17 @@ def find_next_runs(
                 ".//journal:NXentry/journal:run_number", namespaces
             )
         ]
-        cycle_next_runs = list(
-            filter(lambda run: (run not in skip) and (run > after), cycle_runs)
-        )
+        cycle_next_runs = list(filter(lambda run: (run not in skip), cycle_runs))
         cycle_name = f"cycle_{filename[len('journal_') : -len('.xml')]}"
         if len(cycle_next_runs) > 0:
-            next_runs[cycle_name] = sorted(cycle_next_runs)
+            available_runs[cycle_name] = sorted(cycle_next_runs)
 
         logger.debug(f"Found {len(cycle_next_runs)} runs.")
-        if len(cycle_next_runs) < len(cycle_runs):
-            # We dropped some entries so we must have found the stop marker and don't need to continue
+        if cycle_start in filename:
             break
 
-    logger.debug(f"Found {len(next_runs)} cycles.")
-    return next_runs
+    logger.debug(f"Found {len(available_runs)} cycles.")
+    return available_runs
 
 
 def run_file_path(archive_mount: Path, beamline: str, cycle: str, run_no: int) -> Path:
@@ -115,12 +153,15 @@ def run_file_path(archive_mount: Path, beamline: str, cycle: str, run_no: int) -
 def monitor_peaks(
     journals_base_url: str = dlt.config.value,
     archive_mount: str = dlt.config.value,
+    run_mode: RunMode = "incremental",
 ):
     # This defines the column order
-    def as_dict(peak):
+    def as_dict(peak: MonitorPeak):
         return {
             "beamline": peak.run.beamline,
             "run_number": peak.run.run_number,
+            # Use naming convention YYYY/N
+            "cycle_name": f"{str(peak.run.start_time.year)[:2]}{peak.run.isis_cycle}",
             "run_start": peak.run.start_time,
             "proton_charge": peak.run.proton_charge_uamps,
             "peak_centre": peak.centre,
@@ -131,39 +172,27 @@ def monitor_peaks(
             "peak_sigma_error": peak.sigma_error,
         }
 
-    from pyiceberg.expressions import EqualTo
-
     pipeline = dlt.current.pipeline()
     for beamline, fit_config in FIT_CONFIGS.items():
         logger.info(f"Fitting monitor peaks for '{beamline}'")
-        existing_peaks_table = load_iceberg_table(pipeline, "monitor_peaks")
-        latest_run_result = None
-        if existing_peaks_table:
-            logger.debug("Peaks table exists, finding latest run number")
-            c_beamline, c_run_number = "beamline", "run_number"
-            beamline_peaks = existing_peaks_table.scan(
-                row_filter=EqualTo(c_beamline, beamline),
-                selected_fields=(c_run_number,),
-            ).to_arrow()
-            if beamline_peaks.num_rows > 0:
-                latest_run_result = beamline_peaks.sort_by(
-                    [(c_run_number, "descending")]
-                ).to_pylist()[0][c_run_number]
-                logger.debug(f"Latest run found for '{beamline}': {latest_run_result}")
-            else:
-                logger.debug(f"No entries found for '{beamline}'.")
-
-        after = (
-            latest_run_result
-            if latest_run_result is not None
-            else fit_config.first_run - 1
+        available_runs = find_available_runs(
+            run_mode,
+            journals_base_url,
+            beamline,
+            fit_config.cycle_start,
+            fit_config.skip_runs,
         )
-        next_runs = find_next_runs(
-            journals_base_url, beamline, fit_config.skip_runs, after=after
-        )
-
+        runs_already_fitted = get_fitted_runs(beamline, pipeline)
+        runs_to_fit = {
+            key: [
+                x
+                for x in available_runs[key]
+                if x not in set(runs_already_fitted.get(key, []))
+            ]
+            for key in available_runs
+        }
         archive = Path(archive_mount)
-        for cycle, runs in next_runs.items():
+        for cycle, runs in runs_to_fit.items():
             logger.debug(f"Fitting runs {runs[0]} -> {runs[-1]}")
             peaks = [
                 fit_monitor_peak(
