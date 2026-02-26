@@ -150,30 +150,33 @@ def fit_monitor_peak(
     mask = (freq_data.x >= fit_range[0]) & (freq_data.x <= fit_range[1])
     x, y, ye = freq_data.x[mask], freq_data.y[mask], freq_data.ye[mask]
 
-    # Fit the data
-    popt, pcov = curve_fit(
-        curve_fit_args["function"],
-        x,
-        y,
-        sigma=ye,
-        absolute_sigma=True,
-        p0=curve_fit_args["p0"],
-        bounds=curve_fit_args["bounds"],
-        **CURVE_FIT_DEFAULT_ARGS,
-    )
-    # Extract parameters and errors from covariance matrix
-    perr = np.sqrt(np.diag(pcov))
-    amplitude, peak_centre, sigma = popt
-    amplitude_err, peak_centre_err, sigma_err = perr
-    return MonitorPeak(
-        monitor_ws.run_info,
-        float(peak_centre),
-        float(peak_centre_err),
-        float(amplitude),
-        float(amplitude_err),
-        float(sigma),
-        float(sigma_err),
-    )
+    try:
+        # Fit the data
+        popt, pcov = curve_fit(
+            curve_fit_args["function"],
+            x,
+            y,
+            sigma=ye,
+            absolute_sigma=True,
+            p0=curve_fit_args["p0"],
+            bounds=curve_fit_args["bounds"],
+            **CURVE_FIT_DEFAULT_ARGS,
+        )
+        # Extract parameters and errors from covariance matrix
+        perr = np.sqrt(np.diag(pcov))
+        amplitude, peak_centre, sigma = popt
+        amplitude_err, peak_centre_err, sigma_err = perr
+        return MonitorPeak(
+            monitor_ws.run_info,
+            float(peak_centre),
+            float(peak_centre_err),
+            float(amplitude),
+            float(amplitude_err),
+            float(sigma),
+            float(sigma_err),
+        )
+    except Exception:
+        return None
 
 
 def fit_monitor_peaks(
