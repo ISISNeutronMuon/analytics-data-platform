@@ -1,0 +1,47 @@
+2026-02-26 15:09:43,230|[INFO]|2956468|133451299833664|dlt|cli.py|cli_main_v2:156|Starting pipeline: 'moderator_performance'
+2026-02-26 15:09:44,351|[INFO]|2956468|133451299833664|dlt|pipeline.py|_restore_state_from_destination:1618|The state was restored from the destination pyiceberg (elt_common.dlt_destinations.pyiceberg.factory.pyiceberg):source_beamlines_moderator_performance
+2026-02-26 15:09:44,383|[INFO]|2956468|133451299833664|dlt|moderator_performance.py|monitor_peaks:177|Fitting monitor peaks for 'PEARL'
+/home/ubuntu/code/analytics-data-platform/.venv/lib/python3.13/site-packages/scipy/optimize/_minpack_py.py:989: RuntimeWarning: divide by zero encountered in divide
+  transform = 1.0 / sigma
+/home/ubuntu/code/analytics-data-platform/.venv/lib/python3.13/site-packages/scipy/optimize/_numdiff.py:686: RuntimeWarning: invalid value encountered in subtract
+  df = [f_eval - f0 for f_eval in f_evals]
+2026-02-26 15:13:04,885|[INFO]|2956468|133451299833664|dlt|pool_runner.py|create_pool:171|Created none pool with 1 workers
+2026-02-26 15:13:04,885|[INFO]|2956468|133451299833664|dlt|normalize.py|run:310|Running file normalizing
+2026-02-26 15:13:04,885|[INFO]|2956468|133451299833664|dlt|normalize.py|run:313|Found 1 load packages
+2026-02-26 15:13:04,888|[INFO]|2956468|133451299833664|dlt|normalize.py|run:336|Found 2 files in schema moderator_performance load_id 1772118584.3761313
+2026-02-26 15:13:04,889|[INFO]|2956468|133451299833664|dlt|normalize.py|spool_schema_files:299|Created new load package 1772118584.3761313 on loading volume with 2 files
+2026-02-26 15:13:04,893|[INFO]|2956468|133451299833664|dlt|worker.py|_get_items_normalizer:132|A file format for table monitor_peaks was specified to parquet in the resource so parquet format being used.
+2026-02-26 15:13:04,893|[INFO]|2956468|133451299833664|dlt|worker.py|_get_items_normalizer:181|Created items normalizer JsonLItemsNormalizer with writer ParquetDataWriter for item format object and file format parquet
+2026-02-26 15:13:04,936|[INFO]|2956468|133451299833664|dlt|worker.py|_get_items_normalizer:132|A file format for table _dlt_pipeline_state was specified to preferred in the resource so parquet format being used.
+2026-02-26 15:13:04,936|[INFO]|2956468|133451299833664|dlt|worker.py|_get_items_normalizer:181|Created items normalizer JsonLItemsNormalizer with writer ParquetDataWriter for item format object and file format parquet
+2026-02-26 15:13:04,946|[INFO]|2956468|133451299833664|dlt|worker.py|w_normalize_files:264|Processed all items in 2 files
+2026-02-26 15:13:04,946|[INFO]|2956468|133451299833664|dlt|validate.py|validate_and_update_schema:26|Updating schema for table monitor_peaks with 1 deltas
+2026-02-26 15:13:04,946|[INFO]|2956468|133451299833664|dlt|normalize.py|spool_files:265|Saving schema moderator_performance with version 2:3
+2026-02-26 15:13:04,948|[INFO]|2956468|133451299833664|dlt|normalize.py|spool_files:283|Committing storage, do not kill this process
+2026-02-26 15:13:04,948|[INFO]|2956468|133451299833664|dlt|normalize.py|spool_files:289|Extracted package 1772118584.3761313 processed
+2026-02-26 15:13:04,948|[INFO]|2956468|133451299833664|dlt|pool_runner.py|run_pool:217|Closing processing pool
+2026-02-26 15:13:04,948|[INFO]|2956468|133451299833664|dlt|pool_runner.py|run_pool:220|Processing pool closed
+2026-02-26 15:13:05,075|[INFO]|2956468|133451299833664|dlt|pool_runner.py|create_pool:171|Created thread pool with 20 workers
+2026-02-26 15:13:05,075|[INFO]|2956468|133451299833664|dlt|load.py|run:671|Running file loading
+2026-02-26 15:13:05,076|[INFO]|2956468|133451299833664|dlt|load.py|run:674|Found 1 load packages
+2026-02-26 15:13:05,076|[INFO]|2956468|133451299833664|dlt|load.py|run:680|Loading schema from load package in 1772118584.3761313
+2026-02-26 15:13:05,076|[INFO]|2956468|133451299833664|dlt|load.py|run:682|Loaded schema name moderator_performance and version 3
+2026-02-26 15:13:05,131|[INFO]|2956468|133451299833664|dlt|utils.py|_init_dataset_and_update_schema:165|Client for pyiceberg will start initialize storage 
+2026-02-26 15:13:05,135|[INFO]|2956468|133451299833664|dlt|utils.py|_init_dataset_and_update_schema:184|Client for pyiceberg will update schema to package schema 
+2026-02-26 15:13:05,261|[INFO]|2956468|133451299833664|dlt|pyiceberg.py|update_stored_schema:124|Schema with hash zAyWzFlpV/Pdi6GIqIssZ5VB/AfqXk0MF7dSoIutrFs= not found in the storage. upgrading
+2026-02-26 15:13:05,629|[INFO]|2956468|133451299833664|dlt|load.py|resume_started_jobs:301|0 started jobs found, which should be continued
+2026-02-26 15:13:05,629|[INFO]|2956468|133451299833664|dlt|load.py|complete_jobs:425|Will complete 0 for 1772118584.3761313
+2026-02-26 15:13:05,629|[INFO]|2956468|133451299833664|dlt|load.py|start_new_jobs:284|Will load additional 2, creating jobs
+2026-02-26 15:13:05,689|[INFO]|2956468|133451299833664|dlt|load.py|submit_job:172|Will load file 1772118584.3761313/new_jobs/_dlt_pipeline_state.d8513d0582.0.parquet with table name _dlt_pipeline_state
+2026-02-26 15:13:05,762|[INFO]|2956468|133451299833664|dlt|load.py|submit_job:172|Will load file 1772118584.3761313/new_jobs/monitor_peaks.14f6e2d6e8.0.parquet with table name monitor_peaks
+2026-02-26 15:13:06,470|[INFO]|2956468|133451299833664|dlt|load.py|complete_jobs:425|Will complete 2 for 1772118584.3761313
+2026-02-26 15:13:06,470|[INFO]|2956468|133451299833664|dlt|load.py|complete_jobs:481|Job for _dlt_pipeline_state.d8513d0582.parquet completed in load 1772118584.3761313
+2026-02-26 15:13:06,471|[INFO]|2956468|133451299833664|dlt|load.py|start_new_jobs:284|Will load additional 0, creating jobs
+2026-02-26 15:13:06,636|[INFO]|2956468|133451299833664|dlt|load.py|complete_jobs:425|Will complete 1 for 1772118584.3761313
+2026-02-26 15:13:06,636|[INFO]|2956468|133451299833664|dlt|load.py|complete_jobs:481|Job for monitor_peaks.14f6e2d6e8.parquet completed in load 1772118584.3761313
+2026-02-26 15:13:06,636|[INFO]|2956468|133451299833664|dlt|load.py|start_new_jobs:284|Will load additional 0, creating jobs
+2026-02-26 15:13:06,880|[INFO]|2956468|133451299833664|dlt|load.py|complete_package:519|All jobs completed, archiving package 1772118584.3761313 with aborted set to False
+2026-02-26 15:13:06,880|[INFO]|2956468|133451299833664|dlt|pool_runner.py|run_pool:217|Closing processing pool
+2026-02-26 15:13:06,880|[INFO]|2956468|133451299833664|dlt|pool_runner.py|run_pool:220|Processing pool closed
+2026-02-26 15:13:06,884|[INFO]|2956468|133451299833664|dlt|cli.py|cli_main_v2:169|Extracted row counts: {'monitor_peaks': 903, '_dlt_pipeline_state': 1}
+2026-02-26 15:13:06,885|[INFO]|2956468|133451299833664|dlt|cli.py|cli_main_v2:171|Pipeline moderator_performance completed in 3 minutes and 23.57 seconds

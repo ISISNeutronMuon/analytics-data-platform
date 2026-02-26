@@ -24,7 +24,6 @@ class MonitorFitConfig:
 class Run:
     beamline: str
     run_number: int
-    isis_cycle: str
     start_time: dt.datetime
     proton_charge_uamps: float
 
@@ -112,7 +111,6 @@ def read_monitor(file_path: Path) -> Workspace:
             run_info = Run(
                 _read_dataset(raw_data, "name")[0].decode("utf-8"),
                 int(_read_dataset(raw_data, "run_number")[0]),
-                _read_dataset(raw_data, "isis_cycle")[0].decode("utf-8"),
                 dt.datetime.fromisoformat(
                     _read_dataset(raw_data, "start_time")[0].decode("utf-8")
                 ),

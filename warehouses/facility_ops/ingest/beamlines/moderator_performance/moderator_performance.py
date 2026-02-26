@@ -141,7 +141,7 @@ def run_file_path(archive_mount: Path, beamline: str, cycle: str, run_no: int) -
     """Return the path to the given file on the ISIS archive"""
     return (
         archive_mount
-        / f"ndx{beamline}"
+        / f"ndx{beamline.lower()}"
         / "Instrument"
         / "data"
         / cycle
@@ -156,12 +156,12 @@ def monitor_peaks(
     run_mode: RunMode = "incremental",
 ):
     # This defines the column order
-    def as_dict(peak: MonitorPeak):
+    def as_dict(cycle_name: str, peak: MonitorPeak):
         return {
             "beamline": peak.run.beamline,
             "run_number": peak.run.run_number,
             # Use naming convention YYYY/N
-            "cycle_name": f"{str(peak.run.start_time.year)[:2]}{peak.run.isis_cycle}",
+            "cycle_name": cycle_name,
             "run_start": peak.run.start_time,
             "proton_charge": peak.run.proton_charge_uamps,
             "peak_centre": peak.centre,
@@ -201,7 +201,7 @@ def monitor_peaks(
                 for run_no in runs
             ]
 
-            yield [as_dict(peak) for peak in peaks if peak]
+            yield [as_dict(cycle, peak) for peak in peaks if peak]
 
 
 if __name__ == "__main__":
