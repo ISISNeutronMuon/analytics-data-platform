@@ -18,6 +18,8 @@ monitor_peaks as (
 select
 
     beamline,
+    run_number,
+    cycle_name,
     run_start,
     peak_centre
 

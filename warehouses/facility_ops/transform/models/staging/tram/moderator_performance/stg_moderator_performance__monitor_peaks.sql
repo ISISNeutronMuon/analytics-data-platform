@@ -10,6 +10,7 @@ renamed as (
 
         beamline,
         run_number,
+        cycle_name,
         run_start,
         proton_charge,
         peak_centre,
