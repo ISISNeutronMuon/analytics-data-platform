@@ -65,15 +65,13 @@ def get_fitted_runs(beamline: str, pipeline: dlt.Pipeline) -> Dict[str, Sequence
         selected_fields=(c_run_number, c_cycle),
     ).to_arrow()
     if beamline_peaks.num_rows > 0:
-        cycle_groups = (
-            beamline_peaks.sort_by([(c_run_number, "ascending")])
-            .group_by("c_cycle")
-            .aggregate([(c_cycle, "list")])
+        cycle_groups = beamline_peaks.group_by(c_cycle).aggregate(
+            [(c_run_number, "list")]
         )
         fitted_runs = dict(
             zip(
                 cycle_groups[c_cycle].to_pylist(),
-                cycle_groups[c_run_number].to_pylist(),
+                sorted(cycle_groups[c_run_number + "_list"].to_pylist()),
             )
         )
     else:
@@ -149,7 +147,10 @@ def run_file_path(archive_mount: Path, beamline: str, cycle: str, run_no: int) -
     )
 
 
-@dlt.resource(write_disposition="append")
+@dlt.resource(
+    merge_key=["beamline", "run_number"],
+    write_disposition={"disposition": "merge", "strategy": "upsert"},
+)
 def monitor_peaks(
     journals_base_url: str = dlt.config.value,
     archive_mount: str = dlt.config.value,
