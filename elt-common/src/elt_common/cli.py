@@ -7,6 +7,7 @@ from typing import Any
 
 import dlt
 from dlt.common.destination.reference import TDestinationReferenceArg
+import dlt.common.logger as logger
 from dlt.common.typing import TLoaderFileFormat
 from dlt.common.runtime.collector import NULL_COLLECTOR
 from dlt.common.schema.typing import TWriteDisposition
@@ -14,10 +15,7 @@ from dlt.extract.reference import SourceFactory
 from dlt.pipeline.progress import TCollectorArg
 import humanize
 
-from . import logging as logging_utils
 from .pipeline import dataset_name, dataset_name_v2
-
-LOGGER = logging.getLogger(__name__)
 
 
 def create_standard_argparser(
@@ -88,10 +86,9 @@ def cli_main(
         default_loader_file_format,
         default_progress,
     ).parse_args()
-    # TODO: Make the log filtering more configurable
-    logging_utils.configure_logging(
-        args.log_level, keep_records_from=["dlt", "elt_common", "__main__"]
-    )
+
+    if logger.is_logging():
+        logger.LOGGER.setLevel(args.log_level)
 
     pipeline = dlt.pipeline(
         pipeline_name=pipeline_name,
@@ -99,8 +96,8 @@ def cli_main(
         destination=args.destination,
         progress=args.progress,
     )
-    LOGGER.info(f"-- Starting pipeline={pipeline.pipeline_name} --")
-    LOGGER.info("Dropping pending packages to ensure a clean new load")
+    logger.info(f"Starting pipeline: '{pipeline.pipeline_name}'")
+    logger.debug("Dropping pending packages to ensure a clean new load")
     pipeline.drop_pending_packages()
     if isinstance(data_generator, SourceFactory):
         data = data_generator()
@@ -111,10 +108,10 @@ def cli_main(
         loader_file_format=args.loader_file_format,
         write_disposition=args.write_disposition,
     )
-    LOGGER.debug(pipeline.last_trace.last_extract_info)
-    LOGGER.debug(f"Extracted row counts: {pipeline.last_trace.last_normalize_info.row_counts}")
-    LOGGER.debug(pipeline.last_trace.last_load_info)
-    LOGGER.info(
+    logger.debug(pipeline.last_trace.last_extract_info)
+    logger.debug(f"Extracted row counts: {pipeline.last_trace.last_normalize_info.row_counts}")
+    logger.debug(pipeline.last_trace.last_load_info)
+    logger.info(
         f"Pipeline {pipeline.pipeline_name} completed in {
             humanize.precisedelta(pipeline.last_trace.finished_at - pipeline.last_trace.started_at)
         }"
@@ -146,10 +143,6 @@ def cli_main_v2(
         default_loader_file_format,
         default_progress,
     ).parse_args()
-    # TODO: Make the log filtering more configurable
-    logging_utils.configure_logging(
-        args.log_level, keep_records_from=["dlt", "elt_common", "__main__"]
-    )
 
     pipeline = dlt.pipeline(
         pipeline_name=pipeline_name,
@@ -157,9 +150,11 @@ def cli_main_v2(
         destination=args.destination,
         progress=args.progress,
     )
+    if logger.is_logging():
+        logger.LOGGER.setLevel(args.log_level)
 
-    LOGGER.info(f"-- Starting pipeline={pipeline.pipeline_name} --")
-    LOGGER.info("Dropping pending packages to ensure a clean new load")
+    logger.info(f"Starting pipeline: '{pipeline.pipeline_name}'")
+    logger.debug("Dropping pending packages to ensure a clean new load")
     pipeline.drop_pending_packages()
     if isinstance(data_generator, SourceFactory):
         data = data_generator()
@@ -170,10 +165,10 @@ def cli_main_v2(
         loader_file_format=args.loader_file_format,
         write_disposition=args.write_disposition,
     )
-    LOGGER.debug(pipeline.last_trace.last_extract_info)
-    LOGGER.info(f"Extracted row counts: {pipeline.last_trace.last_normalize_info.row_counts}")
-    LOGGER.debug(pipeline.last_trace.last_load_info)
-    LOGGER.info(
+    logger.debug(pipeline.last_trace.last_extract_info)
+    logger.info(f"Extracted row counts: {pipeline.last_trace.last_normalize_info.row_counts}")
+    logger.debug(pipeline.last_trace.last_load_info)
+    logger.info(
         f"Pipeline {pipeline.pipeline_name} completed in {
             humanize.precisedelta(pipeline.last_trace.finished_at - pipeline.last_trace.started_at)
         }"

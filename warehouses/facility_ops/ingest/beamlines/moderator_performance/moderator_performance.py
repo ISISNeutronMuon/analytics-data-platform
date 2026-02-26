@@ -8,13 +8,18 @@ from pathlib import Path
 from typing import Dict, Sequence
 
 import dlt
+import dlt.common.logger as logger
 import elt_common.cli as cli_utils
 from elt_common.dlt_destinations.pyiceberg.helpers import load_iceberg_table
 from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
     pyiceberg_adapter,
     PartitionTrBuilder,
 )
-from fit_monitor import MonitorFitConfig, fit_monitor_peaks, gaussian_plus_flat
+from fit_monitor import (
+    MonitorFitConfig,
+    fit_monitor_peak,
+    gaussian_plus_flat,
+)
 import numpy as np
 import requests
 import xml.etree.ElementTree as ET
@@ -50,6 +55,7 @@ def find_next_runs(
 
     Return a map of cycle id to list of runs
     """
+    logger.debug(f"Finding next runs to process: after={after}, skip={skip}")
     journals_beamline_url = f"{journals_base_url}/ndx{beamline.lower()}"
     journal_main = requests.get(journals_beamline_url + "/journal_main.xml")
     journal_main.raise_for_status()
@@ -62,6 +68,7 @@ def find_next_runs(
     )
     next_runs = {}
     for filename in journals_cycles:
+        logger.debug(f"Checking journal {filename}")
         journal_cycle = requests.get(journals_beamline_url + f"/{filename}")
         journal_cycle.raise_for_status()
         root = ET.fromstring(journal_cycle.text)
@@ -83,10 +90,12 @@ def find_next_runs(
         if len(cycle_next_runs) > 0:
             next_runs[cycle_name] = sorted(cycle_next_runs)
 
+        logger.debug(f"Found {len(cycle_next_runs)} runs.")
         if len(cycle_next_runs) < len(cycle_runs):
             # We dropped some entries so we must have found the stop marker and don't need to continue
             break
 
+    logger.debug(f"Found {len(next_runs)} cycles.")
     return next_runs
 
 
@@ -126,9 +135,11 @@ def monitor_peaks(
 
     pipeline = dlt.current.pipeline()
     for beamline, fit_config in FIT_CONFIGS.items():
+        logger.info(f"Fitting monitor peaks for '{beamline}'")
         existing_peaks_table = load_iceberg_table(pipeline, "monitor_peaks")
         latest_run_result = None
         if existing_peaks_table:
+            logger.debug("Peaks table exists, finding latest run number")
             c_beamline, c_run_number = "beamline", "run_number"
             beamline_peaks = existing_peaks_table.scan(
                 row_filter=EqualTo(c_beamline, beamline),
@@ -138,6 +149,9 @@ def monitor_peaks(
                 latest_run_result = beamline_peaks.sort_by(
                     [(c_run_number, "descending")]
                 ).to_pylist()[0][c_run_number]
+                logger.debug(f"Latest run found for '{beamline}': {latest_run_result}")
+            else:
+                logger.debug(f"No entries found for '{beamline}'.")
 
         after = (
             latest_run_result
@@ -149,17 +163,16 @@ def monitor_peaks(
         )
 
         archive = Path(archive_mount)
-        yield [
-            as_dict(peak)
-            for peak in fit_monitor_peaks(
-                [
-                    run_file_path(archive, beamline, cycle, run_no)
-                    for cycle, runs in next_runs.items()
-                    for run_no in runs
-                ],
-                FIT_CONFIGS["PEARL"],
-            )
-        ]
+        for cycle, runs in next_runs.items():
+            logger.debug(f"Fitting runs {runs[0]} -> {runs[-1]}")
+            peaks = [
+                fit_monitor_peak(
+                    run_file_path(archive, beamline, cycle, run_no), fit_config
+                )
+                for run_no in runs
+            ]
+
+            yield [as_dict(peak) for peak in peaks if peak]
 
 
 if __name__ == "__main__":
