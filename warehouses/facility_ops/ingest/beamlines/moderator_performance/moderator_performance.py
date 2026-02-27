@@ -3,6 +3,7 @@
 It currently requires the ISIS archive to be mounted locally.
 """
 
+from collections import namedtuple
 import functools
 from pathlib import Path
 from typing import Dict, Literal, Sequence
@@ -26,8 +27,10 @@ from pyiceberg.expressions import EqualTo
 import requests
 import xml.etree.ElementTree as ET
 
+RunFile = namedtuple("RunFile", ("run_number", "path"))
 RunMode = Literal["backfill", "incremental"]
 
+CYCLE_DIR_PREFIX = "cycle_"
 FIT_CONFIGS = {
     "PEARL": MonitorFitConfig(
         beamline="PEARL",
@@ -44,7 +47,7 @@ FIT_CONFIGS = {
                 (np.inf, 5200, 1900),
             ),
         },
-        cycle_start="15_2",
+        cycle_start="25_4",
         skip_runs=(95382,),
     )
 }
@@ -80,71 +83,69 @@ def get_fitted_runs(beamline: str, pipeline: dlt.Pipeline) -> Dict[str, Sequence
     return fitted_runs
 
 
-def find_available_runs(
+def find_available_runs_from_archive(
     run_mode: RunMode,
-    journals_base_url: str,
+    archive_mount: Path,
     beamline: str,
     cycle_start: str,
     skip: Sequence[int],
-) -> Dict[str, Sequence[int]]:
-    """Look at journal files to determine the runs that exist.
+) -> Dict[str, Sequence[RunFile]]:
+    """Look over the archive for the beamline and find the available runs
 
     If the mode=incremental only look at the most recent cycle.
     """
     logger.debug(
         f"Finding available runs (mode={run_mode}) for {beamline} starting at cycle {cycle_start}"
     )
-    journals_beamline_url = f"{journals_base_url}/ndx{beamline.lower()}"
-    journal_main = requests.get(journals_beamline_url + "/journal_main.xml")
-    journal_main.raise_for_status()
 
-    root = ET.fromstring(journal_main.text)
-    journals_cycles = sorted(
-        [journalfile.attrib["name"] for journalfile in root.iter("file")], reverse=True
+    data_dir = archive_mount / f"NDX{beamline}" / "Instrument" / "data"
+    if not data_dir.exists():
+        logger.warning(f"Data directory does not exist: {data_dir}")
+        return {}
+
+    # Get all cycle directories
+    # To sort by correctly we need to pad the year to full YYYY
+    cycle_dirs = [
+        d.name[len(CYCLE_DIR_PREFIX) :]
+        for d in data_dir.iterdir()
+        if d.is_dir() and d.name.startswith(CYCLE_DIR_PREFIX)
+    ]
+    cycle_years = sorted(
+        map(lambda x: f"{19}{x}" if x.startswith("9") else f"{20}{x}", cycle_dirs),
+        reverse=True,
     )
+
     if run_mode == "incremental":
-        journals_cycles = [journals_cycles[0]]
+        cycle_years = [cycle_years[0]]
 
     available_runs = {}
-    for filename in journals_cycles:  # reverse iteration
-        logger.debug(f"Checking journal {filename}")
-        journal_cycle = requests.get(journals_beamline_url + f"/{filename}")
-        journal_cycle.raise_for_status()
-        root = ET.fromstring(journal_cycle.text)
-        namespaces = {
-            "journal": root.attrib[
-                "{http://www.w3.org/2001/XMLSchema-instance}schemaLocation"
-            ]
-        }
-        cycle_runs = [
-            int(entry.text.strip())  # type: ignore
-            for entry in root.findall(
-                ".//journal:NXentry/journal:run_number", namespaces
-            )
-        ]
-        cycle_next_runs = list(filter(lambda run: (run not in skip), cycle_runs))
-        cycle_name = f"cycle_{filename[len('journal_') : -len('.xml')]}"
-        if len(cycle_next_runs) > 0:
-            available_runs[cycle_name] = sorted(cycle_next_runs)
+    for cycle_year in cycle_years:
+        cycle_dir = f"{CYCLE_DIR_PREFIX}{cycle_year[2:]}"
+        logger.debug(f"Checking cycle {cycle_dir}")
+        cycle_path = data_dir / cycle_dir
 
-        logger.debug(f"Found {len(cycle_next_runs)} runs.")
-        if cycle_start in filename:
+        # Find all .nxs files and extract run numbers
+        cycle_runs = []
+        for file in cycle_path.glob(f"{beamline}*.nxs"):
+            try:
+                run_str = file.stem[len(beamline) :]
+                run_number = int(run_str)
+                if run_number not in skip:
+                    cycle_runs.append(RunFile(run_number, file))
+            except (ValueError, IndexError):
+                logger.warning(f"Could not parse run number from {file.name}")
+                continue
+
+        if cycle_runs:
+            available_runs[cycle_dir] = sorted(cycle_runs)
+            logger.debug(f"Found {len(cycle_runs)} runs in {cycle_dir}")
+
+        # Stop if we've reached the cycle_start
+        if cycle_start in cycle_dir:
             break
 
     logger.debug(f"Found {len(available_runs)} cycles.")
     return available_runs
-
-
-def run_file_path(archive_mount: Path, beamline: str, cycle: str, run_no: int) -> Path:
-    """Return the path to the given file on the ISIS archive"""
-    return (
-        archive_mount
-        / f"ndx{beamline.lower()}"
-        / "Instrument"
-        / "data"
-        / cycle
-        / f"{beamline}{run_no:08}.nxs"
-    )
 
 
 @dlt.resource(
@@ -152,7 +153,6 @@ def run_file_path(archive_mount: Path, beamline: str, cycle: str, run_no: int) -
     write_disposition={"disposition": "merge", "strategy": "upsert"},
 )
 def monitor_peaks(
-    journals_base_url: str = dlt.config.value,
     archive_mount: str = dlt.config.value,
     run_mode: RunMode = "incremental",
 ):
@@ -161,7 +161,6 @@ def monitor_peaks(
         return {
             "beamline": peak.run.beamline,
             "run_number": peak.run.run_number,
-            # Use naming convention YYYY/N
             "cycle_name": cycle_name,
             "run_start": peak.run.start_time,
             "proton_charge": peak.run.proton_charge_uamps,
@@ -176,9 +175,10 @@ def monitor_peaks(
     pipeline = dlt.current.pipeline()
     for beamline, fit_config in FIT_CONFIGS.items():
         logger.info(f"Fitting monitor peaks for '{beamline}'")
-        available_runs = find_available_runs(
+        archive = Path(archive_mount)
+        available_runs = find_available_runs_from_archive(
             run_mode,
-            journals_base_url,
+            archive,
             beamline,
             fit_config.cycle_start,
             fit_config.skip_runs,
@@ -188,20 +188,13 @@ def monitor_peaks(
             key: [
                 x
                 for x in available_runs[key]
-                if x not in set(runs_already_fitted.get(key, []))
+                if x.run_number not in set(runs_already_fitted.get(key, []))
             ]
             for key in available_runs
         }
-        archive = Path(archive_mount)
         for cycle, runs in runs_to_fit.items():
-            logger.debug(f"Fitting runs {runs[0]} -> {runs[-1]}")
-            peaks = [
-                fit_monitor_peak(
-                    run_file_path(archive, beamline, cycle, run_no), fit_config
-                )
-                for run_no in runs
-            ]
-
+            logger.debug(f"Fitting runs {runs[0].run_number} -> {runs[-1].run_number}")
+            peaks = [fit_monitor_peak(run.path, fit_config) for run in runs]
             yield [as_dict(cycle, peak) for peak in peaks if peak]
 
 
