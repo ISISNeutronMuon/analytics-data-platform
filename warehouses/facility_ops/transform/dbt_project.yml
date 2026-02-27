@@ -36,9 +36,9 @@ models:
     #   - 'custom_schema' is defined for each collection of models below
     # See https://docs.getdbt.com/docs/build/custom-schemas
     staging:
-      tram:
-        +schema: staging_tram
+      beamlines:
+        +schema: staging_beamlines
     marts:
       +materialized: table
-      tram:
-        +schema: tram
+      beamlines:
+        +schema: beamlines
