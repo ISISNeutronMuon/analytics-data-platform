@@ -149,7 +149,7 @@ CUSTOM_SECURITY_MANAGER = InternallyManagedAdminRoleSecurityManager
 # Caching layer
 REDIS_HOST = os.getenv("REDIS_HOST", "redis")
 REDIS_PORT = os.getenv("REDIS_PORT", "6379")
-REDIS_DB = int(os.getenv("REDIS_DB", "0"))
+REDIS_DB = int(os.environ["REDIS_DB"])
 COMMON_CACHE_CONFIG = {
     "CACHE_TYPE": "RedisCache",
     "CACHE_DEFAULT_TIMEOUT": 300,

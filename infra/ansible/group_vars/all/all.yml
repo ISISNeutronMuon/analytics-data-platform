@@ -88,18 +88,20 @@ superset_farm_instances:
     env_name: production
     flask_debug: false
     http_port: 8088
-    secret_key: "{{ vault_superset_accelerator_secret_key }}"
-    users_yaml: "{{ vault_superset_accelerator_users_yaml }}"
+    redis_db: 0
+    secret_key: "{{ vault_superset_secret_keys['accelerator'] }}"
+    users_yaml: "{{ vault_superset_users_yaml['accelerator'] }}"
     analytic_dbs:
       - name: accelerator_ops
         db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/accelerator_ops"
-  tram:
-    app_root: "{{ superset_farm_url_prefix }}/tram"
+  experiment_ops:
+    app_root: "{{ superset_farm_url_prefix }}/experiment_ops"
     env_name: production
     flask_debug: false
     http_port: 8089
-    secret_key: "{{ vault_superset_tram_secret_key }}"
-    users_yaml: "{{ vault_superset_tram_users_yaml }}"
+    redis_db: 1
+    secret_key: "{{ vault_superset_secret_keys['experiment_ops'] }}"
+    users_yaml: "{{ vault_superset_users_yaml['experiment_ops'] }}"
     analytic_dbs:
       - name: facility_ops
         db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/facility_ops"

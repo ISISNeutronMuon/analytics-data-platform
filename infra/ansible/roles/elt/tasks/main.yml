@@ -42,11 +42,7 @@
     dest: "{{ ansible_env['HOME'] }}/.aws/credentials"
     content: |+
       [default]
-      endpoint = {{ s3_endpoint }}
       request_checksum_calculation = when_required
-      region = local-01
-      aws_access_key_id = {{ s3_access_key_id }}
-      aws_secret_access_key = {{ s3_access_secret }}
     mode: "u=rw,o=r,g=r"
 
 # ---------- dlt ----------
