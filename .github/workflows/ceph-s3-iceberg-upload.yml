@@ -39,6 +39,11 @@ jobs:
 
       - name: Run test script
         shell: bash -l {0}
+        env:
+          CEPH_S3_ACCESS_KEY_ID: ${{ secrets.CEPH_S3_ACCESS_KEY_ID }}
+          CEPH_S3_SECRET_ACCESS_KEY: ${{ secrets.CEPH_S3_SECRET_ACCESS_KEY }}
+          CEPH_S3_ENDPOINT: ${{ secrets.CEPH_S3_ENDPOINT }}
+          CEPH_S3_REGION: ${{ secrets.CEPH_S3_REGION }}
         run: |
           uv run --script ../.github/workflows/test-ceph-s3-iceberg-upload.py
         working-directory: elt-common
