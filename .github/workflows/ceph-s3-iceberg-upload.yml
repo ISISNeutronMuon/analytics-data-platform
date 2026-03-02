@@ -1,0 +1,59 @@
+# Guard against https://github.com/ISISNeutronMuon/analytics-data-platform/issues/183
+# Test upload using same dependency versions as elt-common
+name: Tests for S3 upload by pyiceberg using Ceph
+
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - ".github/workflows/ceph-s3-iceberg-upload.yml"
+      - "elt-common/pyproject.toml"
+      - "elt-common/uv.lock"
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - ".github/workflows/ceph-s3-iceberg-upload.yml"
+      - "elt-common/pyproject.toml"
+      - "elt-common/uv.lock"
+
+env:
+  PYTHON_VERSION: 3.13
+  UV_VERSION: latest
+
+jobs:
+  test-upload:
+    name: Upload to S3
+    runs-on: ubuntu-slim
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: false
+          cache-dependency-glob: elt-common/pyproject.toml
+          python-version: ${{ env.PYTHON_VERSION }}
+          working-directory: elt-common
+
+      - name: Run test script
+        shell: bash -l {0}
+        env:
+          CEPH_S3_ACCESS_KEY_ID: ${{ secrets.CEPH_S3_ACCESS_KEY_ID }}
+          CEPH_S3_SECRET_ACCESS_KEY: ${{ secrets.CEPH_S3_SECRET_ACCESS_KEY }}
+          CEPH_S3_ENDPOINT: ${{ secrets.CEPH_S3_ENDPOINT }}
+          CEPH_S3_REGION: ${{ secrets.CEPH_S3_REGION }}
+        run: |
+          uv venv
+          source .venv/bin/activate
+          uv run --active --script ../.github/scripts/test-ceph-s3-iceberg-upload.py
+        working-directory: elt-common
+
+      - name: Dump package versions for possible debugging
+        if: always()
+        shell: bash -l {0}
+        run: |
+          source .venv/bin/activate
+          uv pip list
+        working-directory: elt-common
