@@ -41,5 +41,4 @@ jobs:
         shell: bash -l {0}
         run: |
           uv run --script ../.github/workflows/test-ceph-s3-iceberg-upload.py
-        with:
-          working-directory: elt-common
+        working-directory: elt-common
