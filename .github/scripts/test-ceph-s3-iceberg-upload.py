@@ -66,7 +66,7 @@ df = pa.Table.from_pylist(
 
 namespace, table_name = "testing", "cities"
 catalog.create_namespace_if_not_exists(namespace)
-table = catalog.create_table((namespace, table_name), df.schema)
+table = catalog.create_table_if_not_exists((namespace, table_name), df.schema)
 table.append(df)
 print(table.scan().to_arrow())
 catalog.purge_table(

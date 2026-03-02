@@ -45,5 +45,15 @@ jobs:
           CEPH_S3_ENDPOINT: ${{ secrets.CEPH_S3_ENDPOINT }}
           CEPH_S3_REGION: ${{ secrets.CEPH_S3_REGION }}
         run: |
-          uv run --script ../.github/workflows/test-ceph-s3-iceberg-upload.py
+          uv venv
+          source .venv/bin/activate
+          uv run --active --script ../.github/scripts/test-ceph-s3-iceberg-upload.py
+        working-directory: elt-common
+
+      - name: Dump package versions for possible debugging
+        if: always()
+        shell: bash -l {0}
+        run: |
+          source .venv/bin/activate
+          uv pip list
         working-directory: elt-common
