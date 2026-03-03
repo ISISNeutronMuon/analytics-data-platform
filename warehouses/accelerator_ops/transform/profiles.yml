@@ -1,4 +1,20 @@
-accelerator_ops_catalog:
+local:
+  target: trino
+  outputs:
+    trino:
+      type: trino
+      method: ldap
+      user: machine-infra
+      password: s3cr3t
+      host: localhost
+      port: 58443
+      http_scheme: https
+      cert: false
+      database: playground
+      schema: analytics
+      threads: 8
+
+remote:
   target: trino
   outputs:
     trino:

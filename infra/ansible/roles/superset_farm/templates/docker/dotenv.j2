@@ -10,6 +10,7 @@ SUPERSET_DB_SCHEMA_NAME={{ instance.key }}
 # Caching
 REDIS_HOST={{ superset_farm_redis_host }}
 REDIS_PORT={{ superset_farm_redis_port }}
+REDIS_DB={{ instance.value.redis_db }}
 
 # Environment/development settings
 PYTHONPATH=/app/docker/pythonpath
