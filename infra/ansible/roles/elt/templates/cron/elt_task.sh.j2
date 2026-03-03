@@ -6,10 +6,8 @@ ELT_SECRETS=${ELT_SECRETS:?}
 ELT_GIT_CLONE_DIR={{ elt_git_clone_dir }}
 ELT_GIT_REF=${ELT_GIT_REF:-main}
 ELT_WRITE_DISPOSITION=${ELT_WRITE_DISPOSITION:-}
-EXTRACT_AND_LOAD_SCRIPT=extract_and_load.py
 LOG_LEVEL=${ELT_LOG_LEVEL:-INFO}
 ON_PIPELINE_FAILURE=log_and_continue
-DBT_REQUIREMENTS_TXT=requirements.txt
 
 function ensure_elt_sources_exist() {
   export GIT_TERMINAL_PROMPT=0
@@ -31,43 +29,39 @@ function ensure_elt_sources_exist() {
 }
 
 # Script arguments - directories are relative to ELT_GIT_DEST
-# As many dbt project directories can be passed as required
 if [ $# -eq 0  ]; then
-  echo "Usage $0 <git_url> <warehouse_name> <source_name> [dbt_run_args...]"
+  echo "Usage $0 <git_url> <ingest_script> <transform_dir> [dbt_run_args...]"
   exit 1
 fi
 
 git_url=$1
-warehouse_name=$2
-source_name=$3
+ingest_script=$ELT_GIT_CLONE_DIR/$2
+transform_dir=$ELT_GIT_CLONE_DIR/$3
 shift 3
 
 # Read secrets
 set -o allexport; source $ELT_SECRETS; set +o allexport
 
-# Extraction
+# Ingest
 ensure_elt_sources_exist $git_url $ELT_GIT_CLONE_DIR
-warehouse_dir=$ELT_GIT_CLONE_DIR/warehouses/$warehouse_name
-extract_and_load_dir=$warehouse_dir/extract_load/$source_name
-cd $extract_and_load_dir
+ingest_script_dir=$(dirname $ingest_script)
 dlt_write_disposition=
 if [ -n "$ELT_WRITE_DISPOSITION" ]; then
   dlt_write_disposition="--write-disposition $ELT_WRITE_DISPOSITION"
 fi
+
+cd $ingest_script_dir
 uv run \
   --reinstall \
-  --script $EXTRACT_AND_LOAD_SCRIPT \
+  --script $ingest_script \
   --log-level $LOG_LEVEL \
   --on-pipeline-step-failure $ON_PIPELINE_FAILURE \
   $dlt_write_disposition
 
 
 # Transform
-dbt_project_dir=$warehouse_dir/transform
-if [ -d "$dbt_project_dir" ]; then
-  cd $dbt_project_dir
-  uv venv
-  uv pip install -r requirements/$DBT_REQUIREMENTS_TXT
-  uv run dbt deps
-  uv run dbt run $*
-fi
+cd $transform_dir
+uv venv
+uv pip install -r requirements/requirements.txt
+uv run dbt deps
+uv run dbt run $*

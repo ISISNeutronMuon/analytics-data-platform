@@ -22,7 +22,7 @@ security_groups = {
     ports_ingress = [8060]
   },
   "superset_farm-qa" = {
-    ports_ingress = [8088]
+    ports_ingress = [8088,8089]
   }
 }
 

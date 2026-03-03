@@ -262,7 +262,6 @@ def create_oauth2_session(
 )
 @click.option(
     "--server-admin",
-    required=True,
     multiple=True,
     help="Human users assigned as server/project admin for UI access. Value should be username. Options can be provided multiple times.",
 )
@@ -279,7 +278,7 @@ def main(
     bootstrap_credentials: TwoTuple,
     token_scope: str,
     warehouse_json_file: str,
-    server_admin: Sequence[str],
+    server_admin: Sequence[str] | None,
     log_level: str,
 ):
     """Bootstrap Lakekeeper and create a list of warehouses.
@@ -307,14 +306,15 @@ def main(
     kcadm.connection.refresh_token()  # force token request to master realm before switching target
     kcadm.change_current_realm(keycloak_user_realm)
     # Server admins
-    server_admin_ids = [oidc_user_id(kcadm, username) for username in server_admin]
-    server.assign_permissions(
-        server_admin_ids,
-        entities={
-            "server": ["admin"],
-            "project": ["project_admin"],
-        },
-    )
+    if server_admin is not None:
+        server_admin_ids = [oidc_user_id(kcadm, username) for username in server_admin]
+        server.assign_permissions(
+            server_admin_ids,
+            entities={
+                "server": ["admin"],
+                "project": ["project_admin"],
+            },
+        )
 
     LOGGER.debug(f"Creating warehouse using file: {warehouse_json_file}")
     with open(warehouse_json_file) as fp:

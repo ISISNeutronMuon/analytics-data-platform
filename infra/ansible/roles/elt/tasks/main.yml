@@ -22,14 +22,8 @@
     state: absent
   when: not stat_uv.stat.exists
 
-- name: Find compatible Python version
-  ansible.builtin.command: uv python find --quiet "{{ elt_uv_python_version }}"
-  ignore_errors: true
-  register: uv_python_find
-
 - name: Ensure Python is installed
   ansible.builtin.command: uv python install "{{ elt_uv_python_version }}"
-  when: uv_python_find.rc != 0
 
 # ---------- AWS S3 ----------
 - name: Ensure S3 configuration directory exists
@@ -48,11 +42,7 @@
     dest: "{{ ansible_env['HOME'] }}/.aws/credentials"
     content: |+
       [default]
-      endpoint = {{ s3_endpoint }}
       request_checksum_calculation = when_required
-      region = local-01
-      aws_access_key_id = {{ s3_access_key_id }}
-      aws_secret_access_key = {{ s3_access_secret }}
     mode: "u=rw,o=r,g=r"
 
 # ---------- dlt ----------
@@ -97,7 +87,9 @@
   vars:
     warehouse_name: "{{ warehouse.key }}"
     elt_jobs: "{{ warehouse.value.elt_jobs }}"
+    transform_dir: "{{ warehouse.value.transform_dir }}"
   loop: "{{ lakekeeper_catalog.warehouses | dict2items }}"
   loop_control:
     loop_var: warehouse
     label: "{{ warehouse_name }}"
+  when: "warehouse.value.elt_jobs is defined"
