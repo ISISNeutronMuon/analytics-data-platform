@@ -28,8 +28,11 @@ Deploy the services using Ansible:
 
 ```bash
 > cd infra/ansible
-> ansible-playbook -i inventories/<dev|qa>/inventory.ini site.yml -e lakekeeper_admin_user=<admin_email>
+> ansible-playbook -i inventories/<dev|qa>/inventory.ini site.yml [-e lakekeeper_admin_user=<admin_email>]
 ```
+
+The variable `lakekeeper_admin_user` is required the first time the playbooks are run. Further runs will add additional users
+as Lakekeeper admins.
 
 Once deployed the services are available at:
 
