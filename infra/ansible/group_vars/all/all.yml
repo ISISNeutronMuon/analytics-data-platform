@@ -62,6 +62,7 @@ lakekeeper_catalog:
       elt_jobs:
         github_org: ISISNeutronMuon
         github_repo: analytics-data-platform
+        dbt_common_args: "--profile remote"
         sources:
           - name: statusdisplay
             hour: 1
