@@ -19,7 +19,7 @@ import dlt
 from dlt.sources import TDataItems
 import pendulum
 import pandas as pd
-from elt_common.cli import cli_main
+from elt_common.cli import cli_main_v2
 from elt_common.logging import logging
 from elt_common.dlt_sources.m365 import (
     sharepoint,
@@ -160,11 +160,10 @@ def rdm_data(
     )
 
 
-cli_main(
+cli_main_v2(
     pipeline_name=PIPELINE_NAME,
-    default_destination="elt_common.dlt_destinations.pyiceberg",
     data_generator=pyiceberg_adapter(
         rdm_data, partition=PartitionTrBuilder.year("date_time")
     ),
-    dataset_name_suffix=PIPELINE_NAME,
+    source_domain="accelerator",
 )

@@ -153,9 +153,8 @@ def more_entry_columns_table(chunk_size: int) -> DltResource:
 # ------------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    cli_utils.cli_main(
+    cli_utils.cli_main_v2(
         pipeline_name="opralogweb",
-        default_destination="elt_common.dlt_destinations.pyiceberg",
         data_generator=opralogwebdb,
-        dataset_name_suffix="opralogweb",
+        source_domain="accelerator",
     )

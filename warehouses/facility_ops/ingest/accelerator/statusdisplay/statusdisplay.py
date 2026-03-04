@@ -34,9 +34,8 @@ def statusdisplay() -> DltSource:
 
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    cli_utils.cli_main(
+    cli_utils.cli_main_v2(
         pipeline_name="statusdisplay",
-        default_destination="elt_common.dlt_destinations.pyiceberg",
         data_generator=statusdisplay(),
-        dataset_name_suffix="statusdisplay",
+        source_domain="accelerator",
     )
