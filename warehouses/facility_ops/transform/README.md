@@ -7,7 +7,7 @@
 Install the Python requirements into a virtual environment:
 
 ```bash
->uv pip install -r ./requirements/requirements.txt
+> uv pip install -r ./requirements/requirements.txt
 ```
 
 Run the models against a local catalog, ensure the docker services in

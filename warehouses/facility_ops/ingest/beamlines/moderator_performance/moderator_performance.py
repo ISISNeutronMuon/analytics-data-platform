@@ -66,13 +66,17 @@ def get_fitted_runs(beamline: str, pipeline: dlt.Pipeline) -> Dict[str, Sequence
         selected_fields=(c_run_number, c_cycle),
     ).to_arrow()
     if beamline_peaks.num_rows > 0:
-        cycle_groups = beamline_peaks.group_by(c_cycle).aggregate(
-            [(c_run_number, "list")]
+        cycle_groups = (
+            beamline_peaks.sort_by(
+                [(c_cycle, "ascending"), (c_run_number, "ascending")]
+            )
+            .group_by(c_cycle)
+            .aggregate([(c_run_number, "list")])
         )
         fitted_runs = dict(
             zip(
                 cycle_groups[c_cycle].to_pylist(),
-                sorted(cycle_groups[c_run_number + "_list"].to_pylist()),
+                cycle_groups[c_run_number + "_list"].to_pylist(),
             )
         )
     else:
@@ -112,6 +116,9 @@ def find_available_runs_from_archive(
         map(lambda x: f"{19}{x}" if x.startswith("9") else f"{20}{x}", cycle_dirs),
         reverse=True,
     )
+    if not cycle_years:
+        logger.warning("No cycles directory found.")
+        return {}
 
     if run_mode == "incremental":
         cycle_years = [cycle_years[0]]
@@ -191,6 +198,8 @@ def monitor_peaks(
             for key in available_runs
         }
         for cycle, runs in runs_to_fit.items():
+            if not runs:
+                continue
             logger.debug(f"Fitting runs {runs[0].run_number} -> {runs[-1].run_number}")
             peaks = [fit_monitor_peak(run.path, fit_config) for run in runs]
             yield [as_dict(cycle, peak) for peak in peaks if peak]

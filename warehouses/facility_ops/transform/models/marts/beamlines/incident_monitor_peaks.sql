@@ -3,7 +3,7 @@
     properties={
       "partitioning": "ARRAY['beamline']",
     },
-    on_table_exists = 'drop'
+    on_table_exists = 'replace'
 )
 }}
 

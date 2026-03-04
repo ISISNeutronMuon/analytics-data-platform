@@ -87,7 +87,6 @@
   vars:
     warehouse_name: "{{ warehouse.key }}"
     elt_jobs: "{{ warehouse.value.elt_jobs }}"
-    transform_dir: "{{ warehouse.value.transform_dir }}"
   loop: "{{ lakekeeper_catalog.warehouses | dict2items }}"
   loop_control:
     loop_var: warehouse
