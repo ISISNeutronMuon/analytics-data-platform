@@ -33,28 +33,6 @@ client_secret = "s3cr3t"
 scope = "lakekeeper"
 ```
 
-To test dbt transform projects create and add the following to `$HOME/.dbt/profiles`:
-
-```yaml
-local_catalog:
-  target: local_trino
-  outputs:
-    local_trino:
-      type: trino
-      method: ldap
-      user: machine-infra
-      password: s3cr3t
-      host: localhost
-      port: 58443
-      http_scheme: https
-      cert: false
-      database: playground
-      schema: analytics
-      threads: 8
-```
-
-The values are defined in [`env-local`](./env-local).
-
 ## Start services
 
 Bring up the services with `docker compose`:

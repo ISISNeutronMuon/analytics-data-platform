@@ -1,0 +1,35 @@
+models:
+  - name: stg_moderator_performance__monitor_peaks
+    description: >
+      Each record defines a fit over a peak in the incident for a given beamline and experiment run.
+    columns:
+      - name: beamline
+        data_tests:
+          - not_null
+      - name: run_number
+        data_tests:
+          - not_null
+      - name: run_start
+        data_tests:
+          - not_null
+      - name: proton_charge
+        data_tests:
+          - not_null
+      - name: peak_centre
+        data_tests:
+          - not_null
+      - name: peak_centre_error
+        data_tests:
+          - not_null
+      - name: peak_amplitude
+        data_tests:
+          - not_null
+      - name: peak_amplitude_error
+        data_tests:
+          - not_null
+      - name: peak_sigma
+        data_tests:
+          - not_null
+      - name: peak_sigma_error
+        data_tests:
+          - not_null

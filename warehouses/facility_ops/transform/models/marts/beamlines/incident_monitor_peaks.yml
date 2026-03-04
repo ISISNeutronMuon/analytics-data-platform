@@ -1,0 +1,17 @@
+models:
+  - name: incident_monitor_peaks
+    description: >
+      Records fitted peaks in the monitor spectrum of beamlines
+    columns:
+      - name: beamline
+        description: The beamline identifier
+        data_tests:
+          - not_null
+      - name: run_start
+        description: The start timestamp of the run
+        data_tests:
+          - not_null
+      - name: peak_centre
+        description: The centre position of the peak in the spectrum
+        data_tests:
+          - not_null
