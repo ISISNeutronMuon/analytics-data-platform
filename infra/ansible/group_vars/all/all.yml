@@ -55,6 +55,16 @@ lakekeeper_catalog:
       storage:
         bucket_name: "{{ lakekeeper_bucket_prefix }}facility-ops"
         key_prefix: ""
+      elt_jobs:
+        github_org: ISISNeutronMuon
+        github_repo: analytics-data-platform
+        sources:
+          - name: moderator_performance
+            hour: 3
+            minute: 33
+            ingest_script: warehouses/facility_ops/ingest/beamlines/moderator_performance/moderator_performance.py
+            dbt_args: "--select '+models/marts'"
+        transform_dir: warehouses/facility_ops/transform
     accelerator_ops:
       storage:
         bucket_name: "{{ lakekeeper_bucket_prefix }}accelerator-ops"
