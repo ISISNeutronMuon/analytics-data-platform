@@ -64,28 +64,28 @@ lakekeeper_catalog:
             hour: 3
             minute: 33
             ingest_script: warehouses/facility_ops/ingest/beamlines/moderator_performance/moderator_performance.py
-            dbt_args: "--select '+models/marts'"
+            dbt_args: "--select '+models/marts/beamlines'"
             state: absent
           - name: statusdisplay
             hour: 1
             minute: 45
             ingest_script: warehouses/facility_ops/ingest/accelerator/statusdisplay/statusdisplay.py
-            dbt_args: "--select 'models/staging/statusdisplay'"
+            dbt_args: "--select 'models/staging/accelerator/statusdisplay'"
           - name: accelerator_sharepoint
             hour: 2
             minute: 2
             ingest_script: warehouses/facility_ops/ingest/accelerator/accelerator_sharepoint/accelerator_sharepoint.py
-            dbt_args: "--select 'models/staging/accelerator_sharepoint'"
+            dbt_args: "--select 'models/staging/accelerator/accelerator_sharepoint'"
           - name: opralogweb
             hour: 2
             minute: 11
             ingest_script: warehouses/facility_ops/ingest/accelerator/opralogweb/opralogweb.py
-            dbt_args: "--select '+models/operations' --exclude '+models/operations/power_consumption.sql'"
+            dbt_args: "--select '+models/marts/accelerator' --exclude '+models/marts/accelerator/power_consumption.sql'"
           - name: electricity_sharepoint
             hour: "*"
             minute: 5
             ingest_script: warehouses/facility_ops/ingest/accelerator/electricity_sharepoint/electricity_sharepoint.py
-            dbt_args: "--select '+models/operations/power_consumption.sql'"
+            dbt_args: "--select '+models/marts/accelerator/power_consumption.sql'"
         transform_dir: warehouses/facility_ops/transform
         maintenance:
           state: present
