@@ -1,0 +1,6 @@
+models:
+  - name: base_statusdisplay__cycles
+    description: >
+      Each row contains the cycle id & label along with a primary key referenced
+      in the secondary base_statusdisplay__cycles__phases table where
+      information describing a particular phase of a cycle is stored.

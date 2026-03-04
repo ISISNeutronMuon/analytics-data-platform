@@ -1,0 +1,11 @@
+models:
+  - name: stg_electricity_sharepoint_rdm_data
+    description: >
+      ISIS electricity consumption.
+    columns:
+      - name: power_measured_at
+        data_tests:
+          - not_null
+      - name: power_consumption_mw
+        data_tests:
+          - not_null

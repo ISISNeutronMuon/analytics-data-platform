@@ -1,0 +1,4 @@
+models:
+  - name: mcr_equipment_downtime_records
+    description: >
+      A full history of MCR equipment failures, including downtime and fault descriptions

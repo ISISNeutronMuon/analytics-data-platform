@@ -1,0 +1,18 @@
+[runtime]
+dlthub_telemetry = false
+log_level = "WARNING"
+
+[sources]
+base_url = "https://status.isis.stfc.ac.uk/api"
+resources = ["cycles"]
+
+[sources.data_writer]
+file_max_items = 100000
+
+[normalize]
+workers = 3
+
+[load]
+delete_completed_jobs = true
+raise_on_max_retries = 1
+workers = 1

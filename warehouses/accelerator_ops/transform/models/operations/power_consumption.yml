@@ -1,0 +1,11 @@
+models:
+  - name: power_consumption
+    description: >
+      The total power consumption for ISIS over time.
+    columns:
+      - name: power_measured_at
+        data_tests:
+          - not_null
+      - name: total_isis_power_mw
+        data_tests:
+          - not_null
