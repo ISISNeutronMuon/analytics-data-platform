@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 import datetime as dt
 from pathlib import Path
-from typing import Any, Dict, Sequence, Tuple, cast
+from typing import Any, Dict, Tuple, cast
 
 import h5py
 import numpy as np
@@ -16,8 +16,6 @@ Range = Tuple[float, float]
 class MonitorFitConfig:
     beamline: str
     curve_fit_args: Dict[str, Any]
-    cycle_start: str
-    skip_runs: Sequence
 
 
 @dataclass
@@ -137,8 +135,6 @@ def fit_monitor_peak(
 ) -> MonitorPeak | None:
     """Fit a low TOF peak in the given run"""
     monitor_ws = read_monitor(nxs_file)
-    if monitor_ws.run_info.run_number in fit_config.skip_runs:
-        return None
 
     pcharge = monitor_ws.run_info.proton_charge_uamps
     if monitor_ws.run_info.proton_charge_uamps < 1.0:

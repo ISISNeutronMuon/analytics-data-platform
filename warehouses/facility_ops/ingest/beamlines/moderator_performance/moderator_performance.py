@@ -17,7 +17,7 @@ It currently requires the ISIS archive to be mounted locally.
 from collections import namedtuple
 import functools
 from pathlib import Path
-from typing import Dict, Literal, Sequence
+from typing import Any, Dict, Literal, Sequence
 
 import dlt
 import dlt.common.logger as logger
@@ -56,8 +56,6 @@ FIT_CONFIGS = {
                 (np.inf, 5200, 1900),
             ),
         },
-        cycle_start="15_2",
-        skip_runs=(95382,),
     )
 }
 
@@ -113,8 +111,7 @@ def find_available_runs_from_archive(
 
     data_dir = archive_mount / f"NDX{beamline}" / "Instrument" / "data"
     if not data_dir.exists():
-        logger.warning(f"Data directory does not exist: {data_dir}")
-        return {}
+        raise ValueError(f"Data directory does not exist: {data_dir}")
 
     # Get all cycle directories
     # To sort by correctly we need to pad the year to full YYYY
@@ -189,15 +186,19 @@ def monitor_peaks(
         }
 
     pipeline = dlt.current.pipeline()
+    runs_config: Dict[str, Any] = dlt.config[
+        "moderator_performance.monitor_peaks.fit_config.runs"
+    ]
     for beamline, fit_config in FIT_CONFIGS.items():
         logger.info(f"Fitting monitor peaks for '{beamline}'")
+        beamline_runs = runs_config[beamline.lower()]
         archive = Path(archive_mount)
         available_runs = find_available_runs_from_archive(
             run_mode,
             archive,
             beamline,
-            fit_config.cycle_start,
-            fit_config.skip_runs,
+            beamline_runs["cycle_start"],
+            beamline_runs["skip"],
         )
         runs_already_fitted = get_fitted_runs(beamline, pipeline)
         runs_to_fit = {
