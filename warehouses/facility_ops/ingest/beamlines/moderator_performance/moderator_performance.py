@@ -1,3 +1,14 @@
+# /// script
+# requires-python = ">=3.13"
+# dependencies = [
+#     "elt-common",
+#     "numpy>=2.4.2,<3",
+#     "scipy>=1.17.1,<2",
+# ]
+#
+# [tool.uv.sources]
+# elt-common = { path = "../../../../../elt-common" }
+# ///
 """Pull raw data from defined beamlines and compute monitor peak positions
 
 It currently requires the ISIS archive to be mounted locally.

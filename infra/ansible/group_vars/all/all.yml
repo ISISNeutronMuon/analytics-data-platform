@@ -66,6 +66,8 @@ lakekeeper_catalog:
             dbt_args: "--select '+models/marts'"
             state: absent
         transform_dir: warehouses/facility_ops/transform
+        maintenance:
+          state: present
     accelerator_ops:
       storage:
         bucket_name: "{{ lakekeeper_bucket_prefix }}accelerator-ops"
