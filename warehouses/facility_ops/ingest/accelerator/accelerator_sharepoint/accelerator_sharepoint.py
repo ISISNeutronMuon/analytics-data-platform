@@ -7,7 +7,7 @@
 # ]
 #
 # [tool.uv.sources]
-# elt-common = { path = "../../../../elt-common" }
+# elt-common = { path = "../../../../../elt-common" }
 # ///
 import io
 from typing import Any, Iterator
