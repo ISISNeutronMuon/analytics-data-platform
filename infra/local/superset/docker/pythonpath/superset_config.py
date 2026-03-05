@@ -72,9 +72,13 @@ AUTH_API_LOGIN_ALLOW_MULTIPLE_PROVIDERS = False
 FAB_ADD_SECURITY_API = True
 RECAPTCHA_PUBLIC_KEY = ""
 RECAPTCHA_PRIVATE_KEY = ""
-SILENCE_FAB = True
-
 LOGIN_PROVIDER = os.environ.get("SUPERSET_LOGIN_PROVIDER", "db")
+
+if LOGIN_PROVIDER not in ("db", "oauth"):
+    raise ValueError(
+        f"Invalid login provider '{LOGIN_PROVIDER}'. Allowed values: (db, oauth)"
+    )
+
 if LOGIN_PROVIDER == "oauth":
     CUSTOM_SECURITY_MANAGER = CustomSsoSecurityManager
 
