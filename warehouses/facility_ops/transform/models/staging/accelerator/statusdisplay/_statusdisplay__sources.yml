@@ -1,7 +1,7 @@
 version: 2
 
 sources:
-  - name: src_statusdisplay
+  - name: source_accelerator_statusdisplay
     tables:
       - name: cycles
       - name: cycles__phases

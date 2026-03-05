@@ -1,7 +1,7 @@
 with
 
 source as (
-  select * from {{ source('src_opralogweb', 'more_entry_columns') }}
+  select * from {{ source('source_accelerator_opralogweb', 'more_entry_columns') }}
 ),
 
 renamed as (

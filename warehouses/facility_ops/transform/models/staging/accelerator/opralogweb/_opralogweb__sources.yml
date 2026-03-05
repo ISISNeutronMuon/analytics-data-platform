@@ -1,7 +1,7 @@
 version: 2
 
 sources:
-  - name: src_opralogweb
+  - name: source_accelerator_opralogweb
     tables:
       - name: entries
       - name: chapter_entry
