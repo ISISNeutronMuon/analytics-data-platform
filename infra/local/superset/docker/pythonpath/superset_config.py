@@ -66,34 +66,47 @@ class CustomSsoSecurityManager(SupersetSecurityManager):
         return None
 
 
-CUSTOM_SECURITY_MANAGER = CustomSsoSecurityManager
-
-# User registration is required to fill the Superset users table and happens automatically
-# via Keycloak
-AUTH_TYPE = AUTH_OAUTH
+# Enable this to mirror prod
 AUTH_USER_REGISTRATION = True
 AUTH_API_LOGIN_ALLOW_MULTIPLE_PROVIDERS = False
 FAB_ADD_SECURITY_API = True
+RECAPTCHA_PUBLIC_KEY = ""
+RECAPTCHA_PRIVATE_KEY = ""
+LOGIN_PROVIDER = os.environ.get("SUPERSET_LOGIN_PROVIDER", "db")
 
-KEYCLOAK_REALM = os.environ["KEYCLOAK_REALM_INTERNAL"]
-OAUTH_PROVIDERS = [
-    {
-        "name": "keycloak",
-        "icon": "fa-key",
-        "token_key": "access_token",
-        "remote_app": {
-            "client_id": "superset",
-            "client_kwargs": {
-                "scope": "openid email profile roles",
+if LOGIN_PROVIDER not in ("db", "oauth"):
+    raise ValueError(
+        f"Invalid login provider '{LOGIN_PROVIDER}'. Allowed values: (db, oauth)"
+    )
+
+if LOGIN_PROVIDER == "oauth":
+    CUSTOM_SECURITY_MANAGER = CustomSsoSecurityManager
+
+    # User registration is required to fill the Superset users table and happens automatically
+    # via Keycloak
+    AUTH_TYPE = AUTH_OAUTH
+
+    KEYCLOAK_REALM = os.environ["KEYCLOAK_REALM_INTERNAL"]
+    OAUTH_PROVIDERS = [
+        {
+            "name": "keycloak",
+            "icon": "fa-key",
+            "token_key": "access_token",
+            "remote_app": {
+                "client_id": "superset",
+                "client_kwargs": {
+                    "scope": "openid email profile roles",
+                },
+                "server_metadata_url": KEYCLOAK_REALM
+                + "/.well-known/openid-configuration",
+                "api_base_url": KEYCLOAK_REALM + "/protocol/",
             },
-            "server_metadata_url": KEYCLOAK_REALM + "/.well-known/openid-configuration",
-            "api_base_url": KEYCLOAK_REALM + "/protocol/",
-        },
+        }
+    ]
+    AUTH_ROLES_MAPPING = {
+        "adp_platform_admins": ["Admin"],
     }
-]
-AUTH_ROLES_MAPPING = {
-    "adp_platform_admins": ["Admin"],
-}
+
 AUTH_USER_REGISTRATION_ROLE = "Gamma"
 AUTH_ROLES_SYNC_AT_LOGIN = True
 
