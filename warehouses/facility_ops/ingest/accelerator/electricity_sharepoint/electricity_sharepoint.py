@@ -160,10 +160,11 @@ def rdm_data(
     )
 
 
-cli_main_v2(
-    pipeline_name=PIPELINE_NAME,
-    data_generator=pyiceberg_adapter(
-        rdm_data, partition=PartitionTrBuilder.year("date_time")
-    ),
-    source_domain="accelerator",
-)
+if __name__ == "__main__":
+    cli_main_v2(
+        pipeline_name=PIPELINE_NAME,
+        data_generator=pyiceberg_adapter(
+            rdm_data, partition=PartitionTrBuilder.year("date_time")
+        ),
+        source_domain="accelerator",
+    )
