@@ -43,5 +43,5 @@ models:
       +materialized: table
       accelerator:
         +schema: accelerator
-      beamlines:
-        +schema: beamlines
+      experiment_ops:
+        +schema: experiment_ops
