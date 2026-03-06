@@ -103,24 +103,28 @@ lakekeeper_catalog:
             minute: 45
             ingest_script: warehouses/accelerator_ops/extract_load/statusdisplay/extract_and_load.py
             dbt_args: "--select 'models/staging/statusdisplay'"
+            state: absent
           - name: accelerator_sharepoint
             hour: 2
             minute: 2
             ingest_script: warehouses/accelerator_ops/extract_load/accelerator_sharepoint/extract_and_load.py
             dbt_args: "--select 'models/staging/accelerator_sharepoint'"
+            state: absent
           - name: opralogweb
             hour: 2
             minute: 11
             ingest_script: warehouses/accelerator_ops/extract_load/opralogweb/extract_and_load.py
             dbt_args: "--select '+models/operations' --exclude '+models/operations/power_consumption.sql'"
+            state: absent
           - name: electricity_sharepoint
             hour: "*"
             minute: 5
             ingest_script: warehouses/accelerator_ops/extract_load/electricity_sharepoint/extract_and_load.py
             dbt_args: "--select '+models/operations/power_consumption.sql'"
+            state: absent
         transform_dir: warehouses/accelerator_ops/transform
         maintenance:
-          state: present
+          state: absent
 
 superset_farm_instances:
   accelerator:
