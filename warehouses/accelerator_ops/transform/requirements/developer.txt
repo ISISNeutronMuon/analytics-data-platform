@@ -34,7 +34,7 @@ daff==1.4.2
     # via dbt-core
 dbt-adapters==1.16.7
     # via dbt-core
-dbt-common==1.37.2
+dbt-common==1.37.3
     # via
     #   dbt-adapters
     #   dbt-core
