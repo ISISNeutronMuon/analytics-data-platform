@@ -58,13 +58,34 @@ lakekeeper_catalog:
       elt_jobs:
         github_org: ISISNeutronMuon
         github_repo: analytics-data-platform
+        dbt_common_args: "--profile remote"
         sources:
           - name: moderator_performance
             hour: 3
             minute: 33
             ingest_script: warehouses/facility_ops/ingest/beamlines/moderator_performance/moderator_performance.py
-            dbt_args: "--select '+models/marts'"
+            dbt_args: "--select '+models/marts/beamlines'"
             state: absent
+          - name: statusdisplay
+            hour: 3
+            minute: 45
+            ingest_script: warehouses/facility_ops/ingest/accelerator/statusdisplay/statusdisplay.py
+            dbt_args: "--select 'models/staging/accelerator/statusdisplay'"
+          - name: accelerator_sharepoint
+            hour: 4
+            minute: 2
+            ingest_script: warehouses/facility_ops/ingest/accelerator/accelerator_sharepoint/accelerator_sharepoint.py
+            dbt_args: "--select 'models/staging/accelerator/accelerator_sharepoint'"
+          - name: opralogweb
+            hour: 4
+            minute: 11
+            ingest_script: warehouses/facility_ops/ingest/accelerator/opralogweb/opralogweb.py
+            dbt_args: "--select '+models/marts/accelerator' --exclude '+models/marts/accelerator/power_consumption.sql'"
+          - name: electricity_sharepoint
+            hour: "*"
+            minute: 5
+            ingest_script: warehouses/facility_ops/ingest/accelerator/electricity_sharepoint/electricity_sharepoint.py
+            dbt_args: "--select '+models/marts/accelerator/power_consumption.sql'"
         transform_dir: warehouses/facility_ops/transform
         maintenance:
           state: present
@@ -82,24 +103,28 @@ lakekeeper_catalog:
             minute: 45
             ingest_script: warehouses/accelerator_ops/extract_load/statusdisplay/extract_and_load.py
             dbt_args: "--select 'models/staging/statusdisplay'"
+            state: absent
           - name: accelerator_sharepoint
             hour: 2
             minute: 2
             ingest_script: warehouses/accelerator_ops/extract_load/accelerator_sharepoint/extract_and_load.py
             dbt_args: "--select 'models/staging/accelerator_sharepoint'"
+            state: absent
           - name: opralogweb
             hour: 2
             minute: 11
             ingest_script: warehouses/accelerator_ops/extract_load/opralogweb/extract_and_load.py
             dbt_args: "--select '+models/operations' --exclude '+models/operations/power_consumption.sql'"
+            state: absent
           - name: electricity_sharepoint
             hour: "*"
             minute: 5
             ingest_script: warehouses/accelerator_ops/extract_load/electricity_sharepoint/extract_and_load.py
             dbt_args: "--select '+models/operations/power_consumption.sql'"
+            state: absent
         transform_dir: warehouses/accelerator_ops/transform
         maintenance:
-          state: present
+          state: absent
 
 superset_farm_instances:
   accelerator:
@@ -113,6 +138,8 @@ superset_farm_instances:
     analytic_dbs:
       - name: accelerator_ops
         db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/accelerator_ops"
+      - name: facility_ops
+        db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/facility_ops"
   experiment_ops:
     app_root: "{{ superset_farm_url_prefix }}/experiment_ops"
     env_name: production

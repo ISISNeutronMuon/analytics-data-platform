@@ -1,0 +1,5 @@
+models:
+  - name: stg_statusdisplay__cycles
+    description: >
+      Each record defines a phase of a cycle, including which target was running. Multiple
+      records exist for a given period of time if more than one target station was running.

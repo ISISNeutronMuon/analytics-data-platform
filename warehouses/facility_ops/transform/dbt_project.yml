@@ -20,12 +20,11 @@ clean-targets: # directories to be removed by `dbt clean`
 
 dispatch: # Use macros from trino_utils in preference. https://hub.getdbt.com/starburstdata/trino_utils/latest/
   - macro_namespace: dbt_utils
-    search_order: ['trino_utils', 'dbt_utils']
+    search_order: ["trino_utils", "dbt_utils"]
   - macro_namespace: dbt_date
-    search_order: ['trino_utils', 'dbt_date']
+    search_order: ["trino_utils", "dbt_date"]
   - macro_namespace: metrics
-    search_order: ['trino_utils', 'metrics']
-
+    search_order: ["trino_utils", "metrics"]
 
 models:
   +file_format: parquet
@@ -36,9 +35,13 @@ models:
     #   - 'custom_schema' is defined for each collection of models below
     # See https://docs.getdbt.com/docs/build/custom-schemas
     staging:
+      accelerator:
+        +schema: staging_accelerator
       beamlines:
         +schema: staging_beamlines
     marts:
       +materialized: table
+      accelerator:
+        +schema: accelerator
       beamlines:
         +schema: beamlines

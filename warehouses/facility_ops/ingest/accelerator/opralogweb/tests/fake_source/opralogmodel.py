@@ -45,12 +45,12 @@ def commit_or_rollback(func):
 
     def impl(session: Session, *args, **kwargs):
         try:
-            result = func(session, *args, **kwargs)
-            session.commit()
-            return result
+            return func(session, *args, **kwargs)
         except Exception:
             session.rollback()
             raise
+        finally:
+            session.commit()
 
     return impl
 

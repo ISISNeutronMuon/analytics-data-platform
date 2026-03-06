@@ -1,0 +1,6 @@
+version: 2
+
+sources:
+  - name: source_accelerator_electricity_sharepoint
+    tables:
+      - name: rdm_data

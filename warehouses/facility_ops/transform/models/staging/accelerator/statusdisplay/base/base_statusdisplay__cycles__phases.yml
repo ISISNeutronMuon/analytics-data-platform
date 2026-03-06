@@ -1,0 +1,4 @@
+models:
+  - name: base_statusdisplay__cycles__phases
+    description: >
+      Each row in the cycles__phases table corrseponds to a section of time within a given cycle.

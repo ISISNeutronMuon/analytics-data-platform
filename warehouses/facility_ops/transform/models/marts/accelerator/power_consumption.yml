@@ -1,7 +1,7 @@
 models:
-  - name: stg_electricity_sharepoint_rdm_data
+  - name: power_consumption
     description: >
-      ISIS electricity consumption.
+      The total power consumption for ISIS over time.
     columns:
       - name: power_measured_at
         data_tests:

@@ -1,0 +1,7 @@
+models:
+  - name: base_opralogweb__additional_columns
+    description: Opralogweb additional_columns table with basic cleaning
+    columns:
+      - name: additional_column_id
+        tests:
+          - not_null
