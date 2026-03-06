@@ -83,7 +83,7 @@ lakekeeper_catalog:
             dbt_args: "--select '+models/marts/accelerator' --exclude '+models/marts/accelerator/power_consumption.sql'"
           - name: electricity_sharepoint
             hour: "*"
-            minute: 35
+            minute: 5
             ingest_script: warehouses/facility_ops/ingest/accelerator/electricity_sharepoint/electricity_sharepoint.py
             dbt_args: "--select '+models/marts/accelerator/power_consumption.sql'"
         transform_dir: warehouses/facility_ops/transform
