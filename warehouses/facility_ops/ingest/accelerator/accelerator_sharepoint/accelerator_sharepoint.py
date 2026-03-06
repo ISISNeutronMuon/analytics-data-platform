@@ -82,7 +82,7 @@ def edr_equipment_mapping() -> DltResource:
 
 
 # We need to set the section in order for dlt to find our named secret.
-# We cannot run this in parallel as pyiceberg fails with
+# We cannot run this in parallel as pyiceberg fails with message like failed to commit.
 @dlt.source(section="m365")
 def resources():
     for resource_func in (equipment_downtime_records_archive, edr_equipment_mapping):
