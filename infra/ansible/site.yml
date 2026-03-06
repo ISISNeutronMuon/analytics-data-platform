@@ -53,5 +53,6 @@
     - base
     - role: robertdebock.logrotate
       become: true
+    - role: isis_archive
     - role: elt
       tags: [elt]

@@ -65,7 +65,6 @@ lakekeeper_catalog:
             minute: 33
             ingest_script: warehouses/facility_ops/ingest/beamlines/moderator_performance/moderator_performance.py
             dbt_args: "--select '+models/marts/beamlines'"
-            state: absent
           - name: statusdisplay
             hour: 3
             minute: 45

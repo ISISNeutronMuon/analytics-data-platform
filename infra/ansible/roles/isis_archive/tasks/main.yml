@@ -1,0 +1,59 @@
+---
+- name: Mount the archive
+  become: true
+  block:
+    - name: Install cifs-utils and keyutils
+      apt:
+        update_cache: true
+        name: "{{item}}"
+        state: present
+      with_items:
+        - cifs-utils
+        - keyutils
+
+    - name: Create mountpoint
+      ansible.builtin.file:
+        path: "{{ isis_archive_mount_point }}"
+        state: directory
+        mode: "u=rwx,g=rx,o=rx"
+
+    - name: Ensure credentials file is present
+      no_log: true
+      ansible.builtin.lineinfile:
+        path: /archive.creds
+        search_string: "{{item}}"
+        line: "{{item}}"
+        create: true
+        mode: "u=rwx,g=,o="
+        state: present
+      with_items:
+        - username={{ vault_isis_archive.username }}
+        - password={{ vault_isis_archive.password }}
+        - domain={{ vault_isis_archive.domain }}
+
+    - name: Ensure DNS config is setup for the archive
+      ansible.builtin.blockinfile:
+        path: /etc/systemd/resolved.conf
+        state: present
+        create: true
+        mode: "u=rw,g=r,o=r"
+        block: |
+          [Resolve]
+          Domains=isis.cclrc.ac.uk
+
+    - name: Restart resolved to ensure DNS configuration is up to date
+      ansible.builtin.service:
+        name: systemd-resolved.service
+        state: restarted
+
+    - name: Ensure mount is configured
+      ansible.builtin.mount:
+        path: /archive
+        src: "//isis.cclrc.ac.uk/inst$/"
+        fstype: cifs
+        opts: "noserverino,vers=2.1,credentials=/archive.creds,_netdev"
+        state: mounted
+      retries: 100
+      delay: 1
+      register: result
+      until: result.failed == false
