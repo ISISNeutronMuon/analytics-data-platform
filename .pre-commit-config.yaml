@@ -20,9 +20,8 @@ repos:
     rev: v0.11.0.1
     hooks:
       - id: shellcheck
-  # Pin to 0.16 to avoid https://github.com/DavidAnson/markdownlint-cli2/issues/785
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.16.0
+    rev: v0.21.0
     hooks:
       - id: markdownlint-cli2
         exclude: '^(?:\.github|docs)(?:/|$)'
