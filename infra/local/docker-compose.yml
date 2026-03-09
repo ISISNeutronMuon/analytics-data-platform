@@ -317,6 +317,17 @@ services:
     networks: *local-networks
 
   #########################################################
+  # Marimo notebooks
+  #########################################################
+  marimo:
+    container_name: local-lakehouse-marimo
+    build:
+      context: marimo
+    env_file: *env-file
+    networks: *local-networks
+    volumes:
+      - marimo_data:/home/nbuser
+  #########################################################
   # Trino query engine
   #########################################################
 
@@ -439,6 +450,8 @@ volumes:
     name: local-lakehouse_mkcert_data
   keycloak_data:
     name: local-lakehouse_keycloak_data
+  marimo_data:
+    name: local-lakehouse_marimo_data
   minio_data:
     name: local-lakehouse_minio_data
   shared_database_data:
