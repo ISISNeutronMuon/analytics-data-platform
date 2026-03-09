@@ -295,17 +295,19 @@ services:
       - /bin/bash
       - -c
       - |
-        uv run /opt/work/bootstrap-warehouse.py \
-          --lakekeeper-project-name "$$KC_REALM_NAME" \
-          --keycloak-url "$$KEYCLOAK_URL_INTERNAL" \
-          --keycloak-admin-credentials "$$KC_BOOTSTRAP_ADMIN_USERNAME:$$KC_BOOTSTRAP_ADMIN_PASSWORD" \
-          --keycloak-user-realm "$$KC_REALM_NAME" \
-          --bootstrap-credentials "machine-infra:s3cr3t" \
-          --token-scope lakekeeper \
-          --server-admin "$$ADP_SUPERUSER" \
-          --log-level=DEBUG \
-          --warehouse-json-file "/opt/work/warehouses/$$WAREHOUSE_NAME.json" \
-        "http://lakekeeper:8181"
+        for name in "$${WAREHOUSE_NAME}_landing" "$${WAREHOUSE_NAME}"; do \
+          uv run /opt/work/bootstrap-warehouse.py \
+            --lakekeeper-project-name "$$KC_REALM_NAME" \
+            --keycloak-url "$$KEYCLOAK_URL_INTERNAL" \
+            --keycloak-admin-credentials "$$KC_BOOTSTRAP_ADMIN_USERNAME:$$KC_BOOTSTRAP_ADMIN_PASSWORD" \
+            --keycloak-user-realm "$$KC_REALM_NAME" \
+            --bootstrap-credentials "machine-infra:s3cr3t" \
+            --token-scope lakekeeper \
+            --server-admin "$$ADP_SUPERUSER" \
+            --log-level=DEBUG \
+            --warehouse-json-file "/opt/work/warehouses/$$name.json" \
+            "http://lakekeeper:8181"; \
+        done
     restart: "no"
     depends_on:
       lakekeeper:
