@@ -317,6 +317,23 @@ services:
     networks: *local-networks
 
   #########################################################
+  # Marimo notebooks
+  #########################################################
+  marimo:
+    container_name: local-lakehouse-marimo
+    build:
+      context: marimo
+    env_file: *env-file
+    healthcheck:
+      test: ["CMD-SHELL", "healthcheck-localhost.sh 8080 /health healthy"]
+      start_period: 5s
+      interval: 30s
+      timeout: 30s
+    networks: *local-networks
+    volumes:
+      - ./marimo/notebooks:/home/nbuser/notebooks
+      - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
+  #########################################################
   # Trino query engine
   #########################################################
 
@@ -439,6 +456,8 @@ volumes:
     name: local-lakehouse_mkcert_data
   keycloak_data:
     name: local-lakehouse_keycloak_data
+  marimo_data:
+    name: local-lakehouse_marimo_data
   minio_data:
     name: local-lakehouse_minio_data
   shared_database_data:
