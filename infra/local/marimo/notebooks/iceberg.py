@@ -18,7 +18,7 @@ def _():
             "warehouse": "playground",
         },
     )
-    return playground
+    return (playground,)
 
 
 @app.cell

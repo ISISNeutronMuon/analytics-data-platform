@@ -17,19 +17,11 @@ RUN --mount=type=bind,source=./requirements.txt,target=./requirements.txt \
 # Public port
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=3s \
-  CMD curl -f http://localhost:8080/health || exit 1
-
 # Create a non-root user and switch to it
 RUN useradd -m nbuser
 USER nbuser
 
 WORKDIR /home/nbuser
-VOLUME /home/nbuser
-
-# Copy notebooks
-RUN mkdir notebooks
-COPY --chown=nbuser:nbuser  notebooks/* notebooks/
 
 # DO NOT USE THIS IN PRODUCTION!
 CMD [ "marimo", "edit", "--headless", "--host", "0.0.0.0", "--port", "8080", "--no-token"]
