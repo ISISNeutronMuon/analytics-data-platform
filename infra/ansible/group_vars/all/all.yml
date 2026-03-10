@@ -63,28 +63,28 @@ lakekeeper_catalog:
           - name: moderator_performance
             hour: 3
             minute: 33
-            ingest_script: warehouses/facility_ops/ingest/beamlines/moderator_performance/moderator_performance.py
+            ingest_script: warehouses/facility_ops_landing/ingest/beamlines/moderator_performance/moderator_performance.py
             dbt_args: "--select '+models/marts/beamlines'"
             state: absent
           - name: statusdisplay
             hour: 3
             minute: 45
-            ingest_script: warehouses/facility_ops/ingest/accelerator/statusdisplay/statusdisplay.py
+            ingest_script: warehouses/facility_ops_landing/ingest/accelerator/statusdisplay/statusdisplay.py
             dbt_args: "--select 'models/staging/accelerator/statusdisplay'"
           - name: accelerator_sharepoint
             hour: 4
             minute: 2
-            ingest_script: warehouses/facility_ops/ingest/accelerator/accelerator_sharepoint/accelerator_sharepoint.py
+            ingest_script: warehouses/facility_ops_landing/ingest/accelerator/accelerator_sharepoint/accelerator_sharepoint.py
             dbt_args: "--select 'models/staging/accelerator/accelerator_sharepoint'"
           - name: opralogweb
             hour: 4
             minute: 11
-            ingest_script: warehouses/facility_ops/ingest/accelerator/opralogweb/opralogweb.py
+            ingest_script: warehouses/facility_ops_landing/ingest/accelerator/opralogweb/opralogweb.py
             dbt_args: "--select '+models/marts/accelerator' --exclude '+models/marts/accelerator/power_consumption.sql'"
           - name: electricity_sharepoint
             hour: "*"
             minute: 5
-            ingest_script: warehouses/facility_ops/ingest/accelerator/electricity_sharepoint/electricity_sharepoint.py
+            ingest_script: warehouses/facility_ops_landing/ingest/accelerator/electricity_sharepoint/electricity_sharepoint.py
             dbt_args: "--select '+models/marts/accelerator/power_consumption.sql'"
         transform_dir: warehouses/facility_ops/transform
         maintenance:

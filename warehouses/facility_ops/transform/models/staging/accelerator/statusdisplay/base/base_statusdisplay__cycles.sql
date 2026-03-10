@@ -1,6 +1,6 @@
 with source as (
 
-    select * from {{ source('source_accelerator_statusdisplay', 'cycles') }}
+    select * from {{ source('accelerator_statusdisplay', 'cycles') }}
 
 ),
 

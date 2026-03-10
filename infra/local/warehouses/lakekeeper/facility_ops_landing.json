@@ -1,5 +1,5 @@
 {
-  "warehouse-name": "playground_landing",
+  "warehouse-name": "facility_ops_landing",
   "storage-credential": {
     "type": "s3",
     "aws-access-key-id": "adpsuperuser",
@@ -8,7 +8,7 @@
   },
   "storage-profile": {
     "type": "s3",
-    "bucket": "playground-landing",
+    "bucket": "facility-ops-landing",
     "key-prefix": "iceberg",
     "endpoint": "http://adp-router:59000",
     "region": "local-01",

@@ -29,8 +29,9 @@ def _():
 
 
 @app.cell
-def _(playground):
-    playground.list_namespaces()
+def _(playground_landing):
+    tbl = playground_landing.load_table("testing_migrated.cities")
+    tbl.scan().to_arrow()
     return
 
 

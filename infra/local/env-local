@@ -74,7 +74,7 @@ LAKEKEEPER__UI__OPENID_PROVIDER_URI=$KEYCLOAK_REALM_EXTERNAL
 LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
 LAKEKEEPER__UI__OPENID_SCOPE="lakekeeper openid profile email"
 
-WAREHOUSE_NAME=playground
+WAREHOUSE_NAME=facility_ops
 ###############################################################################
 # Trino
 ###############################################################################
@@ -102,11 +102,11 @@ REDIS_PORT=6379
 REDIS_DB=1
 
 # Admin user
-SUPERSET_ADMIN_USER=superset_admin
+SUPERSET_ADMIN_USER=$ADP_SUPERUSER
 SUPERSET_ADMIN_FIRSTNAME=Superset
 SUPERSET_ADMIN_LASTNAME=Admin
 SUPERSET_ADMIN_EMAIL=superset_admin@dev.com
-SUPERSET_ADMIN_PASSWORD=s3cr3t
+SUPERSET_ADMIN_PASSWORD=$ADP_SUPERUSER_PASS
 
 # Environment/development settings
 SUPERSET_CA_BUNDLE=/certs/rootCA.pem
