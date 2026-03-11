@@ -13,7 +13,8 @@ import pyarrow.compute as pc
 from pyiceberg.table import Table as IcebergTable
 import pytest
 
-EL_SCRIPT = Path(__file__).parent.parent / "extract_and_load.py"
+EL_SCRIPT_DIR = Path(__file__).parent.parent
+EL_SCRIPT = EL_SCRIPT_DIR / f"{EL_SCRIPT_DIR.name}.py"
 
 
 @pytest.fixture()
@@ -95,7 +96,7 @@ def test_first_run_pulls_all_records(
     pipelines_dir: str,
 ):
     catalog = destination_config.warehouse.connect()
-    expected_ns = "src_opralogweb"
+    expected_ns = "accelerator_opralogweb"
     assert (expected_ns,) not in catalog.list_namespaces()
 
     run_el_script(fake_source_db, destination_config, pipelines_dir)
@@ -124,7 +125,7 @@ def test_second_run_merges_updates(
     pipelines_dir: str,
 ):
     catalog = destination_config.warehouse.connect()
-    expected_ns = "src_opralogweb"
+    expected_ns = "accelerator_opralogweb"
     assert (expected_ns,) not in catalog.list_namespaces()
 
     run_el_script(fake_source_db, destination_config, pipelines_dir)
