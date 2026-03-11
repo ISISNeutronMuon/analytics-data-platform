@@ -21,5 +21,5 @@ Transformations are defined as dbt models that are read from `facility_ops_landi
 curated tables.
 
 - **Source code**: `warehouses/facility_ops/transform/`
-- **Model domains**: Each subdirectory of `transfrom/models/marts` defines the consumer domain.
+- **Model domains**: Each subdirectory of `transform/models/marts` defines the consumer domain.
 - **Schemas**: Each consumer defines the suffix for the schema name e.g. `analytics_accelerator`.

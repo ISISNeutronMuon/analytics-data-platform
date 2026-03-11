@@ -13,7 +13,7 @@ for details on why we use ADRs.
 | [0004](./0004-use-minio-as-object-store.md) | Use MinIO as object store | Superseded |
 | [0005](./0005-use-apache-iceberg-as-lakehouse-table-format.md) | Use Apache Iceberg as Lakehouse table format | Accepted |
 | [0006](./0006-use-lakekeeper-as-iceberg-catalog.md) | Use Lakekeeper as the Iceberg catalog | Accepted |
-| [0007](./0007-use-echo-s3-object-store) | Use Echo as S3 object store | Accepted |
+| [0007](./0007-use-echo-s3-object-store.md) | Use Echo as S3 object store | Accepted |
 
 ## adr-tools
 

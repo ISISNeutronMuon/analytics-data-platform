@@ -36,7 +36,9 @@ as Lakekeeper admins.
 
 Once deployed the services are available at:
 
-- Keycloak: <https://\<domain\>/auth>
-- Lakekeeper: <https://\<domain\>/iceberg>
-- Superset instances:
-   - <https://\<domain\>/workspace/facility_ops>
+| Service | URL |
+| --- | --- |
+| Keycloak | <https://analytics.isis.cclrc.ac.uk/auth> |
+| Lakekeeper UI | <https://analytics.isis.cclrc.ac.uk/iceberg/ui> |
+| Superset (accelerator) | <https://analytics.isis.cclrc.ac.uk/workspace/accelerator> |
+| Superset (experiment_ops) | <https://analytics.isis.cclrc.ac.uk/workspace/experiment_ops> |

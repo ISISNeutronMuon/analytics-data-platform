@@ -59,7 +59,7 @@ pattern.
 Key conventions:
 
 - Use `elt-common` helpers where possible for consistency (see `elt-common/README.md`).
-- The Iceberg namespace (schema) name is formed from `<pipline_name>_<source_domain>`.
+- The Iceberg namespace (schema) name is formed from `<pipeline_name>_<source_domain>`.
 - Add a inline script metadata for dependencies if using `uv run`.
 
 ### 3. Test the ingestion

@@ -4,15 +4,12 @@ Here we capture a collection of common issues when dealing with deployment and l
 
 ## Deployment
 
-### Ansible stuck waiting 'TASK [vm_create : Wait for connection]'
+### Ansible cannot connect via ssh'
 
 This can happen when a new node has been created with an IP address matching
-an old node. Remove all references of the offending IP address
-from `~/.ssh/known_hosts`: `sed -i ""  -E -e '/^<ip_address>/d' ~/.ssh/known_hosts`
-(where `<ip_address>` should be replaced with the real value).
-
-This can also happen when recreating the Traefik node and the floating IP now
-points at a different node. Again, remove the IP address from `~/.ssh/known_hosts`.
+an old node. Remove all references of the offending IP addresses from
+`~/.ssh/known_hosts` with `ssh-keygen -R <ip_address>`, where `<ip_address>` should be replaced with the real value.
+Be sure to do this for `198.` & `130.` addresses.
 
 ### Ansible Galaxy role errors
 
