@@ -36,7 +36,7 @@ as Lakekeeper admins.
 
 Once deployed the services are available at:
 
-- Keycloak: <https://\domain\>/auth>
+- Keycloak: <https://\<domain\>/auth>
 - Lakekeeper: <https://\<domain\>/iceberg>
 - Superset instances:
-   - <https://\<domain\>/workspace/accelerator>
+   - <https://\<domain\>/workspace/facility_ops>
