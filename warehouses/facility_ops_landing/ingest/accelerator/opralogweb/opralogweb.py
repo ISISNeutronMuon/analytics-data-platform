@@ -153,7 +153,7 @@ def more_entry_columns_table(chunk_size: int) -> DltResource:
 # ------------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    cli_utils.cli_main_v2(
+    cli_utils.cli_main(
         pipeline_name="opralogweb",
         data_generator=opralogwebdb,
         source_domain="accelerator",

@@ -34,7 +34,7 @@ def statusdisplay() -> DltSource:
 
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    cli_utils.cli_main_v2(
+    cli_utils.cli_main(
         pipeline_name="statusdisplay",
         data_generator=statusdisplay(),
         source_domain="accelerator",

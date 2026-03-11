@@ -218,7 +218,7 @@ def monitor_peaks(
 
 
 if __name__ == "__main__":
-    cli_utils.cli_main_v2(
+    cli_utils.cli_main(
         pipeline_name="moderator_performance",
         source_domain="beamlines",
         data_generator=pyiceberg_adapter(

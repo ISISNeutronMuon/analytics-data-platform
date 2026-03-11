@@ -15,8 +15,6 @@ from dlt.extract.reference import SourceFactory
 from dlt.pipeline.progress import TCollectorArg
 import humanize
 
-from .pipeline import dataset_name, dataset_name_v2
-
 
 def create_standard_argparser(
     default_destination: TDestinationReferenceArg,
@@ -64,62 +62,6 @@ def create_standard_argparser(
 
 def cli_main(
     pipeline_name: str,
-    data_generator: Any,
-    dataset_name_suffix: str,
-    *,
-    default_destination: TDestinationReferenceArg = "filesystem",
-    default_loader_file_format: TLoaderFileFormat = "parquet",
-    default_progress: TCollectorArg = NULL_COLLECTOR,
-):
-    """Run a standard extract and load pipeline
-
-    :param pipeline_name: Name of dlt pipeline
-    :param data_generator: Callable returning a dlt.DltSource or dlt.DltResource
-    :param dataset_name_suffix: Suffix part of full dataset name in the destination. The given string is prefixed with
-                                a standard string defined in constants.DATASET_NAME_PREFIX_SRCS
-    :param default_destination: Default destination, defaults to "filesystem"
-    :param default_loader_file_format: Default dlt loader file format, defaults to "parquet"
-    :param default_progress: Default progress reporter, defaults to NULL_COLLECTOR
-    """
-    args = create_standard_argparser(
-        default_destination,
-        default_loader_file_format,
-        default_progress,
-    ).parse_args()
-
-    if logger.is_logging():
-        logger.LOGGER.setLevel(args.log_level)
-
-    pipeline = dlt.pipeline(
-        pipeline_name=pipeline_name,
-        dataset_name=dataset_name(dataset_name_suffix),
-        destination=args.destination,
-        progress=args.progress,
-    )
-    logger.info(f"Starting pipeline: '{pipeline.pipeline_name}'")
-    logger.debug("Dropping pending packages to ensure a clean new load")
-    pipeline.drop_pending_packages()
-    if isinstance(data_generator, SourceFactory):
-        data = data_generator()
-    else:
-        data = data_generator
-    pipeline.run(
-        data,
-        loader_file_format=args.loader_file_format,
-        write_disposition=args.write_disposition,
-    )
-    logger.debug(pipeline.last_trace.last_extract_info)
-    logger.debug(f"Extracted row counts: {pipeline.last_trace.last_normalize_info.row_counts}")
-    logger.debug(pipeline.last_trace.last_load_info)
-    logger.info(
-        f"Pipeline {pipeline.pipeline_name} completed in {
-            humanize.precisedelta(pipeline.last_trace.finished_at - pipeline.last_trace.started_at)
-        }"
-    )
-
-
-def cli_main_v2(
-    pipeline_name: str,
     source_domain: str,
     data_generator: Any,
     *,
@@ -146,7 +88,7 @@ def cli_main_v2(
 
     pipeline = dlt.pipeline(
         pipeline_name=pipeline_name,
-        dataset_name=dataset_name_v2(source_domain, pipeline_name),
+        dataset_name=dataset_name(source_domain, pipeline_name),
         destination=args.destination,
         progress=args.progress,
     )
@@ -173,3 +115,8 @@ def cli_main_v2(
             humanize.precisedelta(pipeline.last_trace.finished_at - pipeline.last_trace.started_at)
         }"
     )
+
+
+def dataset_name(source_domain: str, pipeline_name: str) -> str:
+    """Given a domain and pipeline name construct a dataset name"""
+    return f"{source_domain}_{pipeline_name}"

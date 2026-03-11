@@ -14,7 +14,7 @@ from typing import Any, Iterator
 
 import dlt
 from dlt.common.storages.fsspec_filesystem import FileItemDict
-from elt_common.cli import cli_main_v2
+from elt_common.cli import cli_main
 from elt_common.dlt_sources.m365 import sharepoint
 from dlt.extract import DltResource
 from dlt.sources import TDataItems
@@ -90,7 +90,7 @@ def resources():
 
 
 if __name__ == "__main__":
-    cli_main_v2(
+    cli_main(
         pipeline_name="accelerator_sharepoint",
         data_generator=resources(),
         source_domain="accelerator",
