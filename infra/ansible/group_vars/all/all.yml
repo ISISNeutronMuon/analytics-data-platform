@@ -86,7 +86,7 @@ lakekeeper_catalog:
             minute: 5
             ingest_script: warehouses/facility_ops_landing/ingest/accelerator/electricity_sharepoint/electricity_sharepoint.py
             dbt_args: "--select '+models/marts/accelerator/power_consumption.sql'"
-        transform_dir: warehouses/facility_ops/transform
+        transform_catalog: facility_ops
         maintenance:
           state: present
     facility_ops:
@@ -94,6 +94,9 @@ lakekeeper_catalog:
         bucket_name: "{{ lakekeeper_bucket_prefix }}facility-ops"
         key_prefix: ""
       elt_jobs:
+        github_org: ISISNeutronMuon
+        github_repo: analytics-data-platform
+        transform_catalog: facility_ops
         maintenance:
           state: present
 
