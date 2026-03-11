@@ -5,3 +5,6 @@
 **/*$py.class
 **/build/
 **/*.egg-info/
+
+# pytest artifacts
+.coverage
