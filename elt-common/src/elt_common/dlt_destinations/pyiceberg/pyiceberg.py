@@ -445,4 +445,4 @@ class PyIcebergClient(JobClientBase, WithStateSync):
         exc_val: BaseException,
         exc_tb: TracebackType,
     ) -> None:
-        pass
+        self.iceberg_catalog.close()
