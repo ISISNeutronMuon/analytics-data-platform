@@ -95,10 +95,13 @@ class PyIcebergDestinationTestConfiguration:
     def clean_catalog(self):
         """Clean the destination catalog of all namespaces and tables"""
         catalog = self.warehouse.connect()
-        for ns_name in catalog.list_namespaces():
-            tables = catalog.list_tables(ns_name)
-            for qualified_table_name in tables:
-                catalog.purge_table(qualified_table_name)
-            catalog.drop_namespace(ns_name)
-        # allow a brief moment for cleanup tasks to complete
-        time.sleep(0.1)
+        try:
+            for ns_name in catalog.list_namespaces():
+                tables = catalog.list_tables(ns_name)
+                for qualified_table_name in tables:
+                    catalog.purge_table(qualified_table_name)
+                catalog.drop_namespace(ns_name)
+            # allow a brief moment for cleanup tasks to complete
+            time.sleep(0.1)
+        finally:
+            catalog.close()

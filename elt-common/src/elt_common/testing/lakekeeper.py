@@ -142,7 +142,6 @@ class RestCatalogWarehouse:
             return id_start + rows_per_frame
 
         catalog = self.connect()
-
         for ns_index in range(namespace_count):
             ns_name = f"{namespace_prefix}{ns_index}"
             catalog.create_namespace(ns_name)
@@ -153,11 +152,11 @@ class RestCatalogWarehouse:
         try:
             yield catalog
         finally:
-            self.purge()
+            self.purge(catalog)
+            catalog.close()
 
-    def purge(self):
+    def purge(self, catalog):
         """Purge all contents in warehouse"""
-        catalog = self.connect()
         for ns in catalog.list_namespaces():
             for view_id in catalog.list_views(ns):
                 catalog.drop_view(view_id)
