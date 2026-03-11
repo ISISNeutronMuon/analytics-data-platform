@@ -295,6 +295,7 @@ services:
       - /bin/bash
       - -c
       - |
+        set -euo pipefail
         for name in "$${WAREHOUSE_NAME}_landing" "$${WAREHOUSE_NAME}"; do \
           uv run /opt/work/bootstrap-warehouse.py \
             --lakekeeper-project-name "$$KC_REALM_NAME" \

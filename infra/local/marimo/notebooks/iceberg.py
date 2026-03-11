@@ -8,7 +8,6 @@ app = marimo.App(width="medium")
 def _():
     from pyiceberg.catalog import load_catalog
 
-
     def catalog_connect(warehouse: str):
         return load_catalog(
             warehouse,
@@ -22,17 +21,9 @@ def _():
             },
         )
 
-
-    playground = catalog_connect("playground")
-    playground_landing = catalog_connect("playground_landing")
-    return (playground_landing,)
-
-
-@app.cell
-def _(playground_landing):
-    tbl = playground_landing.load_table("testing_migrated.cities")
-    tbl.scan().to_arrow()
-    return
+    facility_ops = catalog_connect("facility_ops")
+    facility_ops_landing = catalog_connect("facility_ops_landing")
+    return (facility_ops_landing, facility_ops)
 
 
 if __name__ == "__main__":
