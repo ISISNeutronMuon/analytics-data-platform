@@ -96,42 +96,6 @@ lakekeeper_catalog:
       elt_jobs:
         maintenance:
           state: present
-    accelerator_ops:
-      storage:
-        bucket_name: "{{ lakekeeper_bucket_prefix }}accelerator-ops"
-        key_prefix: ""
-      elt_jobs:
-        github_org: ISISNeutronMuon
-        github_repo: analytics-data-platform
-        dbt_common_args: "--profile remote"
-        sources:
-          - name: statusdisplay
-            hour: 1
-            minute: 45
-            ingest_script: warehouses/accelerator_ops/extract_load/statusdisplay/extract_and_load.py
-            dbt_args: "--select 'models/staging/statusdisplay'"
-            state: absent
-          - name: accelerator_sharepoint
-            hour: 2
-            minute: 2
-            ingest_script: warehouses/accelerator_ops/extract_load/accelerator_sharepoint/extract_and_load.py
-            dbt_args: "--select 'models/staging/accelerator_sharepoint'"
-            state: absent
-          - name: opralogweb
-            hour: 2
-            minute: 11
-            ingest_script: warehouses/accelerator_ops/extract_load/opralogweb/extract_and_load.py
-            dbt_args: "--select '+models/operations' --exclude '+models/operations/power_consumption.sql'"
-            state: absent
-          - name: electricity_sharepoint
-            hour: "*"
-            minute: 5
-            ingest_script: warehouses/accelerator_ops/extract_load/electricity_sharepoint/extract_and_load.py
-            dbt_args: "--select '+models/operations/power_consumption.sql'"
-            state: absent
-        transform_dir: warehouses/accelerator_ops/transform
-        maintenance:
-          state: absent
 
 superset_farm_instances:
   accelerator:
@@ -143,8 +107,6 @@ superset_farm_instances:
     secret_key: "{{ vault_superset_secret_keys['accelerator'] }}"
     users_yaml: "{{ vault_superset_users_yaml['accelerator'] }}"
     analytic_dbs:
-      - name: accelerator_ops
-        db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/accelerator_ops"
       - name: facility_ops
         db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/facility_ops"
   experiment_ops:
