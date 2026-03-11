@@ -129,7 +129,7 @@ def cli_main_v2(
 ):
     """Run a standard extract and load pipeline.
 
-    The full dataset name becomes '${constants.SOURCE_DATASET_NAME_PREFIX}{source_domain}_{pipeline_name}'
+    The full dataset name becomes '{source_domain}__{pipeline_name}'
 
     :param pipeline_name: Name of dlt pipeline.
     :param source_domain: Name of domain of the source data

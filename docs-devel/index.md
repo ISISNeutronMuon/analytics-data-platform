@@ -1,17 +1,13 @@
 # Analytics Data Platform
 
+> **Audience**: This is the *developer* documentation for contributors to the platform.
+> For user-facing documentation (Superset guides, data dictionaries, etc.) see the
+> published site built from `docs/`.
+
 ## Introduction
 
-After requirements gathering meetings and a workshop as part of the
-[accelerator operational data platform project](https://stfc365.sharepoint.com/sites/ISISProject-1432)
-there is appetite for trialling a system to support long-term storage, complex
-queries and analysis of data from a multitude of sources across the accelerator
-data space.
-
-This document describes the initial set of requirements along with an overview
-of the design and implementation of a minimal system to prove
-the [Data Lakehouse](https://stfc365-my.sharepoint.com/:w:/g/personal/martyn_gigg_stfc_ac_uk/ETTFvkI6FulFhQFWmrmfGosBRO1Syvqbiq6DhVwnqxhVbw?e=HNKUIl)
-concept can be valuable to ISIS.
+An Apache Iceberg-based data lakehouse to support analytics for the facility.
+See [Background](./background.md) for a high-level overview of a data lakehouse.
 
 ## Repository overview
 
@@ -21,19 +17,29 @@ the future.
 ```text
 .
 ├── certs/                  # Certificate request configurations used for HTTPS/SSL
-├── elt-common/             # Reusable Python package with common ETL/ELT helpers used by the warehouses
-├── docs/                   # User and developer documentation using MkDocs. See `docs/src` for content used in the published docs site.
+├── docs/                   # User-facing documentation site (MkDocs). See docs/src for content.
+├── docs-devel/             # Developer documentation (this directory).
+├── elt-common/             # Reusable Python package with common ELT helpers used by the warehouses
 ├── infra/
 │   ├── ansible/            # Ansible playbooks/roles to deploy the system to the STFC (OpenStack) cloud.
-│   ├── container-images/   # Container definitions deployed services
-│   └── local/              # docker-compose configuration for a local development environment and end-to-end CI tests.
-└── warehouses/             # One subdirectory per (Lakekeeper) warehouse. Each contains ELT code to extract, transform and load data from external sources into Iceberg tables.
+│   ├── container-images/   # Container definitions for deployed services
+│   └── local/              # docker-compose configuration for local development and end-to-end CI tests.
+└── warehouses/             # One subdirectory per Lakekeeper warehouse. Each contains ELT code for that warehouse.
+    ├── facility_ops_landing/   # Ingestion scripts (bronze layer)
+    └── facility_ops/           # dbt transformation models (silver/gold layers)
 ```
+
+## Getting started
+
+New to the project? Start with the [Getting Started](./getting-started.md) guide to set up
+your local development environment.
 
 ## Details
 
-Jump to:
-
-- [System architecture](./system-architecture/index.md)
-- [Data architecture](./data-architecture/index.md)
-- [Deployment](./deployment/index.md)
+- [Getting started](./getting-started.md) — local setup, first pipeline run
+- [System architecture](./system-architecture/index.md) — services, tools, ADRs
+- [Data architecture](./data-architecture/index.md) — medallion layout, catalogs
+- [ELT pipeline development](./elt-pipelines.md) — how to build and modify pipelines
+- [CI/CD and testing](./testing.md) — running tests, CI workflows
+- [Deployment](./deployment/index.md) — cloud provisioning and service deployment
+- [Contributing](./contributing.md) — branching, PRs, code style

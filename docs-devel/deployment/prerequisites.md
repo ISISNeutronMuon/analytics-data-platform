@@ -29,10 +29,10 @@ Ansible requires a Python environment. These instructions assume the use of the
 environments. See [uv installation](https://docs.astral.sh/uv/getting-started/installation/)
 & [installing Python](https://docs.astral.sh/uv/guides/install-python/) guides.
 
-- Create a virtual environment in the `<repo_root>/ansible` directory
+- Create a virtual environment in the `<repo_root>/infra/ansible` directory
 
 ```sh
-cd <repo_root>/ansible
+cd <repo_root>/infra/ansible
 uv venv
 ```
 
@@ -55,7 +55,7 @@ See the [SCD cloud documentation](https://stfc.atlassian.net/wiki/spaces/CLOUDKB
 ## Ansible vault
 
 The project secrets are stored using [Ansible Vault](https://docs.ansible.com/ansible/latest/vault_guide/index.html). The password is required and can be supplied either on the command line with each ansible command or
-stored locally in a `<repo_root>/ansible/.vault_pass` file. **Do not share this password or commit the .vault_pass file to Git.**
+stored locally in a `<repo_root>/infra/ansible/.vault_pass` file. **Do not share this password or commit the .vault_pass file to Git.**
 
 ## Manila share
 
@@ -77,7 +77,7 @@ A Manila/CephFS share of at least 5TB is required. Once a quota has been assigne
 
 This is currently expected to be configured to use the Echo object store.
 The S3 endpoint is configured through the `s3_endpoint` ansible variable
-in [infra/ansible](inventories/qa/group_vars/all/all.yml).
+in [infra/ansible](../../infra/ansible/inventories/qa/group_vars/all/all.yml).
 
 An access key and secret are configured in the vault. They cannot be managed through
 the Openstack web interface, instead new keys and secrets are created using the

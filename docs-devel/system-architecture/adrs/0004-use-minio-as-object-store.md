@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-0007](./0007-use-echo-s3-object-store.md).
 
 ## Context
 

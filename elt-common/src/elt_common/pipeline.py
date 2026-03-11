@@ -1,4 +1,4 @@
-from elt_common.constants import SOURCE_DATASET_NAME_PREFIX, SOURCE_DATASET_NAME_PREFIX_V2
+from elt_common.constants import SOURCE_DATASET_NAME_PREFIX
 
 
 def dataset_name(suffix: str) -> str:
@@ -8,4 +8,4 @@ def dataset_name(suffix: str) -> str:
 
 def dataset_name_v2(source_domain: str, pipeline_name: str) -> str:
     """Given a domain and pipeline name construct a dataset name"""
-    return f"{SOURCE_DATASET_NAME_PREFIX_V2}{source_domain}_{pipeline_name}"
+    return f"{source_domain}_{pipeline_name}"

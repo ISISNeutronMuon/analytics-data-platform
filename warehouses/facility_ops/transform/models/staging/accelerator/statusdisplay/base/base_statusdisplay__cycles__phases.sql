@@ -2,7 +2,7 @@
 
 with source as (
 
-    select * from {{ source('source_accelerator_statusdisplay', 'cycles__phases') }}
+    select * from {{ source('accelerator_statusdisplay', 'cycles__phases') }}
 
 ),
 

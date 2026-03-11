@@ -38,13 +38,14 @@
       {{ elt_cron_root_dir }}/elt_task.sh
       https://github.com/{{ elt_jobs.github_org }}/{{ elt_jobs.github_repo }}.git
       {{ source.ingest_script }}
-      {{ elt_jobs.transform_dir }}
+      warehouses/{{ elt_jobs.transform_catalog }}/transform
       {{ elt_jobs.dbt_common_args | default('') }}
       {{ source.dbt_args | default('') }}
       > {{ elt_cron_logs_root_dir }}/{{ warehouse_name }}/{{ source.name }}-$(date +\%Y\%m\%d_\%H\%M\%S).log 2>&1
   loop: "{{ elt_jobs.sources }}"
   loop_control:
     loop_var: source
+  when: "elt_jobs.sources is defined"
 
 - name: Ensure Iceberg table maintenance jobs exist
   ansible.builtin.cron:

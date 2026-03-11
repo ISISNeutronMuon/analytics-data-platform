@@ -10,7 +10,7 @@ local:
       port: 58443
       http_scheme: https
       cert: false
-      database: playground
+      database: facility_ops
       schema: analytics
       threads: 8
 
