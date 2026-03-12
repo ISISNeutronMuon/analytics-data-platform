@@ -2,7 +2,7 @@ with
 
 source as (
 
-  select * from {{ source('source_accelerator_opralogweb', 'logbooks') }}
+  select * from {{ source('accelerator_opralogweb', 'logbooks') }}
 
 ),
 

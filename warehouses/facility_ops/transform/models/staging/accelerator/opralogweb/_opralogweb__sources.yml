@@ -1,7 +1,8 @@
 version: 2
 
 sources:
-  - name: source_accelerator_opralogweb
+  - name: accelerator_opralogweb
+    database: facility_ops_landing
     tables:
       - name: entries
       - name: chapter_entry

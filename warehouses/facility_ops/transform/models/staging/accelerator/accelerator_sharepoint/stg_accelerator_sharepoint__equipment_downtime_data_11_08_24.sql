@@ -1,6 +1,6 @@
 with source as (
 
-    select * from {{ source('source_accelerator_accelerator_sharepoint', 'equipment_downtime_data_11_08_24') }}
+    select * from {{ source('accelerator_accelerator_sharepoint', 'equipment_downtime_data_11_08_24') }}
 
 ),
 

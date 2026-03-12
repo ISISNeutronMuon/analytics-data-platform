@@ -1,6 +1,7 @@
 version: 2
 
 sources:
-  - name: source_accelerator_electricity_sharepoint
+  - name: accelerator_electricity_sharepoint
+    database: facility_ops_landing
     tables:
       - name: rdm_data
