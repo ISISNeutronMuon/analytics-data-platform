@@ -16,11 +16,11 @@ import pathlib
 from typing import Iterator, Optional
 
 import dlt
+import dlt.common.logger as logger
 from dlt.sources import TDataItems
 import pendulum
 import pandas as pd
 from elt_common.cli import cli_main
-from elt_common.logging import logging
 from elt_common.dlt_sources.m365 import (
     sharepoint,
     M365DriveItem,
@@ -29,9 +29,6 @@ from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
     pyiceberg_adapter,
     PartitionTrBuilder,
 )
-
-LOGGER = logging.getLogger(__name__)
-
 
 MAX_WORKERS_DEFAULT = min(8, (os.cpu_count() or 1) + 4)
 EXCEL_ENGINE = "calamine"
@@ -63,14 +60,56 @@ def read_power_consumption_csv(
 ) -> pd.DataFrame:
     """Read csv-formatted power consumption records. This can return None if there is not data in the file.
 
-    Expected columns: Date, Time, Total Power (MW)
+    The file can contain a record from a single export or multiple records combined. Each record starts with
+    a header:
+
+    Site Information:
+    RAL ISIS RDM
+    RAL ISIS RDM
+    Controller: ISIS
+    Controller description: ISIS Energy Totals
+    Status: Online
+
+    Time	Date	ISIS Elec Total Power {MW}
     The Date & Time columns together to create a single DateTime column.
     """
-    df = pd.read_csv(file_content, skiprows=skip_rows)
-    df["DateTime"] = to_utc(
-        pd.to_datetime(df["Date"] + " " + df["Time"], format="%d/%m/%y %H:%M:%S")  # type: ignore
-    )
-    return df.drop(["Date", "Time"], axis=1)
+    metadata_anchor = "site information"
+    csv_header_anchor = "time,date"
+    sections, current_lines, in_data = [], [], False
+    for line in file_content.getvalue().decode().splitlines():
+        line = line.strip()
+        line_lower = line.lower()
+
+        if line_lower.startswith(csv_header_anchor):
+            # Save any previous section
+            if current_lines:
+                sections.append("\n".join(current_lines))
+            # Start new section with header
+            current_lines = [csv_header_anchor]
+            in_data = True
+
+        elif in_data:
+            if line_lower.startswith(metadata_anchor):
+                # Metadata block
+                in_data = False
+            elif line == "":
+                # Skip blank lines and metadata lines
+                pass
+            else:
+                current_lines.append(line)
+
+    # # Don't forget the last section
+    # if current_lines:
+    #     sections.append("\n".join(current_lines))
+
+    # # Parse each section and concatenate
+    # dfs = [pd.read_csv(StringIO(s)) for s in sections]
+
+    # df = pd.read_csv(file_content, skiprows=skip_rows)
+    # df["DateTime"] = to_utc(
+    #     pd.to_datetime(df["Date"] + " " + df["Time"], format="%d/%m/%y %H:%M:%S")  # type: ignore
+    # )
+    # return df.drop(["Date", "Time"], axis=1)
 
 
 def read_power_consumption_excel(
@@ -108,17 +147,18 @@ def extract_content_and_read(
     def read_as_dataframe(file_obj: M365DriveItem) -> pd.DataFrame | None:
         file_name = file_obj["file_name"]
         file_bytes = file_obj.read_bytes()
-        LOGGER.debug(f"Filename '{file_name}' has size {len(file_bytes)} bytes.")
+        file_content = io.BytesIO(file_bytes)
+        logger.debug(f"Filename '{file_name}' has size {len(file_bytes)} bytes.")
         try:
             match pathlib.Path(file_name).suffix:
                 case ".csv":
-                    df = read_power_consumption_csv(io.BytesIO(file_bytes), skip_rows)
+                    df = read_power_consumption_csv(file_content, skip_rows)
                 case ".xlsx":
-                    df = read_power_consumption_excel(io.BytesIO(file_bytes), skip_rows)
+                    df = read_power_consumption_excel(file_content, skip_rows)
                 case _:
                     raise RuntimeError(f"Unsupported file extension in '{file_name}'")
         except Exception as exc:
-            LOGGER.error(
+            logger.error(
                 f"'Error loading {file_name} ({len(file_bytes)} bytes)'. File skipped.\nDetails: {str(exc)}"
             )
             return None
