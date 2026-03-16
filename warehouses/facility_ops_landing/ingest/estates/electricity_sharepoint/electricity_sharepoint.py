@@ -221,21 +221,24 @@ def get_latest_timestamp(pipeline: dlt.Pipeline) -> pendulum.DateTime | None:
     """Retrieve the timestamp loaded into the warehouse"""
     existing_rdm_data = load_iceberg_table(pipeline, "rdm_data")
     if existing_rdm_data is None:
-        logger.debug("Peaks table does not exist. No runs have been loaded.")
         return None
 
-    logger.debug("Peaks table exists, finding latest timestamp")
+    logger.debug("Destination table exists, finding latest timestamp.")
     c_datetime = "date_time"
     scan = existing_rdm_data.scan(selected_fields=(c_datetime,))
     running_max = None
     for batch in scan.to_arrow_batch_reader():
-        batch_max = pc.max(batch[c_datetime])
+        batch_max = pc.max(batch[c_datetime])  # type: ignore
         if batch_max.is_valid:
             running_max = (
-                batch_max if running_max is None else pc.max([running_max, batch_max])
+                batch_max if running_max is None else pc.max([running_max, batch_max])  # type: ignore
             )
 
-    return pendulum.instance(running_max.as_py()) if running_max is not None else None
+    latest_ts = (
+        pendulum.instance(running_max.as_py()) if running_max is not None else None
+    )
+    logger.debug(f"Latest record has timestamp: {latest_ts}")
+    return latest_ts
 
 
 if __name__ == "__main__":
