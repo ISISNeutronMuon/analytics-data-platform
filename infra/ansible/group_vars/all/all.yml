@@ -84,7 +84,7 @@ lakekeeper_catalog:
           - name: electricity_sharepoint
             hour: "*"
             minute: 5
-            ingest_script: warehouses/facility_ops_landing/ingest/accelerator/electricity_sharepoint/electricity_sharepoint.py
+            ingest_script: warehouses/facility_ops_landing/ingest/estates/electricity_sharepoint/electricity_sharepoint.py
             dbt_args: "--select '+models/marts/accelerator/power_consumption.sql'"
         transform_catalog: facility_ops
         maintenance:
