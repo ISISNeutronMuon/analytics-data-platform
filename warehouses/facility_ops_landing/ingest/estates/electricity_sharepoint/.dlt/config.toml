@@ -1,0 +1,4 @@
+[sources.electricity_sharepoint.rdm_data]
+backfill = false
+site_url = "https://stfc365.sharepoint.com/sites/ISISSustainability"
+root_dir = "/General/RDM Data"
