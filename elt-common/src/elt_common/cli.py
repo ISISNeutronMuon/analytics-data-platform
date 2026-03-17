@@ -1,122 +1,106 @@
-"""Utility functions for a cli script"""
+"""``elt`` CLI — the main entry point for running ingest jobs.
 
-import argparse
+Commands::
+
+    elt run <job_dir>        Run an ingest job
+    elt ls [--warehouse W]   List discovered jobs
+    elt validate [job_dir]   Validate elt.toml files
+"""
+
 import logging
-import typing
-from typing import Any
+from pathlib import Path
 
-import dlt
-from dlt.common.destination.reference import TDestinationReferenceArg
-import dlt.common.logger as logger
-from dlt.common.typing import TLoaderFileFormat
-from dlt.common.runtime.collector import NULL_COLLECTOR
-from dlt.common.schema.typing import TWriteDisposition
-from dlt.extract.reference import SourceFactory
-from dlt.pipeline.progress import TCollectorArg
-import humanize
+import click
+
+from elt_common.manifest import discover_jobs, load_manifest
+from elt_common.runner import run_job
 
 
-def create_standard_argparser(
-    default_destination: TDestinationReferenceArg,
-    default_loader_file_format: TLoaderFileFormat,
-    default_progress: TCollectorArg,
-) -> argparse.ArgumentParser:
-    """Creates an ArgumentParser with standard options common to most pipelines"""
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--log-level",
-        choices=logging.getLevelNamesMapping().keys(),
-        default=logging.INFO,
-    )
-    parser.add_argument(
-        "--on-pipeline-step-failure",
-        type=str,
-        default="raise",
-        choices=["raise", "log_and_continue"],
-        help="What should be done with pipeline step failure exceptions",
-    )
-    parser.add_argument(
-        "--destination",
-        default=default_destination,
-        help="Destination for the loaded data.",
-    )
-    parser.add_argument(
-        "--write-disposition",
-        default=None,
-        choices=typing.get_args(TWriteDisposition),
-        help="The write disposition used with dlt.",
-    )
-    parser.add_argument(
-        "--loader-file-format",
-        default=default_loader_file_format,
-        help="The dlt loader file format",
-    )
-    parser.add_argument(
-        "--progress",
-        default=default_progress,
-        help="The dlt progress option.",
+@click.group()
+@click.option(
+    "--log-level",
+    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False),
+    default="INFO",
+    help="Set the logging level.",
+)
+def cli(log_level: str) -> None:
+    """ELT pipeline runner for Iceberg data warehouses."""
+    logging.basicConfig(
+        level=getattr(logging, log_level.upper()),
+        format="%(asctime)s %(levelname)-8s %(name)s — %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    return parser
+
+@cli.command()
+@click.argument("job_dir", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option(
+    "--step",
+    type=click.Choice(["all", "ingest", "transform"], case_sensitive=False),
+    default="all",
+    help="Which step(s) to run.",
+)
+@click.option("--backfill", is_flag=True, default=False, help="Run a full historical backfill.")
+def run(job_dir: Path, step: str, backfill: bool) -> None:
+    """Run an ELT job from the given directory."""
+    run_job(job_dir, steps=step, backfill=backfill)
 
 
-def cli_main(
-    pipeline_name: str,
-    source_domain: str,
-    data_generator: Any,
-    *,
-    default_destination: TDestinationReferenceArg = "elt_common.dlt_destinations.pyiceberg",
-    default_loader_file_format: TLoaderFileFormat = "parquet",
-    default_progress: TCollectorArg = NULL_COLLECTOR,
-):
-    """Run a standard extract and load pipeline.
+@cli.command()
+@click.argument("root", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--warehouse", default=None, help="Filter by warehouse name.")
+def ls(root: Path, warehouse: str | None) -> None:
+    """List all discovered elt jobs under ROOT."""
+    manifests = discover_jobs(root)
+    if warehouse:
+        manifests = [m for m in manifests if m.warehouse == warehouse]
 
-    The full dataset name becomes '{source_domain}__{pipeline_name}'
+    if not manifests:
+        click.echo("No jobs found.")
+        return
 
-    :param pipeline_name: Name of dlt pipeline.
-    :param source_domain: Name of domain of the source data
-    :param data_generator: Callable returning a dlt.DltSource or dlt.DltResource
-    :param default_destination: Default destination, defaults to "filesystem"
-    :param default_loader_file_format: Default dlt loader file format, defaults to "parquet"
-    :param default_progress: Default progress reporter, defaults to NULL_COLLECTOR
+    # Header
+    click.echo(f"{'Name':<30} {'Domain':<20} {'Warehouse':<20} {'Tables'}")
+    click.echo("-" * 80)
+    for m in manifests:
+        table_names = ", ".join(t.name for t in m.tables)
+        click.echo(f"{m.name:<30} {m.domain:<20} {m.warehouse:<20} {table_names}")
+
+
+@cli.command()
+@click.argument(
+    "job_dir",
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+    required=False,
+    default=None,
+)
+def validate(job_dir: Path | None) -> None:
+    """Validate elt.toml file(s).
+
+    If JOB_DIR is given, validate just that directory.
+    Otherwise validate all elt.toml files found under the current directory.
     """
-    args = create_standard_argparser(
-        default_destination,
-        default_loader_file_format,
-        default_progress,
-    ).parse_args()
-
-    pipeline = dlt.pipeline(
-        pipeline_name=pipeline_name,
-        dataset_name=dataset_name(source_domain, pipeline_name),
-        destination=args.destination,
-        progress=args.progress,
-    )
-    if logger.is_logging():
-        logger.LOGGER.setLevel(args.log_level)
-
-    logger.info(f"Starting pipeline: '{pipeline.pipeline_name}'")
-    logger.debug("Dropping pending packages to ensure a clean new load")
-    pipeline.drop_pending_packages()
-    if isinstance(data_generator, SourceFactory):
-        data = data_generator()
+    if job_dir:
+        dirs = [job_dir]
     else:
-        data = data_generator
-    pipeline.run(
-        data,
-        loader_file_format=args.loader_file_format,
-        write_disposition=args.write_disposition,
-    )
-    logger.debug(pipeline.last_trace.last_extract_info)
-    logger.info(f"Extracted row counts: {pipeline.last_trace.last_normalize_info.row_counts}")
-    logger.debug(pipeline.last_trace.last_load_info)
-    logger.info(
-        f"Pipeline {pipeline.pipeline_name} completed in {
-            humanize.precisedelta(pipeline.last_trace.finished_at - pipeline.last_trace.started_at)
-        }"
-    )
+        dirs = [p.parent for p in Path(".").rglob("elt.toml")]
+
+    errors = 0
+    for d in dirs:
+        try:
+            manifest = load_manifest(d)
+            click.echo(f"  OK  {d} ({manifest.name})")
+        except Exception as exc:
+            click.echo(f"  FAIL  {d}: {exc}", err=True)
+            errors += 1
+
+    if errors:
+        raise SystemExit(1)
 
 
 def dataset_name(source_domain: str, pipeline_name: str) -> str:
-    """Given a domain and pipeline name construct a dataset name"""
+    """Given a domain and pipeline name, construct a dataset name.
+
+    Retained for backward compatibility with existing scripts.
+    """
     return f"{source_domain}_{pipeline_name}"

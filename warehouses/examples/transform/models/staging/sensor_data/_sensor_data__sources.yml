@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: examples_sensor_data
+    description: "Sensor data landing tables loaded by the elt CLI"
+    tables:
+      - name: readings
+        description: "Raw sensor temperature and humidity readings"
+      - name: events
+        description: "Raw operational events"

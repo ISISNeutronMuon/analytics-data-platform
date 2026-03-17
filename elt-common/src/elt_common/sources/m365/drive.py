@@ -1,15 +1,18 @@
+"""Microsoft 365 Drive filesystem (fsspec implementation).
+
+Ported from ``dlt_sources/m365/helpers.py`` with the dlt dependency removed.
+"""
+
 import datetime
-from typing import ClassVar, cast
+from typing import cast
 import urllib.parse as urlparser
 
-from authlib.integrations.httpx_client import OAuth2Client
 from fsspec import AbstractFileSystem
-from dlt.common.configuration.specs import configspec
-from dlt.common.typing import TSecretStrValue
-from dlt.common.storages.fsspec_filesystem import FileItemDict
 from httpx import Response
 from httpx import HTTPStatusError, NetworkError, TimeoutException
 import tenacity
+
+from .credentials import M365Credentials
 
 _RETRY_ARGS = {
     "wait": tenacity.wait_exponential(max=5),
@@ -27,100 +30,37 @@ _RETRY_ARGS = {
 }
 
 
-@configspec
-class M365CredentialsResource:
-    """Supports configuring m365 credentials through dlt secrets"""
-
-    # Constants
-    base_url: ClassVar[str] = "https://graph.microsoft.com"
-    api_url: ClassVar[str] = f"{base_url}/v1.0"
-    default_scope: ClassVar[str] = f"{base_url}/.default"
-    login_url: ClassVar[str] = "https://login.microsoftonline.com"
-
-    # Instance variables
-    tenant_id: str = None
-    client_id: str = None
-    client_secret: TSecretStrValue = None
-
-    @property
-    def authority_url(self) -> str:
-        return f"{self.login_url}/{self.tenant_id}"
-
-    @property
-    def oauth2_token_endpoint(self) -> str:
-        return f"{self.authority_url}/oauth2/v2.0/token"
-
-    def create_oauth_client(self) -> OAuth2Client:
-        return OAuth2Client(
-            self.client_id,
-            self.client_secret,
-            token_endpoint=self.oauth2_token_endpoint,
-            scope=self.default_scope,
-            grant_type="client_credentials",
-            follow_redirects=True,
-        )
-
-
 class M365DriveFS(AbstractFileSystem):
-    """Implements a minimal, read-only implementation of fsspec for M365 Drives."""
+    """Minimal, read-only fsspec implementation for M365 Drives."""
 
     protocol = ("m365",)
-    drives_api_url = f"{M365CredentialsResource.api_url}/drives"
+    drives_api_url = f"{M365Credentials.api_url}/drives"
 
-    def __init__(self, credentials: M365CredentialsResource, site_url: str, **extra_kwargs):
+    def __init__(self, credentials: M365Credentials, site_url: str, **extra_kwargs):
         super_kwargs = extra_kwargs.copy()
         super_kwargs.pop("use_listings_cache", None)
         super_kwargs.pop("listings_expiry_time", None)
         super_kwargs.pop("max_paths", None)
-        # passed to fsspec superclass... we don't support directory caching
         super().__init__(**super_kwargs)
 
-        self.client: OAuth2Client = credentials.create_oauth_client()
+        self.client = credentials.create_oauth_client()
         self.client.ensure_active_token(self.client.fetch_token())
         self.drive_url = f"{self.drives_api_url}/{self._get_site_drive_id(site_url)}"
 
     def fetch_all(self, path: str) -> bytes:
-        """Given a path to a drive item, including the protocol string, fetch
-        the content of the file as bytes.
-        """
+        """Download the full content of a file."""
         return self._msgraph_get(self._path_to_url(path, action="content")).content
 
     def info(self, path: str, **_) -> dict:
-        """Get information about a file or directory.
-
-        Parameters
-        ----------
-        path : str
-            Path to get information about
-        """
         url = self._path_to_url(path)
         response = self._msgraph_get(url)
         return self._drive_item_info_to_fsspec_info(response.json())
 
-    def ls(
-        self,
-        path: str,
-        detail: bool = True,
-        **kwargs,
-    ) -> list[dict | str]:
-        """List files in the given path.
-
-        Parameters
-        ----------
-        path : str
-            Path to list files in
-        detail: bool
-            if True, gives a list of dictionaries, where each is the same as
-            the result of ``info(path)``. If False, gives a list of paths
-            (str).
-        kwargs: may have additional backend-specific options, such as version
-            information
-        """
-
-        def _get_page(page_url: str, page_params: dict | None = None) -> tuple[list, str | None]:
+    def ls(self, path: str, detail: bool = True, **kwargs) -> list[dict | str]:
+        def _get_page(page_url: str, page_params: dict | None = None):
             response = self._msgraph_get(page_url, params=page_params)
             response_json = response.json()
-            return response_json.get("value", []), (response_json.get("@odata.nextLink", None))
+            return response_json.get("value", []), response_json.get("@odata.nextLink", None)
 
         url = self._path_to_url(path, action="children")
         params = None if detail else {"$select": "name,parentReference"}
@@ -143,36 +83,19 @@ class M365DriveFS(AbstractFileSystem):
         else:
             return [self._get_path(item) for item in items]
 
-    ###### private
+    # ------ private ------
+
     def _get_site_drive_id(self, site_url: str) -> str:
-        """Get the SharePoint site library drive id from the url
-
-        :param site_url: Full url of the main page of the SharePoint site
-        :param access_token: A Bearer access token to access the resource
-        :return: The id property of the site's drive
-        :raises: A requests.exception if an error code is encountered
-        """
-
-        # Two steps needed:
-        #  - get the site ID from the path
-        #  - get the drive ID from the /drive resource of the site
         def _get_id(endpoint_url: str) -> str:
             response = self._msgraph_get(endpoint_url, params={"$select": "id"})
             response.raise_for_status()
             return response.json()["id"]
 
         urlparts = urlparser.urlparse(site_url)
-        site_id = _get_id(
-            f"{M365CredentialsResource.api_url}/sites/{urlparts.netloc}:{urlparts.path}"
-        )
-        return _get_id(f"{M365CredentialsResource.api_url}/sites/{site_id}/drive")
+        site_id = _get_id(f"{M365Credentials.api_url}/sites/{urlparts.netloc}:{urlparts.path}")
+        return _get_id(f"{M365Credentials.api_url}/sites/{site_id}/drive")
 
     def _drive_item_info_to_fsspec_info(self, drive_item_info: dict) -> dict:
-        """Convert a drive item info to a fsspec info dictionary.
-
-        See
-        https://docs.microsoft.com/en-us/graph/api/resources/driveitem?view=graph-rest-1.0
-        """
         _type = "other"
         if drive_item_info.get("folder"):
             _type = "directory"
@@ -196,39 +119,29 @@ class M365DriveFS(AbstractFileSystem):
         return data
 
     def _get_path(self, drive_item_info: dict) -> str:
-        """Get a path to the item as if this were a filesystem
-
-        :param drive_item_info: A dict describing a single drive item
-        """
         try:
             parent_path = drive_item_info["parentReference"]["path"]
         except KeyError:
             parent_path = ""
 
         if parent_path:
-            # parentRef includes prefix to describe root folder, strip it
             try:
                 parent_path = "/" + parent_path.split("root:")[1].lstrip("/").rstrip("/")
             except IndexError as exc:
                 raise RuntimeError(
-                    f"parentReference.path does not contain 'root:' for item {drive_item_info['id']}"
+                    f"parentReference.path does not contain 'root:' "
+                    f"for item {drive_item_info['id']}"
                 ) from exc
 
         return parent_path + "/" + drive_item_info["name"]
 
     def _path_to_url(self, path: str, action: str | None = None) -> str:
-        """Given a drive item path create a url to access the item.
-
-        :param path: Path to the drive item
-        :param action: A string denoting an action such as children
-        """
         action = f"/{action}" if action else ""
         path = cast(str, self._strip_protocol(path)).rstrip("/")
         if path and not path.startswith("/"):
             path = "/" + path
         if path:
             path = f":{path}:"
-
         return f"{self.drive_url}/root{path}{action}"
 
     def _msgraph_get(self, url: str, **kwargs) -> Response:
@@ -237,13 +150,3 @@ class M365DriveFS(AbstractFileSystem):
     @tenacity.retry(**_RETRY_ARGS)
     def _msgraph_request(self, method: str, url: str, **kwargs) -> Response:
         return self.client.request(method, url, **kwargs)
-
-
-class M365DriveItem(FileItemDict):
-    """Specialises FileItemDict to add 'fetch_bytes' to bypass complicated file reading/caching in
-    'read_bytes' and just download the file content"""
-
-    @tenacity.retry(**_RETRY_ARGS)
-    def read_bytes(self) -> bytes:
-        drive_fs = cast(M365DriveFS, self.fsspec)
-        return drive_fs.fetch_all(self["file_url"])

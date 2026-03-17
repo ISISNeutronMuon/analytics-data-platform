@@ -9,7 +9,7 @@ from pyiceberg.catalog import Catalog as PyIcebergCatalog, load_catalog
 import requests
 import tenacity
 
-from elt_common.dlt_destinations.pyiceberg.configuration import PyIcebergRestCatalogCredentials
+from pyiceberg.utils.properties import HEADER_PREFIX as CATALOG_HEADER_PREFIX
 
 from . import DEFAULT_RETRY_ARGS, Endpoint, Settings
 
@@ -102,14 +102,17 @@ class RestCatalogWarehouse:
 
     def connect(self) -> PyIcebergCatalog:
         """Connect to the warehouse in the catalog"""
-        creds = PyIcebergRestCatalogCredentials()
-        creds.uri = str(self.server.catalog_endpoint())
-        creds.warehouse = self.name
-        creds.oauth2_server_uri = str(self.server.token_endpoint)
-        creds.client_id = self.server.settings.openid_client_id
-        creds.client_secret = self.server.settings.openid_client_secret
-        creds.scope = self.server.settings.openid_scope
-        return load_catalog(name="default", **creds.as_dict())
+        settings = self.server.settings
+        properties: dict[str, str] = {
+            "type": "rest",
+            "uri": str(self.server.catalog_endpoint()),
+            "warehouse": self.name,
+            "credential": f"{settings.openid_client_id}:{settings.openid_client_secret}",
+            "oauth2-server-uri": str(self.server.token_endpoint),
+            "scope": settings.openid_scope,
+            f"{CATALOG_HEADER_PREFIX}x-iceberg-access-delegation": "vended-credentials",
+        }
+        return load_catalog(name="default", **properties)
 
     @contextmanager
     def create_test_tables(

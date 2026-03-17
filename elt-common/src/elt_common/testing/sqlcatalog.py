@@ -1,6 +1,5 @@
 from tempfile import TemporaryDirectory
 
-from elt_common.dlt_destinations.pyiceberg.configuration import PyIcebergSqlCatalogCredentials
 from pyiceberg.catalog import Catalog as PyIcebergCatalog
 from pyiceberg.catalog import load_catalog
 
@@ -14,7 +13,7 @@ class SqlCatalogWarehouse:
 
     def connect(self) -> PyIcebergCatalog:
         """Connect to the warehouse in the catalog"""
-        creds = PyIcebergSqlCatalogCredentials()
-        creds.uri = self.uri
-        creds.warehouse = self.warehouse_path
-        return load_catalog(name="default", **creds.as_dict())
+        return load_catalog(
+            name="default",
+            **{"type": "sql", "uri": self.uri, "warehouse": self.warehouse_path},
+        )
