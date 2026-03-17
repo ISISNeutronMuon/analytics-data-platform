@@ -1,0 +1,13 @@
+name: examples
+version: "1.0.0"
+
+profile: "local"
+
+model-paths: ["models"]
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  +file_format: parquet
+  +materialized: view

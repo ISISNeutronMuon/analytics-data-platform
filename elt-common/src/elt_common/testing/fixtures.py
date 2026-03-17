@@ -1,6 +1,5 @@
 """A collection of utilities to support testing against this library"""
 
-import tempfile
 import time
 from typing import Generator
 import urllib.parse
@@ -12,7 +11,7 @@ import pytest
 import tenacity
 
 from . import DEFAULT_RETRY_ARGS
-from .dlt import PyIcebergDestinationTestConfiguration
+from .catalog import IcebergTestConfiguration
 from .lakekeeper import Settings, Server
 from .sqlcatalog import SqlCatalogWarehouse
 
@@ -74,15 +73,9 @@ def warehouse(settings: Settings) -> Generator:
 
 
 @pytest.fixture
-def destination_config(warehouse):
-    destination_config = PyIcebergDestinationTestConfiguration(warehouse)
+def catalog_config(warehouse):
+    config = IcebergTestConfiguration(warehouse)
     try:
-        yield destination_config
+        yield config
     finally:
-        destination_config.clean_catalog()
-
-
-@pytest.fixture
-def pipelines_dir():
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        yield tmp_dir
+        config.clean_catalog()
