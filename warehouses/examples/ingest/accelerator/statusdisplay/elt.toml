@@ -11,6 +11,7 @@ sourceconfigcls = "SourceConfig"
 name = "schedule"
 write_mode = "replace"
 partition = { "started_at" = "year" }
+sort_order = { "cycle_name" = "asc" }
 
 [transform]
 dbt_dir = "warehouses/examples/transform"
