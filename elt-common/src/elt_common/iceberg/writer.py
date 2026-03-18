@@ -15,7 +15,7 @@ from elt_common.iceberg.sortorder import SortOrderHint, create_sort_order
 from pyiceberg.catalog import Catalog
 from pyiceberg.exceptions import NoSuchNamespaceError, NoSuchTableError
 from pyiceberg.schema import Schema
-from pyiceberg.table import Table as IcebergTable
+from pyiceberg.table import ALWAYS_TRUE, Table as IcebergTable
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ class IcebergWriter:
             iceberg_table.append(data)
         elif mode == "merge":
             if not merge_on:
-                raise ValueError("merge_on must be provided when mode='merge'")
+                raise ValueError("'merge_on' must be provided when mode='merge'")
             iceberg_table.upsert(
                 df=data,
                 join_cols=merge_on,
@@ -102,8 +102,9 @@ class IcebergWriter:
                 case_sensitive=True,
             )
         elif mode == "replace":
-            iceberg_table.delete()
-            iceberg_table.append(data)
+            with iceberg_table.transaction() as txn:
+                txn.delete(delete_filter=ALWAYS_TRUE)
+                txn.append(data)
         else:
             raise ValueError(f"Unsupported write mode: {mode!r}")
 
@@ -130,7 +131,7 @@ class IcebergWriter:
         logger.info(f"Creating table {table_id}")
         return self.catalog.create_table(
             table_id,
-            schema=arrow_schema,
+            schema=iceberg_schema,
             partition_spec=partition_spec,
             sort_order=sort_order_spec,
         )
