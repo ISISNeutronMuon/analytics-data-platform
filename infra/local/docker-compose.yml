@@ -6,7 +6,7 @@ x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
 x-openfga-image: &openfga-image openfga/openfga:v1.11.2
 x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.11.1
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
-x-postgres-image: &postgres-image postgres:16.9-bookworm
+x-postgres-image: &postgres-image postgres:18-bookworm
 x-redis-image: &redis-image redis:8.4-bookworm
 x-superset-image: &superset-image ghcr.io/isisneutronmuon/analytics-data-platform-superset:a4f0e8011f34785d759269dceedfa2693db81c19
 x-traefik-image: &traefik-image traefik:v3.5.3
@@ -105,7 +105,7 @@ services:
       # Open the port for easy access to viewing the database
       - "55432:5432"
     volumes:
-      - "shared_database_data:/var/lib/postgresql/data"
+      - "shared_database_data:/var/lib/postgresql"
     networks: *local-networks
 
   shared-database-bootstrap:
