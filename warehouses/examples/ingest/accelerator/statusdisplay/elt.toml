@@ -11,6 +11,10 @@ sourceconfigcls = "SourceConfig"
 name = "schedule"
 write_mode = "replace"
 
+[[tables]]
+name = "other"
+write_mode = "replace"
+
 [transform]
 dbt_dir = "warehouses/examples/transform"
 dbt_select = "models/staging/sensor_data"
