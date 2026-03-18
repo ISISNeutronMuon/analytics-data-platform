@@ -6,144 +6,20 @@ evolution, and writing Arrow data to Iceberg tables via ``append``,
 """
 
 import logging
-from typing import Literal, Sequence
+from typing import Literal
 
 import pyarrow as pa
+from elt_common.iceberg.schema import create_iceberg_schema
+from elt_common.iceberg.partition import PartitionHint, create_partition_spec
+from elt_common.iceberg.sortorder import SortOrderHint, create_sort_order
 from pyiceberg.catalog import Catalog
 from pyiceberg.exceptions import NoSuchNamespaceError, NoSuchTableError
-from pyiceberg.partitioning import (
-    UNPARTITIONED_PARTITION_SPEC,
-    PartitionField,
-    PartitionSpec,
-)
 from pyiceberg.schema import Schema
-from pyiceberg.table import Table
-from pyiceberg.table.sorting import (
-    UNSORTED_SORT_ORDER,
-    SortDirection,
-    SortField,
-    SortOrder,
-)
-import pyiceberg.transforms as transforms
+from pyiceberg.table import Table as IcebergTable
 
 logger = logging.getLogger(__name__)
 
 WriteMode = Literal["append", "merge", "replace"]
-
-
-# ---------------------------------------------------------------------------
-# Partition helpers (ported from dlt_destinations/pyiceberg/helpers.py)
-# ---------------------------------------------------------------------------
-
-
-class PartitionTransformation:
-    """A partition transform to apply to a column."""
-
-    def __init__(self, transform: str, column_name: str) -> None:
-        self.transform = transform
-        self.column_name = column_name
-
-
-class PartitionTrBuilder:
-    """Helper to build common Iceberg partition transformations."""
-
-    @staticmethod
-    def identity(column_name: str) -> PartitionTransformation:
-        return PartitionTransformation(transforms.IDENTITY, column_name)
-
-    @staticmethod
-    def year(column_name: str) -> PartitionTransformation:
-        return PartitionTransformation(transforms.YEAR, column_name)
-
-    @staticmethod
-    def month(column_name: str) -> PartitionTransformation:
-        return PartitionTransformation(transforms.MONTH, column_name)
-
-    @staticmethod
-    def day(column_name: str) -> PartitionTransformation:
-        return PartitionTransformation(transforms.DAY, column_name)
-
-    @staticmethod
-    def hour(column_name: str) -> PartitionTransformation:
-        return PartitionTransformation(transforms.HOUR, column_name)
-
-
-class SortOrderSpecification:
-    """A sort specification to apply to a column."""
-
-    def __init__(self, direction: str, column_name: str) -> None:
-        self.direction = direction
-        self.column_name = column_name
-
-
-class SortOrderBuilder:
-    """Builder to generate Iceberg sort order specs."""
-
-    def __init__(self, column_name: str) -> None:
-        self.column_name = column_name
-        self._direction: str | None = None
-
-    @property
-    def direction(self) -> str:
-        if self._direction is None:
-            raise ValueError("Sort direction not specified. Use .asc()/.desc() to set direction.")
-        return self._direction
-
-    def asc(self) -> "SortOrderBuilder":
-        self._direction = SortDirection.ASC.value
-        return self
-
-    def desc(self) -> "SortOrderBuilder":
-        self._direction = SortDirection.DESC.value
-        return self
-
-    def build(self) -> SortOrderSpecification:
-        return SortOrderSpecification(self.direction, self.column_name)
-
-
-def build_partition_spec(
-    partition: dict[str, str] | None,
-    iceberg_schema: Schema,
-) -> PartitionSpec:
-    """Build an Iceberg ``PartitionSpec`` from a ``{column: transform}`` dict."""
-    if not partition:
-        return UNPARTITIONED_PARTITION_SPEC
-
-    def _field_name(column_name: str, transform: str) -> str:
-        bracket = transform.find("[")
-        return f"{column_name}_{transform[:bracket] if bracket > 0 else transform}"
-
-    return PartitionSpec(
-        *(
-            PartitionField(
-                source_id=iceberg_schema.find_field(col).field_id,
-                field_id=1000 + idx,
-                transform=transforms.parse_transform(tr),
-                name=_field_name(col, tr),
-            )
-            for idx, (col, tr) in enumerate(partition.items())
-        )
-    )
-
-
-def build_sort_order(
-    sort_order: dict[str, str] | None,
-    iceberg_schema: Schema,
-) -> SortOrder:
-    """Build an Iceberg ``SortOrder`` from a ``{column: direction}`` dict."""
-    if not sort_order:
-        return UNSORTED_SORT_ORDER
-
-    return SortOrder(
-        *(
-            SortField(
-                source_id=iceberg_schema.find_field(col).field_id,
-                direction=SortDirection(direction),
-                transform=transforms.parse_transform("identity"),
-            )
-            for col, direction in sort_order.items()
-        )
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -178,7 +54,7 @@ class IcebergWriter:
             self.catalog.create_namespace(self.namespace)
             logger.info(f"Created namespace '{self.namespace}'")
 
-    def load_table(self, table_name: str) -> Table | None:
+    def load_table(self, table_name: str) -> IcebergTable | None:
         """Load an existing Iceberg table, or ``None`` if it doesn't exist."""
         try:
             return self.catalog.load_table((self.namespace, table_name))
@@ -191,7 +67,7 @@ class IcebergWriter:
         data: pa.Table,
         *,
         mode: WriteMode = "append",
-        merge_on: Sequence[str] | None = None,
+        merge_on: list[str] | None = None,
         partition: dict[str, str] | None = None,
         sort_order: dict[str, str] | None = None,
     ) -> None:
@@ -209,19 +85,9 @@ class IcebergWriter:
             return
 
         table_id = (self.namespace, table_name)
-        iceberg_table = self._ensure_table(table_id, data.schema, partition, sort_order)
-
-        # Schema evolution: add any new columns
-        existing_columns = set(iceberg_table.schema().column_names)
-        new_columns = set(data.schema.names) - existing_columns
-        if new_columns:
-            logger.info(f"Evolving schema for {table_name}: adding columns {new_columns}")
-            new_schema = Schema(
-                *[f for f in iceberg_table.schema().fields]
-                + [data.schema.field(name) for name in data.schema.names if name in new_columns]
-            )
-            with iceberg_table.update_schema() as update:
-                update.union_by_name(new_schema)
+        iceberg_table = self._evolve_schema(
+            self._ensure_table(table_id, data.schema, partition, sort_order), data
+        )
 
         if mode == "append":
             iceberg_table.append(data)
@@ -247,17 +113,16 @@ class IcebergWriter:
         self,
         table_id: tuple[str, str],
         arrow_schema: pa.Schema,
-        partition: dict[str, str] | None,
-        sort_order: dict[str, str] | None,
-    ) -> Table:
+        partition: PartitionHint,
+        sort_order: SortOrderHint,
+    ) -> IcebergTable:
         """Load an existing table or create a new one."""
         if self.catalog.table_exists(table_id):
             return self.catalog.load_table(table_id)
 
-        # Infer Iceberg schema from Arrow schema
-        iceberg_schema = Schema()
-        partition_spec = build_partition_spec(partition, iceberg_schema)
-        sort_order_spec = build_sort_order(sort_order, iceberg_schema)
+        iceberg_schema = create_iceberg_schema(arrow_schema)
+        partition_spec = create_partition_spec(partition, iceberg_schema)
+        sort_order_spec = create_sort_order(sort_order, iceberg_schema)
 
         logger.info(f"Creating table {table_id}")
         return self.catalog.create_table(
@@ -266,3 +131,22 @@ class IcebergWriter:
             partition_spec=partition_spec,
             sort_order=sort_order_spec,
         )
+
+    def _evolve_schema(self, iceberg_table: IcebergTable, new_data: pa.Table) -> IcebergTable:
+        """Attempt to evolve the schema to match the data"""
+        existing_columns = set(iceberg_table.schema().column_names)
+        new_columns = set(new_data.schema.names) - existing_columns
+        if new_columns:
+            logger.info(f"Evolving schema for {iceberg_table.name}: adding columns {new_columns}")
+            new_schema = Schema(
+                *[f for f in iceberg_table.schema().fields]
+                + [
+                    new_data.schema.field(name)
+                    for name in new_data.schema.names
+                    if name in new_columns
+                ]
+            )
+            with iceberg_table.update_schema() as update:
+                update.union_by_name(new_schema)
+
+        return iceberg_table
