@@ -10,10 +10,7 @@ sourceconfigcls = "SourceConfig"
 [[tables]]
 name = "schedule"
 write_mode = "replace"
-
-[[tables]]
-name = "other"
-write_mode = "replace"
+partition = { "started_at" = "year" }
 
 [transform]
 dbt_dir = "warehouses/examples/transform"
