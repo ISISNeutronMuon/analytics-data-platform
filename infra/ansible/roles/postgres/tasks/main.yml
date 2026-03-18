@@ -52,7 +52,7 @@
       POSTGRES_USER="{{ postgres_db_user }}"
       POSTGRES_PASSWORD_FILE=/secrets/postgres-passwd
     volumes:
-      - "{{ postgres_db_data_path }}:/var/lib/postgresql/data"
+      - "{{ postgres_db_data_path }}:/var/lib/postgresql"
       - /secrets:/secrets:ro
 
 # The postgresql_ping check doesn't seem to be enough to check that postgres is ready
