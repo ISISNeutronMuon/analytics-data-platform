@@ -1,0 +1,16 @@
+[job]
+name = "statusdisplay"
+domain = "accelerator"
+warehouse = "examples"
+
+[extract]
+entrypoint = "extract"
+sourceconfigcls = "SourceConfig"
+
+[[tables]]
+name = "schedule"
+write_mode = "replace"
+
+[transform]
+dbt_dir = "warehouses/examples/transform"
+dbt_select = "models/staging/sensor_data"

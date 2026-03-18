@@ -49,54 +49,52 @@ class CatalogCredentials(BaseSettings):
         return self
 
 
-class CatalogConfig(BaseSettings):
+class CatalogConfig:
     """Top-level catalog configuration.
 
     Reads ``DESTINATION__PYICEBERG__CATALOG_TYPE`` and delegates credential
     resolution to :class:`CatalogCredentials`.
     """
 
-    model_config = SettingsConfigDict(
-        env_prefix="DESTINATION__PYICEBERG__",
-    )
+    catalog_type: Literal["rest", "sql"] = "sql"
+    # credentials: CatalogCredentials | None = None
 
-    catalog_type: Literal["rest", "sql"] = "rest"
-    credentials: CatalogCredentials | None = None
-
-    def model_post_init(self, __context) -> None:
-        if self.credentials is None:
-            self.credentials = CatalogCredentials()  # type: ignore[call-arg]
+    # def model_post_init(self, __context) -> None:
+    #     if self.credentials is None:
+    #         self.credentials = CatalogCredentials()  # type: ignore[call-arg]
 
     def connection_properties(self) -> dict[str, str]:
         """Build the properties dict expected by ``pyiceberg.catalog.load_catalog``."""
-        creds = self.credentials
-        if self.catalog_type == "sql":
-            return {"type": "sql", "uri": creds.uri, "warehouse": creds.warehouse or ""}
+        return {"type": "sql", "uri": "sqlite:///examples.db", "warehouse": "examples"}
 
-        # REST catalog
-        properties: dict[str, str] = {"type": "rest"}
-        if creds.client_id is not None and creds.client_secret is not None:
-            properties["credential"] = (
-                f"{creds.client_id.get_secret_value()}:{creds.client_secret.get_secret_value()}"
-            )
+        # creds = self.credentials
+        # if self.catalog_type == "sql":
+        #     return {"type": "sql", "uri": creds.uri, "warehouse": creds.warehouse or ""}
 
-        field_map: dict[str, str] = {
-            "access_delegation": f"{CATALOG_HEADER_PREFIX}x-iceberg-access-delegation",
-            "oauth2_server_uri": "oauth2-server-uri",
-            "project_id": f"{CATALOG_HEADER_PREFIX}x-project-id",
-        }
-        simple_fields = ("uri", "warehouse", "scope")
-        for field_name in simple_fields:
-            value = getattr(creds, field_name, None)
-            if value is not None:
-                properties[field_name] = value
+        # # REST catalog
+        # properties: dict[str, str] = {"type": "rest"}
+        # if creds.client_id is not None and creds.client_secret is not None:
+        #     properties["credential"] = (
+        #         f"{creds.client_id.get_secret_value()}:{creds.client_secret.get_secret_value()}"
+        #     )
 
-        for field_name, property_name in field_map.items():
-            value = getattr(creds, field_name, None)
-            if value is not None:
-                properties[property_name] = value
+        # field_map: dict[str, str] = {
+        #     "access_delegation": f"{CATALOG_HEADER_PREFIX}x-iceberg-access-delegation",
+        #     "oauth2_server_uri": "oauth2-server-uri",
+        #     "project_id": f"{CATALOG_HEADER_PREFIX}x-project-id",
+        # }
+        # simple_fields = ("uri", "warehouse", "scope")
+        # for field_name in simple_fields:
+        #     value = getattr(creds, field_name, None)
+        #     if value is not None:
+        #         properties[field_name] = value
 
-        return properties
+        # for field_name, property_name in field_map.items():
+        #     value = getattr(creds, field_name, None)
+        #     if value is not None:
+        #         properties[property_name] = value
+
+        # return properties
 
     def connect_catalog(self) -> Catalog:
         """Create and return a connected pyiceberg Catalog."""

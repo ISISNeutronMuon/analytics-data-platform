@@ -38,6 +38,7 @@ class JobManifest:
     domain: str
     warehouse: str
     extract_entrypoint: str
+    extract_sourceconfigcls: str
     tables: Sequence[TableConfig]
     transform: TransformConfig | None = None
     job_dir: Path = dataclasses.field(default=Path("."))
@@ -78,6 +79,9 @@ def load_manifest(job_dir: Path) -> JobManifest:
     if "entrypoint" not in extract:
         raise ValueError(f"Missing required field 'extract.entrypoint' in {manifest_path}")
 
+    if "sourceconfigcls" not in extract:
+        raise ValueError(f"Missing required field 'extract.sourceconfigcls' in {manifest_path}")
+
     tables = []
     for table_raw in raw.get("tables", []):
         if "name" not in table_raw:
@@ -105,6 +109,7 @@ def load_manifest(job_dir: Path) -> JobManifest:
         domain=job["domain"],
         warehouse=job["warehouse"],
         extract_entrypoint=extract["entrypoint"],
+        extract_sourceconfigcls=extract["sourceconfigcls"],
         tables=tables,
         transform=transform,
         job_dir=job_dir.resolve(),

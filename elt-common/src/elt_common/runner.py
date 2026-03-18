@@ -1,6 +1,6 @@
 """Pipeline runner: orchestrates extract → load → transform for an elt job."""
 
-import importlib
+import importlib.util
 import logging
 import subprocess
 import sys
@@ -8,12 +8,26 @@ import time
 from pathlib import Path
 
 import pyarrow as pa
-
 from elt_common.catalog import CatalogConfig
 from elt_common.iceberg.writer import IcebergWriter
 from elt_common.manifest import JobManifest, load_manifest
 
 logger = logging.getLogger(__name__)
+
+
+def dataset_name(source_domain: str, pipeline_name: str) -> str:
+    """Given a domain and pipeline name, construct a dataset name.
+
+    Retained for backward compatibility with existing scripts.
+    """
+    return f"{source_domain}_{pipeline_name}"
+
+
+def import_module_from_path(module_name: str, file_path: Path):
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def run_job(
@@ -29,61 +43,39 @@ def run_job(
     :param backfill: If ``True``, passed to the extract function via config.
     """
     manifest = load_manifest(job_dir)
-    logger.info(f"Starting job: {manifest.name} (namespace={manifest.namespace})")
+    namespace = f"{manifest.domain}_{manifest.name}"
+    logger.info(f"Starting job: {manifest.name} (namespace={namespace})")
     t0 = time.monotonic()
 
     if steps in ("all", "ingest"):
-        _run_ingest(manifest, backfill=backfill)
+        _run_ingest(namespace, manifest, backfill=backfill)
 
-    if steps in ("all", "transform"):
-        _run_transform(manifest)
+    # if steps in ("all", "transform"):
+    #     _run_transform(manifest)
 
     elapsed = time.monotonic() - t0
     logger.info(f"Job {manifest.name} completed in {elapsed:.1f}s")
 
 
-def _run_ingest(manifest: JobManifest, *, backfill: bool) -> None:
+def _run_ingest(namespace: str, manifest: JobManifest, *, backfill: bool) -> None:
     """Import the extract function, call it, and write results to Iceberg."""
     catalog_config = CatalogConfig()  # type: ignore[call-arg]
     catalog = catalog_config.connect_catalog()
 
-    writer = IcebergWriter(catalog, manifest.namespace)
+    writer = IcebergWriter(catalog, namespace)
     writer.ensure_namespace()
 
-    # Import the extract function
-    module_name, func_name = manifest.extract_entrypoint.split(":")
-    sys.path.insert(0, str(manifest.job_dir))
-    try:
-        mod = importlib.import_module(module_name)
-    finally:
-        sys.path.pop(0)
-    extract_fn = getattr(mod, func_name)
+    # Import the source config and extract function
+    module_name = manifest.name
+    module = import_module_from_path(module_name, manifest.job_dir / f"{module_name}.py")
+    source_config_cls = getattr(module, manifest.extract_sourceconfigcls)
+    extract_fn = getattr(module, manifest.extract_entrypoint)
 
-    # Build source config and call extract
-    source_config = dict(manifest.source_config)
-    source_config["backfill"] = backfill
-    result = extract_fn(source_config, catalog)
+    source_config = source_config_cls()
+    for table_name, data in extract_fn(source_config, backfill=backfill):
+        # Build a lookup of table configs by name
+        table_configs = {t.name: t for t in manifest.tables}
 
-    # The extract function can return:
-    #  - dict[str, pa.Table]: multiple tables
-    #  - pa.Table: a single table (matched to the first table in the manifest)
-    if isinstance(result, pa.Table):
-        if not manifest.tables:
-            raise ValueError(
-                f"Extract returned a single table but no [[tables]] defined in elt.toml"
-            )
-        tables = {manifest.tables[0].name: result}
-    elif isinstance(result, dict):
-        tables = result
-    else:
-        raise TypeError(
-            f"Extract function must return pa.Table or dict[str, pa.Table], got {type(result)}"
-        )
-
-    # Build a lookup of table configs by name
-    table_configs = {t.name: t for t in manifest.tables}
-
-    for table_name, data in tables.items():
         if data.num_rows == 0:
             logger.info(f"No data for table {table_name}, skipping.")
             continue
