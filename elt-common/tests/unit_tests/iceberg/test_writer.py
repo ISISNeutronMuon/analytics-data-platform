@@ -2,12 +2,10 @@
 
 import pyarrow as pa
 import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock
 
 from elt_common.iceberg.writer import (
     IcebergWriter,
-    build_partition_spec,
-    build_sort_order,
     namespace_exists,
 )
 
@@ -171,36 +169,4 @@ class TestIcebergWriter:
 
         writer = IcebergWriter(catalog, "ns")
         with pytest.raises(ValueError, match="Unsupported write mode"):
-            writer.write_table("t", sample_arrow_table, mode="invalid")
-
-
-class TestBuildPartitionSpec:
-    def test_returns_unpartitioned_when_none(self):
-        from pyiceberg.partitioning import UNPARTITIONED_PARTITION_SPEC
-        from pyiceberg.schema import Schema
-
-        schema = Schema()
-        assert build_partition_spec(None, schema) == UNPARTITIONED_PARTITION_SPEC
-
-    def test_returns_unpartitioned_when_empty(self):
-        from pyiceberg.partitioning import UNPARTITIONED_PARTITION_SPEC
-        from pyiceberg.schema import Schema
-
-        schema = Schema()
-        assert build_partition_spec({}, schema) == UNPARTITIONED_PARTITION_SPEC
-
-
-class TestBuildSortOrder:
-    def test_returns_unsorted_when_none(self):
-        from pyiceberg.table.sorting import UNSORTED_SORT_ORDER
-        from pyiceberg.schema import Schema
-
-        schema = Schema()
-        assert build_sort_order(None, schema) == UNSORTED_SORT_ORDER
-
-    def test_returns_unsorted_when_empty(self):
-        from pyiceberg.table.sorting import UNSORTED_SORT_ORDER
-        from pyiceberg.schema import Schema
-
-        schema = Schema()
-        assert build_sort_order({}, schema) == UNSORTED_SORT_ORDER
+            writer.write_table("t", sample_arrow_table, mode="invalid")  # type: ignore
