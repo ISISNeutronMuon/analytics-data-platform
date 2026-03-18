@@ -121,8 +121,11 @@ class IcebergWriter:
             return self.catalog.load_table(table_id)
 
         iceberg_schema = create_iceberg_schema(arrow_schema)
+        logger.debug(f"Created iceberg schema: {iceberg_schema}")
         partition_spec = create_partition_spec(partition, iceberg_schema)
+        logger.debug(f"Created partition spec: {partition_spec}")
         sort_order_spec = create_sort_order(sort_order, iceberg_schema)
+        logger.debug(f"Created sort order spec: {sort_order_spec}")
 
         logger.info(f"Creating table {table_id}")
         return self.catalog.create_table(

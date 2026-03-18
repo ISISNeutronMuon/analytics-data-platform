@@ -64,7 +64,10 @@ class PartitionTrBuilder:
 
 def create_partition_spec(partition_hint: PartitionHint, iceberg_schema: Schema) -> PartitionSpec:
     """Create an Iceberg partition spec for this table if the partition hints
-    have been provided"""
+    have been provided
+
+    :param partition_hint: An optional dict mapping column names to iceberg transformations
+    """
 
     def field_name(column_name: str, transform: str):
         bracket_index = transform.find("[")
