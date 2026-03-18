@@ -96,11 +96,3 @@ def validate(job_dir: Path | None) -> None:
 
     if errors:
         raise SystemExit(1)
-
-
-def dataset_name(source_domain: str, pipeline_name: str) -> str:
-    """Given a domain and pipeline name, construct a dataset name.
-
-    Retained for backward compatibility with existing scripts.
-    """
-    return f"{source_domain}_{pipeline_name}"
