@@ -5,19 +5,15 @@ import logging
 from typing import Iterator, Tuple
 
 import pyarrow as pa
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 
 
 class SourceConfig(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="statusdisplay__")
-
     api_base_url: str
     endpoints: list[str]
 
 
-def extract(
-    source_config: SourceConfig, *, backfill: bool = False
-) -> Iterator[Tuple[str, pa.Table]]:
+def extract(source_config: SourceConfig) -> Iterator[Tuple[str, pa.Table]]:
     """Pull from the statusdisplay API and returned the requested resources"""
     for endpoint in source_config.endpoints:
         url = source_config.api_base_url + endpoint

@@ -40,10 +40,9 @@ def cli(log_level: str) -> None:
     default="all",
     help="Which step(s) to run.",
 )
-@click.option("--backfill", is_flag=True, default=False, help="Run a full historical backfill.")
-def run(job_dir: Path, step: str, backfill: bool) -> None:
+def run(job_dir: Path, step: str) -> None:
     """Run an ELT job from the given directory."""
-    run_job(job_dir, steps=step, backfill=backfill)
+    run_job(job_dir, steps=step)
 
 
 @cli.command()

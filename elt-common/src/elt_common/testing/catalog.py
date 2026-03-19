@@ -6,8 +6,6 @@ from collections.abc import MutableMapping
 from dataclasses import dataclass
 
 from pyiceberg.catalog import Catalog
-
-from elt_common.catalog import CatalogConfig
 from elt_common.iceberg.writer import IcebergWriter
 
 from .lakekeeper import RestCatalogWarehouse

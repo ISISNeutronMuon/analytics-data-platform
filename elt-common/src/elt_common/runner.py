@@ -4,11 +4,14 @@ import importlib.util
 import logging
 import subprocess
 import time
+from typing import Any
 from pathlib import Path
 
-from elt_common.catalog import CatalogConfig
+from elt_common.iceberg.catalog import CatalogConfig, get_max_value
 from elt_common.iceberg.writer import IcebergWriter
 from elt_common.manifest import JobManifest, load_manifest
+
+EXTRACT_CLS_NAME = "Extract"
 
 logger = logging.getLogger(__name__)
 
@@ -32,11 +35,19 @@ def import_module_from_path(module_name: str, file_path: Path):
     return module
 
 
+def get_extract_cls_from_module_path(module_name: str, file_path: Path) -> Any:
+    """Get the class attribute that will handle extraction
+
+    :raises: AttributeError if the attribute doesn't exist
+    """
+    module = import_module_from_path(module_name, file_path)
+    return getattr(module, EXTRACT_CLS_NAME)
+
+
 def run_job(
     job_dir: Path,
     *,
     steps: str = "all",
-    backfill: bool = False,
 ) -> None:
     """Run an ELT job defined by the ``elt.toml`` in *job_dir*.
 
@@ -50,7 +61,7 @@ def run_job(
     t0 = time.monotonic()
 
     if steps in ("all", "ingest"):
-        _run_ingest(namespace, manifest, backfill=backfill)
+        _run_ingest(namespace, manifest)
 
     # if steps in ("all", "transform"):
     #     _run_transform(manifest)
@@ -59,37 +70,42 @@ def run_job(
     logger.info(f"Job {manifest.name} completed in {elapsed:.1f}s")
 
 
-def _run_ingest(namespace: str, manifest: JobManifest, *, backfill: bool) -> None:
+def _run_ingest(namespace: str, manifest: JobManifest) -> None:
     """Import the extract function, call it, and write results to Iceberg."""
-    catalog_config = CatalogConfig()  # type: ignore[call-arg]
+    catalog_config = CatalogConfig()
     catalog = catalog_config.connect_catalog()
 
     writer = IcebergWriter(catalog, namespace)
     writer.ensure_namespace()
 
-    # Import the source config and extract function
-    module_name = manifest.name
-    module = import_module_from_path(module_name, manifest.job_dir / f"{module_name}.py")
-    source_config_cls = getattr(module, manifest.extract_sourceconfigcls)
-    extract_fn = getattr(module, manifest.extract_entrypoint)
+    extract_cls = get_extract_cls_from_module_path(
+        manifest.name, manifest.job_dir / f"{manifest.name}.py"
+    )
 
-    source_config = source_config_cls()
-    table_configs = {t.name: t for t in manifest.tables}
+    table_info = {}
+    for t in manifest.tables:
+        table_info[t.name] = {
+            "config": t,
+            "cursor_value": get_max_value(catalog, writer.table_id(t.name), t.cursor_column),
+        }
+
+    source_config = extract_cls.source_config_cls(_env_prefix=f"{manifest.name}__")
+    extract_obj = extract_cls(source_config)
     seen_table: dict[str, bool] = {}
-    for table_name, data in extract_fn(source_config, table_configs.keys(), backfill=backfill):
+    for table_name, data in extract_obj(table_info):
         if data.num_rows == 0:
             logger.info(f"No data for table {table_name}, skipping.")
             continue
 
-        tc = table_configs.get(table_name)
-        if tc is None:
+        ti = table_info.get(table_name)
+        if ti is None:
             raise ValueError(
                 f"Extract returned table '{table_name}' but it's not defined in [[tables]]"
             )
+        tc = ti["config"]
 
         # Determine write mode. A replace is really a delete then append but each source
-        # table can yield several times so we only want to delete once and then we can
-        # continue appending
+        # table can yield several times so only delete once and then continue appending
         write_mode = tc.write_mode
         if tc.write_mode == "replace" and seen_table.get(table_name, False):
             write_mode = "append"

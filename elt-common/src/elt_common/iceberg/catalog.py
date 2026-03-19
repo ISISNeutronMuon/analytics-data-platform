@@ -4,12 +4,13 @@ Reads connection properties from environment variables and provides
 a ``connect_catalog()`` helper that returns a connected pyiceberg ``Catalog``.
 """
 
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
+import pyarrow.compute as pc
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pyiceberg.catalog import Catalog, load_catalog
-from pyiceberg.utils.properties import HEADER_PREFIX as CATALOG_HEADER_PREFIX
+from pyiceberg.typedef import Identifier
 
 
 class CatalogCredentials(BaseSettings):
@@ -99,3 +100,25 @@ class CatalogConfig:
     def connect_catalog(self) -> Catalog:
         """Create and return a connected pyiceberg Catalog."""
         return load_catalog(name="default", **self.connection_properties())
+
+
+def get_max_value(catalog: Catalog, table_id: Identifier, column: str | None) -> Any:
+    """Find the maximum value of the column in the table"""
+    if column is None or not catalog.table_exists(table_id):
+        return None
+
+    table = catalog.load_table(table_id)
+    if table is None:
+        return None
+
+    # Scan in batches to avoid loading large tables into memory all at once
+    scan = table.scan(selected_fields=(column,))
+    running_max = None
+    for batch in scan.to_arrow_batch_reader():
+        batch_max = pc.max(batch[column])  # type: ignore
+        if batch_max.is_valid:
+            running_max = (
+                batch_max if running_max is None else pc.max([running_max, batch_max])  # type: ignore
+            )
+
+    return running_max.as_py() if running_max is not None else None

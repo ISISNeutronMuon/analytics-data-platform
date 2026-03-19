@@ -3,10 +3,6 @@ name = "statusdisplay"
 domain = "accelerator"
 warehouse = "examples"
 
-[extract]
-entrypoint = "extract"
-sourceconfigcls = "SourceConfig"
-
 [[tables]]
 name = "schedule"
 write_mode = "replace"

@@ -1,10 +1,8 @@
 """Tests for elt_common.catalog"""
 
-import os
-
 import pytest
 
-from elt_common.catalog import CatalogConfig, CatalogCredentials
+from elt_common.iceberg.catalog import CatalogConfig, CatalogCredentials
 
 
 class TestCatalogCredentials:

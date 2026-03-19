@@ -3,14 +3,15 @@ name = "opralogweb"
 domain = "accelerator"
 warehouse = "examples"
 
-[extract]
-entrypoint = "extract"
-sourceconfigcls = "SourceConfig"
-
 [[tables]]
 name = "Logbooks"
-write_mode = "replace"
-cursor = "LogbookId"
+write_mode = "append"
+cursor_column = "LogbookId"
+
+[[tables]]
+name = "Entries"
+write_mode = "append"
+cursor_column = "EntryId"
 
 [transform]
 dbt_dir = "warehouses/examples/transform"

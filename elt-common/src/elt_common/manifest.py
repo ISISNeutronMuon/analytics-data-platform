@@ -19,6 +19,7 @@ class TableConfig:
 
     name: str
     write_mode: WriteMode = "append"
+    cursor_column: str | None = None
     merge_on: Sequence[str] = ()
     partition: dict[str, str] = dataclasses.field(default_factory=dict)
     sort_order: dict[str, str] = dataclasses.field(default_factory=dict)
@@ -39,8 +40,6 @@ class JobManifest:
     name: str
     domain: str
     warehouse: str
-    extract_entrypoint: str
-    extract_sourceconfigcls: str
     tables: Sequence[TableConfig]
     transform: TransformConfig | None = None
     job_dir: Path = dataclasses.field(default=Path("."))
@@ -49,16 +48,6 @@ class JobManifest:
     def namespace(self) -> str:
         """The Iceberg namespace for this job: ``{domain}_{name}``."""
         return f"{self.domain}_{self.name}"
-
-    @property
-    def source_config(self) -> dict:
-        """Return the raw ``[source.*]`` sections from the manifest."""
-        return self._raw_source
-
-    def __post_init__(self):
-        # _raw_source is set by load_manifest, not by the user
-        if not hasattr(self, "_raw_source"):
-            object.__setattr__(self, "_raw_source", {})
 
 
 def load_manifest(job_dir: Path) -> JobManifest:
@@ -77,13 +66,6 @@ def load_manifest(job_dir: Path) -> JobManifest:
         if field not in job:
             raise ValueError(f"Missing required field 'job.{field}' in {manifest_path}")
 
-    extract = raw.get("extract", {})
-    if "entrypoint" not in extract:
-        raise ValueError(f"Missing required field 'extract.entrypoint' in {manifest_path}")
-
-    if "sourceconfigcls" not in extract:
-        raise ValueError(f"Missing required field 'extract.sourceconfigcls' in {manifest_path}")
-
     tables = []
     for table_raw in raw.get("tables", []):
         if "name" not in table_raw:
@@ -92,6 +74,7 @@ def load_manifest(job_dir: Path) -> JobManifest:
             TableConfig(
                 name=table_raw["name"],
                 write_mode=table_raw.get("write_mode", "append"),
+                cursor_column=table_raw.get("cursor_column", None),
                 merge_on=tuple(table_raw.get("merge_on", ())),
                 partition=table_raw.get("partition", {}),
                 sort_order=table_raw.get("sort_order", {}),
@@ -110,13 +93,10 @@ def load_manifest(job_dir: Path) -> JobManifest:
         name=job["name"],
         domain=job["domain"],
         warehouse=job["warehouse"],
-        extract_entrypoint=extract["entrypoint"],
-        extract_sourceconfigcls=extract["sourceconfigcls"],
         tables=tables,
         transform=transform,
         job_dir=job_dir.resolve(),
     )
-    object.__setattr__(manifest, "_raw_source", raw.get("source", {}))
     return manifest
 
 
