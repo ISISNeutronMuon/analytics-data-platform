@@ -1,0 +1,17 @@
+---
+- name: Bring down all containers
+  hosts: all
+  tasks:
+    - name: Stop all running Docker containers
+      ansible.builtin.shell: |
+        running_containers=$(docker ps -q)
+        if [ -n "$running_containers" ]; then
+          docker stop $running_containers
+        fi
+      register: stop_containers_result
+      changed_when: stop_containers_result.stdout != ""
+
+    - name: Remove all stopped Docker containers
+      ansible.builtin.command: docker container prune -f
+      register: prune_containers_result
+      changed_when: "'Deleted Containers:' in prune_containers_result.stdout"
