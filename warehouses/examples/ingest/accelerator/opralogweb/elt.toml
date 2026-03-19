@@ -9,7 +9,7 @@ sourceconfigcls = "SourceConfig"
 
 [[tables]]
 name = "Logbooks"
-write_mode = "append"
+write_mode = "replace"
 cursor = "LogbookId"
 
 [transform]

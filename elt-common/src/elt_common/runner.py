@@ -3,11 +3,9 @@
 import importlib.util
 import logging
 import subprocess
-import sys
 import time
 from pathlib import Path
 
-import pyarrow as pa
 from elt_common.catalog import CatalogConfig
 from elt_common.iceberg.writer import IcebergWriter
 from elt_common.manifest import JobManifest, load_manifest
@@ -15,18 +13,22 @@ from elt_common.manifest import JobManifest, load_manifest
 logger = logging.getLogger(__name__)
 
 
-def dataset_name(source_domain: str, pipeline_name: str) -> str:
-    """Given a domain and pipeline name, construct a dataset name.
-
-    Retained for backward compatibility with existing scripts.
-    """
-    return f"{source_domain}_{pipeline_name}"
+def namespace_name(source_domain: str, job_name: str) -> str:
+    """Given a domain and job name, construct a namespace name."""
+    return f"{source_domain}_{job_name}"
 
 
 def import_module_from_path(module_name: str, file_path: Path):
+    """Import a module given its name and file location"""
     spec = importlib.util.spec_from_file_location(module_name, file_path)
+    if spec is None:
+        raise ImportError(f"Unable to find module spec for '{module_name}' at '{file_path}'")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    if spec.loader is not None:
+        spec.loader.exec_module(module)
+    else:
+        raise ImportError(f"Module spec for {module_name} @ '{file_path}' has no loader attribute")
+
     return module
 
 
@@ -43,7 +45,7 @@ def run_job(
     :param backfill: If ``True``, passed to the extract function via config.
     """
     manifest = load_manifest(job_dir)
-    namespace = f"{manifest.domain}_{manifest.name}"
+    namespace = namespace_name(manifest.domain, manifest.name)
     logger.info(f"Starting job: {manifest.name} (namespace={namespace})")
     t0 = time.monotonic()
 
@@ -72,10 +74,9 @@ def _run_ingest(namespace: str, manifest: JobManifest, *, backfill: bool) -> Non
     extract_fn = getattr(module, manifest.extract_entrypoint)
 
     source_config = source_config_cls()
-    for table_name, data in extract_fn(source_config, backfill=backfill):
-        # Build a lookup of table configs by name
-        table_configs = {t.name: t for t in manifest.tables}
-
+    table_configs = {t.name: t for t in manifest.tables}
+    seen_table: dict[str, bool] = {}
+    for table_name, data in extract_fn(source_config, table_configs.keys(), backfill=backfill):
         if data.num_rows == 0:
             logger.info(f"No data for table {table_name}, skipping.")
             continue
@@ -86,14 +87,22 @@ def _run_ingest(namespace: str, manifest: JobManifest, *, backfill: bool) -> Non
                 f"Extract returned table '{table_name}' but it's not defined in [[tables]]"
             )
 
+        # Determine write mode. A replace is really a delete then append but each source
+        # table can yield several times so we only want to delete once and then we can
+        # continue appending
+        write_mode = tc.write_mode
+        if tc.write_mode == "replace" and seen_table.get(table_name, False):
+            write_mode = "append"
+
         writer.write_table(
             table_name,
             data,
-            mode=tc.write_mode,
+            mode=write_mode,
             merge_on=list(tc.merge_on) if tc.merge_on else None,
             partition=tc.partition or None,
             sort_order=tc.sort_order or None,
         )
+        seen_table[table_name] = True
 
 
 def _run_transform(manifest: JobManifest) -> None:

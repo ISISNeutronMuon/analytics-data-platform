@@ -6,9 +6,9 @@ evolution, and writing Arrow data to Iceberg tables via ``append``,
 """
 
 import logging
-from typing import Literal
 
 import pyarrow as pa
+from elt_common.types import WriteMode
 from elt_common.iceberg.schema import create_iceberg_schema
 from elt_common.iceberg.partition import PartitionHint, create_partition_spec
 from elt_common.iceberg.sortorder import SortOrderHint, create_sort_order
@@ -16,10 +16,9 @@ from pyiceberg.catalog import Catalog
 from pyiceberg.exceptions import NoSuchNamespaceError, NoSuchTableError
 from pyiceberg.schema import Schema
 from pyiceberg.table import ALWAYS_TRUE, Table as IcebergTable
+from pyiceberg.typedef import Identifier
 
 logger = logging.getLogger(__name__)
-
-WriteMode = Literal["append", "merge", "replace"]
 
 
 # ---------------------------------------------------------------------------
@@ -27,7 +26,7 @@ WriteMode = Literal["append", "merge", "replace"]
 # ---------------------------------------------------------------------------
 
 
-def namespace_exists(catalog: Catalog, namespace: str | tuple[str, ...]) -> bool:
+def namespace_exists(catalog: Catalog, namespace: str) -> bool:
     """Check if a namespace exists in the catalog."""
     try:
         catalog.load_namespace_properties(namespace)
@@ -48,6 +47,9 @@ class IcebergWriter:
         self.catalog = catalog
         self.namespace = namespace
 
+    def table_id(self, name: str) -> Identifier:
+        return (self.namespace, name)
+
     def ensure_namespace(self) -> None:
         """Create the namespace if it doesn't already exist."""
         if not namespace_exists(self.catalog, self.namespace):
@@ -57,7 +59,7 @@ class IcebergWriter:
     def load_table(self, table_name: str) -> IcebergTable | None:
         """Load an existing Iceberg table, or ``None`` if it doesn't exist."""
         try:
-            return self.catalog.load_table((self.namespace, table_name))
+            return self.catalog.load_table(self.table_id(table_name))
         except NoSuchTableError:
             return None
 
@@ -80,11 +82,11 @@ class IcebergWriter:
         :param partition: ``{column_name: transform}`` dict for partitioning.
         :param sort_order: ``{column_name: direction}`` dict for sort order.
         """
+        table_id = (self.namespace, table_name)
         if data.num_rows == 0:
-            logger.info(f"No data to write to {self.namespace}.{table_name}, skipping.")
+            logger.info(f"No data to write to {table_id}, skipping.")
             return
 
-        table_id = (self.namespace, table_name)
         iceberg_table = self._evolve_schema(
             self._ensure_table(table_id, data.schema, partition, sort_order), data
         )
@@ -104,6 +106,7 @@ class IcebergWriter:
         elif mode == "replace":
             with iceberg_table.transaction() as txn:
                 txn.delete(delete_filter=ALWAYS_TRUE)
+                logger.info(f"Deleted all records from {self.namespace}.{table_name}")
                 txn.append(data)
         else:
             raise ValueError(f"Unsupported write mode: {mode!r}")
