@@ -1,9 +1,4 @@
-"""Example extract script: generates fake sensor readings and events.
-
-Demonstrates the extract contract expected by ``elt run``:
-  - A module-level ``extract(config, catalog) -> dict[str, pa.Table]`` function.
-  - Incremental loading by querying the catalog for the latest timestamp.
-"""
+"""Pull data from the statusdisplay system"""
 
 import datetime as dt
 import logging
