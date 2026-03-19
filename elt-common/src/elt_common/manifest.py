@@ -10,13 +10,15 @@ import tomllib
 from pathlib import Path
 from typing import Sequence
 
+from elt_common.types import WriteMode
+
 
 @dataclasses.dataclass(frozen=True)
 class TableConfig:
     """Configuration for a single Iceberg table within a job."""
 
     name: str
-    write_mode: str = "append"
+    write_mode: WriteMode = "append"
     merge_on: Sequence[str] = ()
     partition: dict[str, str] = dataclasses.field(default_factory=dict)
     sort_order: dict[str, str] = dataclasses.field(default_factory=dict)
