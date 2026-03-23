@@ -26,6 +26,9 @@ security_groups = {
   },
   "superset_farm-dev" = {
     ports_ingress = [8088, 8089]
+  },
+  "metabase-dev" = {
+    ports_ingress = [3000]
   }
 }
 
@@ -60,7 +63,11 @@ instance_configs = {
     flavor_name                = "l3.nano"
     ansible_group              = "superset_farm"
     additional_security_groups = ["superset_farm-dev"]
-  }
+  },
+  "metabase-dev" = {
+    flavor_name                = "l3.nano"
+    ansible_group              = "metabase"
+  },
   "elt-dev" = {
     flavor_name                = "l3.nano"
     ansible_group              = "elt"

@@ -1,0 +1,8 @@
+---
+metabase_metadb_host: "{{ groups['datastore'][0] }}"
+metabase_metadb_name: metabase
+metabase_metadb_port: 5432
+metabase_metadb_user: "{{ vault_postgres_db_user }}"
+metabase_metadb_passwd: "{{ vault_postgres_db_passwd }}"
+
+metabase_http_port: 3000

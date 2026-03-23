@@ -1,0 +1,41 @@
+---
+- name: Create Metabase working directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ metabase_working_dir }}"
+    state: directory
+    mode: "u=rwx,g=rx,o=rx"
+
+- name: Start Metabase
+  become: true
+  community.docker.docker_container:
+    name: "{{ metabase_container_name }}"
+    image: "{{ metabase_image }}"
+    state: healthy
+    cleanup: true
+    detach: true
+    network_mode: host
+    restart_policy: unless-stopped
+    recreate: true
+    env:
+      MB_DB_TYPE: postgres
+      MB_DB_HOST: "{{ metabase_metadb_host }}"
+      MB_DB_PORT: "{{ metabase_metadb_port | string }}"
+      MB_DB_DBNAME: "{{ metabase_metadb_name }}"
+      MB_DB_USER: "{{ metabase_metadb_user }}"
+      MB_DB_PASS: "{{ metabase_metadb_passwd }}"
+      MB_JETTY_PORT: "{{ metabase_http_port | string }}"
+      MB_SITE_URL: "https://{{ top_level_domain }}{{ metabase_base_path }}"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "--fail",
+          "http://localhost:{{ metabase_http_port }}/api/health",
+        ]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+    comparisons:
+      env: strict

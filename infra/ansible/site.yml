@@ -5,7 +5,8 @@
     - base
     - role: docs
       become: true
-    - traefik
+    - role: traefik
+      tags: [traefik]
 
 - name: Deploy data services (if required)
   hosts: datastore
@@ -46,6 +47,13 @@
     - redis
     - role: superset_farm
       tags: [superset_farm]
+
+- name: Deploy Metabase
+  hosts: metabase
+  roles:
+    - base
+    - role: metabase
+      tags: [metabase]
 
 - name: Deploy ELT node
   hosts: elt

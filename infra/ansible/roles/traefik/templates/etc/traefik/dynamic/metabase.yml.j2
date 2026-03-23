@@ -1,0 +1,23 @@
+{% if 'metabase' in groups %}
+http:
+  routers:
+    metabase:
+      entryPoints: websecure
+      rule: Host(`{{ top_level_domain }}`) && PathPrefix(`{{ metabase_base_path }}`)
+      service: metabase
+      middlewares:
+        - metabase-strip-prefix
+      tls: {}
+
+  middlewares:
+    metabase-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "{{ metabase_base_path }}"
+
+  services:
+    metabase:
+      loadBalancer:
+        servers:
+          - url: "http://{{ groups['metabase'][0] }}:{{ metabase_http_port }}"
+{% endif %}

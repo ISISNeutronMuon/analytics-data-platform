@@ -5,6 +5,7 @@
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
 x-openfga-image: &openfga-image openfga/openfga:v1.11.2
 x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.11.1
+x-metabase-image: &metabase-image metabase/metabase:v0.57.16
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
 x-postgres-image: &postgres-image postgres:18-bookworm
 x-redis-image: &redis-image redis:8.4-bookworm
@@ -449,6 +450,18 @@ services:
     networks: *local-networks
     healthcheck:
       disable: true
+
+  #########################################################
+  # Metabase BI tool
+  #########################################################
+  metabase:
+    profiles:
+      - metabase
+    container_name: local-lakehouse-metabase
+    env_file: *env-file
+    image: *metabase-image
+    restart: unless-stopped
+    networks: *local-networks
 
 networks:
   local-lakehouse_net:

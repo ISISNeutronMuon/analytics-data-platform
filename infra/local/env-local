@@ -84,7 +84,7 @@ TRINO_HTTPS_PORT=8443
 TRINO_CATALOG_STORE=${TRINO_CATALOG_STORE:-file}
 
 ###############################################################################
-# Superset
+# Superset\
 ###############################################################################
 # Metadata DB
 SHARED_DB__SUPERSET_DB_NAME=superset
@@ -121,3 +121,8 @@ SUPERSET_LOGIN_PROVIDER=db
 
 # Make sure you set this to a unique secure random value on production
 SUPERSET_SECRET_KEY=0123456789
+
+###############################################################################
+# Metabase
+###############################################################################
+MB_SITE_URL=$ROUTER_HOSTNAME_EXTERNAL:$ROUTER_PORT_HTTP/metabase

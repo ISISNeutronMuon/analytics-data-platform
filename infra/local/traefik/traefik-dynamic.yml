@@ -29,6 +29,20 @@ http:
         - lakekeeper-strip-prefix
       service: lakekeeper
 
+    marimo:
+      entryPoints: web
+      rule: PathPrefix(`/marimo`)
+      service: marimo
+      middlewares:
+        - marimo-strip-prefix
+
+    metabase:
+      entryPoints: web
+      rule: PathPrefix(`/metabase`)
+      service: metabase
+      middlewares:
+        - metabase-strip-prefix
+
     minioapi:
       entryPoints: minioapi
       rule: PathPrefix(`/`)
@@ -47,13 +61,6 @@ http:
       service: openfga
       middlewares:
         - openfga-strip-prefix
-
-    marimo:
-      entryPoints: web
-      rule: PathPrefix(`/marimo`)
-      service: marimo
-      middlewares:
-        - marimo-strip-prefix
 
     superset:
       entryPoints: web
@@ -76,6 +83,10 @@ http:
       stripPrefix:
         prefixes:
           - "/marimo"
+    metabase-strip-prefix:
+      stripPrefix:
+        prefixes:
+          - "/metabase"
     minioconsole-strip-prefix:
       stripPrefix:
         prefixes:
@@ -98,6 +109,10 @@ http:
       loadBalancer:
         servers:
           - url: "http://marimo:8080"
+    metabase:
+      loadBalancer:
+        servers:
+          - url: "http://metabase:3000"
     minioapi:
       loadBalancer:
         servers:

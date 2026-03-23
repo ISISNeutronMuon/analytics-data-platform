@@ -34,6 +34,9 @@ keycloak_realm_url: "{{ keycloak_url }}/realms/{{ keycloak_realm.name }}"
 lakekeeper_base_path: /iceberg
 lakekeeper_http_port: 8181
 
+metabase_base_path: /metabase
+metabase_http_port: 3000
+
 pip_install_packages:
   - name: docker
     extra_args: --break-system-packages
