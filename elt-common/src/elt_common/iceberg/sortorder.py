@@ -1,3 +1,4 @@
+from elt_common.typing import SortOrderHint
 import pyiceberg.transforms as transforms
 from pyiceberg.schema import Schema
 from pyiceberg.table.sorting import (
@@ -7,10 +8,8 @@ from pyiceberg.table.sorting import (
     SortDirection,
 )
 
-SortOrderHint = dict[str, str] | None
 
-
-def create_sort_order(sort_order_hint: SortOrderHint, iceberg_schema: Schema) -> SortOrder:
+def create_sort_order(sort_order_hint: SortOrderHint | None, iceberg_schema: Schema) -> SortOrder:
     """If a sort order hint is provider, create the appropriate SortOrder instance."""
     if sort_order_hint is None:
         return UNSORTED_SORT_ORDER

@@ -12,6 +12,8 @@ cursor_column = "LogbookId"
 name = "Entries"
 write_mode = "append"
 cursor_column = "EntryId"
+partition = { "EntryId" = "bucket[4]" }
+sort_order = { "EntryId" = "asc" }
 
 [transform]
 dbt_dir = "warehouses/examples/transform"

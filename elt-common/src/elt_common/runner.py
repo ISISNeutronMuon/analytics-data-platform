@@ -81,44 +81,41 @@ def _run_ingest(namespace: str, manifest: JobManifest) -> None:
     extract_cls = get_extract_cls_from_module_path(
         manifest.name, manifest.job_dir / f"{manifest.name}.py"
     )
-
-    table_info = {}
-    for t in manifest.tables:
-        table_info[t.name] = {
-            "config": t,
-            "cursor_value": get_max_value(catalog, writer.table_id(t.name), t.cursor_column),
-        }
-
     source_config = extract_cls.source_config_cls(_env_prefix=f"{manifest.name}__")
     extract_obj = extract_cls(source_config)
-    seen_table: dict[str, bool] = {}
-    for table_name, data in extract_obj(table_info):
+
+    expected_tables = manifest.tables
+    for _, t in expected_tables.items():
+        if t.cursor_column is not None:
+            t.cursor_column.max_value = get_max_value(
+                catalog, writer.table_id(t.name), t.cursor_column.column
+            )
+    tables_seen: dict[str, bool] = {}
+    for table_name, data in extract_obj(manifest.tables):
+        if table_name not in expected_tables:
+            raise ValueError(
+                f"Extract returned table '{table_name}' but it's not defined in [[tables]]"
+            )
         if data.num_rows == 0:
             logger.info(f"No data for table {table_name}, skipping.")
             continue
 
-        ti = table_info.get(table_name)
-        if ti is None:
-            raise ValueError(
-                f"Extract returned table '{table_name}' but it's not defined in [[tables]]"
-            )
-        tc = ti["config"]
-
         # Determine write mode. A replace is really a delete then append but each source
         # table can yield several times so only delete once and then continue appending
-        write_mode = tc.write_mode
-        if tc.write_mode == "replace" and seen_table.get(table_name, False):
+        table_props = expected_tables[table_name]
+        write_mode = table_props.write_mode
+        if table_props.write_mode == "replace" and tables_seen.get(table_name, False):
             write_mode = "append"
 
         writer.write_table(
             table_name,
             data,
             mode=write_mode,
-            merge_on=list(tc.merge_on) if tc.merge_on else None,
-            partition=tc.partition or None,
-            sort_order=tc.sort_order or None,
+            merge_on=list(table_props.merge_on) if table_props.merge_on else None,
+            partition=table_props.partition or None,
+            sort_order=table_props.sort_order or None,
         )
-        seen_table[table_name] = True
+        tables_seen[table_name] = True
 
 
 def _run_transform(manifest: JobManifest) -> None:

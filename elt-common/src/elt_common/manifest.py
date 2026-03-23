@@ -5,49 +5,10 @@ entrypoint, table configurations (write mode, partitioning, merge keys), and
 optional dbt transform settings.
 """
 
-import dataclasses
 import tomllib
 from pathlib import Path
-from typing import Sequence
 
-from elt_common.types import WriteMode
-
-
-@dataclasses.dataclass(frozen=True)
-class TableConfig:
-    """Configuration for a single Iceberg table within a job."""
-
-    name: str
-    write_mode: WriteMode = "append"
-    cursor_column: str | None = None
-    merge_on: Sequence[str] = ()
-    partition: dict[str, str] = dataclasses.field(default_factory=dict)
-    sort_order: dict[str, str] = dataclasses.field(default_factory=dict)
-
-
-@dataclasses.dataclass(frozen=True)
-class TransformConfig:
-    """Optional dbt transform configuration."""
-
-    dbt_dir: str
-    dbt_select: str = ""
-
-
-@dataclasses.dataclass(frozen=True)
-class JobManifest:
-    """Parsed representation of an ``elt.toml`` file."""
-
-    name: str
-    domain: str
-    warehouse: str
-    tables: Sequence[TableConfig]
-    transform: TransformConfig | None = None
-    job_dir: Path = dataclasses.field(default=Path("."))
-
-    @property
-    def namespace(self) -> str:
-        """The Iceberg namespace for this job: ``{domain}_{name}``."""
-        return f"{self.domain}_{self.name}"
+from elt_common.typing import JobManifest, TableCursor, TableProperties, TransformProperties
 
 
 def load_manifest(job_dir: Path) -> JobManifest:
@@ -61,30 +22,33 @@ def load_manifest(job_dir: Path) -> JobManifest:
     with open(manifest_path, "rb") as f:
         raw = tomllib.load(f)
 
-    job = raw.get("job", {})
+    job = raw.pop("job", {})
     for field in ("name", "domain", "warehouse"):
         if field not in job:
             raise ValueError(f"Missing required field 'job.{field}' in {manifest_path}")
 
-    tables = []
-    for table_raw in raw.get("tables", []):
+    tables = {}
+    for table_raw in raw.pop("tables", []):
         if "name" not in table_raw:
             raise ValueError(f"Missing required field 'tables.name' in {manifest_path}")
-        tables.append(
-            TableConfig(
-                name=table_raw["name"],
-                write_mode=table_raw.get("write_mode", "append"),
-                cursor_column=table_raw.get("cursor_column", None),
-                merge_on=tuple(table_raw.get("merge_on", ())),
-                partition=table_raw.get("partition", {}),
-                sort_order=table_raw.get("sort_order", {}),
-            )
+        name = table_raw["name"]
+        tables[name] = TableProperties(
+            name=table_raw.pop("name"),
+            write_mode=table_raw.pop("write_mode", "append"),
+            cursor_column=TableCursor(table_raw.pop("cursor_column"), None),
+            merge_on=tuple(table_raw.pop("merge_on", ())),
+            partition=table_raw.pop("partition", {}),
+            sort_order=table_raw.pop("sort_order", {}),
         )
+        if len(table_raw) > 0:
+            raise ValueError(
+                f"Found unknown keys in [[tables]] section of manifest '{manifest_path}': {table_raw}."
+            )
 
     transform = None
     if "transform" in raw:
         tr = raw["transform"]
-        transform = TransformConfig(
+        transform = TransformProperties(
             dbt_dir=tr.get("dbt_dir", ""),
             dbt_select=tr.get("dbt_select", ""),
         )

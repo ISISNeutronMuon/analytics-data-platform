@@ -1,3 +1,4 @@
+from elt_common.typing import PartitionHint
 from pyiceberg.partitioning import (
     UNPARTITIONED_PARTITION_SPEC,
     PartitionField,
@@ -6,10 +7,10 @@ from pyiceberg.partitioning import (
 from pyiceberg.schema import Schema
 import pyiceberg.transforms as transforms
 
-PartitionHint = dict[str, str] | None
 
-
-def create_partition_spec(partition_hint: PartitionHint, iceberg_schema: Schema) -> PartitionSpec:
+def create_partition_spec(
+    partition_hint: PartitionHint | None, iceberg_schema: Schema
+) -> PartitionSpec:
     """Create an Iceberg partition spec rhe partition hints"""
 
     def field_name(column_name: str, transform: str):
