@@ -13,12 +13,51 @@ from elt_common.manifest import JobManifest, load_manifest
 
 EXTRACT_CLS_NAME = "Extract"
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def namespace_name(source_domain: str, job_name: str) -> str:
     """Given a domain and job name, construct a namespace name."""
     return f"{source_domain}_{job_name}"
+
+
+def get_extract_cls(job: JobManifest) -> Any:
+    """Get the class that will handle the extraction.
+
+    If there is a custom extract script next to the job manifest use it, else check for an 'extract'
+    key in the job manifest. If both are provided prefer the custom script.
+    """
+    custom_extract_script = job.job_dir / f"{job.name}.py"
+    if custom_extract_script.exists() and job.extract is not None:
+        LOGGER.warning(
+            f"Both a [job.extract] key in elt.toml and custom extract script '{custom_extract_script}' have been provided. Preferring custom script..."
+        )
+    if custom_extract_script.exists():
+        return get_extract_cls_from_module_path(job.name, custom_extract_script)
+    elif job.extract is not None:
+        return get_extract_cls_from_module_name(job.extract)
+    else:
+        raise RuntimeError("No class defined to perform extraction step.")
+
+
+def get_extract_cls_from_module_path(module_name: str, file_path: Path) -> Any:
+    """Get the class attribute that will handle extraction
+
+    :raises: AttributeError if the attribute doesn't exist
+    """
+    module = import_module_from_path(module_name, file_path)
+    return getattr(module, EXTRACT_CLS_NAME)
+
+
+def get_extract_cls_from_module_name(module_name: str) -> Any:
+    """Get the class attribute that will handle extraction
+
+    Expects the format 'fully_qualified_module_name:attribute_name.'
+    :raises: AttributeError if the attribute doesn't exist
+    """
+    # module = import_module_from_path(module_name, file_path)
+    fq_module_name, extract_attr = module_name.split(":")
+    return getattr(importlib.import_module(fq_module_name), extract_attr)
 
 
 def import_module_from_path(module_name: str, file_path: Path):
@@ -35,15 +74,6 @@ def import_module_from_path(module_name: str, file_path: Path):
     return module
 
 
-def get_extract_cls_from_module_path(module_name: str, file_path: Path) -> Any:
-    """Get the class attribute that will handle extraction
-
-    :raises: AttributeError if the attribute doesn't exist
-    """
-    module = import_module_from_path(module_name, file_path)
-    return getattr(module, EXTRACT_CLS_NAME)
-
-
 def run_job(
     job_dir: Path,
     *,
@@ -57,7 +87,7 @@ def run_job(
     """
     manifest = load_manifest(job_dir)
     namespace = namespace_name(manifest.domain, manifest.name)
-    logger.info(f"Starting job: {manifest.name} (namespace={namespace})")
+    LOGGER.info(f"Starting job: {manifest.name} (namespace={namespace})")
     t0 = time.monotonic()
 
     if steps in ("all", "ingest"):
@@ -67,7 +97,7 @@ def run_job(
     #     _run_transform(manifest)
 
     elapsed = time.monotonic() - t0
-    logger.info(f"Job {manifest.name} completed in {elapsed:.1f}s")
+    LOGGER.info(f"Job {manifest.name} completed in {elapsed:.1f}s")
 
 
 def _run_ingest(namespace: str, manifest: JobManifest) -> None:
@@ -97,7 +127,7 @@ def _run_ingest(namespace: str, manifest: JobManifest) -> None:
                 f"Extract returned table '{table_name}' but it's not defined in [[tables]]"
             )
         if data.num_rows == 0:
-            logger.info(f"No data for table {table_name}, skipping.")
+            LOGGER.info(f"No data for table {table_name}, skipping.")
             continue
 
         # Determine write mode. A replace is really a delete then append but each source
@@ -121,18 +151,18 @@ def _run_ingest(namespace: str, manifest: JobManifest) -> None:
 def _run_transform(manifest: JobManifest) -> None:
     """Run the dbt transform step if configured."""
     if manifest.transform is None:
-        logger.debug("No [transform] section, skipping dbt.")
+        LOGGER.debug("No [transform] section, skipping dbt.")
         return
 
     dbt_dir = manifest.transform.dbt_dir
     dbt_select = manifest.transform.dbt_select
     if not dbt_dir:
-        logger.debug("No dbt_dir configured, skipping transform.")
+        LOGGER.debug("No dbt_dir configured, skipping transform.")
         return
 
     cmd = ["dbt", "run"]
     if dbt_select:
         cmd.extend(["--select", dbt_select])
 
-    logger.info(f"Running dbt: {' '.join(cmd)} (cwd={dbt_dir})")
+    LOGGER.info(f"Running dbt: {' '.join(cmd)} (cwd={dbt_dir})")
     subprocess.run(cmd, cwd=dbt_dir, check=True)

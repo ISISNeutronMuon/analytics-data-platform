@@ -2,6 +2,7 @@
 name = "opralogweb"
 domain = "accelerator"
 warehouse = "examples"
+extract = "elt_common.sources.sqldatabase:DatabaseExtract"
 
 [[tables]]
 name = "Logbooks"

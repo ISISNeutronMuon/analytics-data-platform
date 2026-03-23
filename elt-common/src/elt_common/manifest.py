@@ -27,6 +27,8 @@ def load_manifest(job_dir: Path) -> JobManifest:
         if field not in job:
             raise ValueError(f"Missing required field 'job.{field}' in {manifest_path}")
 
+    extract = job.get("extract", None)
+
     tables = {}
     for table_raw in raw.pop("tables", []):
         if "name" not in table_raw:
@@ -58,6 +60,7 @@ def load_manifest(job_dir: Path) -> JobManifest:
         domain=job["domain"],
         warehouse=job["warehouse"],
         tables=tables,
+        extract=extract,
         transform=transform,
         job_dir=job_dir.resolve(),
     )

@@ -9,9 +9,9 @@ import logging
 
 import pyarrow as pa
 from elt_common.iceberg.schema import create_iceberg_schema
-from elt_common.iceberg.partition import PartitionHint, create_partition_spec
-from elt_common.iceberg.sortorder import SortOrderHint, create_sort_order
-from elt_common.typing import WriteMode
+from elt_common.iceberg.partition import create_partition_spec
+from elt_common.iceberg.sortorder import create_sort_order
+from elt_common.typing import PartitionHint, SortOrderHint, WriteMode
 from pyiceberg.catalog import Catalog
 from pyiceberg.exceptions import NoSuchNamespaceError, NoSuchTableError
 from pyiceberg.schema import Schema
@@ -70,8 +70,8 @@ class IcebergWriter:
         *,
         mode: WriteMode = "append",
         merge_on: list[str] | None = None,
-        partition: dict[str, str] | None = None,
-        sort_order: dict[str, str] | None = None,
+        partition: PartitionHint | None = None,
+        sort_order: SortOrderHint | None = None,
     ) -> None:
         """Write an Arrow table to an Iceberg table.
 
@@ -117,8 +117,8 @@ class IcebergWriter:
         self,
         table_id: tuple[str, str],
         arrow_schema: pa.Schema,
-        partition: PartitionHint,
-        sort_order: SortOrderHint,
+        partition: PartitionHint | None,
+        sort_order: SortOrderHint | None,
     ) -> IcebergTable:
         """Load an existing table or create a new one."""
         if self.catalog.table_exists(table_id):
