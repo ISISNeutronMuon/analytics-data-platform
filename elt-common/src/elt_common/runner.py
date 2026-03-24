@@ -34,10 +34,10 @@ def get_extract_cls(job: JobManifest) -> Any:
         )
     if custom_extract_script.exists():
         return get_extract_cls_from_module_path(job.name, custom_extract_script)
-    elif job.extract is not None:
-        return get_extract_cls_from_module_name(job.extract)
     else:
-        raise RuntimeError("No class defined to perform extraction step.")
+        raise RuntimeError(
+            f"No extraction class definition file found at '{custom_extract_script}'"
+        )
 
 
 def get_extract_cls_from_module_path(module_name: str, file_path: Path) -> Any:
@@ -47,17 +47,6 @@ def get_extract_cls_from_module_path(module_name: str, file_path: Path) -> Any:
     """
     module = import_module_from_path(module_name, file_path)
     return getattr(module, EXTRACT_CLS_NAME)
-
-
-def get_extract_cls_from_module_name(module_name: str) -> Any:
-    """Get the class attribute that will handle extraction
-
-    Expects the format 'fully_qualified_module_name:attribute_name.'
-    :raises: AttributeError if the attribute doesn't exist
-    """
-    # module = import_module_from_path(module_name, file_path)
-    fq_module_name, extract_attr = module_name.split(":")
-    return getattr(importlib.import_module(fq_module_name), extract_attr)
 
 
 def import_module_from_path(module_name: str, file_path: Path):
@@ -121,7 +110,7 @@ def _run_ingest(namespace: str, manifest: JobManifest) -> None:
                 catalog, writer.table_id(t.name), t.cursor_column.column
             )
     tables_seen: dict[str, bool] = {}
-    for table_name, data in extract_obj(manifest.tables):
+    for table_name, data in extract_obj.extract(manifest.tables):
         if table_name not in expected_tables:
             raise ValueError(
                 f"Extract returned table '{table_name}' but it's not defined in [[tables]]"

@@ -1,49 +1,40 @@
 """Pull data from the Opralogweb database"""
 
-import logging
+import functools as ft
+from typing import Any, Sequence
 
-from elt_common.sources.sqldatabase import DatabaseSourceConfig
 from elt_common.typing import DataItems, TableItems
-import pyarrow as pa
-import sqlalchemy as sa
+from elt_common.sources.sqldatabase import SqlDatabaseExtract
+from sqlalchemy import Select
 
 
-class Extract:
-    source_config_cls = DatabaseSourceConfig
+class Extract(SqlDatabaseExtract):
+    def extract(self, table_info: TableItems) -> DataItems:
+        # Pull out everything but Entries/MoreEntryColumns.
+        append_only = {
+            name: info
+            for name, info in table_info.items()
+            if name not in ("Entries", "MoreEntryColumns")
+        }
+        yield from super().extract(append_only)
 
-    def __init__(self, source_config: DatabaseSourceConfig):
-        self._source_config = source_config
+        # Deal with updated record entries. The cursor column of the Entries table
+        # is used to detect rows that have been modified in the source. These EntryIds of these
+        # records are passed to the MoreEntyrColumns query to retrieve updates from that table
+        # also.
+        def entry_ids_in(table, query: Select[Any], entry_ids: Sequence[int]):
+            # Modify the query to only select the given entry_ids
+            return query.filter(table.c.EntryId.in_(entry_ids))
 
-        logging.debug(
-            f"Creating engine for {source_config.drivername} database at "
-            f"{source_config.host}:{source_config.port}/{source_config.database}"
-        )
-        self._engine = sa.create_engine(source_config.connection_url)
-        self._metadata = sa.MetaData(schema=source_config.database_schema)
-
-    def __call__(self, table_info: TableItems) -> DataItems:
         with self._engine.connect() as conn:
-            for name, info in table_info.items():
-                logging.debug(
-                    f"Extracting table {name} in chunks of {self._source_config.chunk_size} rows."
-                )
+            entries_info = table_info["Entries"]
+            entries_chunk = next(self.extract_single(conn, "Entries", entries_info))
+            yield entries_chunk
+            loaded_entry_ids = entries_chunk[1].column("EntryId").to_pylist()
 
-                table = sa.Table(
-                    info.name,
-                    self._metadata,
-                    autoload_with=self._engine,
-                )
-                query = sa.select(table)
-                if (cursor := info.cursor_column) is not None and (
-                    cursor.max_value is not None
-                ):
-                    logging.debug(
-                        f"Cursor value detected. Limiting query to {cursor.column} > {cursor.max_value}"
-                    )
-                    query = query.where(sa.column(cursor.column) > cursor.max_value)
-
-                result = conn.execution_options(
-                    yield_per=self._source_config.chunk_size
-                ).execute(query)
-                for partition in result.mappings().partitions():
-                    yield info.name, pa.Table.from_pylist(list(partition))
+            yield from self.extract_single(
+                conn,
+                "MoreEntryColumns",
+                table_info["MoreEntryColumns"],
+                query_mutator=ft.partial(entry_ids_in, entry_ids=loaded_entry_ids),
+            )

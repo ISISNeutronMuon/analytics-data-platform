@@ -95,7 +95,7 @@ class IcebergWriter:
             iceberg_table.append(data)
         elif mode == "merge":
             if not merge_on:
-                raise ValueError("'merge_on' must be provided when mode='merge'")
+                raise ValueError(f"{table_name}: 'merge_on' must be provided when mode='merge'")
             iceberg_table.upsert(
                 df=data,
                 join_cols=merge_on,

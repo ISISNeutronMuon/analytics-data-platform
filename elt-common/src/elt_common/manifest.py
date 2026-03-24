@@ -34,10 +34,15 @@ def load_manifest(job_dir: Path) -> JobManifest:
         if "name" not in table_raw:
             raise ValueError(f"Missing required field 'tables.name' in {manifest_path}")
         name = table_raw["name"]
+        cursor_column = (
+            TableCursor(table_raw.pop("cursor_column"), None)
+            if "cursor_column" in table_raw
+            else None
+        )
         tables[name] = TableProperties(
             name=table_raw.pop("name"),
             write_mode=table_raw.pop("write_mode", "append"),
-            cursor_column=TableCursor(table_raw.pop("cursor_column"), None),
+            cursor_column=cursor_column,
             merge_on=tuple(table_raw.pop("merge_on", ())),
             partition=table_raw.pop("partition", {}),
             sort_order=table_raw.pop("sort_order", {}),

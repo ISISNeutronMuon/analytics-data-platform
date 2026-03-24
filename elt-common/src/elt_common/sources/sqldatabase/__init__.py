@@ -3,7 +3,7 @@
 import logging
 from typing import Optional
 
-from elt_common.typing import DataItems, TableItems
+from elt_common.typing import DataItems, TableItems, TableProperties
 import pyarrow as pa
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
@@ -53,27 +53,46 @@ class SqlDatabaseExtract:
         self._engine = sa.create_engine(source_config.connection_url)
         self._metadata = sa.MetaData(schema=source_config.database_schema)
 
-    def __call__(self, table_info: TableItems) -> DataItems:
+    @property
+    def chunk_size(self):
+        return self._source_config.chunk_size
+
+    def extract(self, table_info: TableItems) -> DataItems:
+        """Yield the results of extracting the named Tables from the source."""
         with self._engine.connect() as conn:
             for name, info in table_info.items():
-                LOGGER.debug(
-                    f"Extracting table {name} in chunks of {self._source_config.chunk_size} rows."
-                )
+                yield from self.extract_single(conn, name, info)
 
-                table = sa.Table(
-                    info.name,
-                    self._metadata,
-                    autoload_with=self._engine,
-                )
-                query = sa.select(table)
-                if (cursor := info.cursor_column) is not None and (cursor.max_value is not None):
-                    LOGGER.debug(
-                        f"Cursor value detected. Limiting query to {cursor.column} > {cursor.max_value}"
-                    )
-                    query = query.where(sa.column(cursor.column) > cursor.max_value)
+    def extract_single(
+        self,
+        conn: sa.Connection,
+        name: str,
+        info: TableProperties,
+        *,
+        query_mutator=None,
+    ) -> DataItems:
+        LOGGER.debug(f"Extracting table {name} in chunks of {self.chunk_size} rows.")
+        table = sa.Table(
+            info.name,
+            self._metadata,
+            autoload_with=self._engine,
+        )
+        query = sa.select(table)
+        if (cursor := info.cursor_column) is not None and (cursor.max_value is not None):
+            LOGGER.debug(
+                f"Cursor value detected. Limiting query to {cursor.column} > {cursor.max_value}"
+            )
+            query = query.where(sa.column(cursor.column) > cursor.max_value)
 
-                result = conn.execution_options(yield_per=self._source_config.chunk_size).execute(
-                    query
-                )
-                for partition in result.mappings().partitions():
-                    yield info.name, pa.Table.from_pylist(list(partition))
+        if query_mutator is None:
+            query_mutator = _noop
+        result = conn.execution_options(yield_per=self.chunk_size).execute(
+            query_mutator(table, query)
+        )
+        for partition in result.mappings().partitions():
+            yield info.name, pa.Table.from_pylist(list(partition))
+
+
+def _noop(_, query):
+    """Default mutator if no query mutation function provided"""
+    return query
