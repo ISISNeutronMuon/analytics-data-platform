@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from elt_common.manifest import JobManifest, TableConfig, load_manifest, discover_jobs
+from elt_common.manifest import load_manifest, discover_jobs
 
 
 class TestLoadManifest:

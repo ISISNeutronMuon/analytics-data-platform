@@ -5,9 +5,13 @@ Commands::
     elt run <job_dir>        Run an ingest job
     elt ls [--warehouse W]   List discovered jobs
     elt validate [job_dir]   Validate elt.toml files
+    elt test <job_dir>       Run tests for a single job
+    elt test-all <root>      Run tests for all jobs under a root directory
 """
 
 import logging
+import subprocess
+import sys
 from pathlib import Path
 
 import click
@@ -95,3 +99,66 @@ def validate(job_dir: Path | None) -> None:
 
     if errors:
         raise SystemExit(1)
+
+
+@cli.command()
+@click.argument("job_dir", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--catalog-type", default="rest", help="Catalog type for e2e tests (sql or rest).")
+@click.argument("pytest_args", nargs=-1, type=click.UNPROCESSED)
+def test(job_dir: Path, catalog_type: str, pytest_args: tuple[str, ...]) -> None:
+    """Run tests for an ELT job.
+
+    Discovers and runs pytest in <job_dir>/tests/.
+    Extra arguments after -- are forwarded to pytest.
+    """
+    test_dir = job_dir / "tests"
+    if not test_dir.is_dir():
+        raise click.ClickException(f"No tests/ directory found in {job_dir}")
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "pytest",
+        str(test_dir),
+        f"--catalog-type={catalog_type}",
+        "-v",
+        *pytest_args,
+    ]
+    result = subprocess.run(cmd, cwd=str(job_dir))
+    raise SystemExit(result.returncode)
+
+
+@cli.command("test-all")
+@click.argument("root", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--catalog-type", default="rest", help="Catalog type for e2e tests (sql or rest).")
+def test_all(root: Path, catalog_type: str) -> None:
+    """Run tests for all jobs that have a tests/ directory under ROOT."""
+    test_dirs = sorted(
+        p.parent for p in root.rglob("tests/conftest.py") if (p.parent.parent / "elt.toml").exists()
+    )
+    if not test_dirs:
+        click.echo("No job test directories found.")
+        return
+
+    failures: list[Path] = []
+    for td in test_dirs:
+        job_dir = td.parent
+        click.echo(f"\n{'=' * 60}\nTesting: {job_dir}\n{'=' * 60}")
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "pytest",
+                str(td),
+                f"--catalog-type={catalog_type}",
+                "-v",
+            ],
+            cwd=str(job_dir),
+        )
+        if result.returncode != 0:
+            failures.append(job_dir)
+
+    if failures:
+        click.echo(f"\nFailed: {', '.join(str(f) for f in failures)}")
+        raise SystemExit(1)
+    click.echo("\nAll job tests passed.")

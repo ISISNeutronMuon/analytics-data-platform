@@ -4,8 +4,8 @@ import textwrap
 from pathlib import Path
 
 from click.testing import CliRunner
-
 from elt_common.cli import cli
+import pytest
 
 
 @pytest.fixture
@@ -26,9 +26,6 @@ def job_dir(tmp_path: Path) -> Path:
     """)
     (tmp_path / "elt.toml").write_text(toml)
     return tmp_path
-
-
-import pytest
 
 
 class TestValidateCommand:

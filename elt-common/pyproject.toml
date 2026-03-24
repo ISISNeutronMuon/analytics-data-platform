@@ -33,6 +33,7 @@ iceberg-maintenance = "elt_common.iceberg.maintenance:cli"
 dev = [
   "minio>=7.2.20",
   "prek>=0.2.27",
+  "pyarrow-stubs>=20.0.0.20251215",
   "pytest>=9.0.2",
   "pytest-httpx>=0.36.0",
   "pytest-mock>=3.15.1",

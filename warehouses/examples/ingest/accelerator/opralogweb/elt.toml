@@ -4,55 +4,55 @@ domain = "accelerator"
 warehouse = "examples"
 
 # append-only tables
-[[tables]]
-name = "ChapterEntry"
-write_mode = "append"
-cursor_column = "LogbookEntryId"
-partition = { "LogbookEntryId" = "bucket[4]" }
-sort_order = { "LogbookEntryId" = "asc" }
+# [[tables]]
+# name = "ChapterEntry"
+# write_mode = "append"
+# cursor_column = "LogbookEntryId"
+# partition = { "LogbookEntryId" = "bucket[4]" }
+# sort_order = { "LogbookEntryId" = "asc" }
 
-[[tables]]
-name = "LogbookChapter"
-write_mode = "append"
-cursor_column = "LogbookChapterNo"
-partition = { "LogbookChapterNo" = "bucket[4]" }
-sort_order = { "LogbookChapterNo" = "asc" }
+# [[tables]]
+# name = "LogbookChapter"
+# write_mode = "append"
+# cursor_column = "LogbookChapterNo"
+# partition = { "LogbookChapterNo" = "bucket[4]" }
+# sort_order = { "LogbookChapterNo" = "asc" }
 
-[[tables]]
-name = "Logbooks"
-write_mode = "append"
-cursor_column = "LogbookId"
-sort_order = { "LogbookId" = "asc" }
+# [[tables]]
+# name = "Logbooks"
+# write_mode = "append"
+# cursor_column = "LogbookId"
+# sort_order = { "LogbookId" = "asc" }
 
-[[tables]]
-name = "AdditionalColumns"
-write_mode = "append"
-cursor_column = "AdditionalColumnId"
-sort_order = { "AdditionalColumnId" = "asc" }
+# [[tables]]
+# name = "AdditionalColumns"
+# write_mode = "append"
+# cursor_column = "AdditionalColumnId"
+# sort_order = { "AdditionalColumnId" = "asc" }
 
-# Records can be updated
-[[tables]]
-name = "Entries"
-write_mode = "merge"
-cursor_column = "LastChangedDate"
-partition = { "EntryId" = "bucket[8]" }
-sort_order = { "EntryId" = "asc" }
+# # Records can be updated
+# [[tables]]
+# name = "Entries"
+# write_mode = "merge"
+# cursor_column = "LastChangedDate"
+# partition = { "EntryId" = "bucket[8]" }
+# sort_order = { "EntryId" = "asc" }
 
-# Records can be updated
-[[tables]]
-name = "Entries"
-write_mode = "merge"
-merge_on = ["EntryId"]
-cursor_column = "LastChangedDate"
-partition = { "EntryId" = "bucket[8]" }
-sort_order = { "EntryId" = "asc" }
+# # Records can be updated
+# [[tables]]
+# name = "Entries"
+# write_mode = "merge"
+# merge_on = ["EntryId"]
+# cursor_column = "LastChangedDate"
+# partition = { "EntryId" = "bucket[8]" }
+# sort_order = { "EntryId" = "asc" }
 
-[[tables]]
-merge_on = ["MoreEntryColumnId"]
-partition = { "MoreEntryColumnId" = "bucket[8]" }
-name = "MoreEntryColumns"
-write_mode = "merge"
-sort_order = { "MoreEntryColumnId" = "asc" }
+# [[tables]]
+# merge_on = ["MoreEntryColumnId"]
+# partition = { "MoreEntryColumnId" = "bucket[8]" }
+# name = "MoreEntryColumns"
+# write_mode = "merge"
+# sort_order = { "MoreEntryColumnId" = "asc" }
 
 
 [transform]

@@ -1,6 +1,6 @@
 import dataclasses as dc
 from pathlib import Path
-from typing import Any, Literal, Iterator, Optional, Sequence, Tuple
+from typing import Any, Literal, Iterator, Sequence, Tuple, TypedDict
 
 import pyarrow as pa
 
@@ -49,12 +49,15 @@ class JobManifest:
         return f"{self.domain}_{self.name}"
 
 
-@dc.dataclass(frozen=False)
-class TableCursor:
+class TableCursor(TypedDict, total=True):
     """Encapsulate properties for a cursor within a table"""
 
     column: str
-    max_value: Optional[Any]
+    max_value: Any
+
+
+CursorInfo = dict[str, TableCursor]
+"""Map a table name to a cursor object that defines the max value in the cursor column"""
 
 
 @dc.dataclass(frozen=True)
@@ -63,10 +66,15 @@ class TableProperties:
 
     name: str
     write_mode: WriteMode = "append"
-    cursor_column: TableCursor | None = None
     merge_on: Sequence[str] = ()
     partition: PartitionHint = dc.field(default_factory=dict)
     sort_order: SortOrderHint = dc.field(default_factory=dict)
+
+    cursor_column: str | None = None
+
+    @property
+    def has_cursor_column(self) -> bool:
+        return self.cursor_column is not None
 
 
 @dc.dataclass(frozen=True)

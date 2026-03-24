@@ -1,9 +1,10 @@
 """Support for extracting data from a SQL database"""
 
+from abc import abstractmethod
 import logging
 from typing import Optional
 
-from elt_common.typing import DataItems, TableItems, TableProperties
+from elt_common.typing import CursorInfo, DataItems, TableCursor
 import pyarrow as pa
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
@@ -57,32 +58,38 @@ class SqlDatabaseExtract:
     def chunk_size(self):
         return self._source_config.chunk_size
 
-    def extract(self, table_info: TableItems) -> DataItems:
+    @abstractmethod
+    def tables(self):
+        raise NotImplementedError(
+            "Subclass should implement this to provide details of tables to be extracted."
+        )
+
+    def extract(self, cursor_info: CursorInfo) -> DataItems:
         """Yield the results of extracting the named Tables from the source."""
+        table_info = self.tables()
         with self._engine.connect() as conn:
-            for name, info in table_info.items():
-                yield from self.extract_single(conn, name, info)
+            for name in table_info.keys():
+                yield from self.extract_single(conn, name, cursor_info=cursor_info.get(name))
 
     def extract_single(
         self,
         conn: sa.Connection,
         name: str,
-        info: TableProperties,
         *,
+        cursor_info: TableCursor | None = None,
         query_mutator=None,
     ) -> DataItems:
         LOGGER.debug(f"Extracting table {name} in chunks of {self.chunk_size} rows.")
         table = sa.Table(
-            info.name,
+            name,
             self._metadata,
             autoload_with=self._engine,
         )
         query = sa.select(table)
-        if (cursor := info.cursor_column) is not None and (cursor.max_value is not None):
-            LOGGER.debug(
-                f"Cursor value detected. Limiting query to {cursor.column} > {cursor.max_value}"
-            )
-            query = query.where(sa.column(cursor.column) > cursor.max_value)
+        if cursor_info is not None:
+            column, max_value = cursor_info["column"], cursor_info["max_value"]
+            LOGGER.debug(f"Cursor value detected. Limiting query to {column} > {max_value}")
+            query = query.where(sa.column(column) > max_value)  # type: ignore
 
         if query_mutator is None:
             query_mutator = _noop
@@ -90,7 +97,7 @@ class SqlDatabaseExtract:
             query_mutator(table, query)
         )
         for partition in result.mappings().partitions():
-            yield info.name, pa.Table.from_pylist(list(partition))
+            yield name, pa.Table.from_pylist(list(partition))
 
 
 def _noop(_, query):
