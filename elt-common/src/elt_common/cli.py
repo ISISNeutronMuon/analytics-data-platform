@@ -7,7 +7,7 @@ import click
 
 from elt_common.manifest import discover_jobs
 from elt_common.runner import run_job
-from elt_common.tester import unit_test_job
+from elt_common.tester import unit_test_job, e2e_test_job
 
 
 @click.group()
@@ -75,6 +75,8 @@ def test(job_dir: Path, type: str, extra_args: tuple[str, ...]) -> None:
         if not test_dir.is_dir():
             raise click.ClickException(f"No tests/ directory found in {job_dir}")
 
-        raise SystemExit(unit_test_job(test_dir, extra_args))
+        result = unit_test_job(test_dir, extra_args)
     else:
-        raise NotImplementedError("e2e tests not yet implemented.")
+        result = e2e_test_job(job_dir)
+
+    raise SystemExit(result)

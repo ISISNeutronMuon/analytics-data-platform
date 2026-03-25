@@ -101,9 +101,12 @@ class Extract(SqlDatabaseExtract):
                 pass
 
 
-def _entry_ids_in(table, query: Select[Any], entry_ids: Sequence[int]):
+def _entry_ids_in(table, query: Select[Any], entry_ids: Sequence[int | None]):
     # Modify the query to only select the given entry_ids
-    return query.filter(table.c.EntryId.in_(entry_ids))
+    if entry_ids:
+        return query.filter(table.c.EntryId.in_(entry_ids))
+    else:
+        return query
 
 
 def _to_markdown(data_item: DataChunk, column_name: str) -> DataChunk:

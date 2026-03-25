@@ -7,7 +7,7 @@ import time
 from typing import Any
 from pathlib import Path
 
-from elt_common.iceberg.catalog import CatalogConfig, get_max_value
+from elt_common.iceberg.catalog import connect_catalog, get_max_value
 from elt_common.iceberg.writer import IcebergWriter
 from elt_common.manifest import JobManifest, load_manifest
 from elt_common.typing import CursorInfo
@@ -83,8 +83,7 @@ def run_job(
 
 def _run_ingest(namespace: str, manifest: JobManifest) -> None:
     """Import the extract function, call it, and write results to Iceberg."""
-    catalog_config = CatalogConfig()
-    catalog = catalog_config.connect_catalog()
+    catalog = connect_catalog()
 
     writer = IcebergWriter(catalog, namespace)
     writer.ensure_namespace()
