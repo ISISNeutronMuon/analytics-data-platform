@@ -1,105 +1,60 @@
+from pathlib import Path
 import tempfile
+from typing import Any
 
-# from elt_common.typing import CursorInfo
-from fake_source import (
-    create_fake_source_db,
-    get_table_max_values,
-    update_fake_source_db,
-)
-from fake_source.opralogmodel import ADDITIONAL_COLUMNS as OLOG_ADDITIONAL_COLS
 from opralogweb import Extract
 import pyarrow as pa
 import pyarrow.compute as pc
 import pytest
+import sqlalchemy as sa
 
-#######################################
-# Helpers
-#######################################
+# This directory contains sql scripts to setup a minimal fake database to
+# test the extraction logic
+TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
 @pytest.fixture()
 def fake_db():
     with tempfile.TemporaryDirectory() as tmp_dir:
-        db_file = f"///{tmp_dir}/fake_db.sqlite"
-        create_fake_source_db(db_url=f"sqlite:{db_file}")
+        db_file = Path(tmp_dir) / "fake_db.db"
+        _execute_sql_scripts(TEST_DATA_DIR / "base", db_file)
         yield db_file
-
-
-def create_extractor(db_file: str):
-    return Extract(Extract.source_config_cls(drivername="sqlite", database=db_file))
-
-
-def validate_chapter_entry_table(arrow_table: pa.Table, *, nruns: int):
-    assert nruns in (1, 2)
-    assert arrow_table.num_rows == 100 if nruns == 2 else 10
-
-
-def validate_entries_table(arrow_table: pa.Table, *, nruns: int):
-    assert nruns in (1, 2)
-
-    assert arrow_table.num_rows == 100 if nruns == 2 else 10
-    assert len(arrow_table["EntryId"].unique()) == arrow_table.num_rows
-
-    # second run changed EntryId == 110
-    entry_110 = arrow_table.filter((pc.field("EntryId") == 110)).to_pydict()
-    if nruns == 1:
-        assert entry_110["AdditionalComment"][0].strip() == "Comment 110"
-    else:
-        assert entry_110["AdditionalComment"][0].strip() == "Comment 110 updated."
-
-
-def validate_more_entry_columns_table(arrow_table: pa.Table, *, nruns: int):
-    assert nruns in (1, 2)
-
-    assert arrow_table.num_rows == 400 + (nruns - 1) * 40
-
-    # second run changed entry_id == 110
-    entry_110 = arrow_table.filter(
-        (
-            (pc.field("EntryId") == 110)
-            & (pc.field("AdditionalColumnId") == OLOG_ADDITIONAL_COLS["Lost Time"])
-        )
-    ).to_pydict()
-    if nruns == 1:
-        assert entry_110["NumberValue"][0] == 5.1
-    else:
-        assert entry_110["NumberValue"][0] == 3.5
 
 
 #######################################
 # Tests
 #######################################
-def test_first_run_pulls_all_records(fake_db: str):
-    extractor = create_extractor(fake_db)
+def test_first_run_pulls_all_records(fake_db: Path):
+    extractor = _create_extractor(fake_db)
     data_items = list(extractor.extract(cursor_info={}))
 
-    assert len(data_items) == 6
+    assert len(data_items) == 6  # number of tables
     # See fake_source/__init__.py for database contents
     expected_row_counts = {
-        "ChapterEntry": validate_chapter_entry_table,
-        "LogbookChapter": 5,
+        "ChapterEntry": 5,
+        "LogbookChapter": 2,
         "Logbooks": 1,
         "AdditionalColumns": 4,
-        "Entries": validate_entries_table,
-        "MoreEntryColumns": validate_more_entry_columns_table,
+        "Entries": _validate_entries_table,
+        "MoreEntryColumns": _validate_more_entry_columns_table,
     }
     for table_name, arrow_table in data_items:
         validator = expected_row_counts[table_name]
         if isinstance(validator, int):
             assert arrow_table.num_rows == validator
         else:
-            validator(arrow_table, nruns=1)
+            validator(arrow_table, first_run=True)
 
 
-def test_second_run_merges_updates(fake_db: str):
-    extractor = create_extractor(fake_db)
+def test_second_run_merges_updates(fake_db: Path):
+    extractor = _create_extractor(fake_db)
 
-    # first run
+    # run once
     _ = list(extractor.extract(cursor_info={}))
+    max_values = _get_table_max_values(extractor._engine, extractor._metadata)
+
     # do an update
-    db_url = f"sqlite:{fake_db}"
-    max_values = get_table_max_values(db_url)
-    update_fake_source_db(db_url)
+    _execute_sql_scripts(TEST_DATA_DIR / "update_1", Path(fake_db))
 
     # extract
     tables_info = extractor.tables()
@@ -113,16 +68,78 @@ def test_second_run_merges_updates(fake_db: str):
 
     data_items_second_run = list(extractor.extract(cursor_info=cursor_info))
     expected_row_counts = {
-        "ChapterEntry": validate_chapter_entry_table,
+        "ChapterEntry": 2,
         "LogbookChapter": 5,
         "Logbooks": 1,
         "AdditionalColumns": 4,
-        "Entries": validate_entries_table,
-        "MoreEntryColumns": validate_more_entry_columns_table,
+        "Entries": _validate_entries_table,
+        "MoreEntryColumns": _validate_more_entry_columns_table,
     }
     for table_name, arrow_table in data_items_second_run:
         validator = expected_row_counts[table_name]
         if isinstance(validator, int):
             assert arrow_table.num_rows == validator
         else:
-            validator(arrow_table, nruns=2)
+            validator(arrow_table, first_run=False)
+
+
+#######################################
+# Helpers
+#######################################
+
+
+def _create_extractor(db_file: Path):
+    return Extract(
+        Extract.source_config_cls(drivername="sqlite", database=str(db_file))
+    )
+
+
+def _execute_sql_scripts(scripts_dir: Path, db_file: Path):
+    engine = sa.create_engine(f"sqlite:///{db_file}", echo=False)
+    with engine.connect() as conn:
+        raw_conn = conn.connection
+        for sql_file in scripts_dir.glob("*.sql"):
+            raw_conn.executescript(sql_file.read_text())
+
+
+def _update_fake_db(db_file: Path):
+    _execute_sql_scripts(TEST_DATA_DIR / "update_1", db_file)
+
+
+def _get_table_max_values(
+    engine: sa.Engine, meta: sa.MetaData
+) -> dict[str, dict[str, Any]]:
+    """Return the maximum value of every column in every table."""
+    result: dict[str, dict[str, Any]] = {}
+    with engine.connect() as conn:
+        for table in meta.sorted_tables:
+            result[table.name] = {
+                col.name: conn.execute(sa.select(sa.func.max(col))).scalar_one_or_none()
+                for col in table.columns
+            }
+    return result
+
+
+# See sql scripts in data/ for where thes values originate
+def _validate_entries_table(arrow_table: pa.Table, *, first_run: bool):
+    assert arrow_table.num_rows == (5 if first_run else 3)
+    assert len(arrow_table["EntryId"].unique()) == arrow_table.num_rows
+
+    # second run changed EntryId == 104
+    entry_104 = arrow_table.filter((pc.field("EntryId") == 104)).to_pydict()
+    if first_run:
+        assert entry_104["AdditionalComment"][0].strip() == "Comment 104."
+    else:
+        assert entry_104["AdditionalComment"][0].strip() == "Comment 104 updated."
+
+
+def _validate_more_entry_columns_table(arrow_table: pa.Table, *, first_run: bool):
+    assert arrow_table.num_rows == (20 if first_run else 12)
+
+    # second run changed entry_id == 104.
+    # check the lost time changed field (last record for each entryid, see MoreEntryColumns)
+    entry_104 = arrow_table.filter((pc.field("EntryId") == 104)).to_pydict()
+    if first_run:
+        assert entry_104["NumberValue"][-1] == 4.5
+    else:
+        assert entry_104["NumberValue"][-1] == 5.1
