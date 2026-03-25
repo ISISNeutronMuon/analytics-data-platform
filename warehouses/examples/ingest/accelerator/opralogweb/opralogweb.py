@@ -82,19 +82,23 @@ class Extract(SqlDatabaseExtract):
             # to detect rows that have been modified in the source. These EntryIds of these
             # records are passed to the MoreEntyrColumns query to retrieve updates from that table
             # also.
-            entries_chunk = next(
-                self.extract_single(
-                    conn, "Entries", cursor_info=cursor_info.get("Entries")
+            try:
+                entries_chunk = next(
+                    self.extract_single(
+                        conn, "Entries", cursor_info=cursor_info.get("Entries")
+                    )
                 )
-            )
-            yield _to_markdown(entries_chunk, "AdditionalComment")
-            loaded_entry_ids = entries_chunk[1].column("EntryId").to_pylist()
+                yield _to_markdown(entries_chunk, "AdditionalComment")
+                loaded_entry_ids = entries_chunk[1].column("EntryId").to_pylist()
 
-            yield from self.extract_single(
-                conn,
-                "MoreEntryColumns",
-                query_mutator=ft.partial(_entry_ids_in, entry_ids=loaded_entry_ids),
-            )
+                yield from self.extract_single(
+                    conn,
+                    "MoreEntryColumns",
+                    query_mutator=ft.partial(_entry_ids_in, entry_ids=loaded_entry_ids),
+                )
+            except StopIteration:
+                # No new entries in source
+                pass
 
 
 def _entry_ids_in(table, query: Select[Any], entry_ids: Sequence[int]):

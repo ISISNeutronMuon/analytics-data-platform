@@ -10,6 +10,7 @@ from pathlib import Path
 from elt_common.iceberg.catalog import CatalogConfig, get_max_value
 from elt_common.iceberg.writer import IcebergWriter
 from elt_common.manifest import JobManifest, load_manifest
+from elt_common.typing import CursorInfo
 
 EXTRACT_CLS_NAME = "Extract"
 
@@ -22,16 +23,8 @@ def namespace_name(source_domain: str, job_name: str) -> str:
 
 
 def get_extract_cls(job: JobManifest) -> Any:
-    """Get the class that will handle the extraction.
-
-    If there is a custom extract script next to the job manifest use it, else check for an 'extract'
-    key in the job manifest. If both are provided prefer the custom script.
-    """
+    """Get the class that will handle the extraction."""
     custom_extract_script = job.job_dir / f"{job.name}.py"
-    if custom_extract_script.exists() and job.extract is not None:
-        LOGGER.warning(
-            f"Both a [job.extract] key in elt.toml and custom extract script '{custom_extract_script}' have been provided. Preferring custom script..."
-        )
     if custom_extract_script.exists():
         return get_extract_cls_from_module_path(job.name, custom_extract_script)
     else:
@@ -72,7 +65,6 @@ def run_job(
 
     :param job_dir: Directory containing ``elt.toml``.
     :param steps: ``"all"``, ``"ingest"``, or ``"transform"``.
-    :param backfill: If ``True``, passed to the extract function via config.
     """
     manifest = load_manifest(job_dir)
     namespace = namespace_name(manifest.domain, manifest.name)
@@ -97,20 +89,23 @@ def _run_ingest(namespace: str, manifest: JobManifest) -> None:
     writer = IcebergWriter(catalog, namespace)
     writer.ensure_namespace()
 
-    extract_cls = get_extract_cls_from_module_path(
-        manifest.name, manifest.job_dir / f"{manifest.name}.py"
-    )
+    extract_cls = get_extract_cls(manifest)
     source_config = extract_cls.source_config_cls(_env_prefix=f"{manifest.name}__")
     extract_obj = extract_cls(source_config)
 
-    expected_tables = manifest.tables
-    for _, t in expected_tables.items():
-        if t.cursor_column is not None:
-            t.cursor_column.max_value = get_max_value(
-                catalog, writer.table_id(t.name), t.cursor_column.column
-            )
+    expected_tables = extract_obj.tables()
+    cursor_info: CursorInfo = {}
+    for table_name, table_info in expected_tables.items():
+        if (column := table_info.cursor_column) is not None:
+            max_value = get_max_value(catalog, writer.table_id(table_name), column)
+            if max_value is not None:
+                cursor_info[table_name] = {
+                    "column": column,
+                    "max_value": max_value,
+                }
+
     tables_seen: dict[str, bool] = {}
-    for table_name, data in extract_obj.extract(manifest.tables):
+    for table_name, data in extract_obj.extract(cursor_info):
         if table_name not in expected_tables:
             raise ValueError(
                 f"Extract returned table '{table_name}' but it's not defined in [[tables]]"

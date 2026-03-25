@@ -117,6 +117,7 @@ def get_max_value(catalog: Catalog, table_id: Identifier, column: str | None) ->
     for batch in scan.to_arrow_batch_reader():
         batch_max = pc.max(batch[column])
         if batch_max.is_valid:
+            batch_max = batch_max.as_py()
             running_max = batch_max if running_max is None else max(batch_max, running_max)
 
-    return running_max.as_py() if running_max is not None else None
+    return running_max if running_max is not None else None

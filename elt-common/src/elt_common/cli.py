@@ -27,19 +27,6 @@ def cli(log_level: str) -> None:
 
 
 @cli.command()
-@click.argument("job_dir", type=click.Path(exists=True, file_okay=False, path_type=Path))
-@click.option(
-    "--step",
-    type=click.Choice(["all", "ingest", "transform"], case_sensitive=False),
-    default="all",
-    help="Which step(s) to run.",
-)
-def run(job_dir: Path, step: str) -> None:
-    """Run an ELT job from the given directory."""
-    run_job(job_dir, steps=step)
-
-
-@cli.command()
 @click.argument("root", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option("--warehouse", default=None, help="Filter by warehouse name.")
 def ls(root: Path, warehouse: str | None) -> None:
@@ -61,15 +48,33 @@ def ls(root: Path, warehouse: str | None) -> None:
 
 @cli.command()
 @click.argument("job_dir", type=click.Path(exists=True, file_okay=False, path_type=Path))
-@click.argument("pytest_args", nargs=-1, type=click.UNPROCESSED)
-def test(job_dir: Path, pytest_args: tuple[str, ...]) -> None:
+@click.option(
+    "--step",
+    type=click.Choice(["all", "ingest", "transform"], case_sensitive=False),
+    default="all",
+    help="Which step(s) to run.",
+)
+def run(job_dir: Path, step: str) -> None:
+    """Run an ELT job from the given directory."""
+    run_job(job_dir, steps=step)
+
+
+@cli.command()
+@click.argument("job_dir", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--type", type=click.Choice(["unit", "e2e"], case_sensitive=False), default="unit")
+@click.argument("extra_args", nargs=-1, type=click.UNPROCESSED)
+def test(job_dir: Path, type: str, extra_args: tuple[str, ...]) -> None:
     """Run tests for an ELT job.
 
-    Discovers and runs pytest in <job_dir>/unit_tests/.
-    Extra arguments after -- are forwarded to pytest.
+    There are two types of test:
+      - unit_tests: Unit tests for just the extract functionality in <job_dir>/unit_tests/. Extra arguments after '--' are forwarded to pytest.
+      - e2e_tests: End-to-end tests, standing up a test catalog and running ingest & transforms steps.
     """
-    test_dir = job_dir / "unit_tests"
-    if not test_dir.is_dir():
-        raise click.ClickException(f"No tests/ directory found in {job_dir}")
+    if type == "unit":
+        test_dir = job_dir / "unit_tests"
+        if not test_dir.is_dir():
+            raise click.ClickException(f"No tests/ directory found in {job_dir}")
 
-    raise SystemExit(unit_test_job(test_dir, pytest_args))
+        raise SystemExit(unit_test_job(test_dir, extra_args))
+    else:
+        raise NotImplementedError("e2e tests not yet implemented.")
