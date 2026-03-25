@@ -38,9 +38,7 @@ class JobManifest:
     name: str
     domain: str
     warehouse: str
-    tables: TableItems
     job_dir: Path = dc.field(default=Path("."))
-    extract: str | None = None
     transform: "TransformProperties | None" = None
 
     @property

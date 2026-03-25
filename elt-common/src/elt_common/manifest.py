@@ -8,7 +8,7 @@ optional dbt transform settings.
 import tomllib
 from pathlib import Path
 
-from elt_common.typing import JobManifest, TableCursor, TableProperties, TransformProperties
+from elt_common.typing import JobManifest, TransformProperties
 
 
 def load_manifest(job_dir: Path) -> JobManifest:
@@ -27,31 +27,6 @@ def load_manifest(job_dir: Path) -> JobManifest:
         if field not in job:
             raise ValueError(f"Missing required field 'job.{field}' in {manifest_path}")
 
-    extract = job.get("extract", None)
-
-    tables = {}
-    for table_raw in raw.pop("tables", []):
-        if "name" not in table_raw:
-            raise ValueError(f"Missing required field 'tables.name' in {manifest_path}")
-        name = table_raw["name"]
-        cursor_column = (
-            TableCursor(table_raw.pop("cursor_column"), None)
-            if "cursor_column" in table_raw
-            else None
-        )
-        tables[name] = TableProperties(
-            name=table_raw.pop("name"),
-            write_mode=table_raw.pop("write_mode", "append"),
-            cursor_column=cursor_column,
-            merge_on=tuple(table_raw.pop("merge_on", ())),
-            partition=table_raw.pop("partition", {}),
-            sort_order=table_raw.pop("sort_order", {}),
-        )
-        if len(table_raw) > 0:
-            raise ValueError(
-                f"Found unknown keys in [[tables]] section of manifest '{manifest_path}': {table_raw}."
-            )
-
     transform = None
     if "transform" in raw:
         tr = raw["transform"]
@@ -64,8 +39,6 @@ def load_manifest(job_dir: Path) -> JobManifest:
         name=job["name"],
         domain=job["domain"],
         warehouse=job["warehouse"],
-        tables=tables,
-        extract=extract,
         transform=transform,
         job_dir=job_dir.resolve(),
     )
