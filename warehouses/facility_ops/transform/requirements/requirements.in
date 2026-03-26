@@ -1,4 +1,5 @@
-dbt-core>=1.9.4,<2.0.0
-dbt-trino>=1.9.1,<2.0.0
+dbt-core>=1.9.4,<2
+dbt-adapters>=1.17.3,<2
+dbt-trino>=1.9.1,<2
 # Temp pin to avoid requests raising exception. See https://github.com/psf/requests/issues/7219
 chardet==5.2.0
