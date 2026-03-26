@@ -79,7 +79,7 @@ lz4==4.4.4
     # via trino
 markupsafe==3.0.2
     # via jinja2
-mashumaro[msgpack]==3.14
+mashumaro==3.14
     # via
     #   dbt-adapters
     #   dbt-common
@@ -136,7 +136,7 @@ referencing==0.36.2
     # via
     #   jsonschema
     #   jsonschema-specifications
-requests==2.32.5
+requests==2.33.0
     # via
     #   dbt-common
     #   dbt-core
