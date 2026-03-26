@@ -236,7 +236,7 @@ referencing==0.36.2
     #   ansible-lint
     #   jsonschema
     #   jsonschema-specifications
-requests==2.32.4
+requests==2.33.0
     # via
     #   keystoneauth1
     #   osc-lib
@@ -260,8 +260,6 @@ ruamel-yaml==0.18.14
     # via ansible-lint
 ruamel-yaml-clib==0.2.12
     # via ruamel-yaml
-setuptools==82.0.0
-    # via pbr
 six==1.17.0
     # via python-dateutil
 stevedore==5.4.1
