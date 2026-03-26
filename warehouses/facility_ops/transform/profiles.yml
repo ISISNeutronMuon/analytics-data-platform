@@ -9,10 +9,11 @@ local:
       host: localhost
       port: 58443
       http_scheme: https
-      cert: false
       database: facility_ops
       schema: analytics
       threads: 8
+      cert: false
+      suppress_cert_warning: true
 
 remote:
   target: trino
