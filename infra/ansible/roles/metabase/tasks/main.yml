@@ -6,6 +6,13 @@
     state: directory
     mode: "u=rwx,g=rx,o=rx"
 
+- name: Deploy log4j2 configuration
+  become: true
+  ansible.builtin.template:
+    src: log4j2.xml.j2
+    dest: "{{ metabase_working_dir }}/log4j2.xml"
+    mode: "u=rw,g=r,o=r"
+
 - name: Start Metabase
   become: true
   community.docker.docker_container:
@@ -17,6 +24,8 @@
     network_mode: host
     restart_policy: unless-stopped
     recreate: true
+    volumes:
+      - /var/metabase/log4j2.xml:/tmp/log4j2.xml:ro
     env:
       MB_DB_TYPE: postgres
       MB_DB_HOST: "{{ metabase_metadb_host }}"
@@ -26,6 +35,7 @@
       MB_DB_PASS: "{{ metabase_metadb_passwd }}"
       MB_JETTY_PORT: "{{ metabase_http_port | string }}"
       MB_SITE_URL: "https://{{ top_level_domain }}{{ metabase_base_path }}"
+      JAVA_OPTS: "-Dlog4j2.configurationFile=/tmp/log4j2.xml"
     healthcheck:
       test:
         [

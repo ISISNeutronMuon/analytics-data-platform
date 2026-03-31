@@ -4,3 +4,4 @@ metabase_image: metabase/metabase:v0.54.6
 metabase_http_port: 3000
 metabase_working_dir: /var/metabase
 metabase_base_path: ""
+metabase_log_level: INFO
