@@ -28,6 +28,8 @@ def get_max_value(catalog: Catalog, table_id: Identifier, column: str | None) ->
     if table is None:
         return None
 
+    # table.properties.get(f"ingest.cursor.{column}.value")
+
     # Scan in batches to avoid loading large tables into memory all at once
     scan = table.scan(selected_fields=(column,))
     running_max = None

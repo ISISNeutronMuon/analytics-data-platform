@@ -124,6 +124,8 @@ def _run_ingest(namespace: str, manifest: JobManifest) -> None:
             table_name,
             data,
             mode=write_mode,
+            #  Pass through props here!
+            cursor_column=table_props.cursor_column,
             merge_on=list(table_props.merge_on) if table_props.merge_on else None,
             partition=table_props.partition or None,
             sort_order=table_props.sort_order or None,

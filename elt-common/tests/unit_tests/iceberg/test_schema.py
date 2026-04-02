@@ -15,7 +15,7 @@ from pyiceberg.types import (
 )
 import pytest
 
-from elt_common.iceberg.schema import arrow_type_to_iceberg, create_iceberg_schema
+from elt_common.iceberg.schema import arrow_type_to_iceberg, create_schema
 
 
 @pytest.fixture()
@@ -24,8 +24,8 @@ def arrow_schema() -> pa.Schema:
         [
             pa.field("row_id", pa.int64(), nullable=False),
             pa.field("entry_name", pa.string(), nullable=False),
-            ("entry_timestamp", pa.timestamp(unit="us")),
-            ("entry_weight", pa.float64()),
+            pa.field("entry_timestamp", pa.timestamp(unit="us")),
+            pa.field("entry_weight", pa.float64()),
         ]
     )
 
@@ -37,7 +37,7 @@ def test_unsupported_arrow_type_raises():
 
 def test_invalid_arrow_type_string_raises():
     with pytest.raises(TypeError, match="Unknown pyarrow type"):
-        arrow_type_to_iceberg("not-a-real-arrow-type")
+        arrow_type_to_iceberg(pa.type_for_alias("not-a-real-arrow-type"))  # type: ignore
 
 
 @pytest.mark.parametrize(
@@ -85,7 +85,7 @@ def test_timestamp_nanoseconds_raises():
 
 @pytest.mark.parametrize(("identifier_fields",), [[None], [["row_id", "entry_name"]]])
 def test_create_iceberg_schema(arrow_schema: pa.Schema, identifier_fields):
-    iceberg_schema = create_iceberg_schema(arrow_schema, identifier_fields)
+    iceberg_schema = create_schema(arrow_schema, identifier_fields)
 
     assert len(iceberg_schema.fields) == len(arrow_schema.names)
     assert [f.name for f in iceberg_schema.fields] == arrow_schema.names
