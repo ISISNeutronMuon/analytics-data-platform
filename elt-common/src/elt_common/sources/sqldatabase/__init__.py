@@ -4,7 +4,7 @@ from abc import abstractmethod
 import logging
 from typing import Optional
 
-from elt_common.typing import CursorInfo, DataItems, TableCursor
+from elt_common.typing import DataItems, Watermark, WatermarkInfo
 import pyarrow as pa
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
@@ -64,19 +64,19 @@ class SqlDatabaseExtract:
             "Subclass should implement this to provide details of tables to be extracted."
         )
 
-    def extract(self, cursor_info: CursorInfo) -> DataItems:
+    def extract(self, watermarks: WatermarkInfo) -> DataItems:
         """Yield the results of extracting the named Tables from the source."""
         table_info = self.tables()
         with self._engine.connect() as conn:
             for name in table_info.keys():
-                yield from self.extract_single(conn, name, cursor_info=cursor_info.get(name))
+                yield from self.extract_single(conn, name, watermark=watermarks.get(name))
 
     def extract_single(
         self,
         conn: sa.Connection,
         name: str,
         *,
-        cursor_info: TableCursor | None = None,
+        watermark: Watermark | None = None,
         query_mutator=None,
     ) -> DataItems:
         LOGGER.debug(f"Extracting table {name} in chunks of {self.chunk_size} rows.")
@@ -86,8 +86,8 @@ class SqlDatabaseExtract:
             autoload_with=self._engine,
         )
         query = sa.select(table)
-        if cursor_info is not None:
-            column, max_value = cursor_info["column"], cursor_info["max_value"]
+        if watermark is not None:
+            column, max_value = watermark.column, watermark.value
             LOGGER.debug(f"Cursor value detected. Limiting query to {column} > {max_value}")
             query = query.where(sa.column(column) > max_value)  # type: ignore
 
@@ -97,7 +97,7 @@ class SqlDatabaseExtract:
             query_mutator(table, query)
         )
         for partition in result.mappings().partitions():
-            yield name, pa.Table.from_pylist(list(partition))
+            yield name, pa.Table.from_pylist(list(partition))  # type: ignore
 
 
 def _noop(_, query):

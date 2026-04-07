@@ -6,7 +6,7 @@ from collections.abc import MutableMapping
 from dataclasses import dataclass
 
 from pyiceberg.catalog import Catalog
-from elt_common.iceberg.writer import IcebergWriter
+from elt_common.iceberg.writer import IcebergIO
 
 from .lakekeeper import RestCatalogWarehouse
 from .sqlcatalog import SqlCatalogWarehouse
@@ -58,9 +58,9 @@ class IcebergTestConfiguration:
         """Connect to the test catalog."""
         return self.warehouse.connect()
 
-    def writer(self, namespace: str) -> IcebergWriter:
+    def writer(self, namespace: str) -> IcebergIO:
         """Create an ``IcebergWriter`` for the given namespace."""
-        return IcebergWriter(self.connect(), namespace)
+        return IcebergIO(self.connect(), namespace)
 
     def clean_catalog(self) -> None:
         """Purge all namespaces and tables from the catalog."""

@@ -6,15 +6,19 @@ evolution, and writing Arrow data to Iceberg tables via ``append``,
 """
 
 import logging
+from typing import Iterable
 
 import pyarrow as pa
-import pyarrow.compute as pc
+from elt_common.iceberg.catalog import Catalog, table_id
 from elt_common.iceberg.schema import create_schema, evolve_schema
 from elt_common.iceberg.partition import create_partition_spec
 from elt_common.iceberg.sortorder import create_sort_order
-from elt_common.typing import PartitionHint, SortOrderHint, WriteMode
-from pyiceberg.catalog import Catalog
-from pyiceberg.exceptions import NoSuchNamespaceError, NoSuchTableError
+from elt_common.iceberg.watermark import (
+    create_watermark_property,
+    get_watermark_property_value,
+)
+from elt_common.typing import PartitionHint, SortOrderHint, Watermark, WatermarkInfo, WriteMode
+from pyiceberg.exceptions import NoSuchTableError
 from pyiceberg.table import ALWAYS_TRUE, Table as IcebergTable
 from pyiceberg.typedef import Identifier
 
@@ -22,17 +26,8 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Catalog helpers
+# Reader
 # ---------------------------------------------------------------------------
-
-
-def namespace_exists(catalog: Catalog, namespace: str) -> bool:
-    """Check if a namespace exists in the catalog."""
-    try:
-        catalog.load_namespace_properties(namespace)
-        return True
-    except NoSuchNamespaceError:
-        return False
 
 
 # ---------------------------------------------------------------------------
@@ -40,36 +35,42 @@ def namespace_exists(catalog: Catalog, namespace: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
-class IcebergWriter:
-    """Writes Arrow tables to Iceberg, handling table creation and schema evolution."""
+class IcebergIO:
+    """Read/write arrow tables to/from Iceberg, handling table creation and schema evolution."""
 
-    def __init__(self, catalog: Catalog, namespace: str) -> None:
+    def __init__(self, catalog: Catalog) -> None:
         self.catalog = catalog
-        self.namespace = namespace
 
-    def table_id(self, name: str) -> Identifier:
-        return (self.namespace, name)
-
-    def ensure_namespace(self) -> None:
+    def ensure_namespace(self, namespace: str) -> None:
         """Create the namespace if it doesn't already exist."""
-        if not namespace_exists(self.catalog, self.namespace):
-            self.catalog.create_namespace(self.namespace)
-            logger.info(f"Created namespace '{self.namespace}'")
+        if not self.catalog.namespace_exists(namespace):
+            self.catalog.create_namespace(namespace)
+            logger.info(f"Created namespace '{namespace}'")
 
-    def load_table(self, table_name: str) -> IcebergTable | None:
-        """Load an existing Iceberg table, or ``None`` if it doesn't exist."""
+    def read_watermarks(self, namespace: str, table_names: Iterable[str]) -> WatermarkInfo:
+        """Convenience function to read all watermarks from a list of table names"""
+        return {
+            name: watermark
+            for name in table_names
+            if (watermark := self.read_watermark(namespace, name)) is not None
+        }
+
+    def read_watermark(self, namespace: str, table_name: str) -> Watermark | None:
+        """If a table exists check for a watermark and return it if it exists"""
         try:
-            return self.catalog.load_table(self.table_id(table_name))
-        except NoSuchTableError:
+            return get_watermark_property_value(
+                self.catalog.load_table(table_id(namespace, table_name))
+            )
+        except (KeyError, NoSuchTableError):
             return None
 
     def write_table(
         self,
-        table_name: str,
+        table_id: Identifier,
         data: pa.Table,
         *,
         mode: WriteMode = "append",
-        cursor_column: str | None = None,
+        watermark_column: str | None = None,
         merge_on: list[str] | None = None,
         partition: PartitionHint | None = None,
         sort_order: SortOrderHint | None = None,
@@ -83,20 +84,19 @@ class IcebergWriter:
         :param partition: ``{column_name: transform}`` dict for partitioning.
         :param sort_order: ``{column_name: direction}`` dict for sort order.
         """
-        table_id = (self.namespace, table_name)
         if data.num_rows == 0:
             logger.info(f"No data to write to {table_id}, skipping.")
             return
 
         iceberg_table = self._ensure_table(table_id, data.schema, partition, sort_order)
-        table_properties = self._compute_table_properties(data, cursor_column=cursor_column)
+        table_properties = self._compute_table_properties(data, watermark_column=watermark_column)
 
         with iceberg_table.transaction() as txn:
             if mode == "append":
                 iceberg_table.append(data)
             elif mode == "merge":
                 if not merge_on:
-                    raise ValueError(f"{table_name}: 'merge_on' must be provided when mode='merge'")
+                    raise ValueError(f"{table_id}: 'merge_on' must be provided when mode='merge'")
                 iceberg_table.upsert(
                     df=data,
                     join_cols=merge_on,
@@ -106,18 +106,19 @@ class IcebergWriter:
                 )
             elif mode == "replace":
                 txn.delete(delete_filter=ALWAYS_TRUE)
-                logger.info(f"Deleted all records from {self.namespace}.{table_name}")
+                logger.info(f"Deleted all records from {table_id}")
                 txn.append(data)
             else:
                 raise ValueError(f"Unsupported write mode: {mode!r}")
-            if cursor_column is not None:
+            if watermark_column is not None:
                 txn.set_properties(**table_properties)
 
-        logger.info(f"Wrote {data.num_rows} rows to {self.namespace}.{table_name} (mode={mode})")
+        logger.info(f"Wrote {data.num_rows} rows to {table_id} (mode={mode})")
 
+    # private
     def _ensure_table(
         self,
-        table_id: tuple[str, str],
+        table_id: Identifier,
         arrow_schema: pa.Schema,
         partition: PartitionHint | None,
         sort_order: SortOrderHint | None,
@@ -155,10 +156,10 @@ class IcebergWriter:
 
         return iceberg_table
 
-    def _compute_table_properties(self, data: pa.Table, *, cursor_column: str | None) -> dict:
+    def _compute_table_properties(self, data: pa.Table, *, watermark_column: str | None) -> dict:
         """Compute relevant table properties based on the keywords provided"""
         table_properties = {}
-        if cursor_column is not None:
-            table_properties[f"ingest.cursor.{cursor_column}"] = pc.max(data[cursor_column])
+        if watermark_column is not None:
+            table_properties.update(create_watermark_property(data, watermark_column))
 
         return table_properties

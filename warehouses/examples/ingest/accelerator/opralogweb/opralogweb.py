@@ -4,11 +4,11 @@ import functools as ft
 from typing import Any, Sequence
 
 from elt_common.typing import (
-    CursorInfo,
     DataChunk,
     DataItems,
     TableItems,
     TableProperties,
+    WatermarkInfo,
 )
 from elt_common.sources.sqldatabase import SqlDatabaseExtract
 from html2text import html2text
@@ -24,34 +24,34 @@ class Extract(SqlDatabaseExtract):
             "ChapterEntry": TableProperties(
                 name="ChapterEntry",
                 write_mode="append",
-                cursor_column="LogbookEntryId",
+                watermark_column="LogbookEntryId",
                 partition={"LogbookEntryId": "bucket[4]"},
                 sort_order={"LogbookEntryId": "asc"},
             ),
             "LogbookChapter": TableProperties(
                 name="LogbookChapter",
                 write_mode="append",
-                cursor_column="LogbookChapterNo",
+                watermark_column="LogbookChapterNo",
                 partition={"LogbookChapterNo": "bucket[4]"},
                 sort_order={"LogbookChapterNo": "asc"},
             ),
             "Logbooks": TableProperties(
                 name="Logbooks",
                 write_mode="append",
-                cursor_column="LogbookId",
+                watermark_column="LogbookId",
                 sort_order={"LogbookId": "asc"},
             ),
             "AdditionalColumns": TableProperties(
                 name="AdditionalColumns",
                 write_mode="append",
-                cursor_column="AdditionalColumnId",
+                watermark_column="AdditionalColumnId",
                 sort_order={"AdditionalColumnId": "asc"},
             ),
             "Entries": TableProperties(
                 name="Entries",
                 write_mode="merge",
                 merge_on=["EntryId"],
-                cursor_column="LastChangedDate",
+                watermark_column="LastChangedDate",
                 partition={"EntryId": "bucket[8]"},
                 sort_order={"EntryId": "asc"},
             ),
@@ -64,7 +64,7 @@ class Extract(SqlDatabaseExtract):
             ),
         }
 
-    def extract(self, cursor_info: CursorInfo) -> DataItems:
+    def extract(self, watermarks: WatermarkInfo) -> DataItems:
         # Pull out everything but Entries/MoreEntryColumns.
         table_info = self.tables()
         append_only = {
@@ -75,19 +75,17 @@ class Extract(SqlDatabaseExtract):
         with self._engine.connect() as conn:
             for name in append_only.keys():
                 yield from super().extract_single(
-                    conn, name, cursor_info=cursor_info.get(name)
+                    conn, name, watermark=watermarks.get(name)
                 )
 
-            # Deal with updated record entries. The cursor column of the Entries table is used
-            # to detect rows that have been modified in the source. These EntryIds of these
-            # records are passed to the MoreEntyrColumns query to retrieve updates from that table
-            # also.
-            try:
-                entries_chunk = next(
-                    self.extract_single(
-                        conn, "Entries", cursor_info=cursor_info.get("Entries")
-                    )
-                )
+            # Deal with Entries that have been updated since we last loaded.
+            # The watermark column of the Entries table is used to detect rows
+            # that have been modified in the source.
+            # The EntryIds of these records are passed to the MoreEntyrColumns query
+            # to retrieve updates from that table also.
+            for entries_chunk in self.extract_single(
+                conn, "Entries", watermark=watermarks.get("Entries")
+            ):
                 yield _to_markdown(entries_chunk, "AdditionalComment")
                 loaded_entry_ids = entries_chunk[1].column("EntryId").to_pylist()
 
@@ -96,9 +94,6 @@ class Extract(SqlDatabaseExtract):
                     "MoreEntryColumns",
                     query_mutator=ft.partial(_entry_ids_in, entry_ids=loaded_entry_ids),
                 )
-            except StopIteration:
-                # No new entries in source
-                pass
 
 
 def _entry_ids_in(table, query: Select[Any], entry_ids: Sequence[int | None]):

@@ -7,10 +7,9 @@ import time
 from typing import Any
 from pathlib import Path
 
-from elt_common.iceberg.catalog import connect_catalog, get_max_value
-from elt_common.iceberg.writer import IcebergWriter
+from elt_common.iceberg.catalog import connect_catalog
+from elt_common.iceberg.writer import IcebergIO
 from elt_common.manifest import JobManifest, load_manifest
-from elt_common.typing import CursorInfo
 
 EXTRACT_CLS_NAME = "Extract"
 
@@ -83,28 +82,21 @@ def run_job(
 
 def _run_ingest(namespace: str, manifest: JobManifest) -> None:
     """Import the extract function, call it, and write results to Iceberg."""
-    catalog = connect_catalog()
 
-    writer = IcebergWriter(catalog, namespace)
-    writer.ensure_namespace()
-
+    # Get type that will perform extraction
     extract_cls = get_extract_cls(manifest)
     source_config = extract_cls.source_config_cls(_env_prefix=f"{manifest.name}__")
     extract_obj = extract_cls(source_config)
-
     expected_tables = extract_obj.tables()
-    cursor_info: CursorInfo = {}
-    for table_name, table_info in expected_tables.items():
-        if (column := table_info.cursor_column) is not None:
-            max_value = get_max_value(catalog, writer.table_id(table_name), column)
-            if max_value is not None:
-                cursor_info[table_name] = {
-                    "column": column,
-                    "max_value": max_value,
-                }
 
+    # Connect to catalog
+    iceberg_io = IcebergIO(connect_catalog())
+    iceberg_io.ensure_namespace(namespace)
+    watermarks = iceberg_io.read_watermarks(namespace, expected_tables.keys())
+
+    # Extract
     tables_seen: dict[str, bool] = {}
-    for table_name, data in extract_obj.extract(cursor_info):
+    for table_name, data in extract_obj.extract(watermarks):
         if table_name not in expected_tables:
             raise ValueError(
                 f"Extract returned table '{table_name}' but it's not defined in [[tables]]"
@@ -120,12 +112,12 @@ def _run_ingest(namespace: str, manifest: JobManifest) -> None:
         if table_props.write_mode == "replace" and tables_seen.get(table_name, False):
             write_mode = "append"
 
-        writer.write_table(
+        iceberg_io.write_table(
             table_name,
             data,
             mode=write_mode,
             #  Pass through props here!
-            cursor_column=table_props.cursor_column,
+            watermark_column=table_props.watermark_column,
             merge_on=list(table_props.merge_on) if table_props.merge_on else None,
             partition=table_props.partition or None,
             sort_order=table_props.sort_order or None,
