@@ -39,7 +39,7 @@ cliff==4.10.0
     #   python-openstackclient
 cmd2==2.6.1
     # via cliff
-cryptography==46.0.6
+cryptography==46.0.7
     # via
     #   ansible-core
     #   openstacksdk
@@ -260,6 +260,8 @@ ruamel-yaml==0.18.14
     # via ansible-lint
 ruamel-yaml-clib==0.2.12
     # via ruamel-yaml
+setuptools==82.0.1
+    # via pbr
 six==1.17.0
     # via python-dateutil
 stevedore==5.4.1
