@@ -25,6 +25,8 @@ NAPI_TO_PY = {
     "NX_CHAR": lambda x: x,
     "NX_INT32": lambda x: int(x),
     "NX_INT64": lambda x: int(x),
+    "NX_UINT32": lambda x: int(x),
+    "NX_UINT64": lambda x: int(x),
     "NX_FLOAT32": lambda x: float(x),
     "NX_FLOAT64": lambda x: float(x),
 }
