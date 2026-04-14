@@ -2,6 +2,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "elt-common",
+#     "s3fs<2026.2.0"
 # ]
 #
 # [tool.uv.sources]
