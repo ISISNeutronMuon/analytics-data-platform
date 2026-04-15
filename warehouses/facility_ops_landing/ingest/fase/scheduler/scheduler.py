@@ -5,7 +5,6 @@
 #     "pandas",
 #     "elt-common[m365]",
 #     "s3fs<2026.2.0"
-
 # ]
 #
 # [tool.uv.sources]
