@@ -1,0 +1,5 @@
+sources:
+  - name: fase_scheduler
+    database: facility_ops_landing
+    tables:
+      - name: scheduled_experiments
