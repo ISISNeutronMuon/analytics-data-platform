@@ -8,27 +8,26 @@ renamed as (
 
     select
 
-        duration,
+        experiment_identifier,
+        run_number,
+        instrument_name,
+        isis_cycle,
+        start_time,
         end_time,
+        duration as duraction_mins,
         case
           when event_mode > 0.0 then true
           else false
         end as event_mode,
-        experiment_identifier,
+        total_mevents * 1000000 as total_events,
+        proton_charge,
+        raw_frames,
         good_frames,
-        instrument_name,
-        isis_cycle,
         monitor_sum,
-        npratio_average,
         number_detectors,
         number_periods,
         number_spectra,
-        number_time_regimes,
-        proton_charge,
-        raw_frames,
-        run_number,
-        start_time,
-        total_mevents * 1000000 as total_events,
+        number_time_regimes
 
     from source
 
