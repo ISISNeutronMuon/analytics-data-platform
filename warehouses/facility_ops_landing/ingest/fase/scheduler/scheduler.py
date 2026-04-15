@@ -59,7 +59,7 @@ def scheduled_experiments(
             write_disposition="replace",
         )
     )
-    yield reader
+    yield from reader
 
 
 if __name__ == "__main__":
