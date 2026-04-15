@@ -41,6 +41,8 @@ models:
         +schema: staging_beamlines
       estates:
         +schema: staging_estates
+      fase:
+        +schema: staging_fase
     marts:
       +materialized: table
       accelerator:

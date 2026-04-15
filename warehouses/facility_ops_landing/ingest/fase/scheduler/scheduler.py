@@ -37,7 +37,11 @@ def read_excel(
 
     for file_obj in items:
         df = pd.read_excel(io.BytesIO(file_obj["file_content"]), **pandas_kwargs)
-        yield df.to_dict(orient="records")
+        # Convert any timedelta64 columns to float (hours)
+        for col in df.columns:
+            if "timedelta64" in str(df[col].dtype):
+                df[col] = df[col].dt.total_seconds() / 3600
+        yield df
 
 
 @dlt.resource()

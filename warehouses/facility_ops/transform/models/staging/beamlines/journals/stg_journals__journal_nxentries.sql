@@ -8,9 +8,9 @@ renamed as (
 
     select
 
-        experiment_identifier,
+        instrument_name as instrument,
+        rb_number,
         run_number,
-        instrument_name,
         isis_cycle,
         start_time,
         end_time,
