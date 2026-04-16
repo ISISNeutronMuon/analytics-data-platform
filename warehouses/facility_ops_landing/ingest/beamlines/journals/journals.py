@@ -53,7 +53,11 @@ def entry_to_dict(entry: ET.Element) -> dict:
         if "[" in napi_type:
             napi_type = napi_type[: napi_type.find("[")]
         try:
-            record[tag] = NAPI_TO_PY[napi_type](text)
+            py_value = NAPI_TO_PY[napi_type](text)
+            # event_mode seems to switch between float & int
+            if tag == "event_mode":
+                py_value = int(py_value)
+            record[tag] = py_value
         except KeyError:
             record[tag] = text
 
