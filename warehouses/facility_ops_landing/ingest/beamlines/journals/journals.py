@@ -49,7 +49,11 @@ def entry_to_dict(entry: ET.Element) -> dict:
         if tag in SKIP_TAGS or text is None:
             continue
 
-        napi_type = child.attrib["NAPItype"]
+        try:
+            napi_type = child.attrib["NAPItype"]
+        except KeyError:
+            napi_type = "NX_CHAR"
+
         if "[" in napi_type:
             napi_type = napi_type[: napi_type.find("[")]
         try:
