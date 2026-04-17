@@ -9,14 +9,13 @@ renamed as (
     select
 
         instrument_name as instrument,
-        rb_number,
+        experiment_identifier as rb_number,
         run_number,
-        isis_cycle,
         start_time,
         end_time,
-        duration as duraction_mins,
+        duration as duration_mins,
         case
-          when event_mode > 0.0 then true
+          when event_mode > 0 then true
           else false
         end as event_mode,
         total_mevents * 1000000 as total_events,
