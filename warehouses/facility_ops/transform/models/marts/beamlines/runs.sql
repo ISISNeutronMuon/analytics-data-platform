@@ -1,4 +1,7 @@
 {{ config(
+    properties={
+      "partitioning": "ARRAY['year(started_at)']",
+    },
   on_table_exists = 'drop'
 ) }}
 

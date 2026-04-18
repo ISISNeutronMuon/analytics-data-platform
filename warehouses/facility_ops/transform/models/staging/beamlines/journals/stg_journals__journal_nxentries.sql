@@ -11,8 +11,8 @@ renamed as (
         instrument_name as instrument,
         experiment_identifier as rb_number,
         run_number,
-        start_time,
-        end_time,
+        cast(from_iso8601_timestamp(start_time) as timestamp(6)) as started_at,
+        cast(from_iso8601_timestamp(end_time) as timestamp(6)) as ended_at,
         duration as duration_mins,
         case
           when event_mode > 0 then true
@@ -21,12 +21,7 @@ renamed as (
         total_mevents * 1000000 as total_events,
         proton_charge,
         raw_frames,
-        good_frames,
-        monitor_sum,
-        number_detectors,
-        number_periods,
-        number_spectra,
-        number_time_regimes
+        good_frames
 
     from source
 
