@@ -1,0 +1,4 @@
+models:
+  - name: stg_journals__journal_nxentries
+    config:
+      event_time: started_at
