@@ -4,11 +4,11 @@
 
 select
 
-  year(start_time) as "year",
+  year(started_at) as "year",
   avg(planned_hours) / 24. as "avg_scheduled_days",
   avg(delivered_hours) / 24. as "avg_delivered_days"
 
 from
-  {{ ref('scheduled_experiments') }}
+  {{ ref('scheduled_experiment_parts') }}
 group by
-  year(start_time)
+  year(started_at)

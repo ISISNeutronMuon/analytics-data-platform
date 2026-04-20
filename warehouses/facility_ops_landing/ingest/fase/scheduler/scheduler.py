@@ -37,15 +37,17 @@ def read_excel(
 
     for file_obj in items:
         df = pd.read_excel(io.BytesIO(file_obj["file_content"]), **pandas_kwargs)
-        # Convert any timedelta64 columns to float (hours)
+        # Convert any timedelta64 columns to float (hours) as Iceberg can't handle timedelta
         for col in df.columns:
             if "timedelta64" in str(df[col].dtype):
                 df[col] = df[col].dt.total_seconds() / 3600
+        # Ensure the Title column is a string else we get 'Expected bytes, got a 'int' object'
+        df["Title"] = df["Title"].astype(str)
         yield df
 
 
 @dlt.resource()
-def scheduled_experiments(
+def scheduled_experiment_parts(
     site_url: str = dlt.config.value, file_glob: str = dlt.config.value
 ):
     """Return a resource to read the scheduled experiments export files.
@@ -71,7 +73,7 @@ if __name__ == "__main__":
         pipeline_name="scheduler",
         source_domain="fase",
         data_generator=pyiceberg_adapter(
-            scheduled_experiments,
+            scheduled_experiment_parts,
             partition=[
                 PartitionTrBuilder.year("start_date"),
             ],

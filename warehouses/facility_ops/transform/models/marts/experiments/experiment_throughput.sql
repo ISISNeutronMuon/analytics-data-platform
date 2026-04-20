@@ -7,9 +7,9 @@ select
   count(distinct se.rb_number) / sb.duration_days as expts_per_day
 from
   {{ ref('total_scheduled_user_beam_days_by_year') }} sb
-  join {{ ref('stg_scheduler__scheduled_experiments') }} se
+  join {{ ref('scheduled_experiment_parts') }} se
   on sb.year = year(
-    se.start_time
+    se.started_at
   )
 group by
   sb.year,

@@ -1,3 +1,7 @@
+{{ config(
+    event_time='started_at'
+) }}
+
 with source as (
 
     select * from {{ source('beamlines_journals', 'journal_nxentries') }}

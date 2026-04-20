@@ -9,7 +9,7 @@ renamed as (
 select
 
   file_name,
-  replace(instrument_dir, 'NDX', '') as instrument_name,
+  replace(instrument_dir, 'NDX', '') as instrument,
   regexp_extract(file_name, '^(.*?)(\d{8}|\d{5}).+$', 2) as run_number,
   file_bytes,
   substring(file_name, strpos(file_name, '.', -1)) as file_ext,
