@@ -15,4 +15,4 @@ select
 
 from
 
-  {{ ref('stg_journals__journal_nxentries') }}
+  {{ ref('stg_beamlines__journal_nxentries') }}

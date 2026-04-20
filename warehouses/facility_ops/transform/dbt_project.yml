@@ -51,5 +51,5 @@ models:
         +schema: accelerator
       beamlines:
         +schema: beamlines
-      experiments:
+      users:
         +schema: experiments

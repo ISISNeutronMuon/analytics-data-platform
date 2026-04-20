@@ -1,0 +1,13 @@
+sources:
+  - name: beamlines_archive_files
+    database: facility_ops_landing
+    tables:
+      - name: archive_files
+  - name: beamlines_journals
+    database: facility_ops_landing
+    tables:
+      - name: journal_nxentries
+  - name: beamlines_moderator_performance
+    database: facility_ops_landing
+    tables:
+      - name: monitor_peaks

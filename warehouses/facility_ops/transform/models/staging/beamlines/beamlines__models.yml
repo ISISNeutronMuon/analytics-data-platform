@@ -1,7 +1,32 @@
 models:
-  - name: stg_moderator_performance__monitor_peaks
+  - name: stg_beamlines__archive_files
     description: >
-      Each record defines a fit over a peak in the incident for a given beamline and experiment run.
+      Each record defines a file on the archive system
+    columns:
+      - name: instrument_dir
+        data_tests:
+          - not_null
+      - name: cycle_dir
+        data_tests:
+          - not_null
+      - name: file_name
+        data_tests:
+          - not_null
+      - name: file_ext
+        data_tests:
+          - not_null
+      - name: file_bytes
+        data_tests:
+          - not_null
+
+  - name: stg_beamlines__journal_nxentries
+    config:
+      event_time: started_at
+
+  - name: stg_beamlines__monitor_peaks
+    description: >
+      Each record defines a fit over a peak in the incident for a given beamline
+      and experiment run.
     columns:
       - name: beamline
         data_tests:

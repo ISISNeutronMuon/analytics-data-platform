@@ -1,5 +1,0 @@
-sources:
-  - name: beamlines_journals
-    database: facility_ops_landing
-    tables:
-      - name: journal_nxentries

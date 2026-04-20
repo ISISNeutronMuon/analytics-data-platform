@@ -1,7 +1,0 @@
-version: 2
-
-sources:
-  - name: beamlines_moderator_performance
-    database: facility_ops_landing
-    tables:
-      - name: monitor_peaks

@@ -11,7 +11,7 @@ with
 
 monitor_peaks as (
 
-    select * from {{ ref('stg_moderator_performance__monitor_peaks') }}
+    select * from {{ ref('stg_beamlines__monitor_peaks') }}
 
 )
 
