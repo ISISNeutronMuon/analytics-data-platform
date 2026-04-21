@@ -29,6 +29,7 @@ m365 = ["authlib>=1.6.1", "httpx>=0.28.1", "tenacity>=9.1.2"]
 elt_common = "elt_common.testing.fixtures"
 
 [project.scripts]
+elt = "elt_common.cli:cli"
 iceberg-maintenance = "elt_common.iceberg.maintenance:cli"
 
 [dependency-groups]
