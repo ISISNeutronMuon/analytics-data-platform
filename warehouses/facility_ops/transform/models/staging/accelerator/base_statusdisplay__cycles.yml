@@ -4,3 +4,8 @@ models:
       Each row contains the cycle id & label along with a primary key referenced
       in the secondary base_statusdisplay__cycles__phases table where
       information describing a particular phase of a cycle is stored.
+    columns:
+      - name: dlt_id
+        description: Primary key - unique identifier for the cycle from the source system
+      - name: name
+        description: The cycle label/name

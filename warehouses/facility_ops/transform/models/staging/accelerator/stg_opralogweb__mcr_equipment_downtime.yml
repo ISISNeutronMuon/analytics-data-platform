@@ -1,0 +1,41 @@
+models:
+  - name: stg_opralogweb__mcr_equipment_downtime
+    description: >
+      Equipment downtime records for the MCR assembled from the relational
+      database of the web-based Opralog application. Entries before cycle 17/01
+      are discarded as Opralog was in testing mode before this.
+
+unit_tests:
+  - name: test_stg_opralogweb__mcr_equipment_downtime
+    description: "Check null & before epoch entries are discarded"
+    model: stg_opralogweb__mcr_equipment_downtime
+    given:
+      - input: ref('base_opralogweb__entries')
+        format: sql
+        fixture: base_opralogweb__entries
+      - input: ref('base_opralogweb__chapter_entry')
+        format: sql
+        fixture: base_opralogweb__chapter_entry
+      - input: ref('base_opralogweb__logbook_chapter')
+        format: sql
+        fixture: base_opralogweb__logbook_chapter
+      - input: ref('base_opralogweb__logbooks')
+        format: sql
+        fixture: base_opralogweb__logbooks
+      - input: ref('base_opralogweb__more_entry_columns')
+        format: sql
+        fixture: base_opralogweb__more_entry_columns
+      - input: ref('base_opralogweb__additional_columns')
+        format: sql
+        fixture: base_opralogweb__additional_columns
+    expect:
+      rows:
+        - {
+            equipment: "Equipment 101",
+            downtime_mins: 5.3,
+            fault_date: "2024-01-01",
+            fault_occurred_at: "2024-01-01 00:00:01 UTC",
+            group: "Group 101",
+            fault_description: "Comment 101",
+            managers_comments: null,
+          }

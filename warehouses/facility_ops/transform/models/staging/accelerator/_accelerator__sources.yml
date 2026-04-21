@@ -1,0 +1,22 @@
+version: 2
+
+sources:
+  - name: accelerator_accelerator_sharepoint
+    database: facility_ops_landing
+    tables:
+      - name: equipment_downtime_data_11_08_24
+      - name: edr_equipment_mapping
+  - name: accelerator_opralogweb
+    database: facility_ops_landing
+    tables:
+      - name: entries
+      - name: chapter_entry
+      - name: logbook_chapter
+      - name: logbooks
+      - name: more_entry_columns
+      - name: additional_columns
+  - name: accelerator_statusdisplay
+    database: facility_ops_landing
+    tables:
+      - name: cycles
+      - name: cycles__phases

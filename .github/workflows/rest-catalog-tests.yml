@@ -1,23 +1,26 @@
-name: End-to-end extract and load tests
+name: Test ingest and transform steps against REST catalog
 on:
   push:
     branches:
       - "main"
     paths:
-      - ".github/workflows/warehouses_e2e_tests.yml"
+      - ".github/workflows/rest-catalog-tests.yml"
       - "infra/ansible/roles/lakekeeper/files/bootstrap-warehouse.py"
       - "elt-common/**"
       - "warehouses/facility_ops_landing/extract_load/opralogweb/**"
+      - "warehouses/facility_ops/transform/**"
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [ opened, synchronize, reopened ]
     paths:
-      - ".github/workflows/warehouses_e2e_tests.yml"
+      - ".github/workflows/rest-catalog-tests.yml"
       - "infra/ansible/roles/lakekeeper/files/bootstrap-warehouse.py"
       - "elt-common/**"
       - "warehouses/facility_ops_landing/extract_load/opralogweb/**"
+      - "warehouses/facility_ops/transform/**"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number ||
+    github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -57,17 +60,34 @@ jobs:
         run: |
           uv sync --active --script warehouses/facility_ops_landing/ingest/accelerator/opralogweb/opralogweb.py
 
-      - name: Install test dependencies
+      - name: Install ingest test dependencies
         shell: bash -l {0}
         run: |
           uv pip install --group dev .
         working-directory: elt-common
 
-      - name: Run tests against REST catalog
+      - name: Run ingest test against REST catalog
         shell: bash -l {0}
         run: |
           pytest --durations-min=0.5 --exitfirst --catalog-type=rest tests --cache-clear
         working-directory: warehouses/facility_ops_landing/ingest/accelerator/opralogweb
+
+      - name: Install dbt test dependencies
+        shell: bash -l {0}
+        run: |
+          uv pip install --requirements requirements/requirements.txt
+          dbt clean
+          dbt deps
+        working-directory: warehouses/facility_ops/transform
+
+      - name: Run dbt tests
+        shell: bash -l {0}
+        run: |
+          # setup
+          dbt run --select tag:unit_test_setup
+          # run tests
+          dbt test --resource-type unit_test
+        working-directory: warehouses/facility_ops/transform
 
       - name: Remove adp-router from /etc/hosts
         if: always()

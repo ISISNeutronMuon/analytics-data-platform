@@ -1,0 +1,16 @@
+models:
+  - name: base_statusdisplay__cycles__phases
+    description: >
+      Each row in the cycles__phases table corrseponds to a section of time
+      within a given cycle.
+    columns:
+      - name: phase
+        description: The name of the phase within the cycle
+      - name: target
+        description: The target station number that was running during this phase
+      - name: started_at
+        description: Timestamp when the phase started
+      - name: ended_at
+        description: Timestamp when the phase ended
+      - name: dlt_cycles_id
+        description: Foreign key referencing base_statusdisplay__cycles (dlt_id)
