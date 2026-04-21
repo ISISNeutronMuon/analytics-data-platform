@@ -12,6 +12,8 @@ from pyiceberg.transforms import (
     MonthTransform,
     DayTransform,
     HourTransform,
+    BucketTransform,
+    TruncateTransform,
 )
 
 from elt_common.dlt_destinations.pyiceberg import iceberg_catalog
@@ -44,8 +46,12 @@ def partition_test_configs() -> List[PyIcebergPartitionTestConfiguration]:
     standard_test_data = [
         {"id": i, "category": c, "created_at": d}
         for i, c, d in [
-            (1, "A", pendulum.datetime(2020, 1, 1, 9, 15, 20)),
-            (2, "B", pendulum.datetime(2021, 1, 1, 10, 40, 30)),
+            (1, "A-1", pendulum.datetime(2020, 1, 1, 9, 15, 20)),
+            (2, "A-2", pendulum.datetime(2021, 1, 1, 10, 40, 30)),
+            (3, "A-1", pendulum.datetime(2021, 1, 1, 10, 40, 30)),
+            (4, "B-1", pendulum.datetime(2020, 1, 1, 9, 15, 20)),
+            (5, "B-1", pendulum.datetime(2021, 1, 1, 10, 40, 30)),
+            (6, "B-2", pendulum.datetime(2021, 1, 1, 10, 40, 30)),
         ]
     ]
     test_configs = [
@@ -87,8 +93,35 @@ def partition_test_configs() -> List[PyIcebergPartitionTestConfiguration]:
             ]
         ]
     )
-    # bucket & truncatetransforms are not currently supported.
-    # See note in pyiceberg_adapter.pyiceberg_partition class
+    # bucket
+    test_configs.append(
+        PyIcebergPartitionTestConfiguration(
+            name="partition_by_bucket",
+            data=standard_test_data,
+            partition_request=[PartitionTrBuilder.bucket(4, "id")],
+            expected_spec=PartitionSpec(
+                PartitionField(
+                    source_id=1, field_id=1000, transform=BucketTransform(4), name="id_bucket"
+                ),
+            ),
+        )
+    )
+    # truncate
+    test_configs.append(
+        PyIcebergPartitionTestConfiguration(
+            name="partition_by_bucket",
+            data=standard_test_data,
+            partition_request=[PartitionTrBuilder.truncate(2, "category")],
+            expected_spec=PartitionSpec(
+                PartitionField(
+                    source_id=2,
+                    field_id=1000,
+                    transform=TruncateTransform(2),
+                    name="category_truncate",
+                ),
+            ),
+        )
+    )
 
     # check multiple partition fields
     test_configs.append(
