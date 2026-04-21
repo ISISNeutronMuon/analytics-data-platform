@@ -8,6 +8,7 @@ on:
       - "infra/ansible/roles/lakekeeper/files/bootstrap-warehouse.py"
       - "elt-common/**"
       - "warehouses/facility_ops_landing/extract_load/opralogweb/**"
+      - "warehouses/facility_ops/transform/**"
   pull_request:
     types: [ opened, synchronize, reopened ]
     paths:
@@ -15,6 +16,7 @@ on:
       - "infra/ansible/roles/lakekeeper/files/bootstrap-warehouse.py"
       - "elt-common/**"
       - "warehouses/facility_ops_landing/extract_load/opralogweb/**"
+      - "warehouses/facility_ops/transform/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number ||

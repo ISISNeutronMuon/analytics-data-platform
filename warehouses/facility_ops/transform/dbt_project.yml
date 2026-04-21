@@ -7,24 +7,26 @@ profile: "local"
 flags:
   require_certificate_validation: True
 
-model-paths: ["models"]
-analysis-paths: ["analyses"]
-test-paths: ["tests"]
-seed-paths: ["seeds"]
-macro-paths: ["macros"]
-snapshot-paths: ["snapshots"]
+model-paths: [ "models" ]
+analysis-paths: [ "analyses" ]
+test-paths: [ "tests" ]
+seed-paths: [ "seeds" ]
+macro-paths: [ "macros" ]
+snapshot-paths: [ "snapshots" ]
 
-clean-targets: # directories to be removed by `dbt clean`
+clean-targets:
+  # directories to be removed by `dbt clean`
   - "target"
   - "dbt_packages"
 
-dispatch: # Use macros from trino_utils in preference. https://hub.getdbt.com/starburstdata/trino_utils/latest/
+dispatch:
+  # Use macros from trino_utils in preference. https://hub.getdbt.com/starburstdata/trino_utils/latest/
   - macro_namespace: dbt_utils
-    search_order: ["trino_utils", "dbt_utils"]
+    search_order: [ "trino_utils", "dbt_utils" ]
   - macro_namespace: dbt_date
-    search_order: ["trino_utils", "dbt_date"]
+    search_order: [ "trino_utils", "dbt_date" ]
   - macro_namespace: metrics
-    search_order: ["trino_utils", "metrics"]
+    search_order: [ "trino_utils", "metrics" ]
 
 models:
   +file_format: parquet
@@ -35,12 +37,7 @@ models:
     #   - 'custom_schema' is defined for each collection of models below
     # See https://docs.getdbt.com/docs/build/custom-schemas
     staging:
-      accelerator:
-        +schema: staging_accelerator
-      beamlines:
-        +schema: staging_beamlines
-      estates:
-        +schema: staging_estates
+      +schema: staging
     marts:
       +materialized: table
       accelerator:

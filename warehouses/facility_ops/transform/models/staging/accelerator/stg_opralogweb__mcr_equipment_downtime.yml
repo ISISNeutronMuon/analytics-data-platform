@@ -7,7 +7,7 @@ models:
 
 unit_tests:
   - name: test_stg_opralogweb__mcr_equipment_downtime
-    description: "Check null & before epock entries are discarded"
+    description: "Check null & before epoch entries are discarded"
     model: stg_opralogweb__mcr_equipment_downtime
     given:
       - input: ref('base_opralogweb__entries')
