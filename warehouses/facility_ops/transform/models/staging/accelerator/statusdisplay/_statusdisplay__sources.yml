@@ -1,8 +1,0 @@
-version: 2
-
-sources:
-  - name: accelerator_statusdisplay
-    database: facility_ops_landing
-    tables:
-      - name: cycles
-      - name: cycles__phases
