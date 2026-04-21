@@ -6,7 +6,7 @@ models:
       are discarded as Opralog was in testing mode before this.
 
 unit_tests:
-  - name: test_records_as_expected
+  - name: test_stg_opralogweb__mcr_equipment_downtime
     description: "Check null & before epock entries are discarded"
     model: stg_opralogweb__mcr_equipment_downtime
     given:
