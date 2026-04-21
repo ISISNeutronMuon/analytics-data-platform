@@ -226,18 +226,15 @@ class PartitionTrBuilder:
         """Partition by hour part of a date or timestamp column."""
         return PartitionTransformation(transforms.HOUR, column_name)
 
-    # NOTE: The following transformations are not currently supported by writing through
-    # pyarrow so they are disabled.
+    @staticmethod
+    def bucket(n: int, column_name: str) -> PartitionTransformation:
+        """Partition by hashed value to n buckets."""
+        return PartitionTransformation(f"{transforms.BUCKET}[{n}]", column_name)
 
-    # @staticmethod
-    # def bucket(n: int, column_name: str) -> PartitionTransformation:
-    #     """Partition by hashed value to n buckets."""
-    #     return PartitionTransformation(f"{transforms.BUCKET}[{n}]", column_name)
-
-    # @staticmethod
-    # def truncate(length: int, column_name: str) -> PartitionTransformation:
-    #     """Partition by value truncated to length."""
-    #     return PartitionTransformation(f"{transforms.TRUNCATE}[{length}]", column_name)
+    @staticmethod
+    def truncate(length: int, column_name: str) -> PartitionTransformation:
+        """Partition by value truncated to length."""
+        return PartitionTransformation(f"{transforms.TRUNCATE}[{length}]", column_name)
 
 
 class SortOrderSpecification:
@@ -280,15 +277,6 @@ class SortOrderBuilder:
 
     def build(self) -> SortOrderSpecification:
         return SortOrderSpecification(self.direction, self.column_name)
-
-    # @staticmethod
-    # def ascending(transform: PartitionTransformation) -> SortOrderSpecification:
-    # @staticmethod
-    # def identity(
-    #     column_name: str, direction: str, null_order: str
-    # ) -> SortOrderSpecification:
-    #     """Sort by a column without a transformation"""
-    #     return SortOrderSpecification(transforms.IDENTITY, column_name)
 
 
 def create_partition_spec(dlt_schema: PreparedTableSchema, iceberg_schema: Schema) -> PartitionSpec:
