@@ -1,27 +1,11 @@
 """Utilities for capturing and describing information about ELT jobs in a set of elt pipelines."""
 
-import dataclasses as dc
 from pathlib import Path
 
+from .runner import run_job
+from .typing import ELTJobManifest
+
 INGEST = "ingest"
-
-
-@dc.dataclass(frozen=True)
-class ELTJobManifest:
-    """Parsed representation of an ELT job"""
-
-    name: str
-    domain: str
-    ingest_job_dir: Path
-
-    @property
-    def full_name(self) -> str:
-        return f"{self.domain}.{self.name}"
-
-    @property
-    def destination_namespace(self) -> str:
-        """The destination namespace for this job: ``{domain}_{name}``."""
-        return f"{self.domain}_{self.name}"
 
 
 class PipelinesProject:
@@ -51,6 +35,13 @@ class PipelinesProject:
             self._ingest_jobs = _discover_jobs(self._ingest_dir)
 
         return self._ingest_jobs
+
+    def run_job(self, name: str):
+        """Run a named job.
+
+        The name is assumed to be a qualified name, e.g domain.job"""
+        domain, job_name = name.split(".")
+        run_job(_create_ingest_manifest(self.ingest_dir / domain / job_name))
 
 
 def _discover_jobs(ingest_dir: Path):
