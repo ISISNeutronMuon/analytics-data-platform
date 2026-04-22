@@ -7,6 +7,8 @@ from elt_common.iceberg.io import (
     IcebergIO,
 )
 import pyarrow as pa
+from pyiceberg.catalog import Catalog
+from pyiceberg.table import Table
 import pytest
 from unittest.mock import MagicMock
 
@@ -33,13 +35,12 @@ def sample_arrow_table():
 
 @pytest.fixture
 def mock_dependencies() -> MockedDependencies:
-    catalog = MagicMock()
-    mock_table = MagicMock()
-    mock_schema = MagicMock()
-    mock_schema.column_names = ["id", "name", "ts"]
-    mock_table.schema.return_value = mock_schema
+    mock_catalog = MagicMock(spec=Catalog)
+    mock_table = MagicMock(spec=Table)
+    mock_catalog.create_table.return_value = mock_table
+    mock_catalog.load_table.return_value = mock_table
 
-    return MockedDependencies(mock_catalog=catalog, mock_table=mock_table)
+    return MockedDependencies(mock_catalog=mock_catalog, mock_table=mock_table)
 
 
 class TestIcebergIO:
@@ -55,6 +56,7 @@ class TestIcebergIO:
     def test_ensure_namespace_noop_when_namespace_exists(
         self, mock_dependencies: MockedDependencies
     ):
+        mock_dependencies.mock_catalog.namespace_exists.return_value = True
         writer = IcebergIO(mock_dependencies.mock_catalog)
 
         writer.ensure_namespace("test_ns")
@@ -76,21 +78,18 @@ class TestIcebergIO:
     ):
         mock_catalog = mock_dependencies.mock_catalog
         mock_catalog.table_exists.return_value = False
-        mock_catalog.create_table.return_value = mock_dependencies.mock_table
 
         writer = IcebergIO(mock_catalog)
         writer.write_table(("ns", "t"), sample_arrow_table, mode="append")
 
+        mock_dependencies.mock_catalog.load_table.assert_not_called()
         mock_dependencies.mock_catalog.create_table.assert_called_once()
         mock_dependencies.mock_table.append.assert_called_once_with(sample_arrow_table)
 
     def test_write_table_merge_requires_merge_on(
         self, mock_dependencies: MockedDependencies, sample_arrow_table
     ):
-        mock_catalog = mock_dependencies.mock_catalog
-        mock_catalog.table_exists.return_value = True
-        mock_catalog.load_table.return_value = mock_dependencies.mock_table
-
+        mock_dependencies.mock_catalog.table_exists.return_value = True
         writer = IcebergIO(mock_dependencies.mock_catalog)
 
         with pytest.raises(ValueError, match="merge_on.*must be provided"):
@@ -99,9 +98,7 @@ class TestIcebergIO:
     def test_write_table_merge_calls_upsert(
         self, mock_dependencies: MockedDependencies, sample_arrow_table
     ):
-        mock_catalog = mock_dependencies.mock_catalog
-        mock_catalog.table_exists.return_value = True
-        mock_catalog.load_table.return_value = mock_dependencies.mock_table
+        mock_dependencies.mock_catalog.table_exists.return_value = True
 
         writer = IcebergIO(mock_dependencies.mock_catalog)
         writer.write_table(("ns", "t"), sample_arrow_table, mode="merge", merge_on=["id"])
@@ -119,7 +116,7 @@ class TestIcebergIO:
     ):
         mock_catalog, mock_table = mock_dependencies.mock_catalog, mock_dependencies.mock_table
         mock_catalog.table_exists.return_value = True
-        mock_catalog.load_table.return_value = mock_table
+
         # Mock the transaction context manager
         mock_txn = MagicMock()
         mock_table.transaction.return_value.__enter__ = MagicMock(return_value=mock_txn)

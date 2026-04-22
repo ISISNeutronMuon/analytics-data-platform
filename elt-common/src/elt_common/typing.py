@@ -1,6 +1,45 @@
+from abc import abstractmethod
 import dataclasses as dc
 from pathlib import Path
-from typing import Literal, Sequence
+from typing import TYPE_CHECKING, Iterator, Literal, Sequence
+
+from pydantic_settings import BaseSettings
+
+if TYPE_CHECKING:
+    import pyarrow as pa
+
+DataChunk = tuple[str, "pa.Table"]
+"""Map a string name to a chunk of data to be loaded into the named table."""
+
+DataChunks = Iterator[DataChunk]
+"""An iterator to a collection of DataChunk objects."""
+
+
+class BaseSourceConfig(BaseSettings):
+    """Base for all classes providing runtime configuration"""
+
+    pass
+
+
+class BaseExtract:
+    """Base class for all Extract classes"""
+
+    def __init__(self, source_config: BaseSettings):
+        self._source_config = source_config
+
+    @property
+    def source_config(self):
+        return self._source_config
+
+    @abstractmethod
+    def tables(self) -> dict[str, "TableProperties"]:
+        raise NotImplementedError(
+            "Subclass should implement `tables()` to provide details of tables to be extracted."
+        )
+
+    @abstractmethod
+    def extract(self) -> Iterator[DataChunk]:
+        raise NotImplementedError("Subclass should implement `extract` to perform data extraction.")
 
 
 @dc.dataclass(frozen=True)

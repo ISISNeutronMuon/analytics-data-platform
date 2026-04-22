@@ -65,10 +65,8 @@ def run_ingest(job: ELTJobManifest) -> None:
     iceberg_io = IcebergIO(connect_catalog())
     iceberg_io.ensure_namespace(namespace)
 
-    # Have we loaded before and do we have watermarks?
-    expected_tables = extract_obj.tables()
-
     # Extract
+    expected_tables = extract_obj.tables()
     tables_seen: dict[str, bool] = {}
     for table_name, data in extract_obj.extract():
         if table_name not in expected_tables:
