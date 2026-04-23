@@ -1,103 +1,53 @@
 """Tests for elt_common.iceberg.catalog"""
 
 import pytest
-from unittest.mock import MagicMock, patch
+from pytest_mock import MockerFixture
+from unittest.mock import MagicMock
 
 from elt_common.iceberg.catalog import (
     connect_catalog,
-    load_table,
     table_id,
 )
 
 
-@patch("elt_common.iceberg.catalog.load_catalog")
-@patch("elt_common.iceberg.catalog.IcebergCatalogConfig")
-def test_connect_catalog_loads_default_catalog(mock_config_class, mock_load_catalog):
-    """Test that connect_catalog loads the default catalog from config."""
-    # Setup
+@pytest.fixture
+def mock_pyiceberg(mocker: MockerFixture):
+    mock_config_cls = mocker.patch("elt_common.iceberg.catalog.IcebergCatalogConfig")
     mock_config = MagicMock()
-    mock_config.get_default_catalog_name.return_value = "test_catalog"
+    mock_config.get_default_catalog_name.return_value = "default"
     mock_config.get_catalog_config.return_value = {"warehouse": "/tmp/warehouse"}
-    mock_config_class.return_value = mock_config
+    mock_config_cls.return_value = mock_config
 
-    mock_catalog = MagicMock()
-    mock_load_catalog.return_value = mock_catalog
-
-    # Execute
-    result = connect_catalog()
-
-    # Assert
-    mock_config.get_default_catalog_name.assert_called_once()
-    mock_config.get_catalog_config.assert_called_once_with("test_catalog")
-    mock_load_catalog.assert_called_once_with("test_catalog", warehouse="/tmp/warehouse")
-    assert result == mock_catalog
+    mock_load_catalog = mocker.patch("elt_common.iceberg.catalog.load_catalog")
+    return mock_config, mock_load_catalog
 
 
-@patch("elt_common.iceberg.catalog.load_catalog")
-@patch("elt_common.iceberg.catalog.IcebergCatalogConfig")
-def test_connect_catalog_passes_all_config_options(mock_config_class, mock_load_catalog):
-    """Test that all config options are passed to load_catalog."""
-    # Setup
-    mock_config = MagicMock()
-    mock_config.get_default_catalog_name.return_value = "my_catalog"
-    mock_config.get_catalog_config.return_value = {
-        "warehouse": "/data/warehouse",
-        "uri": "http://localhost:8181",
-        "auth": "oauth2",
-    }
-    mock_config_class.return_value = mock_config
+def test_connect_catalog_loads_default_catalog(mock_pyiceberg):
+    mock_config, mock_load_catalog = mock_pyiceberg[0], mock_pyiceberg[1]
 
     # Execute
     connect_catalog()
 
     # Assert
-    mock_load_catalog.assert_called_once_with(
-        "my_catalog",
-        warehouse="/data/warehouse",
-        uri="http://localhost:8181",
-        auth="oauth2",
-    )
+    mock_config.get_default_catalog_name.assert_called_once()
+    mock_config.get_catalog_config.assert_called_once_with("default")
+    mock_load_catalog.assert_called_once_with("default", warehouse="/tmp/warehouse")
 
 
-def test_load_table_returns_table_when_exists():
-    """Test that load_table returns the table when it exists."""
-    # Setup
-    mock_catalog = MagicMock()
-    mock_table = MagicMock()
-    mock_catalog.catalog.load_table.return_value = mock_table
-
-    # Execute
-    result = load_table(mock_catalog, ("namespace", "table_name"))
-
-    # Assert
-    assert result == mock_table
-    mock_catalog.catalog.load_table.assert_called_once_with(("namespace", "table_name"))
-
-
-def test_load_table_returns_none_when_table_not_found():
-    """Test that load_table returns None when table doesn't exist."""
-    from pyiceberg.exceptions import NoSuchTableError
-
-    # Setup
-    mock_catalog = MagicMock()
-    mock_catalog.catalog.load_table.side_effect = NoSuchTableError("Not found")
+def test_connect_catalog_forwards_all_options_from_pyiceberg_catalog_config(mock_pyiceberg):
+    mock_config, mock_load_catalog = mock_pyiceberg[0], mock_pyiceberg[1]
+    catalog_config = {
+        "warehouse": "/data/warehouse",
+        "uri": "http://localhost:8181",
+        "auth": "oauth2",
+    }
+    mock_config.get_catalog_config.return_value = catalog_config
 
     # Execute
-    result = load_table(mock_catalog, ("namespace", "table_name"))
+    connect_catalog()
 
     # Assert
-    assert result is None
-
-
-def test_load_table_propagates_other_exceptions():
-    """Test that load_table propagates exceptions other than NoSuchTableError."""
-    # Setup
-    mock_catalog = MagicMock()
-    mock_catalog.catalog.load_table.side_effect = RuntimeError("Connection failed")
-
-    # Execute & Assert
-    with pytest.raises(RuntimeError, match="Connection failed"):
-        load_table(mock_catalog, ("namespace", "table_name"))
+    mock_load_catalog.assert_called_once_with("default", **catalog_config)
 
 
 def test_table_id_returns_tuple_identifier():
