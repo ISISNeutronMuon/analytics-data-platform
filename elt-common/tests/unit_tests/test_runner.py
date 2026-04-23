@@ -45,13 +45,10 @@ def validate_write_table_calls(call_args_list: _CallList):
             assert call_kwargs[key] == value
 
 
-class TestRunIngest:
-    """Tests for run_ingest function"""
+def test_write_table(elt_job: ELTJobManifest, mocker: MockerFixture):
+    mocker.patch("elt_common.runner.connect_catalog", autospec=True)
+    mock_iceberg_io_cls = mocker.patch("elt_common.runner.IcebergIO", autospec=True)
+    mock_iceberg_io_cls.return_value = MagicMock(spec=IcebergIO)
+    run_ingest(elt_job)
 
-    def test_write_table(self, elt_job: ELTJobManifest, mocker: MockerFixture):
-        mocker.patch("elt_common.runner.connect_catalog", autospec=True)
-        mock_iceberg_io_cls = mocker.patch("elt_common.runner.IcebergIO", autospec=True)
-        mock_iceberg_io_cls.return_value = MagicMock(spec=IcebergIO)
-        run_ingest(elt_job)
-
-        validate_write_table_calls(mock_iceberg_io_cls.return_value.write_table.call_args_list)
+    validate_write_table_calls(mock_iceberg_io_cls.return_value.write_table.call_args_list)

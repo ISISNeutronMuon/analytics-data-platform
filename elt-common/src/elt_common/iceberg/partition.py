@@ -17,7 +17,7 @@ def create_partition_spec(
         bracket_index = transform.find("[")
         return f"{column_name}_{transform[:bracket_index] if bracket_index > 0 else transform}"
 
-    if partition_config is None:
+    if not partition_config:
         return UNPARTITIONED_PARTITION_SPEC
 
     return PartitionSpec(

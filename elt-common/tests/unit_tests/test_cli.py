@@ -18,19 +18,19 @@ def root_dir(tmp_path: Path) -> Path:
     return root
 
 
-class TestLsCommand:
-    def test_ls_finds_jobs(self, root_dir):
-        runner = CliRunner()
-        result = runner.invoke(cli, ["ls", str(root_dir)])
-        assert result.exit_code == 0
-        assert "domain_a" in result.output
+def test_ls_finds_jobs(root_dir):
+    runner = CliRunner()
+    result = runner.invoke(cli, ["ls", str(root_dir)])
+    assert result.exit_code == 0
+    assert "domain_a" in result.output
 
-    def test_ls_empty_directory(self, tmp_path: Path):
-        root = tmp_path / "my_project"
-        (root / "ingest").mkdir(parents=True)
-        runner = CliRunner()
 
-        result = runner.invoke(cli, ["ls", str(root)])
+def test_ls_empty_directory(tmp_path: Path):
+    root = tmp_path / "my_project"
+    (root / "ingest").mkdir(parents=True)
+    runner = CliRunner()
 
-        assert result.exit_code == 0
-        assert "No jobs found" in result.output
+    result = runner.invoke(cli, ["ls", str(root)])
+
+    assert result.exit_code == 0
+    assert "No jobs found" in result.output

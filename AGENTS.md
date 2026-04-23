@@ -28,6 +28,7 @@ common developer tasks.
 
 - There are both unit and e2e tests for the `elt-common` package under `elt-common/tests/`. They are
   written using `pytest`.
+- When generating `pytest` test functions prefer using free functions and not grouping them into classes.
 - [`elt-common/README.md`](./elt-common/README.md) explains how to run tests for the `elt-common`
   Python package
 
