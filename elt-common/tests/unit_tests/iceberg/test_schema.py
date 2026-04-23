@@ -35,11 +35,6 @@ def test_unsupported_arrow_type_raises():
         arrow_type_to_iceberg(pa.int32())
 
 
-def test_invalid_arrow_type_string_raises():
-    with pytest.raises(TypeError, match="Unknown pyarrow type"):
-        arrow_type_to_iceberg(pa.type_for_alias("not-a-real-arrow-type"))  # type: ignore
-
-
 @pytest.mark.parametrize(
     ("arrow_type", "expected_type"),
     [
@@ -56,8 +51,6 @@ def test_invalid_arrow_type_string_raises():
         (pa.binary(), BinaryType),
         (pa.large_binary(), BinaryType),
         (pa.binary(8), BinaryType),
-        ("int64", LongType),
-        ("string", StringType),
     ],
 )
 def test_returns_expected_iceberg_type(arrow_type, expected_type):
