@@ -67,32 +67,26 @@ def run_ingest(job: ELTJobManifest) -> None:
 
     # Extract
     expected_tables = extract_obj.tables()
-    tables_seen: dict[str, bool] = {}
+    rows_seen: dict[str, int] = {}  # track number of rows
     for table_name, data in extract_obj.extract():
         if table_name not in expected_tables:
             raise ValueError(
-                f"Extract returned table '{table_name}' but it's not defined in [[tables]]"
+                f"Extract returned table '{table_name}' but its properties are not defined by the 'tables()' method."
             )
-        if data.num_rows == 0:
-            LOGGER.info(f"No data for table {table_name}, skipping.")
-            continue
 
         # Determine write mode. A replace is really a delete then append but each source
         # table can yield several times so only delete once and then continue appending
+        rows_seen.setdefault(table_name, 0)
         table_props = expected_tables[table_name]
-        write_mode = table_props.write_mode
-        if table_props.write_mode == "replace" and tables_seen.get(table_name, False):
-            write_mode = "append"
+        if table_props.write_mode == "replace" and rows_seen[table_name] > 0:
+            table_props.write_mode = "append"
 
         iceberg_io.write_table(
             table_name,
+            table_props,
             data,
-            mode=write_mode,
-            merge_on=list(table_props.merge_on) if table_props.merge_on else None,
-            partition=table_props.partition or None,
-            sort_order=table_props.sort_order or None,
         )
-        tables_seen[table_name] = True
+        rows_seen[table_name] += data.num_rows
 
 
 # "private" helpers

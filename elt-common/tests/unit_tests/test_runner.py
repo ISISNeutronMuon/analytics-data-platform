@@ -25,10 +25,21 @@ def elt_job() -> ELTJobManifest:
 
 
 def validate_write_table_calls(call_args_list: _CallList):
-    assert len(call_args_list) == 2
+    """
+    Validate:
 
-    expected_table_names = ["table_default_write", "table_replace_mode"]
-    expected_write_modes = ["append", "replace"]
+      - The appropriate table properties are associcated with the extracted tables and written
+        to Iceberg.
+    """
+    assert len(call_args_list) == 4
+
+    expected_table_names = [
+        "table_default_write",
+        "table_replace_mode",
+        "table_merge_mode",
+        "empty",
+    ]
+    expected_write_modes = ["append", "replace", "merge", "append"]
 
     for index, call in enumerate(call_args_list):
         call_args, call_kwargs = call.args, call.kwargs
@@ -45,7 +56,7 @@ def validate_write_table_calls(call_args_list: _CallList):
             assert call_kwargs[key] == value
 
 
-def test_write_table(elt_job: ELTJobManifest, mocker: MockerFixture):
+def test_write_table_with_fake_extract_class(elt_job: ELTJobManifest, mocker: MockerFixture):
     mocker.patch("elt_common.runner.connect_catalog", autospec=True)
     mock_iceberg_io_cls = mocker.patch("elt_common.runner.IcebergIO", autospec=True)
     mock_iceberg_io_cls.return_value = MagicMock(spec=IcebergIO)

@@ -1,7 +1,7 @@
 from abc import abstractmethod
 import dataclasses as dc
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator, Literal, Sequence
+from typing import TYPE_CHECKING, Iterator, Literal, get_args
 
 from pydantic_settings import BaseSettings
 
@@ -74,11 +74,18 @@ SortOrderConfig = dict[str, str]
 class TableProperties:
     """Configuration for a single table within a job."""
 
-    name: str
     write_mode: "WriteMode" = "append"
-    merge_on: Sequence[str] = ()
+    merge_on: list[str] = dc.field(default_factory=list)
     partition: PartitionConfig = dc.field(default_factory=dict)
     sort_order: SortOrderConfig = dc.field(default_factory=dict)
+
+    def __post_init__(self):
+        if self.write_mode not in get_args(WriteMode):
+            raise ValueError(
+                f"Invalid write mode '{self.write_mode}'. Allowed values: {get_args(WriteMode)}"
+            )
+        if self.write_mode == "merge" and not self.merge_on:
+            raise ValueError("'merge_on' must be provided when mode='merge'")
 
 
 WriteMode = Literal["append", "merge", "replace"]

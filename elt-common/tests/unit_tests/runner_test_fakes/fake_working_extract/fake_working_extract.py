@@ -12,8 +12,10 @@ class Extract(BaseExtract):
 
     def tables(self) -> dict[str, TableProperties]:
         return {
-            "table_default_write": TableProperties(name="table_default_write"),
-            "table_replace_mode": TableProperties(name="table_replace_mode", write_mode="replace"),
+            "table_default_write": TableProperties(),
+            "table_replace_mode": TableProperties(write_mode="replace"),
+            "table_merge_mode": TableProperties(write_mode="merge", merge_on=["name"]),
+            "empty": TableProperties(),
         }
 
     def extract(self) -> DataChunks:
@@ -24,4 +26,12 @@ class Extract(BaseExtract):
         yield (
             "table_replace_mode",
             pa.table({"name": pa.array(["table_replace_mode"], type=pa.string())}),
+        )
+        yield (
+            "table_merge_mode",
+            pa.table({"name": pa.array(["table_merge_mode"], type=pa.string())}),
+        )
+        yield (
+            "empty",
+            pa.table({"name": pa.array([], type=pa.string())}),
         )
