@@ -12,7 +12,7 @@ from elt_common.iceberg.catalog import Catalog
 from elt_common.iceberg.schema import create_schema, evolve_schema
 from elt_common.iceberg.partition import create_partition_spec
 from elt_common.iceberg.sortorder import create_sort_order
-from elt_common.typing import PartitionHint, SortOrderHint, WriteMode
+from elt_common.typing import PartitionConfig, SortOrderConfig, WriteMode
 from pyiceberg.table import ALWAYS_TRUE, Table as IcebergTable
 from pyiceberg.typedef import Identifier
 
@@ -38,8 +38,8 @@ class IcebergIO:
         *,
         mode: WriteMode = "append",
         merge_on: list[str] | None = None,
-        partition: PartitionHint | None = None,
-        sort_order: SortOrderHint | None = None,
+        partition: PartitionConfig | None = None,
+        sort_order: SortOrderConfig | None = None,
     ) -> None:
         """Write an Arrow table to an Iceberg table.
 
@@ -83,8 +83,8 @@ class IcebergIO:
         self,
         table_id: Identifier,
         arrow_schema: pa.Schema,
-        partition: PartitionHint | None,
-        sort_order: SortOrderHint | None,
+        partition: PartitionConfig | None,
+        sort_order: SortOrderConfig | None,
     ) -> IcebergTable:
         """Load an existing table or create a new one.
 

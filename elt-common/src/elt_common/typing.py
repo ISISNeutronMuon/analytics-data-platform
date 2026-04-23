@@ -60,12 +60,12 @@ class ELTJobManifest:
         return f"{self.domain}_{self.name}"
 
 
-PartitionHint = dict[str, str]
+PartitionConfig = dict[str, str]
 """Define the configuration of a Table partition where a key represents a column and the mapped
 value defines an Iceberg transformation.
 """
 
-SortOrderHint = dict[str, str]
+SortOrderConfig = dict[str, str]
 """Define the sort order on the columns in the Iceberg table.
 """
 
@@ -77,8 +77,8 @@ class TableProperties:
     name: str
     write_mode: "WriteMode" = "append"
     merge_on: Sequence[str] = ()
-    partition: PartitionHint = dc.field(default_factory=dict)
-    sort_order: SortOrderHint = dc.field(default_factory=dict)
+    partition: PartitionConfig = dc.field(default_factory=dict)
+    sort_order: SortOrderConfig = dc.field(default_factory=dict)
 
 
 WriteMode = Literal["append", "merge", "replace"]

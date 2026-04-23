@@ -1,4 +1,4 @@
-from elt_common.typing import PartitionHint
+from elt_common.typing import PartitionConfig
 from pyiceberg.partitioning import (
     UNPARTITIONED_PARTITION_SPEC,
     PartitionField,
@@ -9,7 +9,7 @@ import pyiceberg.transforms as transforms
 
 
 def create_partition_spec(
-    partition_hint: PartitionHint | None, iceberg_schema: Schema
+    partition_config: PartitionConfig | None, iceberg_schema: Schema
 ) -> PartitionSpec:
     """Create an Iceberg partition spec from the partition hints"""
 
@@ -17,7 +17,7 @@ def create_partition_spec(
         bracket_index = transform.find("[")
         return f"{column_name}_{transform[:bracket_index] if bracket_index > 0 else transform}"
 
-    if partition_hint is None:
+    if partition_config is None:
         return UNPARTITIONED_PARTITION_SPEC
 
     return PartitionSpec(
@@ -28,6 +28,6 @@ def create_partition_spec(
                 transform=transforms.parse_transform(transform),
                 name=field_name(column_name, transform),
             )
-            for index, (column_name, transform) in enumerate(partition_hint.items())
+            for index, (column_name, transform) in enumerate(partition_config.items())
         )
     )
