@@ -4,7 +4,7 @@ from collections import namedtuple
 import datetime as dt
 
 from elt_common.iceberg.io import IcebergIO
-from elt_common.typing import TableProperties
+from elt_common.typing import TableIngestProperties
 import pyarrow as pa
 from pyiceberg.catalog import Catalog
 from pyiceberg.table import ALWAYS_TRUE, Table
@@ -68,7 +68,7 @@ def test_write_table_skips_empty_data(
     writer = IcebergIO(mock_dependencies.mock_catalog)
 
     empty = sample_arrow_table.slice(0, 0)
-    writer.write_table(("ns", "t"), TableProperties(write_mode="append"), empty)
+    writer.write_table(("ns", "t"), TableIngestProperties(write_mode="append"), empty)
 
     mock_dependencies.mock_catalog.load_table.assert_not_called()
     mock_dependencies.mock_catalog.create_table.assert_not_called()
@@ -82,7 +82,7 @@ def test_write_table_append_creates_and_appends(
     mock_catalog.table_exists.return_value = False
 
     writer = IcebergIO(mock_catalog)
-    writer.write_table(("ns", "t"), TableProperties(write_mode="append"), sample_arrow_table)
+    writer.write_table(("ns", "t"), TableIngestProperties(write_mode="append"), sample_arrow_table)
 
     mock_dependencies.mock_catalog.load_table.assert_not_called()
     mock_dependencies.mock_catalog.create_table.assert_called_once()
@@ -97,7 +97,9 @@ def test_write_table_merge_requires_merge_on(
     writer = IcebergIO(mock_dependencies.mock_catalog)
 
     with pytest.raises(ValueError, match="merge_on.*must be provided"):
-        writer.write_table(("ns", "t"), TableProperties(write_mode="merge"), sample_arrow_table)
+        writer.write_table(
+            ("ns", "t"), TableIngestProperties(write_mode="merge"), sample_arrow_table
+        )
 
 
 def test_write_table_merge_calls_upsert(mock_dependencies: MockedDependencies, sample_arrow_table):
@@ -107,7 +109,7 @@ def test_write_table_merge_calls_upsert(mock_dependencies: MockedDependencies, s
     writer = IcebergIO(mock_dependencies.mock_catalog)
     writer.write_table(
         ("ns", "t"),
-        TableProperties(write_mode="merge", merge_on=["id"]),
+        TableIngestProperties(write_mode="merge", merge_on=["id"]),
         sample_arrow_table,
     )
 
@@ -130,7 +132,7 @@ def test_write_table_calls_overwrite(
     writer = IcebergIO(mock_catalog)
     writer.write_table(
         ("ns", "t"),
-        TableProperties(write_mode="replace"),
+        TableIngestProperties(write_mode="replace"),
         sample_arrow_table,
     )
 
@@ -149,7 +151,7 @@ def test_write_table_with_force_write_mode_calls_expected_method(
     writer = IcebergIO(mock_catalog)
     writer.write_table(
         ("ns", "t"),
-        TableProperties(write_mode="replace"),
+        TableIngestProperties(write_mode="replace"),
         sample_arrow_table,
         force_write_mode="append",
     )

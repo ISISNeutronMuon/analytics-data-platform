@@ -32,7 +32,7 @@ class BaseExtract:
         return self._source_config
 
     @abstractmethod
-    def tables(self) -> dict[str, "TableProperties"]:
+    def tables(self) -> dict[str, "TableIngestProperties"]:
         raise NotImplementedError(
             "Subclass should implement `tables()` to provide details of tables to be extracted."
         )
@@ -71,7 +71,7 @@ SortOrderConfig = dict[str, str]
 
 
 @dc.dataclass(frozen=True)
-class TableProperties:
+class TableIngestProperties:
     """Configuration for a single table within a job."""
 
     write_mode: "WriteMode" = "append"
