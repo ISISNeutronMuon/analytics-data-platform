@@ -84,7 +84,7 @@ leather==0.4.0
     # via agate
 markupsafe==3.0.2
     # via jinja2
-mashumaro[msgpack]==3.14
+mashumaro==3.14
     # via
     #   dbt-adapters
     #   dbt-common
@@ -197,7 +197,7 @@ typing-extensions==4.15.0
     #   typing-inspection
 typing-inspection==0.4.1
     # via pydantic
-urllib3==2.6.3
+urllib3==2.7.0
     # via requests
 zipp==3.23.0
     # via importlib-metadata
