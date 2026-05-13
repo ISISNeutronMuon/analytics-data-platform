@@ -1,0 +1,11 @@
+# default ownership falls to the whole team
+* @ISISNeutronMuon/analytics-team
+
+# infrastructure
+/infra/ @ISISNeutronMuon/analytics-team-code-owners-infra
+/certs/ @ISISNeutronMuon/analytics-team-code-owners-infra
+/.github/ @ISISNeutronMuon/analytics-team-code-owners-infra
+
+# pipeline code
+/elt-common/ @ISISNeutronMuon/analytics-team-code-owners-pipelines
+/warehouses/ @ISISNeutronMuon/analytics-team-code-owners-pipelines
