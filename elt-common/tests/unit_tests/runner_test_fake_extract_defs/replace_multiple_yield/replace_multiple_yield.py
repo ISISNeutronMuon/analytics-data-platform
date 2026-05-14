@@ -1,4 +1,12 @@
-from elt_common.typing import BaseExtract, BaseSourceConfig, DataChunks, TableIngestProperties
+from elt_common.extract import (
+    BaseExtract,
+    BaseSourceConfig,
+)
+from elt_common.typing import (
+    DataChunks,
+    ResourceProperties,
+    ResourcePropertiesMap,
+)
 
 import pyarrow as pa
 
@@ -10,9 +18,9 @@ class SourceConfig(BaseSourceConfig):
 class Extract(BaseExtract):
     source_config_cls = SourceConfig
 
-    def tables(self) -> dict[str, TableIngestProperties]:
+    def tables(self) -> ResourcePropertiesMap:
         return {
-            "table_replace_mode": TableIngestProperties(write_mode="replace"),
+            "table_replace_mode": ResourceProperties(write_mode="replace"),
         }
 
     def extract(self) -> DataChunks:

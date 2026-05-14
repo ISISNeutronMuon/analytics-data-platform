@@ -12,9 +12,14 @@ from elt_common.iceberg.catalog import Catalog
 from elt_common.iceberg.schema import create_schema, evolve_schema
 from elt_common.iceberg.partition import create_partition_spec
 from elt_common.iceberg.sortorder import create_sort_order
-from elt_common.typing import PartitionConfig, SortOrderConfig, TableIngestProperties, WriteMode
+from elt_common.typing import (
+    Identifier,
+    PartitionConfig,
+    SortOrderConfig,
+    ResourceProperties,
+    WriteMode,
+)
 from pyiceberg.table import ALWAYS_TRUE, Table as IcebergTable
-from pyiceberg.typedef import Identifier
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +39,7 @@ class IcebergIO:
     def write_table(
         self,
         table_id: Identifier,
-        props: TableIngestProperties,
+        props: ResourceProperties,
         data: pa.Table,
         *,
         force_write_mode: WriteMode | None = None,

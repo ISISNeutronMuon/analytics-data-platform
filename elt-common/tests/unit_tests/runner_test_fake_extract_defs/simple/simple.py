@@ -1,4 +1,12 @@
-from elt_common.typing import BaseExtract, BaseSourceConfig, DataChunks, TableIngestProperties
+from elt_common.extract import (
+    BaseExtract,
+    BaseSourceConfig,
+)
+from elt_common.typing import (
+    DataChunks,
+    ResourceProperties,
+    ResourcePropertiesMap,
+)
 
 import pyarrow as pa
 
@@ -7,15 +15,19 @@ class SourceConfig(BaseSourceConfig):
     pass
 
 
+class JSONPropertyWatermark:
+    pass
+
+
 class Extract(BaseExtract):
     source_config_cls = SourceConfig
 
-    def tables(self) -> dict[str, TableIngestProperties]:
+    def tables(self) -> ResourcePropertiesMap:
         return {
-            "table_default_write": TableIngestProperties(),
-            "table_replace_mode": TableIngestProperties(write_mode="replace"),
-            "table_merge_mode": TableIngestProperties(write_mode="merge", merge_on=["name"]),
-            "empty": TableIngestProperties(),
+            "table_default_write": ResourceProperties(),
+            "table_replace_mode": ResourceProperties(write_mode="replace"),
+            "table_merge_mode": ResourceProperties(write_mode="merge", merge_on=["name"]),
+            "empty": ResourceProperties(),
         }
 
     def extract(self) -> DataChunks:

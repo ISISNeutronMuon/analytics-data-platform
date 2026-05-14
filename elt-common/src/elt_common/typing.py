@@ -3,43 +3,37 @@ import dataclasses as dc
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterator, Literal, get_args
 
-from pydantic_settings import BaseSettings
 
 if TYPE_CHECKING:
     import pyarrow as pa
+
+
+class BaseIO:
+    @abstractmethod
+    def ensure_namespace(self, namespace: str) -> None:
+        raise NotImplementedError(
+            "Subclass should impement `ensure_namespace` to ensure the namespace exists."
+        )
+
+    @abstractmethod
+    def write_table(
+        self,
+        table_id: "Identifier",
+        props: "ResourceProperties",
+        data: "pa.Table",
+        *,
+        force_write_mode: "WriteMode | None" = None,
+    ) -> None:
+        raise NotImplementedError(
+            "Subclass should impement `write_table` to write a table to the destination."
+        )
+
 
 DataChunk = tuple[str, "pa.Table"]
 """Map a string name to a chunk of data to be loaded into the named table."""
 
 DataChunks = Iterator[DataChunk]
 """An iterator to a collection of DataChunk objects."""
-
-
-class BaseSourceConfig(BaseSettings):
-    """Base for all classes providing runtime configuration"""
-
-    pass
-
-
-class BaseExtract:
-    """Base class for all Extract classes"""
-
-    def __init__(self, source_config: BaseSettings):
-        self._source_config = source_config
-
-    @property
-    def source_config(self):
-        return self._source_config
-
-    @abstractmethod
-    def tables(self) -> dict[str, "TableIngestProperties"]:
-        raise NotImplementedError(
-            "Subclass should implement `tables()` to provide details of tables to be extracted."
-        )
-
-    @abstractmethod
-    def extract(self) -> Iterator[DataChunk]:
-        raise NotImplementedError("Subclass should implement `extract` to perform data extraction.")
 
 
 @dc.dataclass(frozen=True)
@@ -60,6 +54,8 @@ class ELTJobManifest:
         return f"{self.domain}_{self.name}"
 
 
+Identifier = tuple[str, ...]
+
 PartitionConfig = dict[str, str]
 """Define the configuration of a Table partition where a key represents a column and the mapped
 value defines an Iceberg transformation.
@@ -71,8 +67,8 @@ SortOrderConfig = dict[str, str]
 
 
 @dc.dataclass(frozen=True)
-class TableIngestProperties:
-    """Configuration for a single table within a job."""
+class ResourceProperties:
+    """Configuration for a single resource within a job."""
 
     write_mode: "WriteMode" = "append"
     merge_on: list[str] = dc.field(default_factory=list)
@@ -86,6 +82,10 @@ class TableIngestProperties:
             )
         if self.write_mode == "merge" and not self.merge_on:
             raise ValueError("'merge_on' must be provided when mode='merge'")
+
+
+ResourcePropertiesMap = dict[str, ResourceProperties]
+"""Map a resource name to a set of properties configuring that resource."""
 
 
 WriteMode = Literal["append", "merge", "replace"]

@@ -10,7 +10,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from elt_common.runner import run_ingest
-from elt_common.typing import ELTJobManifest, TableIngestProperties
+from elt_common.typing import ELTJobManifest, ResourceProperties
 
 
 @pytest.fixture
@@ -53,7 +53,7 @@ def test_run_ingest_with_simple_extract_class(elt_job: ELTJobManifest, mock_iceb
     for index, call in enumerate(call_args_list):
         call_args = call.args
         assert call_args[0] == expected_table_names[index]
-        assert call_args[1] == TableIngestProperties(
+        assert call_args[1] == ResourceProperties(
             write_mode=expected_write_modes[index], merge_on=expected_merge_on[index]
         )
         data = call_args[2]
@@ -76,7 +76,7 @@ def test_run_ingest_with_write_mode_replace_first_replaces_then_appends(
     # call 1 replaces
     first_call_args, first_call_kwargs = call_args_list[0].args, call_args_list[0].kwargs
     assert first_call_args[0] == "table_replace_mode"
-    assert first_call_args[1] == TableIngestProperties(write_mode="replace")
+    assert first_call_args[1] == ResourceProperties(write_mode="replace")
     data = first_call_args[2]
     assert isinstance(data, pa.Table)
     assert len(first_call_kwargs) == 0
@@ -84,7 +84,7 @@ def test_run_ingest_with_write_mode_replace_first_replaces_then_appends(
     # call 2 appends
     second_call_args, second_call_kwargs = call_args_list[1].args, call_args_list[1].kwargs
     assert second_call_args[0] == "table_replace_mode"
-    assert second_call_args[1] == TableIngestProperties(write_mode="replace")
+    assert second_call_args[1] == ResourceProperties(write_mode="replace")
     data = second_call_args[2]
     assert isinstance(data, pa.Table)
     assert second_call_kwargs["force_write_mode"] == "append"
