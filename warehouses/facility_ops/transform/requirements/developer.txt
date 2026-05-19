@@ -53,7 +53,7 @@ deepdiff==8.6.2
     # via dbt-common
 diff-cover==9.6.0
     # via sqlfluff
-idna==3.10
+idna==3.15
     # via requests
 importlib-metadata==8.7.0
     # via dbt-semantic-interfaces
@@ -84,7 +84,7 @@ leather==0.4.0
     # via agate
 markupsafe==3.0.2
     # via jinja2
-mashumaro==3.14
+mashumaro[msgpack]==3.14
     # via
     #   dbt-adapters
     #   dbt-common
