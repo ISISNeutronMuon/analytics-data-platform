@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 from elt_common.iceberg.catalog import (
     connect_catalog,
-    table_id,
+    table_identifier,
 )
 
 
@@ -53,7 +53,7 @@ def test_connect_catalog_forwards_all_options_from_pyiceberg_catalog_config(mock
 def test_table_id_returns_tuple_identifier():
     """Test that table_id returns a tuple with namespace and table name."""
     # Execute
-    result = table_id("my_namespace", "my_table")
+    result = table_identifier("my_namespace", "my_table")
 
     # Assert
     assert result == ("my_namespace", "my_table")

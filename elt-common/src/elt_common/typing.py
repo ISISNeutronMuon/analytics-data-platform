@@ -1,7 +1,7 @@
 from abc import abstractmethod
 import dataclasses as dc
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator, Literal, get_args
+from typing import TYPE_CHECKING, Iterator, Literal
 
 
 if TYPE_CHECKING:
@@ -19,20 +19,20 @@ class BaseIO:
     def write_table(
         self,
         table_id: "Identifier",
-        props: "ResourceProperties",
         data: "pa.Table",
+        write_mode: "WriteMode",
         *,
-        force_write_mode: "WriteMode | None" = None,
+        merge_on: list[str] | None = None,
+        partition: "PartitionConfig | None" = None,
+        sort_order: "SortOrderConfig | None" = None,
+        watermark: str | None = None,
     ) -> None:
         raise NotImplementedError(
             "Subclass should impement `write_table` to write a table to the destination."
         )
 
 
-DataChunk = tuple[str, "pa.Table"]
-"""Map a string name to a chunk of data to be loaded into the named table."""
-
-DataChunks = Iterator[DataChunk]
+DataChunks = Iterator["pa.Table"]
 """An iterator to a collection of DataChunk objects."""
 
 
@@ -64,28 +64,6 @@ value defines an Iceberg transformation.
 SortOrderConfig = dict[str, str]
 """Define the sort order on the columns in the Iceberg table.
 """
-
-
-@dc.dataclass(frozen=True)
-class ResourceProperties:
-    """Configuration for a single resource within a job."""
-
-    write_mode: "WriteMode" = "append"
-    merge_on: list[str] = dc.field(default_factory=list)
-    partition: PartitionConfig = dc.field(default_factory=dict)
-    sort_order: SortOrderConfig = dc.field(default_factory=dict)
-
-    def __post_init__(self):
-        if self.write_mode not in get_args(WriteMode):
-            raise ValueError(
-                f"Invalid write mode '{self.write_mode}'. Allowed values: {get_args(WriteMode)}"
-            )
-        if self.write_mode == "merge" and not self.merge_on:
-            raise ValueError("'merge_on' must be provided when mode='merge'")
-
-
-ResourcePropertiesMap = dict[str, ResourceProperties]
-"""Map a resource name to a set of properties configuring that resource."""
 
 
 WriteMode = Literal["append", "merge", "replace"]

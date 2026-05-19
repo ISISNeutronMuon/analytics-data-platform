@@ -1,31 +1,7 @@
 """Pipeline runner: orchestrates extract -> load -> transform for an elt job.
 
-Each job is expected to define a class called Extract with the following structure:
-
-from elt_common.typing import (
-    TableProperties,
-    WatermarkInfo,
-)
-from pydantic import SecretStr
-from pydantic_settings import BaseSettings
-
-class MySourceConfig(BaseSettings):
-
-    setting_1: str
-    setting_2: str
-
-
-class Extract:
-    source_config_cls = MySourceConfig
-
-    @abstractmethod
-    def tables(self) -> dict[str, TableProperties]:
-        # Define properties of tables to extract. See TableProperties
-
-    def extract(self, watermarks: WatermarkInfo) -> Iterator[Tuple[str, pa.Table]]:
-        # Yield a tuple of (table_name, pyarrow.Table) for each table
-        # Can yield as many times as necessary to perform chunked loading
-        yield table_name, pa.Table
+Each job is expected to define a class called Extract with the following structure. See
+the example in tests/unit_tests/simple/simple.py for the expected structure.
 """
 
 import importlib.util
@@ -34,8 +10,9 @@ import time
 from typing import Any
 from pathlib import Path
 
-from elt_common.iceberg.catalog import connect_catalog
+from elt_common.iceberg.catalog import connect_catalog, table_identifier
 from elt_common.iceberg.io import IcebergIO
+from elt_common.extract import BaseExtract, Watermark, WatermarkSerializerJSONMaxColumnValue
 from elt_common.typing import ELTJobManifest
 
 EXTRACT_CLS_NAME = "Extract"
@@ -54,42 +31,63 @@ def run_job(job: ELTJobManifest) -> None:
     LOGGER.info(f"Job {job.full_name} completed in {elapsed:.1f}s")
 
 
-def run_ingest(job: ELTJobManifest) -> None:
+def run_ingest(job: ELTJobManifest) -> dict[str, int]:
     """Import the extract function, call it, and write results to Iceberg."""
+    # Connect to catalog
+    iceberg_io = IcebergIO(connect_catalog())
+
+    # Extract
     # Get object that will do the extraction. This step requires the appropriate
     # environment variables for that job to have been set before reaching here.
     extract_obj = _create_extract_obj(job)
+    watermark_serializer = WatermarkSerializerJSONMaxColumnValue()
 
-    # Connect to catalog
     namespace = job.destination_namespace
-    iceberg_io = IcebergIO(connect_catalog())
     iceberg_io.ensure_namespace(namespace)
-
-    # Extract
-    expected_tables = extract_obj.tables()
+    expected_tables = extract_obj.resource_properties()
     rows_seen: dict[str, int] = {}  # track number of rows
-    for table_name, data in extract_obj.extract():
-        if table_name not in expected_tables:
-            raise ValueError(
-                f"Extract returned table '{table_name}' but its properties are not defined by the 'tables()' method."
+    for table_name, table_props in expected_tables.items():
+        table_id = table_identifier(namespace, table_name)
+        partition_by, sort_order, merge_on, write_mode = (
+            table_props.partition,
+            table_props.sort_order,
+            table_props.merge_on,
+            table_props.write_mode,
+        )
+        try:
+            watermark_before_extract = watermark_serializer.deserialize(
+                iceberg_io.read_property(table_id, Watermark.property_key())
             )
+        except KeyError:
+            watermark_before_extract = None
 
-        # Determine write mode. A replace is really a delete then append but each source
-        # table can yield several times so only delete once and then continue appending
         rows_seen.setdefault(table_name, 0)
-        table_props = expected_tables[table_name]
-        kwargs = {}
-        if table_props.write_mode == "replace" and rows_seen[table_name] > 0:
-            kwargs["force_write_mode"] = "append"
+        for data in table_props.extractor(watermark_before_extract):
+            # Determine write mode. A replace is really a delete then append but each source table
+            # can yield several times to load in chunks so only delete once and then continue appending
+            if write_mode == "replace" and rows_seen[table_name] > 0:
+                write_mode = "append"
 
-        iceberg_io.write_table(table_name, table_props, data, **kwargs)
-        rows_seen[table_name] += data.num_rows
+            watermark_after_extract = (
+                watermark_serializer.serialize(table_props.watermark_column, data)
+                if table_props.watermark_column is not None
+                else None
+            )
+            iceberg_io.write_table(
+                table_id,
+                data,
+                write_mode,
+                merge_on=merge_on,
+                partition=partition_by,
+                sort_order=sort_order,
+                watermark=watermark_after_extract,
+            )
+            rows_seen[table_name] += data.num_rows
+
+    return rows_seen
 
 
-# "private" helpers
-
-
-def _create_extract_obj(job: ELTJobManifest):
+def _create_extract_obj(job: ELTJobManifest) -> BaseExtract:
     """Given the job directory and name create the object that will perform the data extraction"""
     extract_cls = _get_extract_cls(job)
     source_config_cls = extract_cls.source_config_cls

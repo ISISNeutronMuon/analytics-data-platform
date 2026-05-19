@@ -16,9 +16,9 @@ from elt_common.typing import (
     Identifier,
     PartitionConfig,
     SortOrderConfig,
-    ResourceProperties,
     WriteMode,
 )
+from elt_common.extract import Watermark
 from pyiceberg.table import ALWAYS_TRUE, Table as IcebergTable
 
 logger = logging.getLogger(__name__)
@@ -36,45 +36,51 @@ class IcebergIO:
             self.catalog.create_namespace(namespace)
             logger.info(f"Created namespace '{namespace}'")
 
+    def read_property(self, table_id: Identifier, key: str) -> str:
+        table = self.catalog.load_table(table_id)
+        return table.properties[key]
+
     def write_table(
         self,
         table_id: Identifier,
-        props: ResourceProperties,
         data: pa.Table,
+        write_mode: WriteMode,
         *,
-        force_write_mode: WriteMode | None = None,
+        merge_on: list[str] | None = None,
+        partition: PartitionConfig | None = None,
+        sort_order: SortOrderConfig | None = None,
+        watermark: str | None = None,
     ) -> None:
-        """Write an Arrow table to an Iceberg table.
-
-        :param table_id: Full Identifier for table in catalog.
-        :param props: Describe properties for writing to the table
-        :param data: Arrow table containing the data to write.
-        :param force_write_mode: If provided use this write_mode instead of the one defined in
-                                 the properties.
-        """
+        """Write an Arrow table to an Iceberg table."""
         if data.num_rows == 0:
             logger.info(f"No data to write to {table_id}, skipping.")
             return
 
-        iceberg_table = self._ensure_table(table_id, data.schema, props.partition, props.sort_order)
+        iceberg_table = self._ensure_table(table_id, data.schema, partition, sort_order)
 
-        write_mode = props.write_mode if force_write_mode is None else force_write_mode
-        if write_mode == "append":
-            iceberg_table.append(data)
-        elif write_mode == "merge":
-            iceberg_table.upsert(
-                df=data,
-                join_cols=props.merge_on,
-                when_matched_update_all=True,
-                when_not_matched_insert_all=True,
-                case_sensitive=True,
-            )
-        elif write_mode == "replace":
-            iceberg_table.overwrite(data, overwrite_filter=ALWAYS_TRUE, case_sensitive=True)
-        else:
-            raise ValueError(f"Unsupported write mode: {props.write_mode!r}")
+        with iceberg_table.transaction() as txn:
+            if write_mode == "append":
+                txn.append(data)
+            elif write_mode == "merge":
+                if merge_on is None:
+                    raise ValueError(
+                        f"Table '{table_id}': write mode 'merge' requires 'merge_on' property."
+                    )
+                txn.upsert(
+                    df=data,
+                    join_cols=merge_on,
+                    when_matched_update_all=True,
+                    when_not_matched_insert_all=True,
+                    case_sensitive=True,
+                )
+            elif write_mode == "replace":
+                txn.overwrite(data, overwrite_filter=ALWAYS_TRUE, case_sensitive=True)
+            else:
+                raise ValueError(f"Unsupported write mode: {write_mode!r}")
+            if watermark is not None:
+                txn.set_properties({Watermark.property_key(): watermark})
 
-        logger.debug(f"Wrote {data.num_rows} rows to {table_id} (mode={props.write_mode})")
+        logger.debug(f"Wrote {data.num_rows} rows to {table_id} (mode={write_mode})")
 
     # private
     def _ensure_table(
