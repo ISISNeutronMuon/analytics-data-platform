@@ -59,7 +59,7 @@ dogpile-cache==1.4.0
     # via openstacksdk
 filelock==3.20.3
     # via ansible-lint
-idna==3.10
+idna==3.15
     # via requests
 importlib-metadata==8.7.0
     # via ansible-lint
@@ -260,8 +260,6 @@ ruamel-yaml==0.18.14
     # via ansible-lint
 ruamel-yaml-clib==0.2.12
     # via ruamel-yaml
-setuptools==82.0.1
-    # via pbr
 six==1.17.0
     # via python-dateutil
 stevedore==5.4.1
