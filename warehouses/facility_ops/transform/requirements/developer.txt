@@ -53,7 +53,7 @@ deepdiff==8.6.2
     # via dbt-common
 diff-cover==9.6.0
     # via sqlfluff
-idna==3.10
+idna==3.15
     # via requests
 importlib-metadata==8.7.0
     # via dbt-semantic-interfaces
