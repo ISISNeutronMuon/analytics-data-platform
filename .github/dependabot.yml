@@ -18,11 +18,43 @@ updates:
 
   - package-ecosystem: "pip"
     directories:
-      - "/warehouses/accelerator/transform/accelerator"
+      - "/warehouses/facility_ops/transform"
     schedule:
       interval: "weekly"
     groups:
       dbt-dependencies:
+        applies-to: version-updates
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(deps): "
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+
+  - package-ecosystem: "pip"
+    directories:
+      - "/infra/ansible"
+    schedule:
+      interval: "weekly"
+    groups:
+      ansible-dependencies:
+        applies-to: version-updates
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(deps): "
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+
+  - package-ecosystem: "pip"
+    directories:
+      - "/docs"
+    schedule:
+      interval: "weekly"
+    groups:
+      docs-dependencies:
         applies-to: version-updates
         patterns:
           - "*"
