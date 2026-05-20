@@ -25,7 +25,7 @@ class BaseIO:
         merge_on: list[str] | None = None,
         partition: "PartitionConfig | None" = None,
         sort_order: "SortOrderConfig | None" = None,
-        watermark: str | None = None,
+        properties: dict[str, str] | None = None,
     ) -> None:
         raise NotImplementedError(
             "Subclass should impement `write_table` to write a table to the destination."

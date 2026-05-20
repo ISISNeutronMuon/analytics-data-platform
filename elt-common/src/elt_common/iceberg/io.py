@@ -13,18 +13,18 @@ from elt_common.iceberg.schema import create_schema, evolve_schema
 from elt_common.iceberg.partition import create_partition_spec
 from elt_common.iceberg.sortorder import create_sort_order
 from elt_common.typing import (
+    BaseIO,
     Identifier,
     PartitionConfig,
     SortOrderConfig,
     WriteMode,
 )
-from elt_common.extract import Watermark
 from pyiceberg.table import ALWAYS_TRUE, Table as IcebergTable
 
 logger = logging.getLogger(__name__)
 
 
-class IcebergIO:
+class IcebergIO(BaseIO):
     """Read/write arrow tables to/from Iceberg, handling table creation and schema evolution."""
 
     def __init__(self, catalog: Catalog) -> None:
@@ -49,7 +49,7 @@ class IcebergIO:
         merge_on: list[str] | None = None,
         partition: PartitionConfig | None = None,
         sort_order: SortOrderConfig | None = None,
-        watermark: str | None = None,
+        properties: dict[str, str] | None = None,
     ) -> None:
         """Write an Arrow table to an Iceberg table."""
         if data.num_rows == 0:
@@ -77,8 +77,9 @@ class IcebergIO:
                 txn.overwrite(data, overwrite_filter=ALWAYS_TRUE, case_sensitive=True)
             else:
                 raise ValueError(f"Unsupported write mode: {write_mode!r}")
-            if watermark is not None:
-                txn.set_properties({Watermark.property_key(): watermark})
+
+            if properties is not None:
+                txn.set_properties(properties)
 
         logger.debug(f"Wrote {data.num_rows} rows to {table_id} (mode={write_mode})")
 

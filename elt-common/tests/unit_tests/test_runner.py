@@ -10,7 +10,7 @@ from elt_common.iceberg.io import IcebergIO
 import pytest
 from pytest_mock import MockerFixture
 
-from elt_common.runner import run_ingest
+from elt_common.runner import INGEST_PROPERTY_WATERMARK_KEY, run_ingest
 from elt_common.typing import ELTJobManifest
 
 TEST_DOMAIN = "test_runner"
@@ -75,7 +75,7 @@ def test_run_ingest_with_simple_extract_class(elt_job: ELTJobManifest, mock_iceb
             "merge_on": expected_merge_on[index],
             "partition": {},
             "sort_order": {},
-            "watermark": None,
+            "properties": {},
         }
 
 
@@ -94,14 +94,14 @@ def test_run_ingest_with_watermark_handling(elt_job: ELTJobManifest, mock_iceber
         expected_sortorder,
         expected_write_modes,
         expected_merge_on,
-        expected_watermarks_after_extract,
+        expected_io_properties,
     ) = (
         ["table_with_watermark_column", "table_without_watermark_column"],
         [{}, {}],
         [{}, {}],
         ("append", "append"),
         ([], []),
-        [json.dumps({"column": "id", "value": 119}), None],
+        [{INGEST_PROPERTY_WATERMARK_KEY: json.dumps({"column": "id", "value": 119})}, {}],
     )
 
     for index, call in enumerate(call_args_list):
@@ -121,12 +121,12 @@ def test_run_ingest_with_watermark_handling(elt_job: ELTJobManifest, mock_iceber
             "merge_on": expected_merge_on[index],
             "partition": expected_partition_by[index],
             "sort_order": expected_sortorder[index],
-            "watermark": expected_watermarks_after_extract[index],
+            "properties": expected_io_properties[index],
         }
 
     # Run again expecting incremental load on table with watermark
     mock_iceberg_io.read_property.side_effect = [
-        expected_watermarks_after_extract[0],
+        expected_io_properties[0][INGEST_PROPERTY_WATERMARK_KEY],
         KeyError,
     ]
     mock_iceberg_io.write_table.reset_mock()
@@ -157,7 +157,7 @@ def test_run_ingest_with_write_mode_replace_first_replaces_then_appends(
         "merge_on": [],
         "partition": {},
         "sort_order": {},
-        "watermark": None,
+        "properties": {},
     }
 
     # call 2 appends

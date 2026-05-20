@@ -1,5 +1,7 @@
 from abc import abstractmethod
 import dataclasses as dc
+import importlib.util
+from pathlib import Path
 import json
 from typing import Any, Callable, get_args
 
@@ -7,10 +9,9 @@ import pyarrow as pa
 import pyarrow.compute as pc
 from pydantic_settings import BaseSettings
 
-from .typing import DataChunks, PartitionConfig, SortOrderConfig, WriteMode
+from .typing import DataChunks, ELTJobManifest, PartitionConfig, SortOrderConfig, WriteMode
 
-
-_TABLE_WATERMARK_KEY = "ingest.watermark"
+EXTRACT_CLS_NAME = "Extract"
 
 
 @dc.dataclass(frozen=True, kw_only=True)
@@ -67,20 +68,73 @@ class BaseExtract:
 
 @dc.dataclass(frozen=True)
 class Watermark:
-    """Store a watermark value as a string to indicate that a table already has data upto and including this value."""
+    """Store a deserialized watermark value"""
 
     value: Any
 
-    @classmethod
-    def property_key(cls) -> str:
-        return _TABLE_WATERMARK_KEY
+
+class WatermarkSerializer:
+    """Convert watermarks to/from JSON"""
+
+    @abstractmethod
+    def serialize(self, column: str, data: "pa.Table") -> str:
+        raise NotImplementedError("Override serialize in subclass.")
+
+    @abstractmethod
+    def deserialize(self, watermark_str: str) -> Watermark:
+        raise NotImplementedError("Override deserialize in subclass.")
 
 
-class WatermarkSerializerJSONMaxColumnValue:
+class WatermarkSerializerJSONMaxColumnValue(WatermarkSerializer):
     """Convert watermarks to/from JSON"""
 
     def serialize(self, column: str, data: "pa.Table") -> str:
         return json.dumps({"column": column, "value": pc.max(data[column]).as_py()})
 
-    def deserialize(self, str) -> Watermark:
-        return Watermark(json.loads(str)["value"])
+    def deserialize(self, watermark_str: str) -> Watermark:
+        return Watermark(json.loads(watermark_str)["value"])
+
+
+def create_extract_obj(job: ELTJobManifest) -> BaseExtract:
+    """Given the job directory and name create the object that will perform the data extraction"""
+    extract_cls = _get_extract_cls(job)
+    source_config_cls = extract_cls.source_config_cls
+
+    return extract_cls(source_config_cls(_env_prefix=f"{job.name}__"))
+
+
+##################
+# private
+##################
+def _get_extract_cls(job: ELTJobManifest) -> Any:
+    """Get the class that will handle the extraction."""
+    custom_extract_script = job.ingest_job_dir / f"{job.name}.py"
+    if custom_extract_script.exists():
+        return _get_extract_cls_from_module_path(job.name, custom_extract_script)
+    else:
+        raise RuntimeError(
+            f"No extraction class definition file found at '{custom_extract_script}'"
+        )
+
+
+def _get_extract_cls_from_module_path(module_name: str, file_path: Path) -> Any:
+    """Get the class attribute that will handle extraction
+
+    :raises: AttributeError if the attribute doesn't exist
+    """
+    module = _import_module_from_path(module_name, file_path)
+    return getattr(module, EXTRACT_CLS_NAME)
+
+
+def _import_module_from_path(module_name: str, file_path: Path):
+    """Import a module given its name and file location"""
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    if spec is None:
+        raise ImportError(f"Unable to find module spec for '{module_name}' at '{file_path}'")
+    module = importlib.util.module_from_spec(spec)
+    if spec.loader is not None:
+        spec.loader.exec_module(module)
+    else:
+        raise ImportError(f"Module spec for {module_name} @ '{file_path}' has no loader attribute")
+
+    return module

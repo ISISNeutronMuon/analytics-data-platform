@@ -4,7 +4,6 @@ from collections import namedtuple
 import datetime as dt
 
 from elt_common.iceberg.io import IcebergIO
-from elt_common.extract import Watermark
 import pyarrow as pa
 from pyiceberg.catalog import Catalog
 from pyiceberg.table import ALWAYS_TRUE, Table
@@ -150,24 +149,22 @@ def test_write_table_merge_calls_upsert(mock_dependencies: MockedDependencies, s
     )
 
 
-def test_write_table_sets_watermark_properties_if_supplied(
+def test_write_table_sets_properties_if_supplied(
     mock_dependencies: MockedDependencies, sample_arrow_table: pa.Table
 ):
     mock_dependencies.mock_catalog.table_exists.return_value = True
-    watermark = "2024-01-15T10:00:00Z"
+    properties = {"timestamp": "2024-01-15T10:00:00Z"}
 
     io = IcebergIO(mock_dependencies.mock_catalog)
     io.write_table(
         ("ns", "t"),
         sample_arrow_table,
         "append",
-        watermark=watermark,
+        properties=properties,
     )
 
     mock_dependencies.mock_transaction.append.assert_called_once_with(sample_arrow_table)
-    mock_dependencies.mock_transaction.set_properties.assert_called_once_with(
-        {Watermark.property_key(): "2024-01-15T10:00:00Z"}
-    )
+    mock_dependencies.mock_transaction.set_properties.assert_called_once_with(properties)
 
 
 def test_write_table_calls_overwrite(
