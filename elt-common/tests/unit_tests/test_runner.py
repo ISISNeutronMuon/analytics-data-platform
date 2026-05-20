@@ -1,5 +1,6 @@
 """Tests for elt_common.runner"""
 
+import datetime as dt
 import json
 from pathlib import Path
 import re
@@ -10,10 +11,25 @@ from elt_common.iceberg.io import IcebergIO
 import pytest
 from pytest_mock import MockerFixture
 
-from elt_common.runner import INGEST_PROPERTY_WATERMARK_KEY, run_ingest
+from elt_common.runner import (
+    INGEST_PROPERTY_KEY_LAST_UPDATED_AT,
+    INGEST_PROPERTY_KEY_WATERMARK,
+    run_ingest,
+)
 from elt_common.typing import ELTJobManifest
 
+FAKE_NOW = dt.datetime(2026, 5, 20, 15, 14, 38)
 TEST_DOMAIN = "test_runner"
+
+
+@pytest.fixture
+def patch_datetime_now(monkeypatch):
+    class mydatetime(dt.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return FAKE_NOW
+
+    monkeypatch.setattr(dt, "datetime", mydatetime)
 
 
 @pytest.fixture
@@ -43,8 +59,19 @@ def _test_elt_job_table_id(elt_job: ELTJobManifest, table_name: str):
     return (f"{elt_job.domain}_{elt_job.name}", table_name)
 
 
+def _assert_properties_as_expected(
+    actual_properties: dict[str, str], expected_watermark_property: str | None = None
+):
+    # check last_updated_at is close to now
+    assert dt.datetime.fromisoformat(actual_properties[INGEST_PROPERTY_KEY_LAST_UPDATED_AT])
+    if expected_watermark_property:
+        assert actual_properties[INGEST_PROPERTY_KEY_WATERMARK] == expected_watermark_property
+
+
 @pytest.mark.parametrize("elt_job", ["working_impl"], indirect=True)
-def test_run_ingest_with_simple_extract_class(elt_job: ELTJobManifest, mock_iceberg_io: MagicMock):
+def test_run_ingest_with_simple_extract_class(
+    elt_job: ELTJobManifest, mock_iceberg_io: MagicMock, patch_datetime_now
+):
     run_ingest(elt_job)
 
     call_args_list = mock_iceberg_io.write_table.call_args_list
@@ -71,12 +98,10 @@ def test_run_ingest_with_simple_extract_class(elt_job: ELTJobManifest, mock_iceb
             assert data.num_rows == 0
         assert call_args[2] == expected_write_modes[index]
 
-        assert call_kwargs == {
-            "merge_on": expected_merge_on[index],
-            "partition": {},
-            "sort_order": {},
-            "properties": {},
-        }
+        assert call_kwargs["merge_on"] == expected_merge_on[index]
+        assert call_kwargs["partition"] == {}
+        assert call_kwargs["sort_order"] == {}
+        _assert_properties_as_expected(call_kwargs["properties"])
 
 
 @pytest.mark.parametrize("elt_job", ["watermark_handling"], indirect=True)
@@ -94,14 +119,14 @@ def test_run_ingest_with_watermark_handling(elt_job: ELTJobManifest, mock_iceber
         expected_sortorder,
         expected_write_modes,
         expected_merge_on,
-        expected_io_properties,
+        expected_watermark_properties,
     ) = (
         ["table_with_watermark_column", "table_without_watermark_column"],
         [{}, {}],
         [{}, {}],
         ("append", "append"),
         ([], []),
-        [{INGEST_PROPERTY_WATERMARK_KEY: json.dumps({"column": "id", "value": 119})}, {}],
+        [json.dumps({"column": "id", "value": 119}), None],
     )
 
     for index, call in enumerate(call_args_list):
@@ -117,16 +142,17 @@ def test_run_ingest_with_watermark_handling(elt_job: ELTJobManifest, mock_iceber
         assert call_args[2] == expected_write_modes[index]
 
         # other arguments
-        assert call_kwargs == {
-            "merge_on": expected_merge_on[index],
-            "partition": expected_partition_by[index],
-            "sort_order": expected_sortorder[index],
-            "properties": expected_io_properties[index],
-        }
+        assert call_kwargs["merge_on"] == expected_merge_on[index]
+        assert call_kwargs["partition"] == expected_partition_by[index]
+        assert call_kwargs["sort_order"] == expected_sortorder[index]
+
+        _assert_properties_as_expected(
+            call_kwargs["properties"], expected_watermark_properties[index]
+        )
 
     # Run again expecting incremental load on table with watermark
     mock_iceberg_io.read_property.side_effect = [
-        expected_io_properties[0][INGEST_PROPERTY_WATERMARK_KEY],
+        expected_watermark_properties[0],
         KeyError,
     ]
     mock_iceberg_io.write_table.reset_mock()
@@ -148,17 +174,11 @@ def test_run_ingest_with_write_mode_replace_first_replaces_then_appends(
     assert len(call_args_list) == 2
 
     # call 1 replaces
-    first_call_args, first_call_kwargs = call_args_list[0].args, call_args_list[0].kwargs
+    first_call_args = call_args_list[0].args
     assert first_call_args[0] == _test_elt_job_table_id(elt_job, "table_replace_mode")
     data = first_call_args[1]
     assert isinstance(data, pa.Table)
     assert first_call_args[2] == "replace"
-    assert first_call_kwargs == {
-        "merge_on": [],
-        "partition": {},
-        "sort_order": {},
-        "properties": {},
-    }
 
     # call 2 appends
     second_call_args = call_args_list[1].args

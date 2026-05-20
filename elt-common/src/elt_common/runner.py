@@ -4,6 +4,7 @@ Each job is expected to define a class called Extract with the following structu
 the example in tests/unit_tests/simple/simple.py for the expected structure.
 """
 
+import datetime as dt
 import logging
 import time
 
@@ -18,7 +19,8 @@ from elt_common.extract import (
 from elt_common.typing import ELTJobManifest
 import pyarrow as pa
 
-INGEST_PROPERTY_WATERMARK_KEY = "ingest.watermark"
+INGEST_PROPERTY_KEY_LAST_UPDATED_AT = "ingest.last_updated_at"
+INGEST_PROPERTY_KEY_WATERMARK = "ingest.watermark"
 
 LOGGER = logging.getLogger(__name__)
 
@@ -59,7 +61,7 @@ def run_ingest(job: ELTJobManifest) -> dict[str, int]:
         )
         try:
             watermark_before_extract = watermark_serializer.deserialize(
-                iceberg_io.read_property(table_id, INGEST_PROPERTY_WATERMARK_KEY)
+                iceberg_io.read_property(table_id, INGEST_PROPERTY_KEY_WATERMARK)
             )
         except KeyError:
             watermark_before_extract = None
@@ -94,10 +96,12 @@ def _create_ingest_properties(
     watermark_serializer: WatermarkSerializer,
 ) -> dict[str, str]:
     """Create a set of properties describing the ingestion"""
-    ingest_props = {}
+    ingest_props = {
+        INGEST_PROPERTY_KEY_LAST_UPDATED_AT: dt.datetime.now(dt.UTC).isoformat(timespec="seconds")
+    }
 
     if resource_properties.watermark_column is not None:
-        ingest_props[INGEST_PROPERTY_WATERMARK_KEY] = watermark_serializer.serialize(
+        ingest_props[INGEST_PROPERTY_KEY_WATERMARK] = watermark_serializer.serialize(
             resource_properties.watermark_column, data
         )
 
