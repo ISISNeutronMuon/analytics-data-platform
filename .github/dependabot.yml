@@ -5,6 +5,8 @@ updates:
       - "/elt-common"
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "s3fs"  # https://github.com/ISISNeutronMuon/analytics-data-platform/issues/237
     groups:
       elt-common-dependencies:
         applies-to: version-updates
@@ -37,14 +39,14 @@ updates:
       - "/infra/ansible"
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "passlib"  # https://github.com/ISISNeutronMuon/analytics-data-platform/issues/313
+      - dependency-name: "bcrypt"
     groups:
       ansible-dependencies:
         applies-to: version-updates
         patterns:
           - "*"
-        exclude-patterns:
-          - "passlib"
-          - "bcrypt"
     commit-message:
       prefix: "chore(deps): "
     cooldown:
