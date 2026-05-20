@@ -15,8 +15,8 @@ babel==2.18.0
     # via agate
 certifi==2026.2.25
     # via requests
-chardet==5.2.0
-    # via -r requirements.in
+chardet==7.4.3
+    # via -r requirements/requirements.in
 charset-normalizer==3.4.7
     # via requests
 click==8.3.2
@@ -27,9 +27,9 @@ colorama==0.4.6
     # via dbt-common
 daff==1.4.2
     # via dbt-core
-dbt-adapters==1.22.10
+dbt-adapters==1.23.0
     # via
-    #   -r requirements.in
+    #   -r requirements/requirements.in
     #   dbt-core
     #   dbt-trino
 dbt-common==1.37.3
@@ -37,9 +37,9 @@ dbt-common==1.37.3
     #   dbt-adapters
     #   dbt-core
     #   dbt-trino
-dbt-core==1.11.8
+dbt-core==1.11.9
     # via
-    #   -r requirements.in
+    #   -r requirements/requirements.in
     #   dbt-trino
 dbt-extractor==0.6.0
     # via dbt-core
@@ -51,7 +51,7 @@ dbt-protos==1.0.443
 dbt-semantic-interfaces==0.9.0
     # via dbt-core
 dbt-trino==1.10.1
-    # via -r requirements.in
+    # via -r requirements/requirements.in
 deepdiff==8.6.2
     # via dbt-common
 idna==3.11
@@ -80,7 +80,7 @@ lz4==4.4.5
     # via trino
 markupsafe==3.0.3
     # via jinja2
-mashumaro==3.14
+mashumaro[msgpack]==3.14
     # via
     #   dbt-adapters
     #   dbt-common
