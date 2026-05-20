@@ -8,10 +8,15 @@
 #Traceback (most recent call last):
 #  File ".../lib/pythonX.XX/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
 #    version = _bcrypt.__about__.__version__
+#
+# bcrypt 5.0.0 gives a fresh issue with passlib: https://github.com/ansible/ansible/issues/85919
+#
+# Waiting for https://github.com/ansible/ansible/pull/85970 to land in a released version of ansible
+# to remove passlib completely.
 
 ansible==13.5.0
 ansible-lint==26.4.0
-bcrypt==5.0.0
+bcrypt==4.0.1
 jmespath==1.1.0
 python-openstackclient==9.0.0
 python-octaviaclient==3.13.0
