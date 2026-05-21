@@ -19,9 +19,13 @@ from elt_common.typing import (
     SortOrderConfig,
     WriteMode,
 )
+from pyiceberg.exceptions import NoSuchTableError
 from pyiceberg.table import ALWAYS_TRUE, Table as IcebergTable
 
-logger = logging.getLogger(__name__)
+# Map exception 1:1
+NoSuchTableError = NoSuchTableError
+
+LOGGER = logging.getLogger(__name__)
 
 
 class IcebergIO(BaseIO):
@@ -34,9 +38,13 @@ class IcebergIO(BaseIO):
         """Create the namespace if it doesn't already exist."""
         if not self.catalog.namespace_exists(namespace):
             self.catalog.create_namespace(namespace)
-            logger.info(f"Created namespace '{namespace}'")
+            LOGGER.info(f"Created namespace '{namespace}'")
 
     def read_property(self, table_id: Identifier, key: str) -> str:
+        """Read a table property.
+
+        :raises: KeyError if property does not exist
+        """
         table = self.catalog.load_table(table_id)
         return table.properties[key]
 
@@ -53,7 +61,7 @@ class IcebergIO(BaseIO):
     ) -> None:
         """Write an Arrow table to an Iceberg table."""
         if data.num_rows == 0:
-            logger.info(f"No data to write to {table_id}, skipping.")
+            LOGGER.info(f"No data to write to {table_id}, skipping.")
             return
 
         iceberg_table = self._ensure_table(table_id, data.schema, partition, sort_order)
@@ -81,7 +89,7 @@ class IcebergIO(BaseIO):
             if properties is not None:
                 txn.set_properties(properties)
 
-        logger.debug(f"Wrote {data.num_rows} rows to {table_id} (mode={write_mode})")
+        LOGGER.debug(f"Wrote {data.num_rows} rows to {table_id} (mode={write_mode})")
 
     # private
     def _ensure_table(
@@ -98,13 +106,13 @@ class IcebergIO(BaseIO):
             return self._ensure_table_schema(self.catalog.load_table(table_id), arrow_schema)
 
         iceberg_schema = create_schema(arrow_schema)
-        logger.debug(f"Created iceberg schema: {iceberg_schema}")
+        LOGGER.debug(f"Created iceberg schema: {iceberg_schema}")
         partition_spec = create_partition_spec(partition, iceberg_schema)
-        logger.debug(f"Created partition spec: {partition_spec}")
+        LOGGER.debug(f"Created partition spec: {partition_spec}")
         sort_order_spec = create_sort_order(sort_order, iceberg_schema)
-        logger.debug(f"Created sort order spec: {sort_order_spec}")
+        LOGGER.debug(f"Created sort order spec: {sort_order_spec}")
 
-        logger.info(f"Creating table {table_id}")
+        LOGGER.info(f"Creating table {table_id}")
         return self.catalog.create_table(
             table_id,
             schema=iceberg_schema,
@@ -118,7 +126,7 @@ class IcebergIO(BaseIO):
         """Ensure the existing table schema matches the new schema."""
         new_schema = evolve_schema(iceberg_table.schema(), new_schema)  # type:ignore
         if new_schema is not None:
-            logger.debug(f"Evolving schema. New schema: {new_schema}")
+            LOGGER.debug(f"Evolving schema. New schema: {new_schema}")
             with iceberg_table.update_schema() as update:
                 update.union_by_name(new_schema)
 

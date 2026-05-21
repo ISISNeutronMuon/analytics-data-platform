@@ -9,6 +9,7 @@ from pyiceberg.types import (
     DateType,
     DecimalType,
     DoubleType,
+    IntegerType,
     LongType,
     NestedField,
     PrimitiveType,
@@ -30,6 +31,8 @@ def arrow_type_to_iceberg(arrow_type: pa.DataType) -> PrimitiveType:
     """
     if pa.types.is_boolean(arrow_type):
         return BooleanType()
+    elif pa.types.is_int32(arrow_type):
+        return IntegerType()
     elif pa.types.is_int64(arrow_type):
         return LongType()
     elif pa.types.is_float64(arrow_type):

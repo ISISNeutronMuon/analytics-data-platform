@@ -56,7 +56,7 @@ class BaseExtract:
         self._source_config = source_config
 
     @property
-    def source_config(self):
+    def source_config(self) -> Any:
         return self._source_config
 
     @abstractmethod

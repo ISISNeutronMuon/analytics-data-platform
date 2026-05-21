@@ -16,7 +16,7 @@ def test_namespace_property_combines_domain_and_name():
         domain="facility_ops",
         ingest_job_dir=Path("/some/path"),
     )
-    assert manifest.destination_namespace == "facility_ops_source_a"
+    assert manifest.destination_namespace == "facility_ops__source_a"
 
 
 def test_full_name_property_combines_domain_and_name():

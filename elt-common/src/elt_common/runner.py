@@ -9,7 +9,7 @@ import logging
 import time
 
 from elt_common.iceberg.catalog import connect_catalog, table_identifier
-from elt_common.iceberg.io import IcebergIO
+from elt_common.iceberg.io import IcebergIO, NoSuchTableError
 from elt_common.extract import (
     ResourceProperties,
     WatermarkSerializer,
@@ -63,7 +63,7 @@ def run_ingest(job: ELTJobManifest) -> dict[str, int]:
             watermark_before_extract = watermark_serializer.deserialize(
                 iceberg_io.read_property(table_id, INGEST_PROPERTY_KEY_WATERMARK)
             )
-        except KeyError:
+        except (NoSuchTableError, KeyError):
             watermark_before_extract = None
 
         rows_seen.setdefault(table_name, 0)

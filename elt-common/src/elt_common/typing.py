@@ -51,7 +51,7 @@ class ELTJobManifest:
     @property
     def destination_namespace(self) -> str:
         """The destination namespace for this job: ``{domain}_{name}``."""
-        return f"{self.domain}_{self.name}"
+        return f"{self.domain}__{self.name}"
 
 
 Identifier = tuple[str, ...]

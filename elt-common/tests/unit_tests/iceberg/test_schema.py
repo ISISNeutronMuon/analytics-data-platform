@@ -7,6 +7,7 @@ from pyiceberg.types import (
     DateType,
     DecimalType,
     DoubleType,
+    IntegerType,
     LongType,
     StringType,
     TimeType,
@@ -32,13 +33,14 @@ def arrow_schema() -> pa.Schema:
 
 def test_unsupported_arrow_type_raises():
     with pytest.raises(TypeError, match="unknown to type mapper"):
-        arrow_type_to_iceberg(pa.int32())
+        arrow_type_to_iceberg(pa.string_view())
 
 
 @pytest.mark.parametrize(
     ("arrow_type", "expected_type"),
     [
         (pa.bool_(), BooleanType),
+        (pa.int32(), IntegerType),
         (pa.int64(), LongType),
         (pa.float64(), DoubleType),
         (pa.decimal128(20, 5), DecimalType),

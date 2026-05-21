@@ -56,7 +56,7 @@ def mock_iceberg_io(mocker: MockerFixture):
 
 
 def _test_elt_job_table_id(elt_job: ELTJobManifest, table_name: str):
-    return (f"{elt_job.domain}_{elt_job.name}", table_name)
+    return (f"{elt_job.domain}__{elt_job.name}", table_name)
 
 
 def _assert_properties_as_expected(
