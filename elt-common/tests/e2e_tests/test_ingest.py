@@ -2,29 +2,18 @@
 
 import datetime as dt
 import json
-import os
 from pathlib import Path
 
 from click.testing import CliRunner
 from elt_common.cli import cli
-from elt_common.iceberg.catalog import connect_catalog
 from pyiceberg.catalog import Catalog
 from pyiceberg.table.sorting import SortOrder, SortField, SortDirection
 from pyiceberg.transforms import BucketTransform
 from pyiceberg.partitioning import PartitionField, PartitionSpec
-import pytest
 
 
 TEST_DIR = Path(__file__).parent
 TEST_PIPELINE_ROOT = TEST_DIR / "isis-facility_ops"
-
-
-@pytest.fixture
-def catalog(tmp_path: Path):
-    os.environ["PYICEBERG_CATALOG__DEFAULT__URI"] = f"sqlite:///{tmp_path}/default.db"
-    os.environ["PYICEBERG_CATALOG__DEFAULT__WAREHOUSE"] = f"file://{tmp_path}/default"
-
-    yield connect_catalog()
 
 
 def test_e2e_cli_ingest(catalog: Catalog):
