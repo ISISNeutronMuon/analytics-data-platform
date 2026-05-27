@@ -17,6 +17,7 @@ function ensure_elt_sources_exist() {
     pushd $git_clone_dir
     git clean -d -x --force
     git reset --hard
+    git fetch --prune
     git checkout "$ELT_GIT_REF"
     git pull
     popd
