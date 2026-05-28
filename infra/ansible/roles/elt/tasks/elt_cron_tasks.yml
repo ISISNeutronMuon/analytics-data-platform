@@ -6,8 +6,8 @@
     path: "{{ elt_secrets_root_dir }}/{{ warehouse_name }}"
     state: directory
     mode: "u=rwx,g=,o="
-    owner: "{{ ansible_env['USER'] }}"
-    group: "{{ ansible_env['USER'] }}"
+    owner: "{{ ansible_facts['env']['USER'] }}"
+    group: "{{ ansible_facts['env']['USER'] }}"
 
 - name: Generate secrets
   become: true
@@ -16,8 +16,8 @@
     src: ./secrets/envvars.j2
     dest: "{{ elt_secrets_root_dir }}/{{ warehouse_name }}/envvars"
     mode: "u=r,g=,o="
-    owner: "{{ ansible_env['USER'] }}"
-    group: "{{ ansible_env['USER'] }}"
+    owner: "{{ ansible_facts['env']['USER'] }}"
+    group: "{{ ansible_facts['env']['USER'] }}"
 
 - name: Ensure cron logs directory exists
   ansible.builtin.file:
