@@ -28,18 +28,18 @@
 # ---------- AWS S3 ----------
 - name: Ensure S3 configuration directory exists
   ansible.builtin.file:
-    path: "{{ ansible_env['HOME'] }}/.aws"
+    path: "{{ ansible_facts['env']['HOME'] }}/.aws"
     state: directory
     mode: "u=rwx,g=rx,o=rx"
 
 - name: Ensure S3 config file is absent
   ansible.builtin.file:
-    path: "{{ ansible_env['HOME'] }}/.aws/config"
+    path: "{{ ansible_facts['env']['HOME'] }}/.aws/config"
     state: absent
 
 - name: Ensure AWS configuration is present
   ansible.builtin.copy:
-    dest: "{{ ansible_env['HOME'] }}/.aws/credentials"
+    dest: "{{ ansible_facts['env']['HOME'] }}/.aws/credentials"
     content: |+
       [default]
       request_checksum_calculation = when_required
@@ -48,7 +48,7 @@
 # ---------- dlt ----------
 - name: Ensure dlt configuration directory exists
   ansible.builtin.file:
-    path: "{{ ansible_env['HOME'] }}/.dlt"
+    path: "{{ ansible_facts['env']['HOME'] }}/.dlt"
     state: directory
     mode: "u=rwx,g=rx,o=rx"
 
@@ -56,14 +56,14 @@
   no_log: "{{ not (elt_enable_logs | default(False)) }}"
   ansible.builtin.template:
     src: dlt/config.toml.j2
-    dest: "{{ ansible_env['HOME'] }}/.dlt/config.toml"
+    dest: "{{ ansible_facts['env']['HOME'] }}/.dlt/config.toml"
     mode: "u=rwx,g=r,o=r"
 
 - name: Set shared ELT job variables
   ansible.builtin.set_fact:
-    elt_git_clone_dir: "{{ ansible_env['HOME'] }}/var/git"
-    elt_cron_root_dir: "{{ ansible_env['HOME'] }}/var/cron"
-    elt_cron_logs_root_dir: "{{ ansible_env['HOME'] }}/var/cron/logs"
+    elt_git_clone_dir: "{{ ansible_facts['env']['HOME'] }}/var/git"
+    elt_cron_root_dir: "{{ ansible_facts['env']['HOME'] }}/var/cron"
+    elt_cron_logs_root_dir: "{{ ansible_facts['env']['HOME'] }}/var/cron/logs"
 
 - name: Ensure cron scripts directory exists
   ansible.builtin.file:
