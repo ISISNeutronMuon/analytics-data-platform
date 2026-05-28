@@ -32,6 +32,7 @@ keycloak_realm:
 keycloak_realm_url: "{{ keycloak_url }}/realms/{{ keycloak_realm.name }}"
 
 lakekeeper_base_path: /iceberg
+lakekeeper_bucket_prefix: isis-adp-warehouse-
 lakekeeper_http_port: 8181
 
 pip_install_packages:
@@ -53,8 +54,8 @@ lakekeeper_catalog:
   warehouses:
     facility_ops_landing:
       storage:
-        bucket_name: "{{ lakekeeper_bucket_prefix }}facility-ops-landing"
-        key_prefix: iceberg
+        bucket_name: "{{ lakekeeper_bucket_prefix }}facility-ops-landing-iceberg"
+        key_prefix: ""
       elt_jobs:
         github_org: ISISNeutronMuon
         github_repo: analytics-data-platform
