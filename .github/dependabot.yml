@@ -4,7 +4,7 @@ updates:
     directories:
       - "/elt-common"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     ignore:
       - dependency-name: "s3fs"  # https://github.com/ISISNeutronMuon/analytics-data-platform/issues/237
     groups:
@@ -22,7 +22,7 @@ updates:
     directories:
       - "/warehouses/facility_ops/transform"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       dbt-dependencies:
         applies-to: version-updates
@@ -38,7 +38,7 @@ updates:
     directories:
       - "/infra/ansible"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     ignore:
       - dependency-name: "passlib"  # https://github.com/ISISNeutronMuon/analytics-data-platform/issues/313
       - dependency-name: "bcrypt"
@@ -57,7 +57,7 @@ updates:
     directories:
       - "/docs"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       docs-dependencies:
         applies-to: version-updates
