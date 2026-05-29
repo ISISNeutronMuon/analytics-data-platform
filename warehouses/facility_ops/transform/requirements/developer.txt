@@ -32,13 +32,13 @@ colorama==0.4.6
     #   sqlfluff
 daff==1.4.2
     # via dbt-core
-dbt-adapters==1.23.0
+dbt-adapters==1.24.2
     # via dbt-core
 dbt-common==1.37.3
     # via
     #   dbt-adapters
     #   dbt-core
-dbt-core==1.11.9
+dbt-core==1.11.11
     # via sqlfluff-templater-dbt
 dbt-extractor==0.6.0
     # via dbt-core

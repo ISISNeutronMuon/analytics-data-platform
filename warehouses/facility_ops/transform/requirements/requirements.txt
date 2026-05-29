@@ -27,7 +27,7 @@ colorama==0.4.6
     # via dbt-common
 daff==1.4.2
     # via dbt-core
-dbt-adapters==1.23.0
+dbt-adapters==1.24.2
     # via
     #   -r requirements/requirements.in
     #   dbt-core
@@ -37,7 +37,7 @@ dbt-common==1.37.3
     #   dbt-adapters
     #   dbt-core
     #   dbt-trino
-dbt-core==1.11.9
+dbt-core==1.11.11
     # via
     #   -r requirements/requirements.in
     #   dbt-trino
