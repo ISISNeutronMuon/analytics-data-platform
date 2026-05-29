@@ -126,6 +126,8 @@ Verify the data landed by logging into the
 [Lakekeeper UI](http://localhost:50080/iceberg/ui/warehouse) and checking that the
 `facility_ops_landing` warehouse contains tables in the `accelerator_statusdisplay` namespace.
 
+*Note: There is currently an issue with the table preview tab being broken. It is a known issue: https://github.com/ISISNeutronMuon/analytics-data-platform/issues/329.*
+
 ### 2. Transform data (analytics layer)
 
 Run the dbt models that depend on the ingested data:
