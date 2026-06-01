@@ -7,6 +7,7 @@ updates:
       interval: "monthly"
     ignore:
       - dependency-name: "s3fs"  # https://github.com/ISISNeutronMuon/analytics-data-platform/issues/237
+      - dependency-name: "dlt" # https://github.com/ISISNeutronMuon/analytics-data-platform/issues/321
     groups:
       elt-common-dependencies:
         applies-to: version-updates
