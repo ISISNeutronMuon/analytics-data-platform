@@ -9,10 +9,9 @@ description = "A set of common utility routines for data pipelines."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-  "dlt[parquet,s3]>=1.27.0,<2",
-  "pyarrow==24.0.0",                 # See https://github.com/ISISNeutronMuon/analytics-data-platform/issues/183
+  "dlt[parquet,s3]==1.26.0",              # Soon to remove, don't make any more updates: https://github.com/ISISNeutronMuon/analytics-data-platform/issues/321
   "pyiceberg[pyiceberg-core]>=0.11.1",
-  "s3fs<2026.2.0",                   # See https://github.com/ISISNeutronMuon/analytics-data-platform/issues/237
+  "s3fs<2026.2.0",                     # See https://github.com/ISISNeutronMuon/analytics-data-platform/issues/237
 ]
 
 

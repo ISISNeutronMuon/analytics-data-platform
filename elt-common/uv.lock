@@ -404,7 +404,7 @@ wheels = [
 
 [[package]]
 name = "dlt"
-version = "1.27.0"
+version = "1.26.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -433,9 +433,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "tzdata" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bb/80/4cc5a1af42e2b9aa3b4a7a8285f1f28fd889a2270bf7c76f812295bbec5b/dlt-1.27.0.tar.gz", hash = "sha256:cec18a34386150ac1620b2f1b5aa160f08e171ec0609af5da573792277f5218c", size = 1069777, upload-time = "2026-05-18T21:07:19.941Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/48/20/c47492cd3c78287133fbba98aa41192c8613a371b8db57738d5096d05b8b/dlt-1.26.0.tar.gz", hash = "sha256:1a066fed8df7ace96a695309d9102046f9e3b9d60692e1cb93e842406aaf55ec", size = 1042686, upload-time = "2026-04-28T17:52:20.379Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/76/23/26e6dcc639bd74025e6b54bb5af140a0a7582047e6b848d072cb947b271a/dlt-1.27.0-py3-none-any.whl", hash = "sha256:69ac35c56f9b319ab3ae5378df2bc199bf746073df287fdd17994f44efd27ad0", size = 1347146, upload-time = "2026-05-18T21:07:23.631Z" },
+    { url = "https://files.pythonhosted.org/packages/72/1a/1430fc5989fe9a476b198a8a9b27e0795c2e6856d2593f7d21e660d99e2d/dlt-1.26.0-py3-none-any.whl", hash = "sha256:81e2d28bdc4d33e97978e3654542bdac95347342d15a35102d09fd79df50c2bd", size = 1312681, upload-time = "2026-04-28T17:52:16.234Z" },
 ]
 
 [package.optional-dependencies]
@@ -453,7 +453,6 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "dlt", extra = ["parquet", "s3"] },
-    { name = "pyarrow" },
     { name = "pyiceberg", extra = ["pyiceberg-core"] },
     { name = "s3fs" },
 ]
@@ -488,9 +487,8 @@ dev = [
 requires-dist = [
     { name = "authlib", marker = "extra == 'm365'", specifier = ">=1.7.2" },
     { name = "click", marker = "extra == 'iceberg-maintenance'", specifier = ">=8.4.1" },
-    { name = "dlt", extras = ["parquet", "s3"], specifier = ">=1.27.0,<2" },
+    { name = "dlt", extras = ["parquet", "s3"], specifier = "==1.26.0" },
     { name = "httpx", marker = "extra == 'm365'", specifier = ">=0.28.1" },
-    { name = "pyarrow", specifier = "==24.0.0" },
     { name = "pydantic-settings", marker = "extra == 'iceberg-maintenance'", specifier = ">=2.14.1" },
     { name = "pyiceberg", extras = ["pyiceberg-core"], specifier = ">=0.11.1" },
     { name = "s3fs", specifier = "<2026.2.0" },
