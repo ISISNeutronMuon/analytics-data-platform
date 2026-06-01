@@ -34,6 +34,9 @@ Now provision the resources:
 
 Move the newly generated inventory `.ini` file to `infra/ansible/inventories/<dev|qa>`.
 
+If this is the first time the floating IP/traefik node has been created then you will need to ssh
+into the Traefik node and accept the key into known hosts.
+
 ## Services
 
 Deploy the services using Ansible:
