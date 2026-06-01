@@ -14,7 +14,7 @@
 # Waiting for https://github.com/ansible/ansible/pull/85970 to land in a released version of ansible
 # to remove passlib completely.
 
-ansible==13.6.0
+ansible==13.7.0
 ansible-lint==26.4.0
 bcrypt==4.0.1
 jmespath==1.1.0
