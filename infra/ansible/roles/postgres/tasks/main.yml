@@ -15,7 +15,7 @@
   ansible.builtin.file:
     path: "{{ postgres_db_data_path }}"
     state: directory
-    owner: 26
+    owner: 999
     group: 999
     mode: "u=rwx,g=,o="
 
@@ -24,7 +24,7 @@
   ansible.builtin.file:
     path: /secrets
     state: directory
-    owner: 26
+    owner: 999
     group: 999
     mode: "u=rwx,g=,o="
 
