@@ -58,4 +58,4 @@ def run(root: Path, job_name: str, step: str) -> None:
     e.g. domain.job.
     """
     project = PipelinesProject(root)
-    project.run_job(job_name)
+    click.echo(f"Will run {project.name} {job_name} ({step})")
