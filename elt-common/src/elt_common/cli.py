@@ -7,7 +7,7 @@ import click
 from elt_common.pipeline import PipelinesProject
 
 
-@click.group()
+@click.group(context_settings={"show_default": True})
 @click.option(
     "--log-level",
     type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False),
@@ -49,7 +49,7 @@ def ls(root: Path) -> None:
     "--step",
     type=click.Choice(["all", "ingest", "transform"], case_sensitive=False),
     default="all",
-    help="Which step to run.",
+    help="Whether to run the ingest step, the transform step, or both.",
 )
 def run(root: Path, job_name: str, step: str) -> None:
     """Run a named ELT job given the root of the ELT project and the name of the job.
