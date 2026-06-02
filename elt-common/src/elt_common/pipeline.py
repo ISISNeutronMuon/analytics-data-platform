@@ -71,7 +71,7 @@ def _discover_jobs(ingest_dir: Path):
     underneath a domain is a data source from that domain.
 
     :param ingest_dir: Root directory to search recursively.
-    :returns: List of parsed manifests, sorted by name.
+    :returns: List of parsed manifests.
     """
 
     return [
