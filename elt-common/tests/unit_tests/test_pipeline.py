@@ -41,8 +41,8 @@ def test_init_stores_root_and_derives_name(tmp_path: Path):
     assert project.name == "my_project"
 
 
-def test_injest_jobs_property_discovers_jobs_lazily(tmp_path: Path):
-    """Test that injest_jobs property discovers jobs on first access"""
+def test_ingest_jobs_property_discovers_jobs_lazily(tmp_path: Path):
+    """Test that ingest_jobs property discovers jobs on first access"""
     root = tmp_path / "my_project"
     (root / "ingest" / "domain_a" / "source_1").mkdir(parents=True)
     (root / "ingest" / "domain_a" / "source_2").mkdir(parents=True)
@@ -56,8 +56,8 @@ def test_injest_jobs_property_discovers_jobs_lazily(tmp_path: Path):
     assert all(isinstance(job, ELTJobManifest) for job in jobs)
 
 
-def test_injest_jobs_caches_results(tmp_path: Path):
-    """Test that injest_jobs property caches the discovered jobs"""
+def test_ingest_jobs_caches_results(tmp_path: Path):
+    """Test that ingest_jobs property caches the discovered jobs"""
     root = tmp_path / "my_project"
     (root / "ingest" / "domain_a" / "source_1").mkdir(parents=True)
 

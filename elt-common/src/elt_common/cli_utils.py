@@ -71,12 +71,12 @@ def cli_main(
 ):
     """Run a standard extract and load pipeline.
 
-    The full dataset name becomes '{source_domain}__{pipeline_name}'
+    The full dataset name becomes '{source_domain}_{pipeline_name}'
 
     :param pipeline_name: Name of dlt pipeline.
     :param source_domain: Name of domain of the source data
     :param data_generator: Callable returning a dlt.DltSource or dlt.DltResource
-    :param default_destination: Default destination, defaults to "filesystem"
+    :param default_destination: Default destination, defaults to "elt_common.dlt_destinations.pyiceberg"
     :param default_loader_file_format: Default dlt loader file format, defaults to "parquet"
     :param default_progress: Default progress reporter, defaults to NULL_COLLECTOR
     """
