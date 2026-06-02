@@ -14,7 +14,7 @@ import dlt
 from dlt.extract import DltSource
 from dlt.sources.rest_api import rest_api_source
 
-import elt_common.cli as cli_utils
+from elt_common import cli_utils
 
 
 def statusdisplay() -> DltSource:

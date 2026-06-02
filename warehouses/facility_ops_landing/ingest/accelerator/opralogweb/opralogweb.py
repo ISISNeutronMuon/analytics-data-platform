@@ -23,7 +23,7 @@ from html2text import html2text
 import pyarrow as pa
 import sqlalchemy as sa
 
-import elt_common.cli as cli_utils
+from elt_common import cli_utils
 
 OPRALOG_EPOCH = dt.datetime(2017, 4, 25, 0, 0, 0)
 SQL_TABLE_KWARGS = dict(
