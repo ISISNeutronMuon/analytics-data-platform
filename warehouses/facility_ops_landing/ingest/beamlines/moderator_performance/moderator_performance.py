@@ -21,7 +21,7 @@ from typing import Any, Dict, Literal, Sequence
 
 import dlt
 import dlt.common.logger as logger
-import elt_common.cli as cli_utils
+from elt_common import cli_utils
 from elt_common.dlt_destinations.pyiceberg.helpers import load_iceberg_table
 from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
     pyiceberg_adapter,
