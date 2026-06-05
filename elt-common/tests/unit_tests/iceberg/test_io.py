@@ -167,7 +167,7 @@ def test_write_table_sets_properties_if_supplied(
     mock_dependencies.mock_transaction.set_properties.assert_called_once_with(properties)
 
 
-def test_write_table_calls_overwrite(
+def test_write_table_replace_calls_overwrite(
     mock_dependencies: MockedDependencies, sample_arrow_table: pa.Table
 ):
     """Tests for IcebergIO.write_table replace mode"""
