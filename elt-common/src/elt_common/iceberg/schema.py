@@ -45,8 +45,7 @@ def arrow_type_to_iceberg(arrow_type: pa.DataType) -> PrimitiveType:
     elif pa.types.is_date(arrow_type):
         return DateType()
     elif pa.types.is_time(arrow_type):
-        time_type = cast(TimeType, arrow_type)
-        if time_type.unit != "us":
+        if arrow_type.unit != "us":
             raise TypeError(
                 f"Iceberg time type only supports 'us' precision. Requested precision={arrow_type.unit}'."
             )
