@@ -104,7 +104,7 @@ class IcebergIO(BaseIO):
 
         For existing tables ensure the schema matches the incoming data."""
         if self.catalog.table_exists(table_id):
-            return self._ensure_table_schema(self.catalog.load_table(table_id), arrow_schema)
+            return _ensure_table_schema(self.catalog.load_table(table_id), arrow_schema)
 
         iceberg_schema = create_schema(arrow_schema)
         LOGGER.debug(f"Created iceberg schema: {iceberg_schema}")
@@ -121,14 +121,13 @@ class IcebergIO(BaseIO):
             sort_order=sort_order_spec,
         )
 
-    def _ensure_table_schema(
-        self, iceberg_table: IcebergTable, new_schema: pa.Schema
-    ) -> IcebergTable:
-        """Ensure the existing table schema matches the new schema."""
-        new_schema = evolve_schema(iceberg_table.schema(), new_schema)  # type:ignore
-        if new_schema is not None:
-            LOGGER.debug(f"Evolving schema. New schema: {new_schema}")
-            with iceberg_table.update_schema() as update:
-                update.union_by_name(new_schema)
 
-        return iceberg_table
+def _ensure_table_schema(iceberg_table: IcebergTable, new_schema: pa.Schema) -> IcebergTable:
+    """Ensure the existing table schema matches the new schema."""
+    new_schema = evolve_schema(iceberg_table.schema(), new_schema)  # type:ignore
+    if new_schema is not None:
+        LOGGER.debug(f"Evolving schema. New schema: {new_schema}")
+        with iceberg_table.update_schema() as update:
+            update.union_by_name(new_schema)
+
+    return iceberg_table
