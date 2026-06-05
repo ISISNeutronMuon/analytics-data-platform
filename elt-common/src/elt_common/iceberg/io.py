@@ -1,8 +1,8 @@
-"""Direct Iceberg table writer using pyiceberg.
+"""Iceberg table io using pyiceberg.
 
-Provides :class:`IcebergWriter` which handles table creation, schema
-evolution, and writing Arrow data to Iceberg tables via ``append``,
-``upsert``, or ``replace`` operations.
+Provides :class:`IcebergIO` which can be used to write pyarrow tables to an
+iceberg catalog, and read properties from iceberg tables, whilst handling table,
+namespace, and schema creation/evolution
 """
 
 import logging
@@ -44,6 +44,8 @@ class IcebergIO(BaseIO):
     def read_property(self, table_id: Identifier, key: str) -> str:
         """Read a table property.
 
+        :param table_id: namespaced identifier of the table to read from
+        :param key: the key to read the value of
         :raises: KeyError if property does not exist
         """
         table = self.catalog.load_table(table_id)
@@ -60,7 +62,18 @@ class IcebergIO(BaseIO):
         sort_order: SortOrderConfig | None = None,
         properties: dict[str, str] | None = None,
     ) -> None:
-        """Write an Arrow table to an Iceberg table."""
+        """Write an Arrow table to an Iceberg table.
+
+        :param table_id: namespaced identifier of the table to write to
+        :param data: the new data to write to the table
+        :param write_mode: 'append' adds the data to the table,
+                           'merge' adds new data and modifies existing rows,
+                           'replace' completely overwrites the table with the new data
+        :param merge_on: field(s) to determine if rows should be merged. Required if write_mode is 'merge'
+        :param partition: mapping of table names to the column(s) they should be partitioned by
+        :param sort_order: mapping of table names to the sort direction of their column(s)
+        :param properties: additional properties to set on the table upon completion. Useful for watermarking
+        """
         if data.num_rows == 0:
             LOGGER.info(f"No data to write to {table_id}, skipping.")
             return

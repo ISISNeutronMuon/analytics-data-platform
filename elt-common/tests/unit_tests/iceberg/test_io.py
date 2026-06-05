@@ -1,4 +1,4 @@
-"""Tests for elt_common.iceberg.writer"""
+"""Tests for elt_common.iceberg.io"""
 
 from collections import namedtuple
 import datetime as dt
