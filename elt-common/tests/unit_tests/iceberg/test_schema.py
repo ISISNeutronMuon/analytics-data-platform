@@ -1,6 +1,7 @@
 """Tests for elt_common.iceberg.schema"""
 
 import pyarrow as pa
+from pyiceberg.schema import Schema, NestedField
 from pyiceberg.types import (
     BinaryType,
     BooleanType,
@@ -16,7 +17,7 @@ from pyiceberg.types import (
 )
 import pytest
 
-from elt_common.iceberg.schema import arrow_type_to_iceberg, create_schema
+from elt_common.iceberg.schema import arrow_type_to_iceberg, create_schema, evolve_schema
 
 
 @pytest.fixture()
@@ -90,3 +91,32 @@ def test_create_iceberg_schema(arrow_schema: pa.Schema, identifier_fields):
     # assume the types are correct as the type mapping is tested above
     if identifier_fields:
         assert iceberg_schema.identifier_field_ids == [1, 2]
+
+
+@pytest.mark.parametrize(
+    ["iceberg_field_names", "expected_new_field_names"],
+    [
+        ([], {"row_id", "entry_name", "entry_timestamp", "entry_weight"}),
+        (
+            ["row_id", "entry_name", "entry_timestamp"],
+            {"row_id", "entry_name", "entry_timestamp", "entry_weight"},
+        ),
+        (["row_id", "entry_name", "entry_timestamp", "entry_weight"], {}),
+    ],
+)
+def test_evolve_schema(
+    arrow_schema: pa.Schema, iceberg_field_names: list[str], expected_new_field_names
+):
+    existing_fields = [
+        NestedField(field_id=i + 1, name=name, field_type=StringType(), required=False)
+        for i, name in enumerate(iceberg_field_names)
+    ]
+    existing_schema = Schema(*existing_fields)
+
+    schema_with_new_fields = evolve_schema(existing_schema, arrow_schema)
+
+    if expected_new_field_names:
+        assert schema_with_new_fields is not None
+        assert {f.name for f in schema_with_new_fields.fields} == expected_new_field_names
+    else:
+        assert schema_with_new_fields is None
