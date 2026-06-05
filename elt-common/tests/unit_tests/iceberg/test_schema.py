@@ -68,9 +68,10 @@ def test_maps_decimal_precision_and_scale():
     assert result.scale == 3
 
 
-def test_time_precision_other_than_microseconds_raises():
+@pytest.mark.parametrize("time_type", [pa.time32("s"), pa.time32("ms"), pa.time64("ns")])
+def test_time_precision_other_than_microseconds_raises(time_type):
     with pytest.raises(TypeError, match="only supports 'us' precision"):
-        arrow_type_to_iceberg(pa.time32("ms"))
+        arrow_type_to_iceberg(time_type)
 
 
 def test_timestamp_nanoseconds_raises():
