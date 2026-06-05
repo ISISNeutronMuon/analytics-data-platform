@@ -80,6 +80,13 @@ def test_timestamp_nanoseconds_raises():
         arrow_type_to_iceberg(pa.timestamp("ns"))
 
 
+def test_create_empty_schema():
+    empty_schema = pa.schema([])
+    iceberg_schema = create_schema(empty_schema)
+
+    assert len(iceberg_schema.fields) == 0
+
+
 @pytest.mark.parametrize("identifier_fields", [(), ["row_id", "entry_name"]])
 def test_create_iceberg_schema(arrow_schema: pa.Schema, identifier_fields):
     iceberg_schema = create_schema(arrow_schema, identifier_fields)
