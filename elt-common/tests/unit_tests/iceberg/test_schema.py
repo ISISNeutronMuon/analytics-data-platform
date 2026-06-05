@@ -79,13 +79,14 @@ def test_timestamp_nanoseconds_raises():
         arrow_type_to_iceberg(pa.timestamp("ns"))
 
 
-@pytest.mark.parametrize(("identifier_fields",), [[None], [["row_id", "entry_name"]]])
+@pytest.mark.parametrize("identifier_fields", [(), ["row_id", "entry_name"]])
 def test_create_iceberg_schema(arrow_schema: pa.Schema, identifier_fields):
     iceberg_schema = create_schema(arrow_schema, identifier_fields)
 
     assert len(iceberg_schema.fields) == len(arrow_schema.names)
     assert [f.name for f in iceberg_schema.fields] == arrow_schema.names
     assert [not f.required for f in iceberg_schema.fields] == [f.nullable for f in arrow_schema]
+
     # assume the types are correct as the type mapping is tested above
-    if identifier_fields is not None:
+    if identifier_fields:
         assert iceberg_schema.identifier_field_ids == [1, 2]

@@ -69,25 +69,21 @@ def arrow_type_to_iceberg(arrow_type: pa.DataType) -> PrimitiveType:
         raise TypeError(f"Pyarrow type '{arrow_type}' unknown to type mapper.")
 
 
-def arrow_field_to_iceberg(column_id: int, arrow_field) -> NestedField:
+def arrow_field_to_iceberg(column_id: int, arrow_field: pa.Field) -> NestedField:
     return NestedField(
-        column_id,
-        arrow_field.name,
-        arrow_type_to_iceberg(arrow_field.type),
+        field_id=column_id,
+        name=arrow_field.name,
+        field_type=arrow_type_to_iceberg(arrow_field.type),
         required=not arrow_field.nullable,
     )
 
 
-def create_schema(
-    arrow_schema: pa.Schema, identifier_fields: Sequence[str] | None = None
-) -> Schema:
-    """Create a Iceberg schema based on a dlt schema
+def create_schema(arrow_schema: pa.Schema, identifier_fields: Sequence[str] = ()) -> Schema:
+    """Convert a pyarrow schema into an iceberg schema
 
-    :param arrow_schema: An existing arrow_schema.
-    :param primary_keys: An optional list of fields to mark as identifiers
+    :param arrow_schema: A pyarrow schema.
+    :param identifier_fields: An optional list of fields to mark as identifiers
     """
-    if identifier_fields is None:
-        identifier_fields = ()
     iceberg_fields, identifier_field_ids = [], []
     for index, arrow_field in enumerate(arrow_schema):
         col_id = index + 1
