@@ -62,7 +62,7 @@ def test_ensure_namespace_noop_when_namespace_exists(mock_dependencies: MockedDe
     io = IcebergIO(mock_dependencies.mock_catalog)
 
     io.ensure_namespace("test_ns")
-    mock_dependencies.mock_catalog.assert_not_called()
+    mock_dependencies.mock_catalog.create_namespace.assert_not_called()
 
 
 def test_read_property_loads_table_and_returns_property_if_exists(

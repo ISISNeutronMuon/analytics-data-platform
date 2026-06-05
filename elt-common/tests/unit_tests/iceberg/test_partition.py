@@ -133,5 +133,5 @@ def test_create_partition_spec_nonexistent_column_raises_error(sample_schema):
     """Test that referencing a nonexistent column raises an error."""
     partition_hint = {"nonexistent_col": "year"}
 
-    with pytest.raises(Exception):  # pyiceberg raises an error for missing fields
+    with pytest.raises(ValueError):
         create_partition_spec(partition_hint, sample_schema)
