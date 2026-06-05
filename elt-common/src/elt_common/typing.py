@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 import dataclasses as dc
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterator, Literal
@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 
-class BaseIO:
+class BaseIO(ABC):
     @abstractmethod
     def ensure_namespace(self, namespace: str) -> None:
         raise NotImplementedError(
