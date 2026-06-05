@@ -16,6 +16,6 @@ def connect_catalog() -> Catalog:
     return load_catalog(name, **config.get_catalog_config(name))  # type: ignore
 
 
-def table_identifier(namespace, table_name) -> Identifier:
+def table_identifier(namespace: str, table_name: str) -> Identifier:
     """Construct a standard fully-qualified table name."""
-    return (namespace, table_name)
+    return namespace, table_name

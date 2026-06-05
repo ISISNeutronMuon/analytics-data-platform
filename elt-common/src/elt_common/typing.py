@@ -12,7 +12,7 @@ class BaseIO(ABC):
     @abstractmethod
     def ensure_namespace(self, namespace: str) -> None:
         raise NotImplementedError(
-            "Subclass should impement `ensure_namespace` to ensure the namespace exists."
+            "Subclass should implement `ensure_namespace` to ensure the namespace exists."
         )
 
     @abstractmethod
@@ -28,7 +28,7 @@ class BaseIO(ABC):
         properties: dict[str, str] | None = None,
     ) -> None:
         raise NotImplementedError(
-            "Subclass should impement `write_table` to write a table to the destination."
+            "Subclass should implement `write_table` to write a table to the destination."
         )
 
 
