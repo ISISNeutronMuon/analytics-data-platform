@@ -3,6 +3,7 @@ import dataclasses as dc
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterator, Literal
 
+from pyiceberg.typedef import Identifier
 
 if TYPE_CHECKING:
     import pyarrow as pa
@@ -18,7 +19,7 @@ class BaseIO(ABC):
     @abstractmethod
     def write_table(
         self,
-        table_id: "Identifier",
+        table_id: Identifier,
         data: "pa.Table",
         write_mode: "WriteMode",
         *,
@@ -53,8 +54,6 @@ class ELTJobManifest:
         """The destination namespace for this job: ``{domain}_{name}``."""
         return f"{self.domain}_{self.name}"
 
-
-Identifier = tuple[str, ...]
 
 PartitionConfig = dict[str, str]
 """Define the configuration of a Table partition where a key represents a column and the mapped

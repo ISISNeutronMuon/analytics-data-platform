@@ -8,13 +8,14 @@ evolution, and writing Arrow data to Iceberg tables via ``append``,
 import logging
 
 import pyarrow as pa
+from pyiceberg.typedef import Identifier
+
 from elt_common.iceberg.catalog import Catalog
 from elt_common.iceberg.schema import create_schema, evolve_schema
 from elt_common.iceberg.partition import create_partition_spec
 from elt_common.iceberg.sortorder import create_sort_order
 from elt_common.typing import (
     BaseIO,
-    Identifier,
     PartitionConfig,
     SortOrderConfig,
     WriteMode,
