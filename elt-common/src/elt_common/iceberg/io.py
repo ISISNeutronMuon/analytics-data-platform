@@ -20,11 +20,8 @@ from elt_common.typing import (
     SortOrderConfig,
     WriteMode,
 )
-from pyiceberg.exceptions import NoSuchTableError
 from pyiceberg.table import ALWAYS_TRUE, Table as IcebergTable
 
-# Map exception 1:1
-NoSuchTableError = NoSuchTableError
 
 LOGGER = logging.getLogger(__name__)
 

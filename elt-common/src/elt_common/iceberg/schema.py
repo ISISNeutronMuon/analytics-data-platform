@@ -1,5 +1,5 @@
 import itertools
-from typing import Sequence, cast
+from typing import Sequence
 
 import pyarrow as pa
 from pyiceberg.schema import Schema
@@ -34,8 +34,7 @@ def arrow_type_to_iceberg(arrow_type: pa.DataType) -> PrimitiveType:
     elif pa.types.is_float64(arrow_type):
         return DoubleType()
     elif pa.types.is_decimal(arrow_type):
-        decimal_type = cast(DecimalType, arrow_type)
-        return DecimalType(decimal_type.precision, decimal_type.scale)
+        return DecimalType(arrow_type.precision, arrow_type.scale)
     elif pa.types.is_string(arrow_type) or pa.types.is_large_string(arrow_type):
         return StringType()
     elif pa.types.is_date(arrow_type):
