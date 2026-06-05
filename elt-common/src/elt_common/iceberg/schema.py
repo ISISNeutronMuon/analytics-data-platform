@@ -1,5 +1,5 @@
 import itertools
-from typing import Dict, Sequence, cast
+from typing import Sequence, cast
 
 import pyarrow as pa
 from pyiceberg.schema import Schema
@@ -18,10 +18,6 @@ from pyiceberg.types import (
     TimestampType,
     TimestamptzType,
 )
-
-
-TIMESTAMP_PRECISION_TO_UNIT: Dict[int, str] = {0: "s", 3: "ms", 6: "us", 9: "ns"}
-UNIT_TO_TIMESTAMP_PRECISION: Dict[str, int] = {v: k for k, v in TIMESTAMP_PRECISION_TO_UNIT.items()}
 
 
 def arrow_type_to_iceberg(arrow_type: pa.DataType) -> PrimitiveType:
@@ -52,9 +48,7 @@ def arrow_type_to_iceberg(arrow_type: pa.DataType) -> PrimitiveType:
         return TimeType()
     elif pa.types.is_timestamp(arrow_type):
         if arrow_type.unit == "ns":
-            raise TypeError(
-                f"Iceberg v1 & v2 does not support timestamps in '{TIMESTAMP_PRECISION_TO_UNIT[9]}' precision."
-            )
+            raise TypeError("Iceberg v1 & v2 does not support timestamps in 'ns' precision.")
         if arrow_type.tz is not None:
             return TimestamptzType()
         else:
