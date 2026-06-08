@@ -114,7 +114,7 @@ def additional_comment_to_markdown(table: pa.Table) -> pa.Table:
         pa.array(
             table[column_name]
             .to_pandas()
-            .apply(lambda x: x if x is None else html2text(x))
+            .apply(lambda x: html2text(x) if isinstance(x, str) else x)
         ),
     )
 
