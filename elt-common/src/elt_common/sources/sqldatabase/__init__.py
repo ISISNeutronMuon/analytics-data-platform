@@ -1,7 +1,7 @@
 """Support for ingesting data from an SQL database."""
 
 import logging
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Generator, Iterator, NamedTuple, Optional
 
 import pyarrow as pa
@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 
-from elt_common.extract import ResourceProperties, ResourceWriteProperties, Watermark
+from elt_common.extract import ResourceProperties, ResourceWriteProperties, Watermark, BaseExtract
 
 LOGGER = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class TableInfo(NamedTuple):
     watermark_column: Optional[str] = None
 
 
-class SqlDatabaseExtract(ABC):
+class SqlDatabaseExtract(BaseExtract):
     """Base class for defining SQL ingest Extract classes.
 
     Example usage, for an ingest script that reads from 3 tables::
@@ -77,21 +77,18 @@ class SqlDatabaseExtract(ABC):
                 }
     """
 
-    source_config_cls = SqlDatabaseSourceConfig
+    config_cls = SqlDatabaseSourceConfig
 
-    def __init__(self, source_config: SqlDatabaseSourceConfig):
-        self._source_config = source_config
+    def __init__(self, config: SqlDatabaseSourceConfig):
+        super().__init__(config)
+        self._chunk_size = config.chunk_size
 
         LOGGER.debug(
-            f"Creating engine for {source_config.drivername} database at "
-            f"{source_config.host}:{source_config.port}/{source_config.database}"
+            f"Creating engine for {config.drivername} database at "
+            f"{config.host}:{config.port}/{config.database}"
         )
-        self._engine = sa.create_engine(source_config.connection_url)
-        self._metadata = sa.MetaData(schema=source_config.database_schema)
-
-    @property
-    def _chunk_size(self):
-        return self._source_config.chunk_size
+        self._engine = sa.create_engine(config.connection_url)
+        self._metadata = sa.MetaData(schema=config.database_schema)
 
     @abstractmethod
     def table_info(self) -> dict[str, Optional[TableInfo]]:

@@ -1,11 +1,19 @@
 import dataclasses as dc
+import importlib.util
 import json
+from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Iterator, Optional, get_args
 
-from elt_common.typing import WriteMode
+from pydantic_settings import BaseSettings
+
+from elt_common.typing import ELTJobManifest, WriteMode
 
 if TYPE_CHECKING:
     import pyarrow as pa
+
+EXTRACT_CLS_NAME = "Extract"
+"""Ingest pipelines must define a class with this name which extends BaseExtract."""
 
 
 @dc.dataclass(frozen=True)
@@ -68,3 +76,84 @@ class ResourceProperties:
 
     # Ingestion properties
     watermark_column: Optional[str]
+
+
+class BaseExtract(ABC):
+    """Base class for ingest Extract classes"""
+
+    config_cls: type[BaseSettings] = BaseSettings
+    """Class used to provide configuration options.
+
+    Override this in subclasses to provide custom configuration.
+
+    Intended to be used with pydantic-settings.
+    """
+
+    def __init__(self, config: BaseSettings):
+        self._config = config
+
+    @property
+    def config(self):
+        return self._config
+
+    @abstractmethod
+    def resource_properties(self) -> Iterator[tuple[str, ResourceProperties]]:
+        pass
+
+
+def create_extract_obj(job: ELTJobManifest) -> BaseExtract:
+    """Given a job directory and name, create the object that will perform the data extraction."""
+    extract_cls = _get_extract_cls(job)
+    config_cls = extract_cls.config_cls
+
+    return extract_cls(config_cls(_env_prefix=f"{job.name}__"))
+
+
+def _get_extract_cls(job: ELTJobManifest) -> type[BaseExtract]:
+    """Get the class that will handle the extraction."""
+    extract_script = job.ingest_job_dir / f"{job.name}.py"
+    if extract_script.exists():
+        return _get_extract_cls_from_module_path(job.name, extract_script)
+    else:
+        raise RuntimeError(f"No extraction class definition file found at '{extract_script}'")
+
+
+def _get_extract_cls_from_module_path(module_name: str, file_path: Path) -> type[BaseExtract]:
+    """Get the class attribute that will handle extraction.
+
+    :raises AttributeError: if the module doesn't include an 'Extract' attribute
+    :raises TypeError: if 'Extract' in the module isn't a subclass of BaseExtract
+    """
+    module = _import_module_from_path(module_name, file_path)
+    try:
+        extract_cls = getattr(module, EXTRACT_CLS_NAME)
+    except AttributeError as e:
+        raise AttributeError(
+            f"Module '{module_name}' doesn't include an "
+            f"'{EXTRACT_CLS_NAME}' class, which is required for defining an ingest job",
+            e,
+        )
+
+    if not isinstance(extract_cls, type):
+        raise TypeError(f"'{EXTRACT_CLS_NAME}' in module '{module_name}' is not a class")
+
+    if not issubclass(extract_cls, BaseExtract):
+        raise TypeError(
+            f"'{EXTRACT_CLS_NAME}' in module '{module_name}' doesn't subclass elt_common.extract.BaseExtract"
+        )
+
+    return extract_cls
+
+
+def _import_module_from_path(module_name: str, file_path: Path):
+    """Import a module given its name and file location."""
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    if spec is None:
+        raise ImportError(f"Unable to find module spec for '{module_name}' at '{file_path}'")
+    module = importlib.util.module_from_spec(spec)
+    if spec.loader is not None:
+        spec.loader.exec_module(module)
+    else:
+        raise ImportError(f"Module spec for {module_name} @ '{file_path}' has no loader attribute")
+
+    return module
