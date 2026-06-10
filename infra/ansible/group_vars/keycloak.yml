@@ -1,4 +1,7 @@
 ---
+keycloak_bootstrap_admin_user: "{{ vault_keycloak['bootstrap_admin_user'] }}"
+keycloak_bootstrap_admin_passwd: "{{ vault_keycloak['bootstrap_admin_password'] }}"
+
 # Eveything is assigned to the realm defined by keycloak_realm.name in all/all.yml
 keycloak_client_scopes:
   - name: lakekeeper

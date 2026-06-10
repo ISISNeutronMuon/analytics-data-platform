@@ -4,17 +4,17 @@ base_additional_apt_keys:
     filename: eugridpma-rpm-4.asc
 base_timezone: "Europe/London"
 
-cephfs_mount_export_path: "{{ vault_cephfs_export_path }}"
+cephfs_mount_export_path: "{{ vault_cephfs['export_path'] }}"
 cephfs_mount_mount_path: "/mnt/lakehouse_data"
-cephfs_mount_access_name: "{{ vault_cephfs_access_name }}"
-cephfs_mount_access_secret: "{{ vault_cephfs_access_secret }}"
+cephfs_mount_access_name: "{{ vault_cephfs['access_name'] }}"
+cephfs_mount_access_secret: "{{ vault_cephfs['access_secret'] }}"
 
 docker_daemon_options:
   mtu: 1450
   registry-mirrors: ["https://dockerhub.stfc.ac.uk"]
 
 docker_users:
-  - "{{ vault_openstack_vm_user }}"
+  - ubuntu
 
 elt_threads: 16
 
@@ -39,8 +39,8 @@ pip_install_packages:
   - name: docker
     extra_args: --break-system-packages
 
-stfc_ldap_server: "{{ vault_stfc_ldap_server }}"
-stfc_ca_cert: "{{ vault_stfc_ca_cert }}"
+stfc_ldap_server: "{{ vault_stfc['ldap_server'] }}"
+stfc_ca_cert: "{{ vault_stfc['ca_cert'] }}"
 
 superset_farm_url_prefix: /workspace
 
