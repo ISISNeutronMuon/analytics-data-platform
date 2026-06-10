@@ -1,7 +1,7 @@
 import dataclasses as dc
-from typing import TYPE_CHECKING, Any, Callable, Iterator, Literal, Optional, get_args
+from typing import TYPE_CHECKING, Any, Callable, Iterator, Optional, get_args
 
-WriteMode = Literal["append", "merge", "replace"]
+from elt_common.typing import WriteMode
 
 if TYPE_CHECKING:
     import pyarrow as pa
