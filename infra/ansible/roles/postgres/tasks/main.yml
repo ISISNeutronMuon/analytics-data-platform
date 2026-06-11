@@ -10,7 +10,7 @@
             version: ">=2.5.1"
             extra_args: --break-system-packages
 
-- name: Create postgres data directory exists
+- name: Ensure postgres data directory exists
   become: true
   ansible.builtin.file:
     path: "{{ postgres_db_data_path }}"
@@ -32,7 +32,7 @@
   become: true
   ansible.builtin.copy:
     dest: /secrets/postgres-passwd
-    content: "{{ postgres_db_passwd }}"
+    content: "{{ postgres_db_password }}"
     owner: root
     group: root
     mode: "u=r,g=r,o=r"
@@ -63,7 +63,7 @@
     name: "{{ item }}"
     login_host: localhost
     login_user: "{{ postgres_db_user }}"
-    login_password: "{{ postgres_db_passwd }}"
+    login_password: "{{ postgres_db_password }}"
   loop: "{{ postgres_db_names }}"
   retries: 5
   delay: 2

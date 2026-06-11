@@ -1,4 +1,5 @@
 ---
+deploy_env: dev
 top_level_domain: dev-analytics.isis.cclrc.ac.uk
 
 minio_api_port: 9000
@@ -7,5 +8,5 @@ minio_console_base_path: /minio-ui
 
 s3_endpoint: "https://{{ top_level_domain }}:{{ minio_api_port }}"
 s3_region: minio # not used but can be required by apis
-s3_access_key_id: "{{ vault_minio_root_user }}"
-s3_access_secret: "{{ vault_minio_root_passwd }}"
+s3_access_key_id: "{{ vault_minio['user'] }}"
+s3_access_secret: "{{ vault_minio['password'] }}"
