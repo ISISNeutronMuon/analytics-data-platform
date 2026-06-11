@@ -4,3 +4,4 @@ condaenv/
 galaxy_roles
 *.ini
 inventory.yml
+*.csr

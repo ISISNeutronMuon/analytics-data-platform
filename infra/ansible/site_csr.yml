@@ -1,0 +1,14 @@
+---
+- name: Generate certificate signing request
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Generate an OpenSSL Certificate Signing Request
+      community.crypto.openssl_csr:
+        path: "{{ csr_out_path }}"
+        privatekey_content: "{{ vault_tls_key }}"
+        country_name: GB
+        state_or_province_name: Wiltshire
+        organization_name: UK Research and Innovation
+        organizational_unit_name: STFC
+        common_name: "{{ top_level_domain }}"
