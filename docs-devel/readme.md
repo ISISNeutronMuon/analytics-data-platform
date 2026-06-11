@@ -16,7 +16,6 @@ the future.
 
 ```text
 .
-├── certs/                  # Certificate request configurations used for HTTPS/SSL
 ├── docs/                   # User-facing documentation site (MkDocs). See docs/src for content.
 ├── docs-devel/             # Developer documentation (this directory).
 ├── elt-common/             # Reusable Python package with common ELT helpers used by the warehouses

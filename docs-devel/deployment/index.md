@@ -42,3 +42,7 @@ Once deployed the services are available at:
 | Lakekeeper UI | <https://analytics.isis.cclrc.ac.uk/iceberg/ui> |
 | Superset (accelerator) | <https://analytics.isis.cclrc.ac.uk/workspace/accelerator> |
 | Superset (experiment_ops) | <https://analytics.isis.cclrc.ac.uk/workspace/experiment_ops> |
+
+## Certificates
+
+See [certificates](certificates.md) for details on certificate management.
