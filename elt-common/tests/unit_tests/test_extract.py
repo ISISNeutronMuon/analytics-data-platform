@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pytest
@@ -88,9 +87,9 @@ def test_create_extract_obj():
         assert yielded[0] == []
 
 
-def test_create_extract_obj_custom_config():
+def test_create_extract_obj_custom_config(monkeypatch):
     job = make_manifest("custom_config")
-    os.environ["CUSTOM_CONFIG__REQUIRED_STR"] = "required"
+    monkeypatch.setenv("CUSTOM_CONFIG__REQUIRED_STR", "required")
 
     extract_obj = create_extract_obj(job)
 
@@ -98,11 +97,11 @@ def test_create_extract_obj_custom_config():
     assert getattr(extract_obj.config, "required_str") == "required"
 
 
-def test_create_extract_obj_sql_extract():
+def test_create_extract_obj_sql_extract(monkeypatch):
     job = make_manifest("sql_extract")
-    os.environ["SQL_EXTRACT__DRIVERNAME"] = "sqlite"
-    os.environ["SQL_EXTRACT__DATABASE"] = "not_real"
-    os.environ["SQL_EXTRACT__CHUNK_SIZE"] = "100"
+    monkeypatch.setenv("SQL_EXTRACT__DRIVERNAME", "sqlite")
+    monkeypatch.setenv("SQL_EXTRACT__DATABASE", "not_real")
+    monkeypatch.setenv("SQL_EXTRACT__CHUNK_SIZE", "100")
 
     extract_obj = create_extract_obj(job)
 
