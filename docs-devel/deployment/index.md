@@ -22,7 +22,7 @@ Choose the environment you are configuring for, `dev` or `qa`, and create a work
 
 ```bash
 > tofu workspace create <dev|qa>
-> tofu select <dev|qa>
+> tofu workspace select <dev|qa>
 ```
 
 Now provision the resources:
