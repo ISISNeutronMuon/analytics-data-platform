@@ -11,11 +11,23 @@ read [them here](./prerequisites.md).
 
 ## Provision VMs
 
-Choose the environment you are configuring for, `dev` or `qa`, and provision the cloud resources:
+If this is the first run of terraform/tofu, initialize the terraform directory:
 
 ```bash
 > cd infra/ansible/terraform
 > tofu init
+```
+
+Choose the environment you are configuring for, `dev` or `qa`, and create a workspace:
+
+```bash
+> tofu workspace create <dev|qa>
+> tofu select <dev|qa>
+```
+
+Now provision the resources:
+
+```bash
 > tofu plan -var-file <tfvars-file> -var cloud_name=<name-in-clouds-yaml>
 > tofu apply -var-file <tfvars-file> -var cloud_name=<name-in-clouds-yaml>
 ```
