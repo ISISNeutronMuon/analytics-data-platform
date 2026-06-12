@@ -13,11 +13,11 @@ class Watermark:
     column: str
     value: str | int | float
 
-    def serialize(self):
+    def serialize(self) -> str:
         return json.dumps({"column": self.column, "value": self.value})
 
     @staticmethod
-    def deserialize(watermark_str: str):
+    def deserialize(watermark_str: str) -> "Watermark":
         as_json = json.loads(watermark_str)
         if "column" not in as_json or as_json["column"] is None:
             raise ValueError(
