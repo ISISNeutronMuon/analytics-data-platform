@@ -1,7 +1,8 @@
 import dataclasses as dc
-from typing import TYPE_CHECKING, Any, Callable, Iterator, Literal, Optional, get_args
+import json
+from typing import TYPE_CHECKING, Callable, Iterator, Optional, get_args
 
-WriteMode = Literal["append", "merge", "replace"]
+from elt_common.typing import WriteMode
 
 if TYPE_CHECKING:
     import pyarrow as pa
@@ -10,7 +11,34 @@ if TYPE_CHECKING:
 @dc.dataclass(frozen=True)
 class Watermark:
     column: str
-    value: Any
+    value: str | int | float
+
+    def serialize(self) -> str:
+        return json.dumps({"column": self.column, "value": self.value})
+
+    @staticmethod
+    def deserialize(watermark_str: str) -> "Watermark":
+        as_json = json.loads(watermark_str)
+        if "column" not in as_json or as_json["column"] is None:
+            raise ValueError(
+                f"Couldn't deserialize {watermark_str} as a watermark, 'column' was missing"
+            )
+        elif "value" not in as_json or as_json["value"] is None:
+            raise ValueError(
+                f"Couldn't deserialize {watermark_str} as a watermark, 'value' was missing"
+            )
+
+        column = as_json["column"]
+        if type(column) is not str:
+            raise ValueError(f"Watermark 'column' must be a string, '{column}' is not valid")
+
+        value = as_json["value"]
+        if type(value) not in (str, int, float):
+            raise ValueError(
+                f"Watermark 'value' must be a string or number, '{value}' is not valid"
+            )
+
+        return Watermark(column=column, value=value)
 
 
 @dc.dataclass(frozen=True, kw_only=True)
