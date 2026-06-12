@@ -127,11 +127,10 @@ def _get_extract_cls_from_module_path(module_name: str, file_path: Path) -> type
     module = _import_module_from_path(module_name, file_path)
     try:
         extract_cls = getattr(module, EXTRACT_CLS_NAME)
-    except AttributeError as e:
+    except AttributeError:
         raise AttributeError(
             f"Module '{module_name}' doesn't include an "
-            f"'{EXTRACT_CLS_NAME}' class, which is required for defining an ingest job",
-            e,
+            f"'{EXTRACT_CLS_NAME}' class, which is required for defining an ingest job"
         )
 
     if not isinstance(extract_cls, type):
