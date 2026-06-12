@@ -77,7 +77,7 @@ def test_sql_database_no_table_info_nothing_returned(tmp_path: Path):
             return {}
 
     e = Extract(source_config)
-    assert len(list(e.resource_properties())) == 0
+    assert len(list(e.extract_resource_properties())) == 0
 
 
 @pytest.mark.parametrize("chunk_size", [1, 2, 3, 4, 5, 6, 1000])
@@ -96,7 +96,7 @@ def test_sql_database_reads_table_in_chunks(tmp_path: Path, chunk_size):
         len(person_values) % chunk_size if len(person_values) % chunk_size > 0 else chunk_size
     )
 
-    for table_name, props in e.resource_properties():
+    for table_name, props in e.extract_resource_properties():
         data = props.extractor(None)
         chunks = list(data)
         for i, chunk in enumerate(chunks):
@@ -116,7 +116,7 @@ def test_sql_database_reads_multiple_tables(tmp_path: Path):
     e = Extract(source_config)
 
     result = {}
-    for table_name, props in e.resource_properties():
+    for table_name, props in e.extract_resource_properties():
         data = pyarrow.lib.concat_tables(table for table in props.extractor(None))
         result[table_name] = data
 
@@ -150,7 +150,7 @@ def test_sql_database_write_properties_returned(tmp_path: Path):
             }
 
     e = Extract(source_config)
-    for table_name, props in e.resource_properties():
+    for table_name, props in e.extract_resource_properties():
         if table_name == "people":
             assert props.write_properties == people_write_properties
         else:
@@ -168,7 +168,7 @@ def test_sql_database_watermarks_filter_results(tmp_path: Path):
 
     e = Extract(source_config)
 
-    for table_name, props in e.resource_properties():
+    for table_name, props in e.extract_resource_properties():
         id_watermark = 2
         data = pyarrow.lib.concat_tables(
             table for table in props.extractor(Watermark("id", id_watermark))
@@ -177,7 +177,7 @@ def test_sql_database_watermarks_filter_results(tmp_path: Path):
         assert len(data) == len(person_values) - id_watermark
         assert min(data["id"].to_pylist()) > id_watermark
 
-    for table_name, props in e.resource_properties():
+    for table_name, props in e.extract_resource_properties():
         tables = [table for table in props.extractor(Watermark("age", 39))]
         data = pyarrow.lib.concat_tables(tables)
         assert len(data) == 1, "Only the one person with age > 39 should be returned"
