@@ -16,7 +16,7 @@ class Extract(BaseExtract):
 
     def extract_resource_properties(self) -> Iterator[tuple[str, ResourceProperties]]:
         yield (
-            "",
+            "empty table",
             ResourceProperties(
                 extractor=extract_nothing,
                 write_properties=ResourceWriteProperties(),
@@ -25,5 +25,5 @@ class Extract(BaseExtract):
         )
 
 
-def extract_nothing(watermark):
+def extract_nothing(_watermark):
     yield []

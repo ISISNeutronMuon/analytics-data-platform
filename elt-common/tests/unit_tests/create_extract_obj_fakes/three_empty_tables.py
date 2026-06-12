@@ -16,5 +16,5 @@ class Extract(BaseExtract):
             )
 
 
-def extract_empty(watermark):
+def extract_empty(_watermark):
     yield []

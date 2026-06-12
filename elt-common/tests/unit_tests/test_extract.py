@@ -81,7 +81,7 @@ def test_create_extract_obj():
     extract_obj = create_extract_obj(job)
 
     assert isinstance(extract_obj, BaseExtract)
-    for i, props in extract_obj.extract_resource_properties():
+    for _, props in extract_obj.extract_resource_properties():
         yielded = [d for d in props.extractor(None)]
         assert len(yielded) == 1
         assert yielded[0] == []

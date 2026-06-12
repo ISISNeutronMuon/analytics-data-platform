@@ -129,8 +129,8 @@ class SqlDatabaseExtract(BaseExtract):
                 else None
             )
 
-            def extractor(watermark):
-                return self._extract_table(name, watermark=watermark, conn=conn)
+            def extractor(watermark, *, _name=name):
+                return self._extract_table(_name, watermark=watermark, conn=conn)
 
             properties = ResourceProperties(
                 extractor=extractor,
