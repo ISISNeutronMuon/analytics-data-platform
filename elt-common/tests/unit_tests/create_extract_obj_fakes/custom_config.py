@@ -14,7 +14,7 @@ class ACustomConfig(BaseSettings):
 class Extract(BaseExtract):
     config_cls = ACustomConfig
 
-    def resource_properties(self) -> Iterator[tuple[str, ResourceProperties]]:
+    def extract_resource_properties(self) -> Iterator[tuple[str, ResourceProperties]]:
         yield (
             "",
             ResourceProperties(

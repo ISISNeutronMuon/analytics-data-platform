@@ -4,7 +4,7 @@ from elt_common.extract import BaseExtract, ResourceProperties, ResourceWritePro
 
 
 class Extract(BaseExtract):
-    def resource_properties(self) -> Iterator[tuple[str, ResourceProperties]]:
+    def extract_resource_properties(self) -> Iterator[tuple[str, ResourceProperties]]:
         for i in range(3):
             yield (
                 str(i),

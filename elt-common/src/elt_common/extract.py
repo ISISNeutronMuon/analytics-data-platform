@@ -97,7 +97,7 @@ class BaseExtract(ABC):
         return self._config
 
     @abstractmethod
-    def resource_properties(self) -> Iterator[tuple[str, ResourceProperties]]:
+    def extract_resource_properties(self) -> Iterator[tuple[str, ResourceProperties]]:
         pass
 
 

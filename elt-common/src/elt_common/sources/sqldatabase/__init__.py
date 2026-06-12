@@ -99,7 +99,7 @@ class SqlDatabaseExtract(BaseExtract):
         """
         pass
 
-    def resource_properties(self):
+    def extract_resource_properties(self):
         """Open a connection to the DB and return ingest properties for tables
         defined by :func:`table_info`.
 
