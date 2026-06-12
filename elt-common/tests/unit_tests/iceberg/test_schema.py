@@ -1,0 +1,129 @@
+"""Tests for elt_common.iceberg.schema"""
+
+import pyarrow as pa
+from pyiceberg.schema import Schema, NestedField
+from pyiceberg.types import (
+    BinaryType,
+    BooleanType,
+    DateType,
+    DecimalType,
+    DoubleType,
+    IntegerType,
+    LongType,
+    StringType,
+    TimeType,
+    TimestampType,
+    TimestamptzType,
+)
+import pytest
+
+from elt_common.iceberg.schema import arrow_type_to_iceberg, create_schema, evolve_schema
+
+
+@pytest.fixture()
+def arrow_schema() -> pa.Schema:
+    return pa.schema(
+        [
+            pa.field("row_id", pa.int64(), nullable=False),
+            pa.field("entry_name", pa.string(), nullable=False),
+            pa.field("entry_timestamp", pa.timestamp(unit="us")),
+            pa.field("entry_weight", pa.float64()),
+        ]
+    )
+
+
+def test_unsupported_arrow_type_raises():
+    with pytest.raises(TypeError, match="unknown to type mapper"):
+        arrow_type_to_iceberg(pa.string_view())
+
+
+@pytest.mark.parametrize(
+    ("arrow_type", "expected_type"),
+    [
+        (pa.bool_(), BooleanType),
+        (pa.int32(), IntegerType),
+        (pa.int64(), LongType),
+        (pa.float64(), DoubleType),
+        (pa.decimal128(20, 5), DecimalType),
+        (pa.string(), StringType),
+        (pa.large_string(), StringType),
+        (pa.date32(), DateType),
+        (pa.time64("us"), TimeType),
+        (pa.timestamp("us"), TimestampType),
+        (pa.timestamp("ms", tz="UTC"), TimestamptzType),
+        (pa.binary(), BinaryType),
+        (pa.large_binary(), BinaryType),
+        (pa.binary(8), BinaryType),
+    ],
+)
+def test_returns_expected_iceberg_type(arrow_type, expected_type):
+    result = arrow_type_to_iceberg(arrow_type)
+    assert isinstance(result, expected_type)
+
+
+def test_maps_decimal_precision_and_scale():
+    result = arrow_type_to_iceberg(pa.decimal128(12, 3))
+
+    assert isinstance(result, DecimalType)
+    assert result.precision == 12
+    assert result.scale == 3
+
+
+@pytest.mark.parametrize("time_type", [pa.time32("s"), pa.time32("ms"), pa.time64("ns")])
+def test_time_precision_other_than_microseconds_raises(time_type):
+    with pytest.raises(TypeError, match="only supports 'us' precision"):
+        arrow_type_to_iceberg(time_type)
+
+
+def test_timestamp_nanoseconds_raises():
+    with pytest.raises(TypeError, match="does not support timestamps"):
+        arrow_type_to_iceberg(pa.timestamp("ns"))
+
+
+def test_create_empty_schema():
+    empty_schema = pa.schema([])
+    iceberg_schema = create_schema(empty_schema)
+
+    assert len(iceberg_schema.fields) == 0
+
+
+@pytest.mark.parametrize("identifier_fields", [(), ["row_id", "entry_name"]])
+def test_create_iceberg_schema(arrow_schema: pa.Schema, identifier_fields):
+    iceberg_schema = create_schema(arrow_schema, identifier_fields)
+
+    assert len(iceberg_schema.fields) == len(arrow_schema.names)
+    assert [f.name for f in iceberg_schema.fields] == arrow_schema.names
+    assert [not f.required for f in iceberg_schema.fields] == [f.nullable for f in arrow_schema]
+
+    # assume the types are correct as the type mapping is tested above
+    if identifier_fields:
+        assert iceberg_schema.identifier_field_ids == [1, 2]
+
+
+@pytest.mark.parametrize(
+    ["iceberg_field_names", "expected_new_field_names"],
+    [
+        ([], {"row_id", "entry_name", "entry_timestamp", "entry_weight"}),
+        (
+            ["row_id", "entry_name", "entry_timestamp"],
+            {"row_id", "entry_name", "entry_timestamp", "entry_weight"},
+        ),
+        (["row_id", "entry_name", "entry_timestamp", "entry_weight"], {}),
+    ],
+)
+def test_evolve_schema(
+    arrow_schema: pa.Schema, iceberg_field_names: list[str], expected_new_field_names
+):
+    existing_fields = [
+        NestedField(field_id=i + 1, name=name, field_type=StringType(), required=False)
+        for i, name in enumerate(iceberg_field_names)
+    ]
+    existing_schema = Schema(*existing_fields)
+
+    schema_with_new_fields = evolve_schema(existing_schema, arrow_schema)
+
+    if expected_new_field_names:
+        assert schema_with_new_fields is not None
+        assert {f.name for f in schema_with_new_fields.fields} == expected_new_field_names
+    else:
+        assert schema_with_new_fields is None
