@@ -30,6 +30,9 @@ keycloak_realm:
   name: "isis-analytics-data-platform"
   display_name: "ISIS Analytics Data Platform"
 keycloak_realm_url: "{{ keycloak_url }}/realms/{{ keycloak_realm.name }}"
+keycloak_bootstrap:
+  admin_user: "{{ vault_keycloak['bootstrap_admin_user'] }}"
+  admin_password: "{{ vault_keycloak['bootstrap_admin_password'] }}"
 
 lakekeeper_base_path: /iceberg
 lakekeeper_bucket_prefix: isis-adp-warehouse-

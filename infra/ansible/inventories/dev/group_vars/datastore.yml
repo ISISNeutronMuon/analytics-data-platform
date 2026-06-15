@@ -1,11 +1,12 @@
 ---
-postgres_db_user: "{{ vault_shared_db['user'] }}"
-postgres_db_password: "{{ vault_shared_db['password'] }}"
-postgres_db_names:
-  - keycloak
-  - openfga
-  - lakekeeper
-  - superset_farm
+postgres_db:
+  user: "{{ vault_self_hosted_db['user'] }}"
+  password: "{{ vault_self_hosted_db['password'] }}"
+  databases:
+    - { name: keycloak, password: "{{ secrets_keycloak['db_name'] }}" }
+    # - openfga
+    # - lakekeeper
+    # - superset_farm
 
 minio_root_user: "{{ vault_minio['user'] }}"
 minio_root_password: "{{ vault_minio['password'] }}"

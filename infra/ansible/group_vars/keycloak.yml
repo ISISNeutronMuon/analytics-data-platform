@@ -1,6 +1,10 @@
 ---
-keycloak_bootstrap_admin_user: "{{ vault_keycloak['bootstrap_admin_user'] }}"
-keycloak_bootstrap_admin_passwd: "{{ vault_keycloak['bootstrap_admin_password'] }}"
+keycloak_db:
+  host: managed_db.host
+  port: managed_db.port
+  name: secrets_keycloak['db_name']
+  user: secrets_keycloak['db_user']
+  password: secrets_keycloak['db_password']
 
 # Eveything is assigned to the realm defined by keycloak_realm.name in all/all.yml
 keycloak_client_scopes:
