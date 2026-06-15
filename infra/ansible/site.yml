@@ -5,7 +5,8 @@
     - base
     - role: docs
       become: true
-    - traefik
+    - role: traefik
+      tags: [traefik]
 
 - name: Deploy data services (if required)
   hosts: datastore
