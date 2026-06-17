@@ -111,15 +111,29 @@ def test_run_ingest_watermark_handling(
 ):
     # Run first expecting full load
     rows_seen = run_ingest(elt_job)
-    assert rows_seen == {"table_with_watermark": 1000, "table_without_watermark": 500}
+    assert rows_seen == {
+        "table_with_watermark": 1000,
+        "table_without_watermark": 500,
+        "table_watermarked_out_of_order_data": 20,
+    }
 
     # check IO write_table call
     call_args_list = mock_iceberg_io.write_table.call_args_list
-    assert len(call_args_list) == 2
+    assert len(call_args_list) == 4
 
     (expected_table_names, expected_watermark_properties) = (
-        ["table_with_watermark", "table_without_watermark"],
-        [json.dumps({"column": "id", "value": 999}), None],
+        [
+            "table_with_watermark",
+            "table_without_watermark",
+            "table_watermarked_out_of_order_data",
+            "table_watermarked_out_of_order_data",
+        ],
+        [
+            json.dumps({"column": "id", "value": 999}),
+            None,
+            json.dumps({"column": "id", "value": 19}),
+            json.dumps({"column": "id", "value": 9}),
+        ],
     )
 
     for index, call in enumerate(call_args_list):
@@ -130,10 +144,18 @@ def test_run_ingest_watermark_handling(
             call.kwargs["properties"], expected_watermark_properties[index]
         )
 
+    # The table with data that arrived out of order should overwrite the watermark
+    write_properties_calls = mock_iceberg_io.write_properties.call_args_list
+    assert len(write_properties_calls) == 1
+    args = write_properties_calls[0].args
+    assert args[0] == _test_elt_job_table_id(elt_job, "table_watermarked_out_of_order_data")
+    assert args[1][INGEST_PROPERTY_KEY_WATERMARK] == json.dumps({"column": "id", "value": 19})
+
     test_watermark_value = 600
     # Run again with a watermark set, and check that only the correct subset of rows are returned
     mock_iceberg_io.read_property.side_effect = [
         json.dumps({"column": "id", "value": test_watermark_value}),
+        KeyError,
         KeyError,
     ]
     mock_iceberg_io.write_table.reset_mock()
@@ -142,9 +164,10 @@ def test_run_ingest_watermark_handling(
     assert rows_seen == {
         "table_with_watermark": 1000 - test_watermark_value - 1,
         "table_without_watermark": 500,
+        "table_watermarked_out_of_order_data": 20,
     }
     call_args_list = mock_iceberg_io.write_table.call_args_list
-    assert len(call_args_list) == 2
+    assert len(call_args_list) == 4
     watermarked_data = call_args_list[0].args[1]
     assert isinstance(watermarked_data, pa.Table)
     # Only rows with id greater than the watermark should be returned

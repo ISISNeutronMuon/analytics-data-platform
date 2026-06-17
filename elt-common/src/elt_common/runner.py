@@ -7,13 +7,13 @@ import datetime as dt
 import logging
 import time
 from collections import defaultdict
+from typing import Optional
 
 import pyarrow as pa
 import pyarrow.compute as pc
 from pyiceberg.exceptions import NoSuchTableError
 
 from elt_common.extract import (
-    ResourceProperties,
     Watermark,
     create_extract_obj,
 )
@@ -74,12 +74,19 @@ def run_ingest(job: ELTJobManifest) -> dict[str, int]:
         except (NoSuchTableError, KeyError):
             watermark_before_extract = None
 
+        watermarks: list[Watermark] = []
         for data in table_props.extractor(watermark_before_extract):
             # 'replace' really means delete the contents of the table, then append the new data.
             # Extractors can return multiple chunks of data, in which case only the first chunk
             # should cause a deletion, whilst the remaining chunks should be appended.
             if write_mode == "replace" and rows_seen[table_name] > 0:
                 write_mode = "append"
+
+            watermark = None
+            if table_props.watermark_column is not None:
+                watermark_value = _get_watermark_value(data, table_props.watermark_column)
+                watermark = Watermark(table_props.watermark_column, watermark_value)
+                watermarks.append(watermark)
 
             iceberg_io.write_table(
                 table_id,
@@ -88,25 +95,34 @@ def run_ingest(job: ELTJobManifest) -> dict[str, int]:
                 merge_on=merge_on,
                 partition=partition_by,
                 sort_order=sort_order,
-                properties=_create_ingest_properties(data, table_props),
+                properties=_create_ingest_properties(watermark),
             )
             rows_seen[table_name] += data.num_rows
+
+        # Check that the last watermark was the largest, and correct it if it isn't
+        # This can happen if the data arrived out of order
+        if watermarks:
+            watermark_with_max_value = max(watermarks, key=lambda w: w.value)
+            if watermark_with_max_value != watermarks[-1]:
+                iceberg_io.write_properties(
+                    table_id, _create_ingest_properties(watermark_with_max_value)
+                )
 
     return rows_seen
 
 
-def _create_ingest_properties(
-    data: pa.Table,
-    resource_properties: ResourceProperties,
-) -> dict[str, str]:
+def _create_ingest_properties(watermark: Optional[Watermark]) -> dict[str, str]:
     """Create a set of properties describing the ingestion."""
+
     ingest_props = {
         INGEST_PROPERTY_KEY_LAST_UPDATED_AT: dt.datetime.now(dt.UTC).isoformat(timespec="seconds")
     }
 
-    if resource_properties.watermark_column is not None:
-        watermark_value = pc.max(data[resource_properties.watermark_column]).as_py()
-        watermark = Watermark(resource_properties.watermark_column, watermark_value)
+    if watermark:
         ingest_props[INGEST_PROPERTY_KEY_WATERMARK] = watermark.serialize()
 
     return ingest_props
+
+
+def _get_watermark_value(data: pa.Table, watermark_column):
+    return pc.max(data[watermark_column]).as_py()
