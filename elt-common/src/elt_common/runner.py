@@ -82,10 +82,8 @@ def run_ingest(job: ELTJobManifest) -> dict[str, int]:
             if write_mode == "replace" and rows_seen[table_name] > 0:
                 write_mode = "append"
 
-            watermark = None
-            if table_props.watermark_column is not None:
-                watermark_value = _get_watermark_value(data, table_props.watermark_column)
-                watermark = Watermark(table_props.watermark_column, watermark_value)
+            watermark = _make_watermark(data, table_props.watermark_column)
+            if watermark:
                 watermarks.append(watermark)
 
             iceberg_io.write_table(
@@ -124,5 +122,12 @@ def _create_ingest_properties(watermark: Optional[Watermark]) -> dict[str, str]:
     return ingest_props
 
 
-def _get_watermark_value(data: pa.Table, watermark_column):
-    return pc.max(data[watermark_column]).as_py()
+def _make_watermark(data: pa.Table, watermark_column: Optional[str]):
+    if watermark_column is None:
+        return None
+
+    watermark_value = pc.max(data[watermark_column]).as_py()
+    if watermark_value is None:
+        return None
+
+    return Watermark(watermark_column, watermark_value)
