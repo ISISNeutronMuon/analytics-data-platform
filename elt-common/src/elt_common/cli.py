@@ -1,6 +1,7 @@
 """``elt`` CLI — the main entry point for running elt jobs."""
 
 import logging
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -70,6 +71,8 @@ def run(root: Path, job_name: str, step: str = "all") -> None:
         job = _find_matching_ingest_job(project, job_name)
         if job:
             run_job(job)
+        else:
+            sys.exit(1)
 
 
 def _find_matching_ingest_job(project: PipelinesProject, job_name: str) -> Optional[ELTJobManifest]:
