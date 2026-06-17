@@ -67,6 +67,8 @@ def _assert_properties_as_expected(
 
     if expected_watermark_property:
         assert actual_properties[INGEST_PROPERTY_KEY_WATERMARK] == expected_watermark_property
+    else:
+        assert INGEST_PROPERTY_KEY_WATERMARK not in actual_properties
 
 
 @pytest.mark.parametrize("elt_job", ["all_write_modes"], indirect=True)
