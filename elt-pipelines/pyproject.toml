@@ -6,6 +6,13 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "elt-common",
+    "pydantic-settings>=2.14.2",
+]
+
+[project.optional-dependencies]
+statusdisplay = [
+    "pyarrow>=24.0.0",
+    "requests>=2.34.2",
 ]
 
 [tool.uv.sources]
