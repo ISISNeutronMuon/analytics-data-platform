@@ -43,10 +43,22 @@ class IcebergIO(BaseIO):
 
         :param table_id: namespaced identifier of the table to read from
         :param key: the key to read the value of
-        :raises: KeyError if property does not exist
+        :raises NoSuchTableError: if the table doesn't exist
+        :raises KeyError: if property does not exist
         """
         table = self.catalog.load_table(table_id)
         return table.properties[key]
+
+    def write_properties(self, table_id: Identifier, properties: dict[str, str]):
+        """Writes properties to a table
+
+        :param table_id: namespaced identifier of the table to read from.
+        :param properties: the properties to write. Any that already existed on the table will be overwritten.
+        :raises NoSuchTableError: if the table doesn't exist.
+        """
+        table = self.catalog.load_table(table_id)
+        with table.transaction() as txn:
+            txn.set_properties(properties)
 
     def write_table(
         self,
