@@ -6,7 +6,7 @@
     - name: Generate an OpenSSL Certificate Signing Request
       community.crypto.openssl_csr:
         path: "{{ csr_out_path }}"
-        privatekey_content: "{{ vault_tls_key }}"
+        privatekey_content: "{{ secrets_stfc['tls_key'] }}"
         country_name: GB
         state_or_province_name: Wiltshire
         organization_name: UK Research and Innovation

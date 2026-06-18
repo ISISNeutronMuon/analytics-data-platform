@@ -1,12 +1,24 @@
 ---
 postgres_db:
-  user: "{{ vault_self_hosted_db['user'] }}"
-  password: "{{ vault_self_hosted_db['password'] }}"
-  databases:
-    - { name: keycloak, password: "{{ secrets_keycloak['db_name'] }}" }
-    # - openfga
-    # - lakekeeper
-    # - superset_farm
+postgres_db_user: "{{ secrets_self_hosted_db['user'] }}"
+postgres_db_password: "{{ secrets_self_hosted_db['password'] }}"
+postgres_db_databases:
+  - {
+      name: "{{ secrets_keycloak['db_name'] }}",
+      password: "{{ secrets_keycloak['db_password'] }}",
+    }
+  - {
+      name: "{{ secrets_openfga['db_name'] }}",
+      password: "{{ secrets_openfga['db_password'] }}",
+    }
+  - {
+      name: "{{ secrets_lakekeeper['db_name'] }}",
+      password: "{{ secrets_lakekeeper['db_password'] }}",
+    }
+  # - {
+  #     name: "{{ secrets_superset_farm['db_name'] }}",
+  #     password: "{{ secrets_superset_farm['db_password'] }}",
+  #   }
 
-minio_root_user: "{{ vault_minio['user'] }}"
-minio_root_password: "{{ vault_minio['password'] }}"
+minio_root_user: "{{ secrets_minio['user'] }}"
+minio_root_password: "{{ secrets_minio['password'] }}"

@@ -1,7 +1,0 @@
----
-keycloak_db:
-  host: "{{ managed_db.host }}"
-  port: "{{ managed_db.port }}"
-  name: "{{ vault_keycloak['db_name'] }}"
-  user: "{{ vault_keycloak['db_user'] }}"
-  password: "{{ vault_keycloak['db_password'] }}"

@@ -1,7 +1,0 @@
----
-keycloak_db:
-  name: keycloak
-  host: "{{ groups['datastore'][0] }}"
-  port: 5432
-  user: "{{ vault_self_hosted_db['user'] }}"
-  password: "{{ vault_self_hosted_db['password'] }}"

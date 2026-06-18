@@ -1,2 +1,9 @@
+---
+superset_farm_metadb_host: "{{ managed_db.host }}"
+superset_farm_metadb_port: "{{ managed_db.port }}"
+superset_farm_metadb_name: "{{ secrets_superset_farm['metadb_name'] }}"
+superset_farm_metadb_user: "{{ secrets_superset_farm['metadb_user'] }}"
+superset_farm_metadb_passwd: "{{ secrets_superset_farm['metadb_passwd'] }}"
+
 superset_farm_redis_host: localhost
 superset_farm_redis_port: 6379

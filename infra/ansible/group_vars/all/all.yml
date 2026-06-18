@@ -4,10 +4,10 @@ base_additional_apt_keys:
     filename: eugridpma-rpm-4.asc
 base_timezone: "Europe/London"
 
-cephfs_mount_export_path: "{{ vault_cephfs['export_path'] }}"
+cephfs_mount_export_path: "{{ secrets_cephfs['export_path'] }}"
 cephfs_mount_mount_path: "/mnt/lakehouse_data"
-cephfs_mount_access_name: "{{ vault_cephfs['access_name'] }}"
-cephfs_mount_access_secret: "{{ vault_cephfs['access_secret'] }}"
+cephfs_mount_access_name: "{{ secrets_cephfs['access_name'] }}"
+cephfs_mount_access_secret: "{{ secrets_cephfs['access_secret'] }}"
 
 docker_daemon_options:
   mtu: 1450
@@ -17,6 +17,8 @@ docker_users:
   - ubuntu
 
 elt_threads: 16
+
+ldap_server: "{{ secrets_stfc['ldap_server'] }}"
 
 logrotate_frequency: weekly
 logrotate_keep: 30
@@ -31,8 +33,8 @@ keycloak_realm:
   display_name: "ISIS Analytics Data Platform"
 keycloak_realm_url: "{{ keycloak_url }}/realms/{{ keycloak_realm.name }}"
 keycloak_bootstrap:
-  admin_user: "{{ vault_keycloak['bootstrap_admin_user'] }}"
-  admin_password: "{{ vault_keycloak['bootstrap_admin_password'] }}"
+  admin_user: "{{ secrets_keycloak['bootstrap_admin_user'] }}"
+  admin_password: "{{ secrets_keycloak['bootstrap_admin_password'] }}"
 
 lakekeeper_base_path: /iceberg
 lakekeeper_bucket_prefix: isis-adp-warehouse-
@@ -42,8 +44,8 @@ pip_install_packages:
   - name: docker
     extra_args: --break-system-packages
 
-stfc_ldap_server: "{{ vault_stfc['ldap_server'] }}"
-stfc_ca_cert: "{{ vault_stfc['ca_cert'] }}"
+stfc_ldap_server: "{{ secrets_stfc['ldap_server'] }}"
+stfc_ca_cert: "{{ secrets_stfc['ca_cert'] }}"
 
 superset_farm_url_prefix: /workspace
 
@@ -111,11 +113,11 @@ superset_farm_instances:
     flask_debug: false
     http_port: 8088
     redis_db: 0
-    secret_key: "{{ vault_superset_secret_keys['accelerator'] }}"
-    users_yaml: "{{ vault_superset_users_yaml['accelerator'] }}"
+    secret_key: "{{ secrets_superset_farm_secret_keys['accelerator'] }}"
+    users_yaml: "{{ secrets_superset_farm_users_yaml['accelerator'] }}"
     analytic_dbs:
       - name: facility_ops
-        db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/facility_ops"
+        db_url: "trino://superset:{{ secrets_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/facility_ops"
   tram:
     app_root: "{{ superset_farm_url_prefix }}/tram"
     env_name: production
@@ -126,4 +128,4 @@ superset_farm_instances:
     users_yaml: "{{ vault_superset_users_yaml['tram'] }}"
     analytic_dbs:
       - name: facility_ops
-        db_url: "trino://superset:{{ vault_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/facility_ops"
+        db_url: "trino://superset:{{ secrets_trino_users['superset'].password }}@{{ top_level_domain }}:{{ trino_https_port }}/facility_ops"

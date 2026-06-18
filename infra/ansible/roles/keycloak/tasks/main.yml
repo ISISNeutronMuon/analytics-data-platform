@@ -65,10 +65,10 @@
     recreate: true
     env:
       # comment to keep formatter moving this up one line
-      KC_BOOTSTRAP_ADMIN_PASSWORD: "{{ keycloak_bootstrap_admin_password }}"
-      KC_DB_URL: "jdbc:postgresql://{{ keycloak_db.host }}:{{ keycloak_db.port }}/{{ keycloak_db.name }}"
-      KC_DB_USERNAME: "{{ keycloak_db.user }}"
-      KC_DB_PASSWORD: "{{ keycloak_db.password }}"
+      KC_BOOTSTRAP_ADMIN_PASSWORD: "{{ keycloak_bootstrap.admin_password }}"
+      KC_DB_URL: "jdbc:postgresql://{{ keycloak_db_host }}:{{ keycloak_db_port }}/{{ keycloak_db_name }}"
+      KC_DB_USERNAME: "{{ keycloak_db_user }}"
+      KC_DB_PASSWORD: "{{ keycloak_db_password }}"
 
 - name: Run Keycloak
   community.docker.docker_container:
@@ -91,9 +91,9 @@
     recreate: true
     env:
       # comment to keep formatter moving this up one line
-      KC_DB_URL: "jdbc:postgresql://{{ keycloak_db.host }}:{{ keycloak_db.port }}/{{ keycloak_db.name }}"
-      KC_DB_USERNAME: "{{ keycloak_db.user }}"
-      KC_DB_PASSWORD: "{{ keycloak_db.password }}"
+      KC_DB_URL: "jdbc:postgresql://{{ keycloak_db_host }}:{{ keycloak_db_port }}/{{ keycloak_db_name }}"
+      KC_DB_USERNAME: "{{ keycloak_db_user }}"
+      KC_DB_PASSWORD: "{{ keycloak_db_password }}"
     network_mode: host
     volumes:
       - "{{ keycloak_working_dir }}/certs/stfc-ca.pem:/opt/keycloak/conf/truststores/stfc-ca.pem:ro"

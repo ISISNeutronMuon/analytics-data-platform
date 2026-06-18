@@ -32,11 +32,11 @@
   loop:
     - {
         filename: "{{ traefik_certs_root }}/cert__domain.pem",
-        content: "{{ vault_tls_cert }}",
+        content: "{{ secrets_certs['tls_cert'] }}",
       }
     - {
         filename: "{{ traefik_certs_root }}/key__domain.pem",
-        content: "{{ vault_tls_key }}",
+        content: "{{ secrets_certs['tls_key'] }}",
       }
   loop_control:
     loop_var: traefik_tls
