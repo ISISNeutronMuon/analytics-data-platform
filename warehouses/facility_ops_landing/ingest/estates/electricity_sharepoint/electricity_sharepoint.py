@@ -23,7 +23,7 @@ import pandas as pd
 import pyarrow.compute as pc
 import pytz
 
-from elt_common.cli import cli_main
+from elt_common.cli_utils import cli_main
 from elt_common.dlt_sources.m365 import (
     sharepoint,
     M365DriveItem,
