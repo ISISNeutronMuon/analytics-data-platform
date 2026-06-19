@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Callable, Iterator, Optional, get_args
 
 from pydantic_settings import BaseSettings
 
-from elt_common.typing import ELTJobManifest, WriteMode
+from elt_common.typing import ELTJobManifest, PartitionConfig, SortOrderConfig, WriteMode
 
 if TYPE_CHECKING:
     import pyarrow as pa
@@ -51,10 +51,20 @@ class Watermark:
 
 @dc.dataclass(frozen=True, kw_only=True)
 class ResourceWriteProperties:
-    # Destination table
+    """Properties which control how data is written to iceberg.
+
+    Defaults to appending with no partitioning or sorting.
+
+    :ivar merge_on: Column(s) which are considered for matching rows with existing
+                    data when write_mode is 'merge'. Required if write_mode is 'merge'.
+    :ivar partition: Column names mapped to Iceberg transforms which will be used for partitioning.
+    :ivar sort_order: Mapping of columns to their sort directions.
+    :ivar write_mode: How the data should be written to iceberg.
+    """
+
     merge_on: list[str] = dc.field(default_factory=list)
-    partition: dict[str, str] = dc.field(default_factory=dict)
-    sort_order: dict[str, str] = dc.field(default_factory=dict)
+    partition: PartitionConfig = dc.field(default_factory=dict)
+    sort_order: SortOrderConfig = dc.field(default_factory=dict)
     write_mode: WriteMode = "append"
 
     def __post_init__(self):
@@ -68,13 +78,15 @@ class ResourceWriteProperties:
 
 @dc.dataclass(frozen=True, kw_only=True)
 class ResourceProperties:
-    """Configuration for a single resource to be extracted."""
+    """Configuration for a single resource to be extracted.
 
-    # Required properties
+    :ivar extractor: Function that extracts data from the source. Can return multiple chunks of data.
+    :ivar write_properties: Properties that control how the resource will be written to iceberg.
+    :ivar watermark_column: Column in the extracted data that should be used for watermarking.
+    """
+
     extractor: Callable[[Optional[Watermark]], "Iterator[pa.Table]"]
     write_properties: ResourceWriteProperties
-
-    # Ingestion properties
     watermark_column: Optional[str]
 
 
@@ -98,6 +110,20 @@ class BaseExtract(ABC):
 
     @abstractmethod
     def extract_resource_properties(self) -> Iterator[tuple[str, ResourceProperties]]:
+        """Get ingestion properties for a data source.
+
+        Each table/resource to be extracted from the data source should be returned
+        as a tuple of (table/resource name, extraction properties). The 'extraction
+        properties' include a method for reading the data, and properties to control
+        how the data should be written to iceberg.
+
+        During execution of this method, some implementations may maintain state
+        (e.g. a database connection) which is required to extract the data. To ensure
+        that state is available for the 'extractor'(s), they should be called whilst
+        iterating over the results of this method.
+
+        :returns: Iterator of tuples of (table/resource name, extraction properties).
+        """
         pass
 
 
