@@ -14,10 +14,10 @@ from typing import Any, Iterator
 
 import dlt
 from dlt.common.storages.fsspec_filesystem import FileItemDict
-from elt_common.cli import cli_main
-from elt_common.dlt_sources.m365 import sharepoint
 from dlt.extract import DltResource
 from dlt.sources import TDataItems
+from elt_common.cli_utils import cli_main
+from elt_common.dlt_sources.m365 import sharepoint
 
 SITE_URL = "https://stfc365.sharepoint.com/sites/ISIS-AcceleratorDivision"
 
