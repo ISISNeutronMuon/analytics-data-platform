@@ -71,7 +71,7 @@ def csv_section_to_df(file_name: str, lines: Sequence[str]) -> pd.DataFrame | No
             pd.to_datetime(df["Date"] + " " + df["Time"], format="%d/%m/%y %H:%M:%S")  # type: ignore
         )
         return df.drop(["Date", "Time"], axis=1)
-    except pytz.exceptions.AmbiguousTimeError as exc:
+    except (pytz.exceptions.AmbiguousTimeError, ValueError) as exc:
         logger.warning(
             f"'Error loading section of {file_name}'. There will be gaps in the data.\nDetails: {str(exc)}"
         )
