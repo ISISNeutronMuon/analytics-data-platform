@@ -15,10 +15,10 @@ postgres_db_databases:
       name: "{{ secrets_lakekeeper['db_name'] }}",
       password: "{{ secrets_lakekeeper['db_password'] }}",
     }
-  # - {
-  #     name: "{{ secrets_superset_farm['db_name'] }}",
-  #     password: "{{ secrets_superset_farm['db_password'] }}",
-  #   }
+  - {
+      name: "{{ secrets_superset_farm['db_name'] }}",
+      password: "{{ secrets_superset_farm['db_password'] }}",
+    }
 
 minio_root_user: "{{ secrets_minio['user'] }}"
 minio_root_password: "{{ secrets_minio['password'] }}"

@@ -1,9 +1,22 @@
 ---
-superset_farm_metadb_host: "{{ managed_db.host }}"
-superset_farm_metadb_port: "{{ managed_db.port }}"
-superset_farm_metadb_name: "{{ secrets_superset_farm['metadb_name'] }}"
-superset_farm_metadb_user: "{{ secrets_superset_farm['metadb_user'] }}"
-superset_farm_metadb_passwd: "{{ secrets_superset_farm['metadb_passwd'] }}"
+superset_farm_db_host: "{{ managed_db.host }}"
+superset_farm_db_port: "{{ managed_db.port }}"
+superset_farm_db_name: "{{ secrets_superset_farm['db_name'] }}"
+superset_farm_db_user: "{{ secrets_superset_farm['db_user'] }}"
+superset_farm_db_password: "{{ secrets_superset_farm['db_password'] }}"
 
 superset_farm_redis_host: localhost
 superset_farm_redis_port: 6379
+
+superset_farm_instances:
+  accelerator:
+    app_root: "{{ superset_farm_url_prefix }}/accelerator"
+    env_name: production
+    flask_debug: false
+    http_port: 8088
+    redis_db: 0
+    secret_key: "{{ secrets_superset_farm_secret_keys['accelerator'] }}"
+    users_yaml: "{{ secrets_superset_farm_users_yaml['accelerator'] | from_yaml }}"
+    analytic_dbs:
+      - name: facility_ops
+        db_url: "trino://superset:{{ secrets_trino_users['superset'] }}@{{ top_level_domain }}:{{ trino_https_port }}/facility_ops"

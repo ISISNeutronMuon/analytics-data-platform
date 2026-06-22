@@ -1,10 +1,10 @@
 ---
 - name: Create a new DB schema ("{{ instance.key }}")
   community.postgresql.postgresql_schema:
-    login_host: "{{ superset_farm_metadb_host }}"
-    login_db: "{{ superset_farm_metadb_name }}"
-    login_user: "{{ superset_farm_metadb_user }}"
-    login_password: "{{ superset_farm_metadb_passwd }}"
+    login_host: "{{ superset_farm_db_host }}"
+    login_db: "{{ superset_farm_db_name }}"
+    login_user: "{{ superset_farm_db_user }}"
+    login_password: "{{ superset_farm_db_password }}"
     name: "{{ instance.key }}"
     comment: "Superset schema for {{ instance.key }}"
 
