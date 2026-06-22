@@ -1,8 +1,8 @@
 ---
-- import_playbook: traefik.yml
-- import_playbook: datastore.yml
-- import_playbook: keycloak.yml
-- import_playbook: lakekeeper.yml
-- import_playbook: trino.yml
-- import_playbook: superset_farm.yml
-- import_playbook: elt.yml
+- import_playbook: site_traefik.yml
+- import_playbook: site_datastore.yml
+- import_playbook: site_keycloak.yml
+- import_playbook: site_lakekeeper.yml
+- import_playbook: site_trino.yml
+- import_playbook: site_superset_farm.yml
+- import_playbook: site_elt.yml
