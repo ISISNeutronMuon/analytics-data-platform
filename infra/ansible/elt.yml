@@ -1,0 +1,9 @@
+---
+- name: Deploy ELT node
+  hosts: elt
+  roles:
+    - base
+    - role: robertdebock.logrotate
+      become: true
+    - role: elt
+      tags: [elt]

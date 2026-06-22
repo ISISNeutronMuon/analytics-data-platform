@@ -1,0 +1,8 @@
+---
+- name: Deploy Superset instances
+  hosts: superset_farm
+  roles:
+    - base
+    - redis
+    - role: superset_farm
+      tags: [superset_farm]

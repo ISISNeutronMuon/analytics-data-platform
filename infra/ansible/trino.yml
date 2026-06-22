@@ -1,0 +1,7 @@
+---
+- name: Deploy Trino
+  hosts: trino
+  roles:
+    - base
+    - role: trino
+      tags: [trino]

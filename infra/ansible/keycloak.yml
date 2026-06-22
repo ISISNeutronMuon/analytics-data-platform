@@ -1,0 +1,7 @@
+---
+- name: Deploy Keycloak
+  hosts: keycloak
+  roles:
+    - base
+    - role: keycloak
+      tags: [keycloak]

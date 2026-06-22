@@ -1,0 +1,9 @@
+---
+- name: Deploy Lakekeeper
+  hosts: lakekeeper
+  roles:
+    - base
+    - role: openfga
+      tags: [openfga]
+    - role: lakekeeper
+      tags: [lakekeeper]
