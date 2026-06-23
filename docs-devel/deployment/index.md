@@ -34,8 +34,31 @@ Now provision the resources:
 
 Move the newly generated inventory `.ini` file to `infra/ansible/inventories/<dev|qa>`.
 
-If this is the first time the floating IP/traefik node has been created then you will need to ssh
-into the Traefik node and accept the key into known hosts.
+### Interactive SSH access
+
+The nodes are on a private network with the floating IP attached to the Traefik node.
+`ssh` access to nodes other than Traefik requires a proxy command - the inventory is
+configured for Ansible to understand this so no further configuration is required for
+running Ansible. To be able to access the nodes via interactive ssh add the following
+to `$HOME/.ssh/config`:
+
+```text
+Host jumphost-lakehouse-qa
+   User ubuntu
+   HostName 130.246.214.124
+
+ Host 192.168.43.*
+   ProxyJump jumphost-lakehouse
+   StrictHostKeyChecking accept-new
+
+ Host jumphost-lakehouse-dev
+   User ubuntu
+   HostName 130.246.212.128
+
+ Host 192.168.44.*
+   ProxyJump jumphost-lakehouse-dev
+   StrictHostKeyChecking accept-new
+```
 
 ## Services
 
