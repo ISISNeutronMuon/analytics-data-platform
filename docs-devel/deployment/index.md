@@ -62,11 +62,14 @@ Host jumphost-lakehouse-qa
 
 ## Services
 
-Deploy the services using Ansible:
+See [Vault access](prerequisites#vault-access) for retrieving a Vault token
+and store it in a file `infra/ansible/.vault_token`. This file is ignored by git.
+
+Deploy the services using Ansible.
 
 ```bash
 > cd infra/ansible
-> ansible-playbook -i inventories/<dev|qa>/inventory.ini site.yml [-e lakekeeper_admin_user=<admin_email>]
+> NO_PROXY="*" VAULT_ADDR=https://secrets.isis.rl.ac.uk VAULT_TOKEN=$(cat .vault_token) ansible-playbook -i inventories/<dev|qa>/inventory.ini site.yml [-e lakekeeper_admin_user=<admin_email>]
 ```
 
 The variable `lakekeeper_admin_user` is required the first time the playbooks are run. Further runs will add additional users
