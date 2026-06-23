@@ -31,6 +31,7 @@
   register: warehouse_json_files
 
 - name: Bootstrap Lakekeeper
+  no_log: true
   community.docker.docker_container:
     name: "{{ lakekeeper_container_name }}_bootstrap"
     image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim

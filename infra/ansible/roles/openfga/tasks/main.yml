@@ -5,6 +5,7 @@
     state: absent
 
 - name: Run OpenFGA migrations
+  no_log: true
   community.docker.docker_container:
     name: openfga_migrate
     image: "{{ openfga_image }}"
@@ -16,11 +17,12 @@
     recreate: true
     env: &openfga_env #
       OPENFGA_DATASTORE_ENGINE: "{{ openfga_db_engine }}"
-      OPENFGA_DATASTORE_URI: "{{ openfga_db_engine }}://{{ openfga_db_user }}:{{ openfga_db_password }}@{{ openfga_db_host }}:{{ openfga_db_port }}/{{ openfga_db_name }}{{ openfga_db_options | default('?sslmode=disable') }}"
+      OPENFGA_DATASTORE_URI: "{{ openfga_db_engine }}://{{ openfga_db_user }}:{{ openfga_db_password }}@{{ openfga_db_host }}:{{ openfga_db_port }}/{{ openfga_db_name }}{{ openfga_db_options }}"
     comparisons:
       env: strict
 
 - name: Start OpenFGA container
+  no_log: true
   community.docker.docker_container:
     name: openfga
     image: "{{ openfga_image }}"

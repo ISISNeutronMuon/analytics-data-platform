@@ -62,7 +62,7 @@
     password: "{{ item.password }}"
     login_host: localhost
     login_user: "{{ postgres_db_user }}"
-    login_password: "{{ item.password }}"
+    login_password: "{{ postgres_db_password }}"
   loop: "{{ postgres_db_databases }}"
   loop_control:
     label: "{{ item.name }}"

@@ -1,5 +1,4 @@
 ---
-postgres_db:
 postgres_db_user: "{{ secrets_self_hosted_db['user'] }}"
 postgres_db_password: "{{ secrets_self_hosted_db['password'] }}"
 postgres_db_databases:
