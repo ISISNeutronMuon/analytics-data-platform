@@ -4,7 +4,7 @@ The following resources are required before deployment can proceed:
 
 - [OpenTofu](#terraformopentofu)
 - [Python environment configured for running Ansible](#python-environment)
-- [Ansible vault password](#ansible-vault)
+- [Vault access](#vault-access)
 - [Openstack clouds.yaml](#openstack-api--vm-credentials)
 - [A shared filesystem through a Manila share](#manila-share)
 - [Object storage](#object-store)
@@ -52,10 +52,12 @@ See the [SCD cloud documentation](https://stfc.atlassian.net/wiki/spaces/CLOUDKB
 An ssh key is required in order to access the VMs.
 See the [SCD cloud documentation](https://stfc.atlassian.net/wiki/spaces/CLOUDKB/pages/211910700/Adding+Your+SSH+Key+into+the+OpenStack+Web+Interface) for details on how to configure your SSH key.
 
-## Ansible vault
+## Vault access
 
-The project secrets are stored using [Ansible Vault](https://docs.ansible.com/ansible/latest/vault_guide/index.html). The password is required and can be supplied either on the command line with each ansible command or
-stored locally in a `<repo_root>/infra/ansible/.vault_pass` file. **Do not share this password or commit the .vault_pass file to Git.**
+The project secrets are stored by [Hashicorp Vault](https://secrets.isis.rl.ac.uk).
+Running Ansible requires a Vault token to access the secrets.
+Login to the [vault](https://secrets.isis.rl.ac.uk), click on the person icon on the left and
+select copy token.
 
 ## Manila share
 

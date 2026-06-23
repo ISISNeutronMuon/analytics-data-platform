@@ -1,6 +1,7 @@
 ---
-postgres_db_data_path: /var/postgres/data
-postgres_db_port: 5432
 postgres_db_user: postgres
+postgres_db_port: 5432
+postgres_db_data_path: /var/postgres
 postgres_docker_initdb_path: /var/postgres/docker-entrypoint-initdb.d
 postgres_image: postgres:18-bookworm
+postgres_db_databases: []

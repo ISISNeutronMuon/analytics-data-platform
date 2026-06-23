@@ -1,0 +1,13 @@
+---
+openfga_db_host: "{{ managed_db.host }}"
+openfga_db_port: "{{ managed_db.port }}"
+openfga_db_name: "{{ secrets_openfga['db_name'] }}"
+openfga_db_user: "{{ secrets_openfga['db_user'] }}"
+openfga_db_password: "{{ secrets_openfga['db_password'] }}"
+
+lakekeeper_db_host: "{{ managed_db.host }}"
+lakekeeper_db_name: "{{ secrets_lakekeeper['db_name'] }}"
+lakekeeper_db_user: "{{ secrets_lakekeeper['db_user'] }}"
+lakekeeper_db_password: "{{ secrets_lakekeeper['db_password'] }}"
+lakekeeper_db_encryption_key: "{{ secrets_lakekeeper['db_encryption_key'] }}"
+lakekeeper_bootstrap_credentials: "ansible:{{ secrets_keycloak_client_secrets['ansible'] }}"

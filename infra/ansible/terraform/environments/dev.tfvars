@@ -68,7 +68,7 @@ instance_configs = {
 }
 floating_ip_info = {
   vm_name     = "traefik-dev"
-  floating_ip = "130.246.81.245"
+  floating_ip = "130.246.212.128"
 }
 
 # ansible

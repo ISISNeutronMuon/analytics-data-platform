@@ -10,12 +10,12 @@
             version: ">=2.5.1"
             extra_args: --break-system-packages
 
-- name: Create postgres data directory exists
+- name: Ensure postgres data directory exists
   become: true
   ansible.builtin.file:
     path: "{{ postgres_db_data_path }}"
     state: directory
-    owner: 26
+    owner: 999
     group: 999
     mode: "u=rwx,g=,o="
 
@@ -24,7 +24,7 @@
   ansible.builtin.file:
     path: /secrets
     state: directory
-    owner: 26
+    owner: 999
     group: 999
     mode: "u=rwx,g=,o="
 
@@ -32,7 +32,7 @@
   become: true
   ansible.builtin.copy:
     dest: /secrets/postgres-passwd
-    content: "{{ postgres_db_passwd }}"
+    content: "{{ postgres_db_password }}"
     owner: root
     group: root
     mode: "u=r,g=r,o=r"
@@ -55,15 +55,30 @@
       - "{{ postgres_db_data_path }}:/var/lib/postgresql"
       - /secrets:/secrets:ro
 
-# The postgresql_ping check doesn't seem to be enough to check that postgres is ready
-# to create a database. Instead just try until we succeed
+- name: Create required users
+  become: true
+  community.postgresql.postgresql_user:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    login_host: localhost
+    login_user: "{{ postgres_db_user }}"
+    login_password: "{{ postgres_db_password }}"
+  loop: "{{ postgres_db_databases }}"
+  loop_control:
+    label: "{{ item.name }}"
+  retries: 5
+  delay: 2
+
 - name: Create required databases
   become: true
   community.postgresql.postgresql_db:
-    name: "{{ item }}"
+    name: "{{ item.name }}"
+    owner: "{{ item.name }}"
     login_host: localhost
     login_user: "{{ postgres_db_user }}"
-    login_password: "{{ postgres_db_passwd }}"
-  loop: "{{ postgres_db_names }}"
+    login_password: "{{ postgres_db_password }}"
+  loop: "{{ postgres_db_databases }}"
+  loop_control:
+    label: "{{ item.name }}"
   retries: 5
   delay: 2

@@ -34,13 +34,42 @@ Now provision the resources:
 
 Move the newly generated inventory `.ini` file to `infra/ansible/inventories/<dev|qa>`.
 
+### Interactive SSH access
+
+The nodes are on a private network with the floating IP attached to the Traefik node.
+`ssh` access to nodes other than Traefik requires a proxy command - the inventory is
+configured for Ansible to understand this so no further configuration is required for
+running Ansible. To be able to access the nodes via interactive ssh add the following
+to `$HOME/.ssh/config`:
+
+```text
+Host jumphost-lakehouse-qa
+   User ubuntu
+   HostName 130.246.214.124
+
+ Host 192.168.43.*
+   ProxyJump jumphost-lakehouse
+   StrictHostKeyChecking accept-new
+
+ Host jumphost-lakehouse-dev
+   User ubuntu
+   HostName 130.246.212.128
+
+ Host 192.168.44.*
+   ProxyJump jumphost-lakehouse-dev
+   StrictHostKeyChecking accept-new
+```
+
 ## Services
 
-Deploy the services using Ansible:
+See [Vault access](prerequisites#vault-access) for retrieving a Vault token
+and store it in a file `infra/ansible/.vault_token`. This file is ignored by git.
+
+Deploy the services using Ansible.
 
 ```bash
 > cd infra/ansible
-> ansible-playbook -i inventories/<dev|qa>/inventory.ini site.yml [-e lakekeeper_admin_user=<admin_email>]
+> NO_PROXY="*" VAULT_ADDR=https://secrets.isis.rl.ac.uk VAULT_TOKEN=$(cat .vault_token) ansible-playbook -i inventories/<dev|qa>/inventory.ini site.yml [-e lakekeeper_admin_user=<admin_email>]
 ```
 
 The variable `lakekeeper_admin_user` is required the first time the playbooks are run. Further runs will add additional users

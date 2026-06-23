@@ -31,6 +31,7 @@
   register: warehouse_json_files
 
 - name: Bootstrap Lakekeeper
+  no_log: true
   community.docker.docker_container:
     name: "{{ lakekeeper_container_name }}_bootstrap"
     image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
@@ -39,7 +40,7 @@
       /opt/work/bootstrap-warehouse.py
         --lakekeeper-project-name "{{ lakekeeper_project_name }}"
         --keycloak-url {{ keycloak_url }}
-        --keycloak-admin-credentials "{{ vault_keycloak_bootstrap_admin_user }}:{{ vault_keycloak_bootstrap_admin_passwd }}"
+        --keycloak-admin-credentials "{{ keycloak_bootstrap.admin_user }}:{{ keycloak_bootstrap.admin_password }}"
         --keycloak-user-realm {{ keycloak_realm.name }}
         --bootstrap-credentials {{ lakekeeper_bootstrap_credentials }}
         --token-scope lakekeeper

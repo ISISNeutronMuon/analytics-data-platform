@@ -1,0 +1,9 @@
+---
+- name: Deploy traefik
+  hosts: traefik
+  roles:
+    - base
+    - role: docs
+      become: true
+    - role: traefik
+      tags: [traefik]

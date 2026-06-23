@@ -1,0 +1,9 @@
+---
+- name: Deploy data services (if required)
+  hosts: datastore
+  roles:
+    - base
+    - role: postgres
+      tags: [postgres]
+    - role: minio
+      tags: [minio]

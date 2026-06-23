@@ -1,58 +1,8 @@
 ---
-- name: Deploy traefik
-  hosts: traefik
-  roles:
-    - base
-    - role: docs
-      become: true
-    - role: traefik
-      tags: [traefik]
-
-- name: Deploy data services (if required)
-  hosts: datastore
-  roles:
-    - base
-    - role: postgres
-      tags: [postgres]
-    - role: minio
-      tags: [minio]
-
-- name: Deploy Keycloak
-  hosts: keycloak
-  roles:
-    - base
-    - role: keycloak
-      tags: [keycloak]
-
-- name: Deploy Lakekeeper
-  hosts: lakekeeper
-  roles:
-    - base
-    - role: openfga
-      tags: [openfga]
-    - role: lakekeeper
-      tags: [lakekeeper]
-
-- name: Deploy Trino
-  hosts: trino
-  roles:
-    - base
-    - role: trino
-      tags: [trino]
-
-- name: Deploy Superset instances
-  hosts: superset_farm
-  roles:
-    - base
-    - redis
-    - role: superset_farm
-      tags: [superset_farm]
-
-- name: Deploy ELT node
-  hosts: elt
-  roles:
-    - base
-    - role: robertdebock.logrotate
-      become: true
-    - role: elt
-      tags: [elt]
+- import_playbook: site_traefik.yml
+- import_playbook: site_datastore.yml
+- import_playbook: site_keycloak.yml
+- import_playbook: site_lakekeeper.yml
+- import_playbook: site_trino.yml
+- import_playbook: site_superset_farm.yml
+- import_playbook: site_elt.yml

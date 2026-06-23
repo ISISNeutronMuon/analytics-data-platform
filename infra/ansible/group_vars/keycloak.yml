@@ -1,4 +1,10 @@
 ---
+keycloak_db_host: "{{ managed_db.host }}"
+keycloak_db_port: "{{ managed_db.port }}"
+keycloak_db_name: "{{ secrets_keycloak['db_name'] }}"
+keycloak_db_user: "{{ secrets_keycloak['db_user'] }}"
+keycloak_db_password: "{{ secrets_keycloak['db_password'] }}"
+
 # Eveything is assigned to the realm defined by keycloak_realm.name in all/all.yml
 keycloak_client_scopes:
   - name: lakekeeper
@@ -19,7 +25,7 @@ keycloak_clients:
     name: "Ansible client"
     protocol: "openid-connect"
     public_client: false
-    secret: "{{ vault_keycloak_client_secrets['ansible'] }}"
+    secret: "{{ secrets_keycloak_client_secrets['ansible'] }}"
     standard_flow_enabled: false
     implicit_flow_enabled: false
     direct_access_grants_enabled: false
@@ -32,7 +38,7 @@ keycloak_clients:
     name: "Trino client"
     protocol: "openid-connect"
     public_client: false
-    secret: "{{ vault_keycloak_client_secrets['trino'] }}"
+    secret: "{{ secrets_keycloak_client_secrets['trino'] }}"
     standard_flow_enabled: false
     implicit_flow_enabled: false
     direct_access_grants_enabled: false
@@ -45,7 +51,7 @@ keycloak_clients:
     name: "ELT services client"
     protocol: "openid-connect"
     public_client: false
-    secret: "{{ vault_keycloak_client_secrets['elt'] }}"
+    secret: "{{ secrets_keycloak_client_secrets['elt'] }}"
     standard_flow_enabled: false
     implicit_flow_enabled: false
     direct_access_grants_enabled: false

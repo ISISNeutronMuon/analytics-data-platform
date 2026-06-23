@@ -4,8 +4,8 @@
     auth_client_id: admin-cli
     auth_keycloak_url: "{{ keycloak_url }}"
     auth_realm: master
-    auth_username: "{{ keycloak_bootstrap_admin_user }}"
-    auth_password: "{{ keycloak_bootstrap_admin_passwd }}"
+    auth_username: "{{ keycloak_bootstrap.admin_user }}"
+    auth_password: "{{ keycloak_bootstrap.admin_password }}"
     realm: "{{ target_realm }}"
     name: "STFC LDAP"
     state: present
@@ -22,7 +22,7 @@
       rdnLDAPAttribute: cn
       uuidLDAPAttribute: objectGUID
       userObjectClasses: "person, organizationalPerson, user"
-      connectionUrl: "{{ vault_keycloak_ldap_connection_url }}"
+      connectionUrl: "{{ ldap_server }}"
       usersDn: "OU=FBU,DC=fed,DC=cclrc,DC=ac,DC=uk"
       authType: none
       searchScope: 1

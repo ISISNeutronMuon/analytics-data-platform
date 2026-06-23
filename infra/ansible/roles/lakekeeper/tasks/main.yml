@@ -2,9 +2,9 @@
 - name: Set Lakekeeper shared facts
   ansible.builtin.set_fact:
     lakekeeper_shared_env:
-      LAKEKEEPER__PG_ENCRYPTION_KEY: "{{ lakekeeper_metadb_encryption_key }}"
-      LAKEKEEPER__PG_DATABASE_URL_READ: "postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
-      LAKEKEEPER__PG_DATABASE_URL_WRITE: "postgresql://{{ lakekeeper_metadb_user }}:{{ lakekeeper_metadb_passwd }}@{{ lakekeeper_metadb_host }}:5432/{{ lakekeeper_metadb_name }}"
+      LAKEKEEPER__PG_ENCRYPTION_KEY: "{{ lakekeeper_db_encryption_key }}"
+      LAKEKEEPER__PG_DATABASE_URL_READ: "postgresql://{{ lakekeeper_db_user }}:{{ lakekeeper_db_password }}@{{ lakekeeper_db_host }}:5432/{{ lakekeeper_db_name }}"
+      LAKEKEEPER__PG_DATABASE_URL_WRITE: "postgresql://{{ lakekeeper_db_user }}:{{ lakekeeper_db_password }}@{{ lakekeeper_db_host }}:5432/{{ lakekeeper_db_name }}"
       LAKEKEEPER__OPENID_PROVIDER_URI: "{{ keycloak_realm_url }}"
       LAKEKEEPER__OPENID_AUDIENCE: lakekeeper
       LAKEKEEPER__AUTHZ_BACKEND: openfga

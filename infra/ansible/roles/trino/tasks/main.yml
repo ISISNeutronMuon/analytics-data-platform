@@ -45,7 +45,7 @@
       iceberg.rest-catalog.vended-credentials-enabled=false
       iceberg.rest-catalog.security=OAUTH2
       iceberg.rest-catalog.oauth2.server-uri={{ keycloak_realm_url }}/protocol/openid-connect/token
-      iceberg.rest-catalog.oauth2.credential=trino:{{ vault_keycloak_client_secrets['trino'] }}
+      iceberg.rest-catalog.oauth2.credential=trino:{{ secrets_keycloak_client_secrets['trino'] }}
       iceberg.rest-catalog.oauth2.scope=lakekeeper offline_access
       # Our S3 implementation does not have STS enabled so we need to provide
       # S3 credentials too
@@ -89,7 +89,7 @@
   ansible.builtin.lineinfile:
     path: "{{ trino_working_dir }}/creds/trino.pass"
     regexp: "^{{ user.key }}"
-    line: "{{ user.key }}:{{ user.value.password | password_hash('bcrypt', rounds=10, ident='2y') }}"
+    line: "{{ user.key }}:{{ user.value | password_hash('bcrypt', rounds=10, ident='2y') }}"
     state: present
     create: true
     owner: root

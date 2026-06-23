@@ -1,2 +1,2 @@
 ---
-trino_users: "{{ vault_trino_users }}"
+trino_users: "{{ secrets_trino_users }}"

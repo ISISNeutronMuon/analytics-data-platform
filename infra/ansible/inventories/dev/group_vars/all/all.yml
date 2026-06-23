@@ -1,11 +1,20 @@
 ---
-top_level_domain: dev-analytics.isis.cclrc.ac.uk
+deploy_env: dev
+
+elt_cron_enable_all: false
 
 minio_api_port: 9000
 minio_console_port: 9001
 minio_console_base_path: /minio-ui
 
+# Managed by us in the datastore host
+managed_db:
+  host: "{{ groups['datastore'][0] }}"
+  port: 5432
+
 s3_endpoint: "https://{{ top_level_domain }}:{{ minio_api_port }}"
 s3_region: minio # not used but can be required by apis
-s3_access_key_id: "{{ vault_minio_root_user }}"
-s3_access_secret: "{{ vault_minio_root_passwd }}"
+s3_access_key_id: "{{ secrets_minio['user'] }}"
+s3_access_secret: "{{ secrets_minio['password'] }}"
+
+top_level_domain: dev-analytics.isis.cclrc.ac.uk
