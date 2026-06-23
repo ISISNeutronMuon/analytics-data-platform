@@ -7,16 +7,3 @@ superset_farm_db_password: "{{ secrets_superset_farm['db_password'] }}"
 
 superset_farm_redis_host: localhost
 superset_farm_redis_port: 6379
-
-superset_farm_instances:
-  accelerator:
-    app_root: "{{ superset_farm_url_prefix }}/accelerator"
-    env_name: production
-    flask_debug: false
-    http_port: 8088
-    redis_db: 0
-    secret_key: "{{ secrets_superset_farm_secret_keys['accelerator'] }}"
-    users_yaml: "{{ secrets_superset_farm_users_yaml['accelerator'] | from_yaml }}"
-    analytic_dbs:
-      - name: facility_ops
-        db_url: "trino://superset:{{ secrets_trino_users['superset'] }}@{{ top_level_domain }}:{{ trino_https_port }}/facility_ops"
