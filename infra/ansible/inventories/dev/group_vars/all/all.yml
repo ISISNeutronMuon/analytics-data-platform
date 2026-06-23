@@ -1,6 +1,8 @@
 ---
 deploy_env: dev
 
+elt_cron_enable_all: false
+
 minio_api_port: 9000
 minio_console_port: 9001
 minio_console_base_path: /minio-ui

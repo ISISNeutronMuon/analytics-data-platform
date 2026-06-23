@@ -1,6 +1,8 @@
 ---
 deploy_env: qa
 
+elt_cron_enable_all: true
+
 # Managed by DB services
 managed_db:
   host: dbspg-dev.fds.rl.ac.uk
