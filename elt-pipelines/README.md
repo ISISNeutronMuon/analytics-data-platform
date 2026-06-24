@@ -27,3 +27,8 @@ fetching data. To install any additional dependencies for that specific pipeline
 ```bash
 > uv sync --extra statusdisplay
 ```
+
+## Running a pipeline
+
+Pipelines are run using the `elt` CLI tool. As an example, with the package as current working directory,
+`elt run pipelines statusdisplay` will run the statusdisplay pipeline. See `elt -h` for full usage.
