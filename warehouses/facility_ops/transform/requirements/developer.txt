@@ -91,7 +91,7 @@ mashumaro[msgpack]==3.14
     #   dbt-core
 more-itertools==10.8.0
     # via dbt-semantic-interfaces
-msgpack==1.1.1
+msgpack==1.2.1
     # via mashumaro
 networkx==3.5
     # via dbt-core
@@ -172,10 +172,10 @@ snowplow-tracker==1.1.0
     # via dbt-core
 sqlfluff==3.4.2
     # via
-    #   -r requirements/developer.in
+    #   -r developer.in
     #   sqlfluff-templater-dbt
 sqlfluff-templater-dbt==3.4.2
-    # via -r requirements/developer.in
+    # via -r developer.in
 sqlparse==0.5.5
     # via dbt-core
 tblib==3.1.0
