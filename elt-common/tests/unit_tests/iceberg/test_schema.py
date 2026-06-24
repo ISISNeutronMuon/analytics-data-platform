@@ -86,6 +86,40 @@ def test_returns_expected_iceberg_type(arrow_type, expected_type):
     assert isinstance(result, expected_type)
 
 
+def test_arrow_type_to_iceberg_nested_fields():
+    arrow_type = pa.struct(
+        [
+            (
+                "a",
+                pa.list_(
+                    pa.struct(
+                        [
+                            ("b", pa.int32()),
+                            ("c", pa.string()),
+                        ]
+                    )
+                ),
+            ),
+            ("d", pa.struct([("e", pa.timestamp("ms"))])),
+        ]
+    )
+    result = arrow_type_to_iceberg(arrow_type)
+    assert isinstance(result, StructType)
+    assert len(result.fields) == 2
+
+    list_field = result.fields[0]
+    assert isinstance(list_field.field_type, ListType)
+    list_struct = list_field.field_type.element_type
+    assert isinstance(list_struct, StructType)
+    assert len(list_struct.fields) == 2
+    assert isinstance(list_struct.fields[0].field_type, IntegerType)
+    assert isinstance(list_struct.fields[1].field_type, StringType)
+
+    struct_field = result.fields[1]
+    assert isinstance(struct_field.field_type, StructType)
+    assert isinstance(struct_field.field_type.fields[0].field_type, TimestampType)
+
+
 def test_maps_decimal_precision_and_scale():
     result = arrow_type_to_iceberg(pa.decimal128(12, 3))
 
@@ -128,12 +162,12 @@ def test_create_iceberg_schema(arrow_schema: pa.Schema, identifier_fields):
 @pytest.mark.parametrize(
     ["iceberg_field_idxs", "expected_new_field_names"],
     [
-        ([], {"row_id", "entry_name", "entry_timestamp", "entry_weight"}),
+        ([], ["row_id", "entry_name", "entry_timestamp", "entry_weight"]),
         (
             [0, 1, 2],
-            {"row_id", "entry_name", "entry_timestamp", "entry_weight"},
+            ["row_id", "entry_name", "entry_timestamp", "entry_weight"],
         ),
-        ([0, 1, 2, 3], {}),
+        ([0, 1, 2, 3], []),
     ],
 )
 def test_evolve_schema(
@@ -146,7 +180,7 @@ def test_evolve_schema(
 
     if expected_new_field_names:
         assert schema_with_new_fields is not None
-        assert {f.name for f in schema_with_new_fields.fields} == expected_new_field_names
+        assert [f.name for f in schema_with_new_fields.fields] == expected_new_field_names
     else:
         assert schema_with_new_fields is None
 
