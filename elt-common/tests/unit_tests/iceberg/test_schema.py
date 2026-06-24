@@ -1,7 +1,8 @@
 """Tests for elt_common.iceberg.schema"""
 
 import pyarrow as pa
-from pyiceberg.schema import Schema, NestedField
+import pytest
+from pyiceberg.schema import NestedField, Schema
 from pyiceberg.types import (
     BinaryType,
     BooleanType,
@@ -9,27 +10,37 @@ from pyiceberg.types import (
     DecimalType,
     DoubleType,
     IntegerType,
+    ListType,
     LongType,
     StringType,
-    TimeType,
+    StructType,
     TimestampType,
     TimestamptzType,
+    TimeType,
 )
-import pytest
 
 from elt_common.iceberg.schema import arrow_type_to_iceberg, create_schema, evolve_schema
 
 
+arrow_fields = [
+    pa.field("row_id", pa.int64(), nullable=False),
+    pa.field("entry_name", pa.string(), nullable=False),
+    pa.field("entry_timestamp", pa.timestamp(unit="us")),
+    pa.field("entry_weight", pa.float64()),
+]
+
+
 @pytest.fixture()
 def arrow_schema() -> pa.Schema:
-    return pa.schema(
-        [
-            pa.field("row_id", pa.int64(), nullable=False),
-            pa.field("entry_name", pa.string(), nullable=False),
-            pa.field("entry_timestamp", pa.timestamp(unit="us")),
-            pa.field("entry_weight", pa.float64()),
-        ]
-    )
+    return pa.schema(arrow_fields)
+
+
+iceberg_fields = [
+    NestedField(field_id=1, name="row_id", field_type=LongType(), required=True),
+    NestedField(field_id=2, name="entry_name", field_type=StringType(), required=True),
+    NestedField(field_id=3, name="entry_timestamp", field_type=TimestampType()),
+    NestedField(field_id=4, name="entry_weight", field_type=DoubleType()),
+]
 
 
 def test_unsupported_arrow_type_raises():
@@ -54,11 +65,59 @@ def test_unsupported_arrow_type_raises():
         (pa.binary(), BinaryType),
         (pa.large_binary(), BinaryType),
         (pa.binary(8), BinaryType),
+        (pa.struct([("test", pa.int32())]), StructType),
+        (pa.struct([("nested", pa.struct([("test", pa.int32())]))]), StructType),
+        (pa.list_(pa.int32()), ListType),
+        (
+            pa.list_(
+                pa.struct(
+                    [
+                        ("list_of_structs", pa.list_(pa.struct([("a", pa.int32())]))),
+                        ("something", pa.binary()),
+                    ]
+                )
+            ),
+            ListType,
+        ),
     ],
 )
 def test_returns_expected_iceberg_type(arrow_type, expected_type):
     result = arrow_type_to_iceberg(arrow_type)
     assert isinstance(result, expected_type)
+
+
+def test_arrow_type_to_iceberg_nested_fields():
+    arrow_type = pa.struct(
+        [
+            (
+                "a",
+                pa.list_(
+                    pa.struct(
+                        [
+                            ("b", pa.int32()),
+                            ("c", pa.string()),
+                        ]
+                    )
+                ),
+            ),
+            ("d", pa.struct([("e", pa.timestamp("ms"))])),
+        ]
+    )
+    result = arrow_type_to_iceberg(arrow_type)
+    assert isinstance(result, StructType)
+    assert len(result.fields) == 2
+
+    list_field = result.fields[0]
+    assert isinstance(list_field.field_type, ListType)
+    list_struct = list_field.field_type.element_type
+    assert isinstance(list_struct, StructType)
+    assert len(list_struct.fields) == 2
+    assert isinstance(list_struct.fields[0].field_type, IntegerType)
+    assert isinstance(list_struct.fields[1].field_type, StringType)
+
+    struct_field = result.fields[1]
+    assert isinstance(struct_field.field_type, StructType)
+    assert isinstance(struct_field.field_type.fields[0].field_type, TimestampType)
 
 
 def test_maps_decimal_precision_and_scale():
@@ -101,29 +160,55 @@ def test_create_iceberg_schema(arrow_schema: pa.Schema, identifier_fields):
 
 
 @pytest.mark.parametrize(
-    ["iceberg_field_names", "expected_new_field_names"],
+    ["iceberg_field_idxs", "expected_new_field_names"],
     [
-        ([], {"row_id", "entry_name", "entry_timestamp", "entry_weight"}),
+        ([], ["row_id", "entry_name", "entry_timestamp", "entry_weight"]),
         (
-            ["row_id", "entry_name", "entry_timestamp"],
-            {"row_id", "entry_name", "entry_timestamp", "entry_weight"},
+            [0, 1, 2],
+            ["row_id", "entry_name", "entry_timestamp", "entry_weight"],
         ),
-        (["row_id", "entry_name", "entry_timestamp", "entry_weight"], {}),
+        ([0, 1, 2, 3], []),
     ],
 )
 def test_evolve_schema(
-    arrow_schema: pa.Schema, iceberg_field_names: list[str], expected_new_field_names
+    arrow_schema: pa.Schema, iceberg_field_idxs: list[int], expected_new_field_names
 ):
-    existing_fields = [
-        NestedField(field_id=i + 1, name=name, field_type=StringType(), required=False)
-        for i, name in enumerate(iceberg_field_names)
-    ]
+    existing_fields = [iceberg_fields[i] for i in iceberg_field_idxs]
     existing_schema = Schema(*existing_fields)
 
     schema_with_new_fields = evolve_schema(existing_schema, arrow_schema)
 
     if expected_new_field_names:
         assert schema_with_new_fields is not None
-        assert {f.name for f in schema_with_new_fields.fields} == expected_new_field_names
+        assert [f.name for f in schema_with_new_fields.fields] == expected_new_field_names
     else:
         assert schema_with_new_fields is None
+
+
+@pytest.mark.parametrize(
+    ["iceberg_field_idxs", "new_fields"],
+    [
+        # Fields removed
+        ([0], []),
+        ([0], arrow_fields[1:]),
+        ([0, 1], arrow_fields[:1]),
+        ([0, 1, 2], arrow_fields[:2]),
+        ([0], [arrow_fields[1]]),
+        ([1, 2], arrow_fields[2:4]),
+        # Fields reordered
+        ([0, 1], [arrow_fields[1], arrow_fields[0]]),
+        ([3, 2, 1], [arrow_fields[1], arrow_fields[3], arrow_fields[2]]),
+        # Field property changed
+        ([0], [pa.field("row_id_renamed", pa.int64(), nullable=False)]),
+        ([0], [pa.field("row_id", pa.int32(), nullable=False)]),
+        ([0], [pa.field("row_id", pa.int64(), nullable=True)]),
+    ],
+)
+def test_evolve_schema_incompatible(iceberg_field_idxs, new_fields):
+    existing_fields = [iceberg_fields[i] for i in iceberg_field_idxs]
+    existing_schema = Schema(*existing_fields)
+
+    new_schema = pa.schema(new_fields)
+
+    with pytest.raises(ValueError):
+        evolve_schema(existing_schema, new_schema)
