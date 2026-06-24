@@ -13,7 +13,7 @@ dependencies = [
   "dlt[parquet,s3]==1.26.0", # Soon to remove, don't make any more updates: https://github.com/ISISNeutronMuon/analytics-data-platform/issues/321
   "pyiceberg[pyiceberg-core]>=0.11.1",
   "s3fs<2026.2.0", # See https://github.com/ISISNeutronMuon/analytics-data-platform/issues/237
-  "pydantic_settings>=2.14.1",
+  "pydantic_settings>=2.14.2",
   "pydantic>=2.13.4",
 ]
 
