@@ -31,7 +31,11 @@ def extract_cycles(_):
 
 
 def fetch():
-    response = requests.get(CYCLES_URL)
+    try:
+        response = requests.get(CYCLES_URL, timeout=20)
+    except requests.Timeout as ex:
+        raise RuntimeError("Timed out when fetching cycles") from ex
+
     if not response.ok:
         raise RuntimeError(f"Failed to fetch cycles - {response.reason}")
 
