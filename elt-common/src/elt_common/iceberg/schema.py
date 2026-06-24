@@ -167,6 +167,8 @@ def get_max_field_id(f: NestedField) -> int:
         return f.field_id
     elif isinstance(f.field_type, StructType):
         struct_fields = f.field_type.fields
+        if not struct_fields:
+            return f.field_id
         return max(get_max_field_id(sub) for sub in struct_fields)
     elif isinstance(f.field_type, ListType):
         return get_max_field_id(f.field_type.element_field)
