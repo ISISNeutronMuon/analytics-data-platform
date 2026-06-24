@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Collection
 
 import pyarrow as pa
 from pyiceberg.schema import Schema
@@ -91,7 +91,7 @@ def arrow_field_to_iceberg(column_id: int, arrow_field: pa.Field) -> NestedField
     )
 
 
-def create_schema(arrow_schema: pa.Schema, identifier_fields: Sequence[str] = ()) -> Schema:
+def create_schema(arrow_schema: pa.Schema, identifier_fields: Collection[str] = ()) -> Schema:
     """Convert a pyarrow schema into an iceberg schema
 
     :param arrow_schema: A pyarrow schema.
@@ -122,7 +122,7 @@ def evolve_schema(iceberg_schema: Schema, new_arrow_schema: pa.Schema) -> Schema
     :returns: None if the schema didn't change, or the new schema if it did (in a backward compatible way).
     :raises ValueError: If the schema has incompatible changes.
     """
-    new_iceberg_schema = create_schema(new_arrow_schema)
+    new_iceberg_schema = create_schema(new_arrow_schema, iceberg_schema.identifier_field_names())
 
     if new_iceberg_schema == iceberg_schema:
         return None
