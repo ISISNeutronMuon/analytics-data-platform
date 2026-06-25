@@ -2,7 +2,6 @@ from datetime import datetime
 import io
 import json
 import pyarrow.json
-from pydantic_settings import BaseSettings
 import requests
 
 from elt_common.extract import BaseExtract, ResourceProperties, ResourceWriteProperties
@@ -56,11 +55,3 @@ def clean(data):
                 phase["end"] = reformat(phase["end"])
 
     return data
-
-
-if __name__ == "__main__":
-    e = Extract(BaseSettings())
-
-    for t, p in e.extract_resource_properties():
-        extracted = list(p.extractor(None))[0]
-        print(extracted)
