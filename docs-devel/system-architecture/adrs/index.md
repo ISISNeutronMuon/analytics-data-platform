@@ -16,7 +16,8 @@ for details on why we use ADRs.
 | [0007](./0007-use-echo-s3-object-store.md)                          | Use Echo as S3 object store                            | Accepted   |
 | [0008](./0008-use-superset-as-reporting-tool-frontend.md)           | Use Superset as frontend replacement of reporting-tool | Accepted   |
 | [0009](./0009-use-apache-airflow-as-job-orchestration-tool.md)      | Use Apache Airflow as job orchestration tool           | Accepted   |
-| [00010](./0010-use-data-load-tool-for-ingesting-data.md)            | Use data load tool for ingesting data                  | Accepted   |
+| [00010](./0010-use-data-load-tool-for-ingesting-data.md)            | Use data load tool for ingesting data                  | Superseded |
+| [00011](./0011-replace-dlt-in-ingestion-pipelines.md)               | Replace DLT in ingestion pipelines                     | Accepted   |
 
 ## adr-tools
 

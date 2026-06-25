@@ -4,7 +4,7 @@ Date: 2026-06-25
 
 ## Status
 
-Accepted
+Superceded by [11. Replace DLT in ingestion pipelines](0011-replace-dlt-in-ingestion-pipelines.md)
 
 ## Context
 
