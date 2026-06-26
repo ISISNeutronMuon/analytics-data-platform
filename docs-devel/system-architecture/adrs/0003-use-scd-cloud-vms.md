@@ -1,5 +1,7 @@
 # 3. Use SCD Cloud VMs
 
+Date: 2024-07-04
+
 ## Status
 
 Accepted

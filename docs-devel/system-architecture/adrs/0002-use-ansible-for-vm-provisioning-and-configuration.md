@@ -1,5 +1,7 @@
 # 2. Use Ansible for VM provisioning and configuration
 
+Date: 2024-07-03
+
 ## Status
 
 Accepted

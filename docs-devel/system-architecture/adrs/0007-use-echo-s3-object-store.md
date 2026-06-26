@@ -1,5 +1,7 @@
 # 7. Use Ceph S3 as object store
 
+Date: 2024-07-04
+
 ## Status
 
 Accepted

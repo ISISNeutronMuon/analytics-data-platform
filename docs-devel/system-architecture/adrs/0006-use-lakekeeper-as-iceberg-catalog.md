@@ -1,5 +1,7 @@
 # 6. Use Lakekeeper as the Iceberg Catalog
 
+Date: 2024-07-04
+
 ## Status
 
 Accepted
