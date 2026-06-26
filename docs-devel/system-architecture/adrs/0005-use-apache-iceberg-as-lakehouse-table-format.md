@@ -1,5 +1,7 @@
 # 5. Use Apache Iceberg as Lakehouse Table Format
 
+Date: 2024-07-04
+
 ## Status
 
 Accepted

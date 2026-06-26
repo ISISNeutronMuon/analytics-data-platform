@@ -1,5 +1,7 @@
 # 4. Use MinIO as object store
 
+Date: 2024-07-04
+
 ## Status
 
 Superseded by [ADR-0007](./0007-use-echo-s3-object-store.md).
