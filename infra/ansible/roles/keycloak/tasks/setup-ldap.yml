@@ -24,6 +24,11 @@
       userObjectClasses: "person, organizationalPerson, user"
       connectionUrl: "{{ ldap_server }}"
       usersDn: "OU=FBU,DC=fed,DC=cclrc,DC=ac,DC=uk"
+      customUserSearchFilter: >-
+        {% if ldap_users | default([]) | length > 0 %}
+        (!({{ ldap_users | map('format', '(mail=%s)') | join('') }}))
+        {% else %}
+        {% endif %}
       authType: none
       searchScope: 1
       validatePasswordPolicy: false

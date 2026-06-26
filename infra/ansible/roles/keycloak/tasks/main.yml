@@ -105,6 +105,12 @@
       timeout: 2s
       retries: 15
 
+# Connect master realm to ldap
+- ansible.builtin.import_tasks: setup-ldap.yml
+  vars:
+    target_realm: "master"
+
+# Configure platform realm
 - ansible.builtin.import_tasks: setup-realm.yml
   vars:
     target_realm: "{{ keycloak_realm.name }}"
