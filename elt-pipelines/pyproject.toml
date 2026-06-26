@@ -1,0 +1,24 @@
+[project]
+name = "elt-pipelines"
+version = "0.1.0"
+description = "Pipelines for ingesting data into Iceberg catalogs"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "elt-common",
+    "pydantic-settings>=2.14.2",
+]
+
+[project.optional-dependencies]
+statusdisplay = [
+    "pyarrow>=24.0.0",
+    "requests>=2.34.2",
+]
+
+[tool.uv.sources]
+elt-common = { path = "../elt-common", editable = true }
+
+[dependency-groups]
+dev = [
+    "prek>=0.4.5",
+]
