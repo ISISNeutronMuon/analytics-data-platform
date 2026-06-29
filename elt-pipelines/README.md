@@ -46,7 +46,9 @@ elt-pipelines/
 |    |    |    |    |-- <job name>.py
 ```
 
-- Each 'target warehouse' is the name of an Iceberg warehouse. The data ingested by the pipelines inside that directory end up in that warehouse.
-- The directory structure from `ingest` down is what is required for `elt-common` to be able to run 'ingest' pipelines.
+- This directory structure is required for using `elt-common`
+- Each 'target warehouse' is the name of an Iceberg warehouse. The data ingested by the pipelines inside that directory
+  end up in that warehouse.
 - Data from ingest pipelines is considered 'raw' data, and is loaded into a warehouse suffixed with `_landing`.
-- Under construction: Each warehouse will also have a `transform` subdirectory containing pipelines for converting the raw data into it's final state in the target warehouse.
+- Under construction: Each warehouse will also have a `transform` subdirectory containing pipelines for converting the
+  raw data into it's final state in the target warehouse.

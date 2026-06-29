@@ -16,6 +16,7 @@ class PipelinesProject:
             raise ValueError(f"Invalid project. Ingest directory '{ingest_dir}' does not exist.")
 
         self._root = root
+        self._warehouse = root.parts[-1]
         self._ingest_dir = ingest_dir
         self._name = root.name
         self._ingest_jobs = []
@@ -31,34 +32,34 @@ class PipelinesProject:
     @property
     def ingest_jobs(self) -> list[ELTJobManifest]:
         if not self._ingest_jobs:
-            self._ingest_jobs = _discover_jobs(self._ingest_dir)
+            self._ingest_jobs = _discover_jobs(self._warehouse, self._ingest_dir)
 
         return self._ingest_jobs
 
 
-def _discover_jobs(ingest_dir: Path):
-    """Find all subdirectories under *root/ingest* and create manifests describing them.
+def _discover_jobs(warehouse_name: str, ingest_dir: Path):
+    """Find all subdirectories the warehouses 'ingest' directory and create manifests describing them.
 
     The following directory structure is assumed:
 
-    root/
+    warehouse_name/
     |-- ingest/
     |   |-- domain_A/
     |   |   |-- source_A/
     |   |   |-- source_B/
     |   |-- domain_B/
     |       |-- source_A/
-    |-- transform/   # Root of dbt project
 
     Each subdirectory under ingest is considered a domain and each subdirectory
     underneath a domain is a data source from that domain.
 
-    :param ingest_dir: Root directory to search recursively.
+    :param warehouse_name: The top level directory name, which is stored in the manifest.
+    :param ingest_dir: Root ingest directory to search for jobs.
     :returns: List of parsed manifests.
     """
 
     return [
-        _create_ingest_manifest(job_dir)
+        _create_ingest_manifest(warehouse_name, job_dir)
         for domain_dir in ingest_dir.iterdir()
         if domain_dir.is_dir()
         for job_dir in domain_dir.iterdir()
@@ -66,9 +67,11 @@ def _discover_jobs(ingest_dir: Path):
     ]
 
 
-def _create_ingest_manifest(job_dir: Path) -> ELTJobManifest:
+def _create_ingest_manifest(warehouse_name: str, job_dir: Path) -> ELTJobManifest:
     return ELTJobManifest(
+        warehouse_name=warehouse_name,
         name=job_dir.name,
         domain=job_dir.parent.name,
         ingest_job_dir=job_dir.resolve(),
+        is_ingest_job=True,
     )

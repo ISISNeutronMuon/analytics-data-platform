@@ -43,8 +43,10 @@ def test_deserialize_watermark_good_values(serialized, expected):
 def make_error_manifest(filename):
     this_dir = Path(__file__).parent
     return ELTJobManifest(
+        warehouse_name="warehouse",
         name=filename,
         domain="whatever",
+        is_ingest_job=True,
         ingest_job_dir=this_dir / "create_extract_obj_fakes" / "errors",
     )
 
@@ -69,8 +71,10 @@ def test_create_extract_obj_errors(filename, expected_error, expected_error_mess
 def make_manifest(filename):
     this_dir = Path(__file__).parent
     return ELTJobManifest(
+        warehouse_name="test_warehouse",
         name=filename,
         domain="whatever",
+        is_ingest_job=True,
         ingest_job_dir=this_dir / "create_extract_obj_fakes",
     )
 
