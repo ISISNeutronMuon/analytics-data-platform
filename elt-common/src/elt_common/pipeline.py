@@ -15,8 +15,9 @@ class PipelinesProject:
         if not ingest_dir.is_dir():
             raise ValueError(f"Invalid project. Ingest directory '{ingest_dir}' does not exist.")
 
-        self._root = root
-        self._warehouse = root.parts[-1]
+        resolved = root.resolve()
+        self._root = resolved
+        self._warehouse = resolved.parts[-1]
         self._ingest_dir = ingest_dir
         self._name = root.name
         self._ingest_jobs = []
