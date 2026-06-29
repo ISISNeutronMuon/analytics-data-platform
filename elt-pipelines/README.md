@@ -32,3 +32,21 @@ fetching data. To install any additional dependencies for that specific pipeline
 
 Pipelines are run using the `elt` CLI tool. As an example, with the package as current working directory,
 `elt run pipelines statusdisplay` will run the statusdisplay pipeline. See `elt -h` for full usage.
+
+## Directory structure
+
+The project uses the following directory structure:
+
+```txt
+elt-pipelines/
+|-- <target warehouse>/
+|    |-- ingest/
+|    |    |-- <domain>/
+|    |    |    |-- <job name>/
+|    |    |    |    |-- <job name>.py
+```
+
+- Each 'target warehouse' is the name of an Iceberg warehouse. The data ingested by the pipelines inside that directory end up in that warehouse.
+- The directory structure from `ingest` down is what is required for `elt-common` to be able to run 'ingest' pipelines.
+- Data from ingest pipelines is considered 'raw' data, and is loaded into a warehouse suffixed with `_landing`.
+- Under construction: Each warehouse will also have a `transform` subdirectory containing pipelines for converting the raw data into it's final state in the target warehouse.
