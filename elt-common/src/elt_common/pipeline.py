@@ -38,11 +38,11 @@ class PipelinesProject:
 
 
 def _discover_jobs(warehouse_name: str, ingest_dir: Path):
-    """Find all subdirectories the warehouses 'ingest' directory and create manifests describing them.
+    """Find all subdirectories under the warehouse 'ingest' directory and create manifests describing them.
 
     The following directory structure is assumed:
 
-    warehouse_name/
+    <warehouse_name>/
     |-- ingest/
     |   |-- domain_A/
     |   |   |-- source_A/

@@ -51,4 +51,4 @@ elt-pipelines/
   end up in that warehouse.
 - Data from ingest pipelines is considered 'raw' data, and is loaded into a warehouse suffixed with `_landing`.
 - Under construction: Each warehouse will also have a `transform` subdirectory containing pipelines for converting the
-  raw data into it's final state in the target warehouse.
+  raw data into its final state in the target warehouse.
