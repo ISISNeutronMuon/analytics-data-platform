@@ -10,24 +10,32 @@ from elt_common.pipeline import (
 )
 
 
-def test_namespace_property_combines_domain_and_name():
-    """Tests for IngestJobManifest.destination_namespace"""
+def test_properties():
     manifest = ELTJobManifest(
+        warehouse_name="test_warehouse",
         name="source_a",
         domain="facility_ops",
+        is_ingest_job=True,
         ingest_job_dir=Path("/some/path"),
     )
-    assert manifest.destination_namespace == "facility_ops_source_a"
+    assert manifest.destination_namespace == "facility_ops_source_a", (
+        "Destination namespace should be 'domain'_'name'"
+    )
+    assert manifest.full_name == "facility_ops.source_a", "Name should be 'domain'.'name'"
+    assert manifest.destination_warehouse == "test_warehouse_landing", (
+        "Ingest job destination should have _landing appended"
+    )
 
-
-def test_full_name_property_combines_domain_and_name():
-    """Tests for IngestJobManifest.full_name"""
-    manifest = ELTJobManifest(
+    non_ingest_manifest = ELTJobManifest(
+        warehouse_name="test_warehouse",
         name="source_a",
         domain="facility_ops",
+        is_ingest_job=False,
         ingest_job_dir=Path("/some/path"),
     )
-    assert manifest.full_name == "facility_ops.source_a"
+    assert non_ingest_manifest.destination_warehouse == "test_warehouse", (
+        "Non-ingest manifest shouldn't change warehouse name"
+    )
 
 
 def test_init_stores_root_and_derives_name(tmp_path: Path):

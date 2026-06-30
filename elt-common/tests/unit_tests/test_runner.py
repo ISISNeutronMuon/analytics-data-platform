@@ -38,8 +38,10 @@ def elt_job(request) -> ELTJobManifest:
     job_name = request.param
 
     return ELTJobManifest(
+        warehouse_name="test_warehouse",
         name=job_name,
         domain=TEST_DOMAIN,
+        is_ingest_job=True,
         ingest_job_dir=this_dir / "runner_extractor_fakes",
     )
 
