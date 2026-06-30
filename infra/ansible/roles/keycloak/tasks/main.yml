@@ -44,6 +44,24 @@
     path: "{{ keycloak_working_dir }}"
     rebuild: always
 
+- name: Check if we need to bootstrap an admin
+  no_log: "{{ not (keycloak_bootstrap_logging | default(false)) }}"
+  ansible.builtin.uri:
+    url: "{{ keycloak_url }}/realms/master/protocol/openid-connect/token"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      client_id: "admin-cli"
+      username: "{{ keycloak_local_admin.user }}"
+      password: "{{ keycloak_local_admin.password }}"
+      grant_type: "password"
+  ignore_errors: true
+  register: keycloak_token_response
+
+- name: Set admin required fact
+  ansible.builtin.set_fact:
+    local_admin_user_exists: "{{ keycloak_token_response['status'] == 200 }}"
+
 - name: Bootstrap Keycloak admin
   no_log: "{{ not (keycloak_bootstrap_logging | default(false)) }}"
   community.docker.docker_container:
@@ -53,7 +71,6 @@
       [
         "bootstrap-admin",
         "user",
-        "--username={{ keycloak_bootstrap.admin_user }}",
         "--password:env=KC_BOOTSTRAP_ADMIN_PASSWORD",
         "--optimized",
         "--no-prompt",
@@ -69,6 +86,7 @@
       KC_DB_URL: "jdbc:postgresql://{{ keycloak_db_host }}:{{ keycloak_db_port }}/{{ keycloak_db_name }}"
       KC_DB_USERNAME: "{{ keycloak_db_user }}"
       KC_DB_PASSWORD: "{{ keycloak_db_password }}"
+  when: not local_admin_user_exists
 
 - name: Run Keycloak
   community.docker.docker_container:
@@ -105,6 +123,54 @@
       timeout: 2s
       retries: 15
 
-- ansible.builtin.import_tasks: setup-realm.yml
+# Configure master realm admin
+- name: Create permanent admin user
+  no_log: true
+  community.general.keycloak_user:
+    auth_keycloak_url: "{{ keycloak_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_bootstrap.admin_user }}"
+    auth_password: "{{ keycloak_bootstrap.admin_password }}"
+    realm: master
+    username: "{{ keycloak_local_admin.user }}"
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: "{{ keycloak_local_admin.password }}"
+        temporary: false
+    state: present
+  register: kc_new_admin
+  when: not local_admin_user_exists
+
+- name: Assign admin realm role to permanent user
+  no_log: "{{ not (keycloak_bootstrap_logging | default(false)) }}"
+  community.general.keycloak_user_rolemapping:
+    auth_keycloak_url: "{{ keycloak_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_bootstrap.admin_user }}"
+    auth_password: "{{ keycloak_bootstrap.admin_password }}"
+    realm: master
+    uid: "{{ kc_new_admin.end_state.id }}"
+    roles:
+      - name: "admin"
+    state: present
+  when: not local_admin_user_exists
+
+- name: Disable temp-admin bootstrap account
+  no_log: "{{ not (keycloak_bootstrap_logging | default(false)) }}"
+  community.general.keycloak_user:
+    auth_keycloak_url: "{{ keycloak_url }}"
+    auth_realm: "master"
+    auth_username: "{{ keycloak_local_admin.user }}"
+    auth_password: "{{ keycloak_local_admin.password }}"
+    realm: master
+    username: "{{ keycloak_bootstrap.admin_user }}"
+    enabled: false
+    state: present
+  when: not local_admin_user_exists
+
+# Configure custom realm
+- ansible.builtin.import_tasks: setup-target-realm.yml
   vars:
     target_realm: "{{ keycloak_realm.name }}"
