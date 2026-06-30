@@ -5,6 +5,10 @@ keycloak_db_name: "{{ secrets_keycloak['db_name'] }}"
 keycloak_db_user: "{{ secrets_keycloak['db_user'] }}"
 keycloak_db_password: "{{ secrets_keycloak['db_password'] }}"
 
+keycloak_local_admin:
+  user: "{{ secrets_keycloak['master_local_admin_user'] }}"
+  password: "{{ secrets_keycloak['master_local_admin_password'] }}"
+
 # Eveything is assigned to the realm defined by keycloak_realm.name in all/all.yml
 keycloak_client_scopes:
   - name: lakekeeper

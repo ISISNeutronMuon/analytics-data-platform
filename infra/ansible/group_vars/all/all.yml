@@ -33,7 +33,7 @@ keycloak_realm:
   display_name: "ISIS Analytics Data Platform"
 keycloak_realm_url: "{{ keycloak_url }}/realms/{{ keycloak_realm.name }}"
 keycloak_bootstrap:
-  admin_user: "{{ secrets_keycloak['bootstrap_admin_user'] }}"
+  admin_user: "temp-admin"
   admin_password: "{{ secrets_keycloak['bootstrap_admin_password'] }}"
 
 lakekeeper_base_path: /iceberg

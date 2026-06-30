@@ -6,8 +6,8 @@
     auth_client_id: admin-cli
     auth_keycloak_url: "{{ keycloak_url }}"
     auth_realm: master
-    auth_username: "{{ keycloak_bootstrap.admin_user }}"
-    auth_password: "{{ keycloak_bootstrap.admin_password }}"
+    auth_username: "{{ keycloak_local_admin.user }}"
+    auth_password: "{{ keycloak_local_admin.password }}"
   when: false
 
 - name: Create Keycloak realm
