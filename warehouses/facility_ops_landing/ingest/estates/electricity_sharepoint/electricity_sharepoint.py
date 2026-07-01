@@ -91,10 +91,10 @@ def csv_section_to_df(file_name: str, lines: Sequence[str]) -> pd.DataFrame | No
     df = pd.read_csv(io.StringIO("\n".join(lines)))
     # clean up column name (strip any whitespace)
     df.columns = df.columns.str.strip()
-    cols = [c.lower() for c in df.columns]
+    cols = [c for c in df.columns]
     assert len(cols) == 3
     try:
-        if "date" in cols:
+        if "Date" in cols:
             # Automated CSV format
             df["DateTime"] = to_utc(
                 pd.to_datetime(
@@ -107,9 +107,8 @@ def csv_section_to_df(file_name: str, lines: Sequence[str]) -> pd.DataFrame | No
             df["DateTime"] = to_utc(
                 pd.to_datetime(df["Time"], format="%d/%m/%y %H:%M:%S")
             )
-            # Drop energy column
-            assert "energy" in cols[1].lower()
-            df = df.drop(cols[1], axis=1)
+            # Drop time and energy columns
+            df = df.drop(["Time", cols[1]], axis=1)
     except (pytz.exceptions.AmbiguousTimeError, ValueError) as exc:
         logger.warning(
             f"'Error loading section of {file_name}'. There will be gaps in the data.\nDetails: {str(exc)}"
@@ -214,45 +213,39 @@ def extract_content_and_read(items: Iterator[M365DriveItem]) -> Iterator[TDataIt
     yield df_batch
 
 
-@dlt.resource(merge_key="DateTime", columns={"DateTime": {"nullable": False}})
+@dlt.resource(
+    primary_key="DateTime",
+    write_disposition={"disposition": "merge", "strategy": "upsert"},
+)
 def rdm_data(
     site_url: str = dlt.config.value,
     root_dir: str = dlt.config.value,
     backfill: bool = False,
     backfill_glob: str | None = None,
 ) -> Iterator[TDataItems]:
-    print(f"Backfill glob: {backfill_glob}")
-    yield None
-    # if backfill:
-    #     historic_xl = sharepoint(
-    #         site_url=site_url,
-    #         file_glob=f"{root_dir}/**/*.xlsx",
-    #         extract_content=False,
-    #     )
-    #     reader = historic_xl | extract_content_and_read()
-    #     yield from reader.apply_hints(
-    #         write_disposition="merge",
-    #     )
-    #     historic_csv = sharepoint(
-    #         site_url=site_url,
-    #         file_glob=f"{root_dir}/**/*-daily.csv",
-    #         extract_content=False,
-    #     )
-    #     reader = historic_csv | extract_content_and_read()
-    #     yield from reader.apply_hints(
-    #         write_disposition="merge",
-    #     )
+    if backfill:
+        if backfill_glob is not None:
+            file_globs = [backfill_glob]
+        else:
+            file_globs = [
+                f"{root_dir}/**/*.xlsx",
+                f"{root_dir}/**/*-daily.csv",
+                f"{root_dir}/**/*-manual-export.csv",
+            ]
+        modified_after = None
+    else:
+        file_globs = [f"{root_dir}/*-ISIS.csv"]
+        modified_after = get_latest_timestamp(dlt.current.pipeline())
 
-    # latest_files = sharepoint(
-    #     site_url=site_url,
-    #     file_glob=f"{root_dir}/*-ISIS.csv",
-    #     extract_content=False,
-    #     modified_after=get_latest_timestamp(dlt.current.pipeline()),
-    # )
-    # reader = latest_files | extract_content_and_read()
-    # yield from reader.apply_hints(
-    #     write_disposition="merge",
-    # )
+    for file_glob in file_globs:
+        file_listing = sharepoint(
+            site_url=site_url,
+            file_glob=file_glob,
+            extract_content=False,
+            modified_after=modified_after,
+        )
+        reader = file_listing | extract_content_and_read()
+        yield from reader
 
 
 def get_latest_timestamp(pipeline: dlt.Pipeline) -> pendulum.DateTime | None:
