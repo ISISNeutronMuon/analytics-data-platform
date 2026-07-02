@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "pandas",
+#     "pandas>=3",
 #     "elt-common[m365]",
 #     "python-calamine",
 # ]
@@ -20,7 +20,6 @@ import dlt.common.logger as logger
 import pandas as pd
 import pendulum
 import pyarrow.compute as pc
-import pytz
 from dlt.sources import TDataItems
 from elt_common.cli_utils import cli_main
 from elt_common.dlt_destinations.pyiceberg.helpers import load_iceberg_table
@@ -33,6 +32,9 @@ from elt_common.dlt_sources.m365 import (
     sharepoint,
 )
 
+CSV_PREAMBLE_ANCHOR = "time"
+COL_DATE_TIME = "date_time"
+COL_TOTAL_POWER = "isis_elec_total_power_mwx"
 EXCEL_ENGINE = "calamine"
 EXCEL_SKIP_ROWS = 7
 MAX_WORKERS = min(8, (os.cpu_count() or 1) + 4)
@@ -67,7 +69,7 @@ RDM_TIMEZONE = "Europe/London"
 #
 # There are three columns: "Time,Date,ISIS Elec Total Power", where Time is in format HH:MM:SS and Date is in format DD/mm/YY.
 # Several of these files can be concatenated together to form larger timespan records - they are concatenated as is and repeated
-# preamble sections are not discarded.
+# preamble sections are not discarded. The variable CSV_PREAMBLE_ANCHOR defines the line at which a new section occurs.
 #
 # 3. Manual CSV export
 # --------------------
@@ -77,10 +79,6 @@ RDM_TIMEZONE = "Europe/London"
 # The second column is discarded.
 
 
-# Time	Date	ISIS Elec Total Power {MW}
-CSV_PREAMBLE_ANCHOR = "time"
-
-
 def to_utc(ts: pd.Series) -> pd.Series:
     """Assumes timezone unaware data and converts to UTC"""
     return ts.dt.tz_localize(RDM_TIMEZONE).dt.tz_convert("UTC")
@@ -88,33 +86,37 @@ def to_utc(ts: pd.Series) -> pd.Series:
 
 def csv_section_to_df(file_name: str, lines: Sequence[str]) -> pd.DataFrame | None:
     """Parse csv and return a DataFrame if the times are valid. None if not"""
-    df = pd.read_csv(io.StringIO("\n".join(lines)))
+    df_raw = pd.read_csv(io.StringIO("\n".join(lines)))
     # clean up column name (strip any whitespace)
-    df.columns = df.columns.str.strip()
-    cols = [c for c in df.columns]
+    df_raw.columns = df_raw.columns.str.strip()
+    cols = [c for c in df_raw.columns]
     assert len(cols) == 3
     try:
-        if "Date" in cols:
+        if cols[1].strip() == "Date":
             # Automated CSV format
-            df["DateTime"] = to_utc(
+            df = to_utc(
                 pd.to_datetime(
-                    df["Date"] + " " + df["Time"], format="%d/%m/%y %H:%M:%S"
+                    df_raw["Date"] + " " + df_raw["Time"], format="%d/%m/%y %H:%M:%S"
                 )  # type: ignore
-            )
-            df = df.drop(["Date", "Time"], axis=1)
+            ).to_frame(name=COL_DATE_TIME)
         else:
             # Manual CSV format
-            df["DateTime"] = to_utc(
-                pd.to_datetime(df["Time"], format="%d/%m/%y %H:%M:%S")
+            df = to_utc(
+                pd.to_datetime(df_raw["Time"], format="%d/%m/%y %H:%M:%S")
+            ).to_frame(name=COL_DATE_TIME)
+    except ValueError as exc:
+        # Pandas 3 uses ValueError for conversions that produce ambiguous/non-existent times
+        msg = str(exc)
+        if "ambiguous" in msg or "nonexistent" in msg:
+            logger.warning(
+                f"'Error loading section of {file_name}'. DST issues detected: {str(exc)}"
             )
-            # Drop time and energy columns
-            df = df.drop(["Time", cols[1]], axis=1)
-    except (pytz.exceptions.AmbiguousTimeError, ValueError) as exc:
-        logger.warning(
-            f"'Error loading section of {file_name}'. There will be gaps in the data.\nDetails: {str(exc)}"
-        )
-        return None
+            return None
+        else:
+            raise
 
+    assert "power" in cols[2].lower()
+    df[COL_TOTAL_POWER] = df_raw[cols[2]]
     return df
 
 
@@ -165,11 +167,10 @@ def read_power_consumption_csv(
 
 def read_power_consumption_excel(file_content: io.BytesIO) -> pd.DataFrame:
     # See comment at the top of this describing the format
-
-    df = pd.read_excel(file_content, engine=EXCEL_ENGINE, skiprows=EXCEL_SKIP_ROWS)
-    df = df.rename(columns={"Time": "DateTime"})
-    df["DateTime"] = to_utc(df["DateTime"])
-    return df
+    df_raw = pd.read_excel(file_content, engine=EXCEL_ENGINE, skiprows=EXCEL_SKIP_ROWS)
+    df_raw = df_raw.rename(columns={"Time": COL_DATE_TIME})
+    df_raw["COL_DATE_TIME"] = to_utc(df_raw[COL_DATE_TIME])
+    return df_raw
 
 
 @dlt.transformer(section="m365")
