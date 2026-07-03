@@ -169,7 +169,7 @@ def read_power_consumption_excel(file_content: io.BytesIO) -> pd.DataFrame:
     # See comment at the top of this describing the format
     df_raw = pd.read_excel(file_content, engine=EXCEL_ENGINE, skiprows=EXCEL_SKIP_ROWS)
     df_raw = df_raw.rename(columns={"Time": COL_DATE_TIME})
-    df_raw["COL_DATE_TIME"] = to_utc(df_raw[COL_DATE_TIME])
+    df_raw[COL_DATE_TIME] = to_utc(df_raw[COL_DATE_TIME])  # type: ignore
     return df_raw
 
 
