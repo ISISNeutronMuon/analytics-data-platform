@@ -34,7 +34,7 @@ from elt_common.dlt_sources.m365 import (
 
 CSV_PREAMBLE_ANCHOR = "time"
 COL_DATE_TIME = "date_time"
-COL_TOTAL_POWER = "isis_elec_total_power_mwx"
+COL_TOTAL_POWER = "isis_elec_total_power_mw"
 EXCEL_ENGINE = "calamine"
 EXCEL_SKIP_ROWS = 7
 MAX_WORKERS = min(8, (os.cpu_count() or 1) + 4)
@@ -199,6 +199,8 @@ def extract_content_and_read(items: Iterator[M365DriveItem]) -> Iterator[TDataIt
             case _:
                 raise RuntimeError(f"Unsupported file extension in '{file_name}'")
 
+        if df is not None:
+            df["file_name"] = file_name
         return df
 
     df_batch = None
