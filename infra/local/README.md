@@ -7,6 +7,6 @@ all service containers.
 
 :exclamation: *Repeat: This configuration should not be used in production.*. :exclamation:
 
-## Local set-up
+## Setup /etc/hosts
 
-The service can be set up locally using the instructions provided on [`getting-started.md`](/docs-devel/getting-started.md#Setup-/etc/hosts).
+The service can be set up locally using the instructions provided on [`getting-started.md`](/docs-devel/getting-started.md#setup-etchosts).
