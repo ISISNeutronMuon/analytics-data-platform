@@ -4,7 +4,8 @@ The services defined here are intended for local development and should not be u
 We do not use https for local development, with the exception of Trino that requires it, due to
 complications of ensuring self-signed certificates are trusted correctly across the host and
 all service containers.
-*Repeat: This configuration should not be used in production.*.
+
+:exclamation: *Repeat: This configuration should not be used in production.*. :exclamation:
 
 ## Local set-up
 
