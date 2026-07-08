@@ -158,7 +158,7 @@ Ensure [DuckDB](https://duckdb.org/install/?environment=cli) is installed, then
 in `<repo_root>/infra/local`:
 
 ```bash
-duckdb -init duckdb_attach.sql
+duckdb -init duckdb_attach_warehouses.sql
 > SELECT * FROM facility_ops.analytics_accelerator.cycles;
 ```
 

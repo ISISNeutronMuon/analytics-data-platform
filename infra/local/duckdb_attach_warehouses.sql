@@ -7,8 +7,6 @@
 --
 -- >SHOW SCHEMAS;
 
-SET s3_access_key_id='access_key';
-SET s3_secret_access_key='access_key_secret';
 SET s3_access_key_id='adpsuperuser';
 SET s3_secret_access_key='adppassword';
 SET s3_endpoint='http://adp-router:59000';
