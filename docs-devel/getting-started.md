@@ -143,11 +143,23 @@ the self-signed Trino certificate.
 
 ### 3. Query the results
 
+#### Superset
+
 Log in to [Superset](http://localhost:50080/workspace/facility_ops), open
 **SQL Lab** from the SQL tab, and run:
 
 ```sql
 SELECT * FROM facility_ops.analytics_accelerator.cycles
+```
+
+#### DuckDB
+
+Ensure [DuckDB](https://duckdb.org/install/?environment=cli) is installed, then
+in `<repo_root>/infra/local`:
+
+```bash
+duckdb -init duckdb_attach_warehouses.sql
+> SELECT * FROM facility_ops.analytics_accelerator.cycles;
 ```
 
 ## Next steps
