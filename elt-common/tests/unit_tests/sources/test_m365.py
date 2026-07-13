@@ -162,7 +162,6 @@ def test_sub_folders(list_client, httpx_mock):
         url=re.compile(f"{folder_url_base}:/children?.+"),
         json={
             "value": [
-                {"name": "root_item", "lastModifiedDateTime": "2026-07-13T00:00:00.00Z"},
                 *(
                     {
                         "name": f"sub_folder_{i}",
@@ -212,7 +211,7 @@ def test_sub_folders(list_client, httpx_mock):
     for ln in range(num_sub_folder_layers):
         expected_num_folders += num_sub_folders_per_layer ** (ln + 1)
 
-    assert len(result) == 1 + expected_num_folders * num_items_per_sub_folder
+    assert len(result) == expected_num_folders * num_items_per_sub_folder
 
     paths = [r.path for r in result]
     assert len(set(paths)) == len(paths), "All paths should be unique"

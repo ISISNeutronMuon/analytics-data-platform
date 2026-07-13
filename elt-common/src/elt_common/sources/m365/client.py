@@ -1,5 +1,6 @@
 import datetime as dt
 import fnmatch
+import logging
 import re
 import urllib.parse as urlparser
 from dataclasses import dataclass
@@ -10,6 +11,8 @@ from authlib.integrations.httpx_client import OAuth2Client
 from httpx import HTTPStatusError, NetworkError, Response, TimeoutException
 
 from elt_common.sources.m365.configuration import M365Config, base_url
+
+LOGGER = logging.getLogger(__name__)
 
 _RETRY_ARGS = {
     "wait": tenacity.wait_exponential(max=5),
@@ -97,9 +100,12 @@ class SPListClient:
                 page_items, next_page = _get_page(next_page)
                 items.extend(page_items)
         else:
-            raise RuntimeError(
-                f"_read_tree must be called with a path to directory, {path} is a file"
+            LOGGER.warning(
+                f"_read_tree was called for {path}, which had no children. "
+                "Could be a file, or an empty directory"
             )
+
+            return []
 
         file_items = [i for i in items if "folder" not in i]
         files = [M365File.from_sp_file(f, path) for f in file_items]
