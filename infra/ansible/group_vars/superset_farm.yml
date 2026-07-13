@@ -1,9 +1,3 @@
 ---
-superset_farm_db_host: "{{ managed_db.host }}"
-superset_farm_db_port: "{{ managed_db.port }}"
-superset_farm_db_name: "{{ secrets_superset_farm['db_name'] }}"
-superset_farm_db_user: "{{ secrets_superset_farm['db_user'] }}"
-superset_farm_db_password: "{{ secrets_superset_farm['db_password'] }}"
-
 superset_farm_redis_host: localhost
 superset_farm_redis_port: 6379

@@ -35,6 +35,10 @@ keycloak_realm_url: "{{ keycloak_url }}/realms/{{ keycloak_realm.name }}"
 keycloak_bootstrap:
   admin_user: "temp-admin"
   admin_password: "{{ secrets_keycloak['bootstrap_admin_password'] }}"
+keycloak_local_admin:
+  user: "{{ secrets_keycloak['master_local_admin_user'] }}"
+  password: "{{ secrets_keycloak['master_local_admin_password'] }}"
+
 
 lakekeeper_base_path: /iceberg
 lakekeeper_bucket_prefix: isis-adp-warehouse-
@@ -113,7 +117,13 @@ superset_farm_instances:
     flask_debug: false
     http_port: 8088
     redis_db: 0
-    secret_key: "{{ secrets_superset_farm_secret_keys['accelerator'] }}"
+    application_db:
+      host: "{{ managed_db.host }}"
+      port: "{{ managed_db.port }}"
+      name: "{{ secrets_superset_accelerator['db_name'] }}"
+      user: "{{ secrets_superset_accelerator['db_user'] }}"
+      password: "{{ secrets_superset_accelerator['db_password'] }}"
+    secret_key: "{{ secrets_superset_accelerator['secret_key'] }}"
     users_yaml: "{{ secrets_superset_farm_users_yaml['accelerator'] | from_yaml }}"
     analytic_dbs:
       - name: facility_ops

@@ -44,6 +44,46 @@
     path: "{{ keycloak_working_dir }}"
     rebuild: always
 
+- name: Run Keycloak
+  community.docker.docker_container:
+    name: keycloak
+    image: "{{ keycloak_image_optimized_name }}"
+    command:
+      [
+        "start",
+        "--optimized",
+        "--http-enabled=true",
+        "--hostname=https://{{ top_level_domain }}{{ keycloak_base_path }}",
+        "--proxy-headers=xforwarded",
+        "--proxy-trusted-addresses=127.0.0.0/8",
+        "--log-level={{ keycloak_log_level }}",
+      ]
+    state: healthy
+    cleanup: true
+    detach: true
+    restart_policy: unless-stopped
+    recreate: true
+    env:
+      # comment to keep formatter moving this up one line
+      KC_DB_URL: "jdbc:postgresql://{{ keycloak_db_host }}:{{ keycloak_db_port }}/{{ keycloak_db_name }}"
+      KC_DB_USERNAME: "{{ keycloak_db_user }}"
+      KC_DB_PASSWORD: "{{ keycloak_db_password }}"
+    network_mode: host
+    volumes:
+      - "{{ keycloak_working_dir }}/certs/stfc-ca.pem:/opt/keycloak/conf/truststores/stfc-ca.pem:ro"
+    comparisons:
+      env: strict
+    healthcheck:
+      test: "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"
+      interval: 5s
+      timeout: 2s
+      retries: 15
+
+- name: Wait for port 9000 to become open on the host, don't start checking for 10 seconds
+  ansible.builtin.wait_for:
+    port: 9000
+    delay: 2
+
 - name: Check if we need to bootstrap an admin
   no_log: "{{ not (keycloak_bootstrap_logging | default(false)) }}"
   ansible.builtin.uri:
@@ -87,41 +127,6 @@
       KC_DB_USERNAME: "{{ keycloak_db_user }}"
       KC_DB_PASSWORD: "{{ keycloak_db_password }}"
   when: not local_admin_user_exists
-
-- name: Run Keycloak
-  community.docker.docker_container:
-    name: keycloak
-    image: "{{ keycloak_image_optimized_name }}"
-    command:
-      [
-        "start",
-        "--optimized",
-        "--http-enabled=true",
-        "--hostname=https://{{ top_level_domain }}{{ keycloak_base_path }}",
-        "--proxy-headers=xforwarded",
-        "--proxy-trusted-addresses=127.0.0.0/8",
-        "--log-level={{ keycloak_log_level }}",
-      ]
-    state: healthy
-    cleanup: true
-    detach: true
-    restart_policy: unless-stopped
-    recreate: true
-    env:
-      # comment to keep formatter moving this up one line
-      KC_DB_URL: "jdbc:postgresql://{{ keycloak_db_host }}:{{ keycloak_db_port }}/{{ keycloak_db_name }}"
-      KC_DB_USERNAME: "{{ keycloak_db_user }}"
-      KC_DB_PASSWORD: "{{ keycloak_db_password }}"
-    network_mode: host
-    volumes:
-      - "{{ keycloak_working_dir }}/certs/stfc-ca.pem:/opt/keycloak/conf/truststores/stfc-ca.pem:ro"
-    comparisons:
-      env: strict
-    healthcheck:
-      test: "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"
-      interval: 5s
-      timeout: 2s
-      retries: 15
 
 # Configure master realm admin
 - name: Create permanent admin user

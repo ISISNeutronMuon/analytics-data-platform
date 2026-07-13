@@ -1,11 +1,10 @@
 # Metadata DB
 SUPERSET_DB_DIALECT=postgresql
-SUPERSET_DB_HOST={{ superset_farm_db_host }}
-SUPERSET_DB_USER={{ superset_farm_db_user }}
-SUPERSET_DB_PASSWORD={{ superset_farm_db_password }}
-SUPERSET_DB_NAME={{ superset_farm_db_name }}
-SUPERSET_DB_PORT={{ superset_farm_db_port }}
-SUPERSET_DB_SCHEMA_NAME={{ instance.key }}
+SUPERSET_DB_HOST={{ instance.value.application_db.host }}
+SUPERSET_DB_PORT={{ instance.value.application_db.port }}
+SUPERSET_DB_NAME={{ instance.value.application_db.name }}
+SUPERSET_DB_USER={{ instance.value.application_db.user }}
+SUPERSET_DB_PASSWORD={{ instance.value.application_db.password }}
 
 # Caching
 REDIS_HOST={{ superset_farm_redis_host }}
