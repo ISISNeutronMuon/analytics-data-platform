@@ -40,7 +40,7 @@
       /opt/work/bootstrap-warehouse.py
         --lakekeeper-project-name "{{ lakekeeper_project_name }}"
         --keycloak-url {{ keycloak_url }}
-        --keycloak-admin-credentials "{{ keycloak_bootstrap.admin_user }}:{{ keycloak_bootstrap.admin_password }}"
+        --keycloak-admin-credentials "{{ keycloak_local_admin.user }}:{{ keycloak_local_admin.password }}"
         --keycloak-user-realm {{ keycloak_realm.name }}
         --bootstrap-credentials {{ lakekeeper_bootstrap_credentials }}
         --token-scope lakekeeper
