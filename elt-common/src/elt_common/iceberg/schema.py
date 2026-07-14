@@ -73,8 +73,8 @@ def arrow_type_to_iceberg(arrow_type: pa.DataType, field_id: int = 1) -> Iceberg
         iceberg_fields = []
         next_field_id = field_id
         for subfield in arrow_type.fields:
-            iceberg_field = arrow_field_to_iceberg(arrow_field=subfield, column_id=next_field_id)
-            next_field_id = get_max_field_id(iceberg_field) + 1
+            iceberg_field = _arrow_field_to_iceberg(arrow_field=subfield, column_id=next_field_id)
+            next_field_id = _get_max_field_id(iceberg_field) + 1
             iceberg_fields.append(iceberg_field)
 
         return StructType(*iceberg_fields)
@@ -82,7 +82,7 @@ def arrow_type_to_iceberg(arrow_type: pa.DataType, field_id: int = 1) -> Iceberg
         raise TypeError(f"Pyarrow type '{arrow_type}' unknown to type mapper.")
 
 
-def arrow_field_to_iceberg(column_id: int, arrow_field: pa.Field) -> NestedField:
+def _arrow_field_to_iceberg(column_id: int, arrow_field: pa.Field) -> NestedField:
     return NestedField(
         field_id=column_id,
         name=arrow_field.name,
@@ -100,13 +100,13 @@ def create_schema(arrow_schema: pa.Schema, identifier_fields: Collection[str] = 
     iceberg_fields, identifier_field_ids = [], []
     col_id = 1
     for arrow_field in arrow_schema:
-        field = arrow_field_to_iceberg(col_id, arrow_field)
+        field = _arrow_field_to_iceberg(col_id, arrow_field)
 
         iceberg_fields.append(field)
         if arrow_field.name in identifier_fields:
             identifier_field_ids.append(col_id)
 
-        col_id = get_max_field_id(field) + 1
+        col_id = _get_max_field_id(field) + 1
 
     return Schema(*iceberg_fields, identifier_field_ids=identifier_field_ids)
 
@@ -156,7 +156,7 @@ def evolve_schema(iceberg_schema: Schema, new_arrow_schema: pa.Schema) -> Schema
     return new_iceberg_schema
 
 
-def get_max_field_id(f: NestedField) -> int:
+def _get_max_field_id(f: NestedField) -> int:
     """Return the largest field_id from an Iceberg field.
 
     - For primitive fields this is just the field_id
@@ -169,8 +169,8 @@ def get_max_field_id(f: NestedField) -> int:
         struct_fields = f.field_type.fields
         if not struct_fields:
             return f.field_id
-        return max(get_max_field_id(sub) for sub in struct_fields)
+        return max(_get_max_field_id(sub) for sub in struct_fields)
     elif isinstance(f.field_type, ListType):
-        return get_max_field_id(f.field_type.element_field)
+        return _get_max_field_id(f.field_type.element_field)
     else:
         raise ValueError("Can only get fields ids for primitive, list, and struct fields")
