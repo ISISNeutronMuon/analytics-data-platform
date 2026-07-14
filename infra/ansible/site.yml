@@ -1,4 +1,5 @@
 ---
+- import_playbook: site_ssh_auth_users.yml
 - import_playbook: site_traefik.yml
 - import_playbook: site_datastore.yml
 - import_playbook: site_keycloak.yml
@@ -6,4 +7,3 @@
 - import_playbook: site_trino.yml
 - import_playbook: site_superset_farm.yml
 - import_playbook: site_elt.yml
-- import_playbook: site_ssh_auth_users.yml
