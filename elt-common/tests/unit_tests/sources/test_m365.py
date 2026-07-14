@@ -219,3 +219,11 @@ def test_sub_folders(list_client, httpx_mock):
         result[-1].name
         == f"item_{num_sub_folder_layers - 1}_{num_sub_folders_per_layer - 1}_{num_items_per_sub_folder - 1}"
     )
+
+
+@pytest.mark.parametrize(
+    "arg", ["*.csv", "**/*.*", "*", "Beam Data/*", "Beam Data/*.csv", "Beam Data/**/*.csv", "/*.*"]
+)
+def test_pattern_in_root_throws(list_client, arg):
+    with pytest.raises(RuntimeError, match="not a glob pattern"):
+        list_client.glob(arg)
