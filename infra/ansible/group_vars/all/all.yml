@@ -96,7 +96,7 @@ lakekeeper_catalog:
             hour: "*"
             minute: 5
             ingest_script: warehouses/facility_ops_landing/ingest/estates/electricity_sharepoint/electricity_sharepoint.py
-            dbt_args: "--select 'models/staging/estates/*electricity_sharepoint*+'"
+            dbt_args: "--select 'models/staging/estates/*electricity_sharepoint*+' {{ dbt_common_exclude }}"
         transform_catalog: facility_ops
         maintenance:
           state: present
