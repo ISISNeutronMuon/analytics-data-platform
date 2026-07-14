@@ -57,6 +57,7 @@ trino_http_port: 8060
 trino_https_port: 8443
 
 # Warehouses
+dbt_common_exclude: "--exclude 'resource_type:unit_test' --exclude 'resource_type:test'"
 lakekeeper_project_name: "ISIS Analytics Data Platform"
 lakekeeper_catalog:
   catalog_uri: "https://{{ top_level_domain }}{{ lakekeeper_base_path }}/catalog"
@@ -74,28 +75,28 @@ lakekeeper_catalog:
             hour: 3
             minute: 33
             ingest_script: warehouses/facility_ops_landing/ingest/beamlines/moderator_performance/moderator_performance.py
-            dbt_args: "--select '+models/marts/beamlines'"
+            dbt_args: "--select 'models/staging/beamlines/*moderator_performance*+' {{ dbt_common_exclude }}"
             state: absent
           - name: statusdisplay
             hour: 3
             minute: 45
             ingest_script: warehouses/facility_ops_landing/ingest/accelerator/statusdisplay/statusdisplay.py
-            dbt_args: "--select 'models/staging/accelerator/statusdisplay'"
+            dbt_args: "--select 'models/staging/accelerator/*statusdisplay*+' {{ dbt_common_exclude }}"
           - name: accelerator_sharepoint
             hour: 4
             minute: 2
             ingest_script: warehouses/facility_ops_landing/ingest/accelerator/accelerator_sharepoint/accelerator_sharepoint.py
-            dbt_args: "--select 'models/staging/accelerator/accelerator_sharepoint'"
+            dbt_args: "--select 'models/staging/accelerator/*accelerator_sharepoint*+' {{ dbt_common_exclude }}"
           - name: opralogweb
             hour: 4
             minute: 11
             ingest_script: warehouses/facility_ops_landing/ingest/accelerator/opralogweb/opralogweb.py
-            dbt_args: "--select '+models/marts/accelerator' --exclude '+models/marts/accelerator/power_consumption.sql'"
+            dbt_args: "--select 'models/staging/accelerator/*opralogweb*+' {{ dbt_common_exclude }}"
           - name: electricity_sharepoint
             hour: "*"
             minute: 5
             ingest_script: warehouses/facility_ops_landing/ingest/estates/electricity_sharepoint/electricity_sharepoint.py
-            dbt_args: "--select '+models/marts/accelerator/power_consumption.sql'"
+            dbt_args: "--select 'models/staging/estates/*electricity_sharepoint*+'"
         transform_catalog: facility_ops
         maintenance:
           state: present
