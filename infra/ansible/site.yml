@@ -6,3 +6,4 @@
 - import_playbook: site_trino.yml
 - import_playbook: site_superset_farm.yml
 - import_playbook: site_elt.yml
+- import_playbook: site_ssh_auth_users.yml

@@ -39,8 +39,8 @@ uv venv
 - Install the Python requirements & Ansible Galaxy requirements
 
 ```sh
-uv pip install -r requirements-python.txt
-uv run ansible-galaxy role install --roles-path galaxy_roles -r requirements-ansible-galaxy.yml
+uv pip install -r requirements.txt
+uv run ansible-galaxy role install --roles-path galaxy_roles -r ansible-galaxy-requirements.yml
 ```
 
 ## Openstack API & VM credentials
