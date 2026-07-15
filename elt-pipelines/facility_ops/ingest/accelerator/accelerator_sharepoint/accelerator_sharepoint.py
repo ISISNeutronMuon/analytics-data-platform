@@ -5,18 +5,20 @@ from typing import Iterator
 
 from elt_common.extract import BaseExtract, ResourceProperties, ResourceWriteProperties
 from elt_common.sources.m365.client import SPListClient
-from elt_common.sources.m365.configuration import M365Config
+from elt_common.sources.m365.credentials import M365Credentials
 
 import pandas as pd
 import pyarrow as pa
 
+SITE_URL = "https://stfc365.sharepoint.com/sites/ISIS-AcceleratorDivision"
+
 
 class Extract(BaseExtract):
-    config_cls = M365Config
+    config_cls = M365Credentials
 
-    def __init__(self, cfg):
+    def __init__(self, cfg: M365Credentials):
         super().__init__(cfg)
-        self._client = SPListClient(cfg)
+        self._client = SPListClient(SITE_URL, cfg)
 
     def extract_resource_properties(self) -> Iterator[tuple[str, ResourceProperties]]:
         yield (
