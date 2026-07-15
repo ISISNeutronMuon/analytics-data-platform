@@ -225,5 +225,5 @@ def test_sub_folders(list_client, httpx_mock):
     "arg", ["*.csv", "**/*.*", "*", "Beam Data/*", "Beam Data/*.csv", "Beam Data/**/*.csv", "/*.*"]
 )
 def test_pattern_in_root_throws(list_client, arg):
-    with pytest.raises(RuntimeError, match="not a glob pattern"):
+    with pytest.raises(ValueError, match="not a glob pattern"):
         list_client.glob(arg)

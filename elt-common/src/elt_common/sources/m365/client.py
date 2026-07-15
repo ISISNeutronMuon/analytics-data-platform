@@ -71,7 +71,7 @@ class SPListClient:
         :param modified_after: if given, only files modified after this datetime are returned. Must be tz aware.
         """
         if "*" in root:
-            raise RuntimeError(
+            raise ValueError(
                 "The 'root' parameter for 'glob' must be a path to a directory, "
                 "not a glob pattern. To apply a glob filter to files under the "
                 "'root' directory, use the 'pattern' parameter."
