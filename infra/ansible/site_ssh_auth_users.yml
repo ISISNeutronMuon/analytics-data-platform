@@ -1,9 +1,6 @@
 ---
 - name: Ensure SSH authorized keys for specified users
   hosts: all
-  become: true
-  vars_files:
-    - ssh_users.yml
   tasks:
     - name: Ensure ubuntu user exists
       ansible.builtin.user:
