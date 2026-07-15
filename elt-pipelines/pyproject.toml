@@ -15,6 +15,12 @@ statusdisplay = [
     "requests>=2.34.2",
 ]
 
+accelerator_sharepoint = [
+    "pandas >= 3.0.3",
+    "openpyxl >= 3.1.5",
+    "elt-common[m365]"
+]
+
 [tool.uv.sources]
 elt-common = { path = "../elt-common", editable = true }
 
