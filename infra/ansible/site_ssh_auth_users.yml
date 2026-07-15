@@ -1,0 +1,18 @@
+---
+- name: Ensure SSH authorized keys for specified users
+  hosts: all
+  tasks:
+    - name: Ensure ubuntu user exists
+      ansible.builtin.user:
+        name: ubuntu
+        state: present
+        create_home: true
+
+    - name: Append public keys to ubuntu authorized_keys
+      ansible.posix.authorized_key:
+        user: ubuntu
+        key: "{{ item.pubkey }}"
+        state: present
+        manage_dir: true
+        exclusive: false
+      loop: "{{ ssh_authorized_keys_users }}"
