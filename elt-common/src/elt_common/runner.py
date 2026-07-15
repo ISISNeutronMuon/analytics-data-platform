@@ -41,12 +41,12 @@ def run_job(job: ELTJobManifest) -> None:
 def run_ingest(job: ELTJobManifest) -> dict[str, int]:
     """Import the extract function, call it, and write results to Iceberg."""
 
-    iceberg_io = IcebergIO(connect_catalog(job.destination_warehouse))
-
-    # Get object that will do the extraction.
+    # Create the object that will do the extraction.
     # Environment variables for the object's configuration must have been set
     # before reaching here.
     extract_obj = create_extract_obj(job)
+
+    iceberg_io = IcebergIO(connect_catalog(job.destination_warehouse))
 
     namespace = job.destination_namespace
     iceberg_io.ensure_namespace(namespace)
