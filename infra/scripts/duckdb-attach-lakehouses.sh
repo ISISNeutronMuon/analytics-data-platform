@@ -35,7 +35,7 @@ command -v duckdb >/dev/null 2>&1 || {
 case "$deploy_env" in
 local)
   # shellcheck disable=SC1091
-  source "${script_dir}/local/env-local"
+  source "${script_dir}/../local/env-local"
 
   s3_access_key_id="${MINIO_ROOT_USER}"
   s3_access_secret="${MINIO_ROOT_PASSWORD}"
