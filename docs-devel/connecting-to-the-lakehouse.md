@@ -65,3 +65,35 @@ Open a SQL editor against the connection and run, for example:
 ```sql
 SELECT * FROM facility_ops.analytics_accelerator.cycles;
 ```
+
+## DuckDB
+
+[DuckDB](https://duckdb.org) supports Iceberg REST catalogs using its [`ATTACH` statement](https://duckdb.org/docs/current/core_extensions/iceberg/iceberg_rest_catalogs).
+[`infra/scripts/duckdb-attach-lakehouses.sh`](../infra/scripts/duckdb-attach-lakehouses.sh) launches an interactive DuckDB session
+already attached to the `facility_ops_landing` and `facility_ops` warehouses of a given
+environment, without persisting any credentials to disk.
+
+### Local docker
+
+All access credentials are available locally, run (from the `infra` directory):
+
+```bash
+>./scripts/duckdb-attach-lakehouses.sh local
+DuckDB v1.5.4 (Variegata)
+Enter ".help" for usage hints.
+memory D .databases;
+```
+
+### Remote
+
+A Vault token is required for the script to access the required secrets.
+See [deployment instructions](./deployment/index#services) on retrieving a token.
+
+```bash
+>VAULT_TOKEN=$(cat ansible/.vault_token) ./scripts/duckdb-attach-lakehouses.sh <qa|dev>
+DuckDB v1.5.4 (Variegata)
+Enter ".help" for usage hints.
+memory D .databases;
+```
+
+where `<qa|dev>` should equal one of the options in the bracket.
