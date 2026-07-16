@@ -34,6 +34,11 @@ On the **Main** tab:
 | Username | value of `TRINO_USER` from `infra/local/env-local` | value from `trino_users` in [Vault](./deployment/prerequisites.md#vault-access) |
 | Password | value of `TRINO_PASSWORD` from `infra/local/env-local` | value from `trino_users` in [Vault](./deployment/prerequisites.md#vault-access) |
 
+Domain names for the remote systems can be found in the Ansible inventories:
+
+- [qa](../infra/ansible/inventories/qa/group_vars/all/all.yml)
+- [dev](../infra/ansible/inventories/dev/group_vars/all/all.yml)
+
 ### 3. Configure SSL/TLS (local docker)
 
 Trino requires HTTPS when authentication is enabled and the local stack uses a self-signed
