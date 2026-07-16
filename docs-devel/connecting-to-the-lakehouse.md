@@ -39,19 +39,14 @@ Domain names for the remote systems can be found in the Ansible inventories:
 - [qa](../infra/ansible/inventories/qa/group_vars/all/all.yml)
 - [dev](../infra/ansible/inventories/dev/group_vars/all/all.yml)
 
-### 3. Configure SSL/TLS (local docker)
+### 3. Configure SSL/TLS
 
-Trino requires HTTPS when authentication is enabled and the local stack uses a self-signed
-certificate (see [TLS warnings](./deployment/troubleshooting.md#trino-ssltls-warnings)). On the
-**Driver properties** tab add the following, which is the JDBC-driver equivalent of the
-`--insecure` flag used by the `trino` CLI:
+Trino requires HTTPS when authentication is enabled.
+On the **Driver properties** tab set `SSL=true`.
 
-| Property | Value |
-| --- | --- |
-| `SSL` | `true` |
-| `SSLVerification` | `NONE` |
-
-_Note: `SSLVerification=NONE` disables both hostname and trust-chain verification. This is fine
+_For the local stack only_: On the **Driver properties** tab add a new property `SSLVerification=NONE`,
+which is the JDBC-driver equivalent of the `--insecure` flag used by the `trino` CLI.
+_Note: This disables both hostname and trust-chain verification. This is fine
 for local development but should never be used against a production endpoint._
 
 ### 4. Test and finish
