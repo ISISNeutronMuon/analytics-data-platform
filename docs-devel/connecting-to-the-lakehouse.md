@@ -1,0 +1,62 @@
+# Connecting to the Lakehouse
+
+You can connect general-purpose SQL clients directly to the Lakehouse for ad-hoc querying and debugging.
+This page collects the supported methods.
+
+There are two broad approaches:
+
+- **Via Trino** - connect a JDBC/ODBC SQL client to the Trino query engine, which in turn reads
+  Iceberg tables through the Lakekeeper catalog. This is the recommended approach for most
+  interactive querying. [DBeaver](#dbeaver) is documented below.
+- **Direct catalog attachment** - some engines (e.g. [DuckDB](https://duckdb.org)) can attach
+  directly to the Iceberg REST catalog exposed by Lakekeeper, bypassing Trino entirely.
+
+## DBeaver
+
+[DBeaver](https://dbeaver.io) ships with a built-in Trino driver, so no manual JDBC driver
+installation is required.
+
+You can create a separate connection for each deployment method: local, dev, qa.
+
+### 1. Create a new connection
+
+1. **Database** > **New Database Connection**.
+2. Search for and select **Trino**, then click **Next**.
+
+### 2. Configure the connection
+
+On the **Main** tab:
+
+| Field | Value (local docker) | Value (remote) |
+| --- | --- | --- |
+| Host | `localhost` | \<domain name\> |
+| Port | `58443` | `8443` |
+| Username | value of `TRINO_USER` from `infra/local/env-local` | value from `trino_users` in [Vault](./deployment/prerequisites.md#vault-access) |
+| Password | value of `TRINO_PASSWORD` from `infra/local/env-local` | value from `trino_users` in [Vault](./deployment/prerequisites.md#vault-access) |
+
+### 3. Configure SSL/TLS (local docker)
+
+Trino requires HTTPS when authentication is enabled and the local stack uses a self-signed
+certificate (see [TLS warnings](./deployment/troubleshooting.md#trino-ssltls-warnings)). On the
+**Driver properties** tab add the following, which is the JDBC-driver equivalent of the
+`--insecure` flag used by the `trino` CLI:
+
+| Property | Value |
+| --- | --- |
+| `SSL` | `true` |
+| `SSLVerification` | `NONE` |
+
+_Note: `SSLVerification=NONE` disables both hostname and trust-chain verification. This is fine
+for local development but should never be used against a production endpoint._
+
+### 4. Test and finish
+
+Click **Test Connection...**. You should see a successful connection message. Click **Finish**.
+
+### 5. Run a query
+
+Open a SQL editor against the connection and run, for example:
+
+```sql
+SELECT * FROM facility_ops.analytics_accelerator.cycles;
+```

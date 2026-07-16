@@ -39,6 +39,7 @@ your local development environment.
 - [System architecture](./system-architecture/index.md) — services, tools, ADRs
 - [Data architecture](./data-architecture/index.md) — medallion layout, catalogs
 - [ELT pipeline development](./elt-pipelines.md) — how to build and modify pipelines
+- [Connecting to the Lakehouse](./connecting-to-the-lakehouse.md) — querying via DBeaver, DuckDB, etc.
 - [CI/CD and testing](./testing.md) — running tests, CI workflows
 - [Deployment](./deployment/index.md) — cloud provisioning and service deployment
 - [Contributing](./contributing.md) — branching, PRs, code style
