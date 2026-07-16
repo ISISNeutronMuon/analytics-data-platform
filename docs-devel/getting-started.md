@@ -152,15 +152,10 @@ Log in to [Superset](http://localhost:50080/workspace/facility_ops), open
 SELECT * FROM facility_ops.analytics_accelerator.cycles
 ```
 
-#### DuckDB
+#### Other SQL CLients
 
-Ensure [DuckDB](https://duckdb.org/install/?environment=cli) is installed, then
-in `<repo_root>/infra/local`:
-
-```bash
-duckdb -init duckdb_attach_warehouses.sql
-> SELECT * FROM facility_ops.analytics_accelerator.cycles;
-```
+See [Connecting to the Lakehouse](./connecting-to-the-lakehouse) for instructions
+on connecting various popular SQL clients to the Lakehouse.
 
 ## Next steps
 
