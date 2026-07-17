@@ -6,12 +6,13 @@ from fase.utils.postgres import PostgresExtractor
 
 LOGGER = logging.getLogger(__name__)
 
+
 class PipelinePostgresConfig(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="proposal__", 
+        env_prefix="proposal__",
         env_nested_delimiter="__",
         extra="ignore",
-        protected_namespaces=()
+        protected_namespaces=(),
     )
 
     drivername: str = "postgresql+psycopg2"
@@ -20,7 +21,7 @@ class PipelinePostgresConfig(BaseSettings):
     username: str
     password: str
     database: str
-    table: str 
+    table: str
 
     @property
     def target_tables(self) -> list[str]:
@@ -52,6 +53,6 @@ class Extract(BaseExtract):
                 ResourceProperties(
                     extractor=lambda _, t=table_name: self.extractor.fetch_as_arrow(t),
                     write_properties=ResourceWriteProperties(write_mode="replace"),
-                    watermark_column=None
-                )
+                    watermark_column=None,
+                ),
             )
