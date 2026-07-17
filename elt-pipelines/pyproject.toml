@@ -21,6 +21,12 @@ accelerator_sharepoint = [
     "elt-common[m365]"
 ]
 
+electricity_sharepoint = [
+    "pandas >= 3.0.3",
+    "openpyxl >= 3.1.5",
+    "elt-common[m365]"
+]
+
 [tool.uv.sources]
 elt-common = { path = "../elt-common", editable = true }
 
