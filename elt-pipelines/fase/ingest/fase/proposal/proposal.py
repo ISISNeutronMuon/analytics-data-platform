@@ -1,5 +1,4 @@
 import logging
-from urllib.parse import quote_plus
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from elt_common.extract import BaseExtract, ResourceProperties, ResourceWriteProperties
@@ -31,8 +30,8 @@ class PipelinePostgresConfig(BaseSettings):
     @property
     def connection_uri(self) -> str:
         driver = self.drivername.strip()
-        user = quote_plus(self.username.strip())
-        pwd = quote_plus(self.password.strip())
+        user = self.username.strip()
+        pwd = self.password.strip()
         h = self.host.strip()
         db = self.database.strip()
         return f"{driver}://{user}:{pwd}@{h}:{self.port}/{db}"

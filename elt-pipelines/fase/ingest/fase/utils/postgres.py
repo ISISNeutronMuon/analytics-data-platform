@@ -79,4 +79,6 @@ class PostgresExtractor:
                 yield pa.Table.from_arrays(aligned_columns, schema=target_schema)
 
             if not has_data:
-                yield pa.table({}, schema=target_schema)
+                dummy_row = {col_key: [None] for col_key in result_proxy.keys()}
+                empty_df = pd.DataFrame(dummy_row)
+                yield pa.Table.from_pandas(empty_df, schema=target_schema)
