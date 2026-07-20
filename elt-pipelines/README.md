@@ -73,7 +73,7 @@ class Extract(BaseExtract):
             "table_name",
             ResourceProperties(
                 extractor=a_function_that_extracts_the_data,
-                resource_write_properties=ResourceWriteProperties(),
+                write_properties=ResourceWriteProperties(),
                 watermark_column=None
             )
         )
