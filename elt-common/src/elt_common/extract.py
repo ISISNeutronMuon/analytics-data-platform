@@ -2,6 +2,7 @@ import dataclasses as dc
 import importlib.util
 import json
 from abc import ABC, abstractmethod
+import datetime as dt
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Iterator, Optional, get_args
 
@@ -19,10 +20,11 @@ EXTRACT_CLS_NAME = "Extract"
 @dc.dataclass(frozen=True)
 class Watermark:
     column: str
-    value: str | int | float
+    value: str | int | float | dt.datetime
 
     def serialize(self) -> str:
-        return json.dumps({"column": self.column, "value": self.value})
+        value = self.value if not isinstance(self.value, dt.datetime) else self.value.isoformat()
+        return json.dumps({"column": self.column, "value": value})
 
     @staticmethod
     def deserialize(watermark_str: str) -> "Watermark":
@@ -41,9 +43,16 @@ class Watermark:
             raise ValueError(f"Watermark 'column' must be a string, '{column}' is not valid")
 
         value = as_json["value"]
-        if type(value) not in (str, int, float):
+        # Parse value as a datetime if it's in ISO format
+        if isinstance(value, str):
+            try:
+                value = dt.datetime.fromisoformat(value)
+            except ValueError:
+                pass
+
+        if type(value) not in (str, int, float, dt.datetime):
             raise ValueError(
-                f"Watermark 'value' must be a string or number, '{value}' is not valid"
+                f"Watermark 'value' must be a string, number, or ISO format datetime, '{value}' is not valid"
             )
 
         return Watermark(column=column, value=value)
