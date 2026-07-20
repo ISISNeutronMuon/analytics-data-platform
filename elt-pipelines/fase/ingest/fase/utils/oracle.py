@@ -99,14 +99,10 @@ class OracleExtractor:
             pq_type_str = hint["data_type"]
             if pq_type_str == "bigint":
                 pa_type = pa.int64()
-            elif pq_type_str == "bool":
-                pa_type = pa.bool_()
             elif pq_type_str == "double":
                 pa_type = pa.float64()
             elif pq_type_str == "timestamp":
                 pa_type = pa.timestamp("us")
-            elif pq_type_str == "date":
-                pa_type = pa.date32()
             else:
                 pa_type = pa.string()
             arrow_fields.append(pa.field(col_name.lower(), pa_type, nullable=True))
