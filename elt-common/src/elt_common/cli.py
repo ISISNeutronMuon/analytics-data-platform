@@ -9,7 +9,7 @@ import click
 
 from elt_common.pipeline import PipelinesProject
 from elt_common.runner import run_job
-from elt_common.typing import ELTJobManifest
+from elt_common.pipeline_types import ELTJobManifest
 
 
 @click.group(context_settings={"show_default": True})

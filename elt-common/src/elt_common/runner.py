@@ -19,7 +19,7 @@ from elt_common.extract import (
 )
 from elt_common.iceberg.catalog import connect_catalog, table_identifier
 from elt_common.iceberg.io import IcebergIO
-from elt_common.typing import ELTJobManifest, WriteMode
+from elt_common.pipeline_types import ELTJobManifest, WriteMode
 
 INGEST_PROPERTY_KEY_LAST_UPDATED_AT = "ingest.last_updated_at"
 INGEST_PROPERTY_KEY_WATERMARK = "ingest.watermark"
