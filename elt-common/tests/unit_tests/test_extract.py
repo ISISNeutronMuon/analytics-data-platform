@@ -4,7 +4,7 @@ import pytest
 
 from elt_common.extract import BaseExtract, Watermark, create_extract_obj
 from elt_common.sources.sqldatabase import SqlDatabaseExtract
-from elt_common.typing import ELTJobManifest
+from elt_common.pipeline_types import ELTJobManifest
 
 
 @pytest.mark.parametrize(

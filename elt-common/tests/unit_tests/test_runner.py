@@ -16,7 +16,7 @@ from elt_common.runner import (
     INGEST_PROPERTY_KEY_WATERMARK,
     run_ingest,
 )
-from elt_common.typing import ELTJobManifest
+from elt_common.pipeline_types import ELTJobManifest
 
 FAKE_NOW = dt.datetime(2026, 1, 1, 0, 0, 0)
 TEST_DOMAIN = "test_runner"

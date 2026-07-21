@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Callable, Iterator, Optional, get_args
 
 from pydantic_settings import BaseSettings
 
-from elt_common.typing import ELTJobManifest, PartitionConfig, SortOrderConfig, WriteMode
+from elt_common.pipeline_types import ELTJobManifest, PartitionConfig, SortOrderConfig, WriteMode
 
 if TYPE_CHECKING:
     import pyarrow as pa

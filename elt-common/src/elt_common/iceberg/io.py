@@ -14,7 +14,7 @@ from elt_common.iceberg.catalog import Catalog
 from elt_common.iceberg.schema import create_schema, evolve_schema
 from elt_common.iceberg.partition import create_partition_spec
 from elt_common.iceberg.sortorder import create_sort_order
-from elt_common.typing import (
+from elt_common.pipeline_types import (
     BaseIO,
     PartitionConfig,
     SortOrderConfig,

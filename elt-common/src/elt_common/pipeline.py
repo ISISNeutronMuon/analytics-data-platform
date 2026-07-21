@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from .typing import ELTJobManifest
+from .pipeline_types import ELTJobManifest
 
 INGEST = "ingest"
 
