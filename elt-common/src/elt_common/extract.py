@@ -1,6 +1,7 @@
 import dataclasses as dc
 import importlib.util
 import json
+import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Iterator, Optional, get_args
@@ -139,18 +140,18 @@ def _get_extract_cls(job: ELTJobManifest) -> type[BaseExtract]:
     """Get the class that will handle the extraction."""
     extract_script = job.ingest_job_dir / f"{job.name}.py"
     if extract_script.exists():
-        return _get_extract_cls_from_module_path(job.name, extract_script)
+        return _get_extract_cls_from_module_path(job.name, job.ingest_job_dir)
     else:
         raise RuntimeError(f"No extraction class definition file found at '{extract_script}'")
 
 
-def _get_extract_cls_from_module_path(module_name: str, file_path: Path) -> type[BaseExtract]:
+def _get_extract_cls_from_module_path(module_name: str, module_dir: Path) -> type[BaseExtract]:
     """Get the class attribute that will handle extraction.
 
     :raises AttributeError: if the module doesn't include an 'Extract' attribute
     :raises TypeError: if 'Extract' in the module isn't a subclass of BaseExtract
     """
-    module = _import_module_from_path(module_name, file_path)
+    module = _import_module_from_path(module_name, module_dir)
     try:
         extract_cls = getattr(module, EXTRACT_CLS_NAME)
     except AttributeError:
@@ -170,15 +171,7 @@ def _get_extract_cls_from_module_path(module_name: str, file_path: Path) -> type
     return extract_cls
 
 
-def _import_module_from_path(module_name: str, file_path: Path):
-    """Import a module given its name and file location."""
-    spec = importlib.util.spec_from_file_location(module_name, file_path)
-    if spec is None:
-        raise ImportError(f"Unable to find module spec for '{module_name}' at '{file_path}'")
-    module = importlib.util.module_from_spec(spec)
-    if spec.loader is not None:
-        spec.loader.exec_module(module)
-    else:
-        raise ImportError(f"Module spec for {module_name} @ '{file_path}' has no loader attribute")
-
-    return module
+def _import_module_from_path(module_name: str, module_dir: Path):
+    """Import a module given its name and directory"""
+    sys.path.append(str(module_dir))
+    return importlib.import_module(module_name)
