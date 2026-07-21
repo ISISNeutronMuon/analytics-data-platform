@@ -4,6 +4,7 @@ import json
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
+from types import ModuleType
 from typing import TYPE_CHECKING, Callable, Iterator, Optional, get_args
 
 from pydantic_settings import BaseSettings
@@ -139,39 +140,39 @@ def create_extract_obj(job: ELTJobManifest) -> BaseExtract:
 def _get_extract_cls(job: ELTJobManifest) -> type[BaseExtract]:
     """Get the class that will handle the extraction."""
     extract_script = job.ingest_job_dir / f"{job.name}.py"
-    if extract_script.exists():
-        return _get_extract_cls_from_module_path(job.name, job.ingest_job_dir)
-    else:
+    if not extract_script.exists():
         raise RuntimeError(f"No extraction class definition file found at '{extract_script}'")
 
-
-def _get_extract_cls_from_module_path(module_name: str, module_dir: Path) -> type[BaseExtract]:
-    """Get the class attribute that will handle extraction.
-
-    :raises AttributeError: if the module doesn't include an 'Extract' attribute
-    :raises TypeError: if 'Extract' in the module isn't a subclass of BaseExtract
-    """
-    module = _import_module_from_path(module_name, module_dir)
-    try:
-        extract_cls = getattr(module, EXTRACT_CLS_NAME)
-    except AttributeError:
-        raise AttributeError(
-            f"Module '{module_name}' doesn't include an "
-            f"'{EXTRACT_CLS_NAME}' class, which is required for defining an ingest job"
-        )
-
-    if not isinstance(extract_cls, type):
-        raise TypeError(f"'{EXTRACT_CLS_NAME}' in module '{module_name}' is not a class")
-
-    if not issubclass(extract_cls, BaseExtract):
-        raise TypeError(
-            f"'{EXTRACT_CLS_NAME}' in module '{module_name}' doesn't subclass elt_common.extract.BaseExtract"
-        )
-
-    return extract_cls
+    module = _import_module_from_path(job.name, job.ingest_job_dir)
+    return _get_extract_cls_from_module(module)
 
 
 def _import_module_from_path(module_name: str, module_dir: Path):
     """Import a module given its name and directory"""
     sys.path.append(str(module_dir))
     return importlib.import_module(module_name)
+
+
+def _get_extract_cls_from_module(module: ModuleType) -> type[BaseExtract]:
+    """Get the class attribute that will handle extraction.
+
+    :raises AttributeError: if the module doesn't include an 'Extract' attribute
+    :raises TypeError: if 'Extract' in the module isn't a subclass of BaseExtract
+    """
+    try:
+        extract_cls = getattr(module, EXTRACT_CLS_NAME)
+    except AttributeError:
+        raise AttributeError(
+            f"Module '{module.__name__}' doesn't include an "
+            f"'{EXTRACT_CLS_NAME}' class, which is required for defining an ingest job"
+        )
+
+    if not isinstance(extract_cls, type):
+        raise TypeError(f"'{EXTRACT_CLS_NAME}' in module '{module.__name__}' is not a class")
+
+    if not issubclass(extract_cls, BaseExtract):
+        raise TypeError(
+            f"'{EXTRACT_CLS_NAME}' in module '{module.__name__}' doesn't subclass elt_common.extract.BaseExtract"
+        )
+
+    return extract_cls
