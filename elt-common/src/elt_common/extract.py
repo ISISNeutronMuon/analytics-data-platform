@@ -151,7 +151,7 @@ def _import_module_from_path(module_name: str, module_dir: Path):
     """Import a module given its name and directory"""
     without_module_dir = [p for p in sys.path]
     try:
-        sys.path.append(str(module_dir))
+        sys.path.insert(0, str(module_dir))
         return importlib.import_module(module_name)
     finally:
         sys.path = without_module_dir
