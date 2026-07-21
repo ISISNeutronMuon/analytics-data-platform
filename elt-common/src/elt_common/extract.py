@@ -1,8 +1,10 @@
 import dataclasses as dc
 import importlib.util
 import json
+import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
+from types import ModuleType
 from typing import TYPE_CHECKING, Callable, Iterator, Optional, get_args
 
 from pydantic_settings import BaseSettings
@@ -138,47 +140,43 @@ def create_extract_obj(job: ELTJobManifest) -> BaseExtract:
 def _get_extract_cls(job: ELTJobManifest) -> type[BaseExtract]:
     """Get the class that will handle the extraction."""
     extract_script = job.ingest_job_dir / f"{job.name}.py"
-    if extract_script.exists():
-        return _get_extract_cls_from_module_path(job.name, extract_script)
-    else:
+    if not extract_script.exists():
         raise RuntimeError(f"No extraction class definition file found at '{extract_script}'")
 
+    module = _import_module_from_path(job.name, job.ingest_job_dir)
+    return _get_extract_cls_from_module(module)
 
-def _get_extract_cls_from_module_path(module_name: str, file_path: Path) -> type[BaseExtract]:
+
+def _import_module_from_path(module_name: str, module_dir: Path):
+    """Import a module given its name and directory"""
+    without_module_dir = [p for p in sys.path]
+    try:
+        sys.path.insert(0, str(module_dir))
+        return importlib.import_module(module_name)
+    finally:
+        sys.path = without_module_dir
+
+
+def _get_extract_cls_from_module(module: ModuleType) -> type[BaseExtract]:
     """Get the class attribute that will handle extraction.
 
     :raises AttributeError: if the module doesn't include an 'Extract' attribute
     :raises TypeError: if 'Extract' in the module isn't a subclass of BaseExtract
     """
-    module = _import_module_from_path(module_name, file_path)
     try:
         extract_cls = getattr(module, EXTRACT_CLS_NAME)
     except AttributeError:
         raise AttributeError(
-            f"Module '{module_name}' doesn't include an "
+            f"Module '{module.__name__}' doesn't include an "
             f"'{EXTRACT_CLS_NAME}' class, which is required for defining an ingest job"
         )
 
     if not isinstance(extract_cls, type):
-        raise TypeError(f"'{EXTRACT_CLS_NAME}' in module '{module_name}' is not a class")
+        raise TypeError(f"'{EXTRACT_CLS_NAME}' in module '{module.__name__}' is not a class")
 
     if not issubclass(extract_cls, BaseExtract):
         raise TypeError(
-            f"'{EXTRACT_CLS_NAME}' in module '{module_name}' doesn't subclass elt_common.extract.BaseExtract"
+            f"'{EXTRACT_CLS_NAME}' in module '{module.__name__}' doesn't subclass elt_common.extract.BaseExtract"
         )
 
     return extract_cls
-
-
-def _import_module_from_path(module_name: str, file_path: Path):
-    """Import a module given its name and file location."""
-    spec = importlib.util.spec_from_file_location(module_name, file_path)
-    if spec is None:
-        raise ImportError(f"Unable to find module spec for '{module_name}' at '{file_path}'")
-    module = importlib.util.module_from_spec(spec)
-    if spec.loader is not None:
-        spec.loader.exec_module(module)
-    else:
-        raise ImportError(f"Module spec for {module_name} @ '{file_path}' has no loader attribute")
-
-    return module
