@@ -92,3 +92,7 @@ def _find_matching_ingest_job(project: PipelinesProject, job_name: str) -> Optio
         return matching_name_jobs[0]
 
     return None
+
+
+if __name__ == "__main__":
+    cli()
