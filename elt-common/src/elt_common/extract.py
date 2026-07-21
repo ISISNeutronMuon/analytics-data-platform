@@ -149,8 +149,12 @@ def _get_extract_cls(job: ELTJobManifest) -> type[BaseExtract]:
 
 def _import_module_from_path(module_name: str, module_dir: Path):
     """Import a module given its name and directory"""
-    sys.path.append(str(module_dir))
-    return importlib.import_module(module_name)
+    without_module_dir = [p for p in sys.path]
+    try:
+        sys.path.append(str(module_dir))
+        return importlib.import_module(module_name)
+    finally:
+        sys.path = without_module_dir
 
 
 def _get_extract_cls_from_module(module: ModuleType) -> type[BaseExtract]:
