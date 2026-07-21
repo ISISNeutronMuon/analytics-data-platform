@@ -33,6 +33,17 @@ fetching data. To install any additional dependencies for that specific pipeline
 Pipelines are run using the `elt` CLI tool. As an example, with `elt-pipelines` as the current working directory,
 `elt run facility_ops statusdisplay` will run the statusdisplay pipeline. See `elt -h` for full usage.
 
+### Configuration
+
+- The connection to the Iceberg destination needs to be configured. `elt-common` uses pyiceberg to handle the
+  connection, so configuration follows [their approach](https://py.iceberg.apache.org/configuration/). See
+  the [getting started guide](../docs-devel/getting-started.md#configure-iceberg-connection) for the local configuration
+  values
+- Any pipelines that include a `config_cls` require/have optional configuration values to be set
+   - These use [`pydantic_settings`](https://pydantic.dev/docs/validation/latest/concepts/pydantic_settings/)
+   - Environment variables are used to set the values. The name of the variable(s) must be prefixed with
+     `<JOB_NAME>__`, where `<JOB_NAME>` is the name of the pipeline
+
 ## Writing a pipeline
 
 To create a new pipeline:
@@ -41,7 +52,7 @@ To create a new pipeline:
 2. In the script, create a class named `Extract` which subclasses `elt_common.extract.BaseExtract`
 3. Implement the `extract_resource_properties` method
     - It must be a generator that yields pairs of (`table_name`, `resource_properties`)
-    - `table_name` is the name of the iceberg table the data should be loaded into
+    - `table_name` is the name of the Iceberg table the data should be loaded into
     - `resource_properties` describes how the data is extracted and loaded. See the class documentation
       [in extract.py](../elt-common/src/elt_common/extract.py) for details
 4. If the pipeline requires configuration:
