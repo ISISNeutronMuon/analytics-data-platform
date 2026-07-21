@@ -1,53 +1,72 @@
 import json
 import logging
-from typing import Iterator
+from typing import Dict, Iterator
 
 import pandas as pd
 import pyarrow as pa
 import sqlalchemy as sa
 from elt_common.extract import Watermark
-from elt_common.sources.sqldatabase import SqlDatabaseExtract
+from elt_common.sources.sqldatabase import SqlDatabaseExtract, SqlDatabaseSourceConfig
+from pydantic_settings import SettingsConfigDict
 
 LOGGER = logging.getLogger(__name__)
 
+# Default PyArrow type lookup dictionary
+DEFAULT_TYPE_MAP: Dict[str, str] = {
+    "int": "bigint",
+    "bool": "bool",
+    "json": "text",
+    "uuid": "text",
+    "float": "double",
+    "numeric": "double",
+    "double": "double",
+    "timestamp": "timestamp",
+    "date": "date",
+}
+
+# Mapping string representations to actual PyArrow types
+PA_TYPE_MAPPING = {
+    "bigint": pa.int64(),
+    "bool": pa.bool_(),
+    "double": pa.float64(),
+    "timestamp": pa.timestamp("us"),
+    "date": pa.date32(),
+    "text": pa.string(),
+}
+
+
+class PostgresConfig(SqlDatabaseSourceConfig):
+    model_config = SettingsConfigDict(
+        extra="ignore",
+        protected_namespaces=(),
+    )
+
+    type_map: Dict[str, str] = DEFAULT_TYPE_MAP
+
 
 class PostgresExtract(SqlDatabaseExtract):
+    config_cls = PostgresConfig
+
     def map_pg_to_pq_type(self, pg_type) -> str:
         t = str(pg_type).lower()
-        if "int" in t:
-            return "bigint"
-        if "bool" in t:
-            return "bool"
-        if "json" in t or "uuid" in t:
-            return "text"
-        if "float" in t or "numeric" in t or "double" in t:
-            return "double"
-        if "timestamp" in t:
-            return "timestamp"
-        if "date" in t:
-            return "date"
+        type_map = getattr(self.config, "type_map", DEFAULT_TYPE_MAP)
+        for keyword, mapped_type in type_map.items():
+            if keyword in t:
+                return mapped_type
         return "text"
 
     def get_table_schema(self, table_name: str) -> pa.Schema:
         inspector = sa.inspect(self._engine)
         columns = inspector.get_columns(table_name)
 
-        arrow_fields = []
-        for col in columns:
-            pq_type_str = self.map_pg_to_pq_type(col["type"])
-            if pq_type_str == "bigint":
-                pa_type = pa.int64()
-            elif pq_type_str == "bool":
-                pa_type = pa.bool_()
-            elif pq_type_str == "double":
-                pa_type = pa.float64()
-            elif pq_type_str == "timestamp":
-                pa_type = pa.timestamp("us")
-            elif pq_type_str == "date":
-                pa_type = pa.date32()
-            else:
-                pa_type = pa.string()
-            arrow_fields.append(pa.field(col["name"], pa_type, nullable=True))
+        arrow_fields = [
+            pa.field(
+                col["name"],
+                PA_TYPE_MAPPING.get(self.map_pg_to_pq_type(col["type"]), pa.string()),
+                nullable=True,
+            )
+            for col in columns
+        ]
 
         return pa.schema(arrow_fields)
 
