@@ -93,7 +93,10 @@ class Extract(BaseExtract):
 
         resolved = self._read_files(files)
         df = read_contents_to_dataframe(resolved)
-        yield pa.Table.from_pandas(df, preserve_index=False)
+        if df is not None and df.size > 0:
+            yield pa.Table.from_pandas(df, preserve_index=False)
+        else:
+            yield pa.Table.from_pylist([])
 
     def _read_files(self, files: list[M365File]) -> list[tuple[str, bytes]]:
         results = []
