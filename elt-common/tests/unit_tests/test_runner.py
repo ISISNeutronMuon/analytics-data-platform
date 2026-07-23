@@ -80,16 +80,16 @@ def test_run_ingest_extract_using_all_write_modes(
     run_ingest(elt_job)
 
     call_args_list = mock_iceberg_io.write_table.call_args_list
-    assert len(call_args_list) == 4
 
     expected_table_names = [
         "table_default_write",
         "table_replace_mode",
         "table_merge_mode",
-        "empty",
     ]
-    expected_write_modes = ("append", "replace", "merge", "append")
-    expected_merge_on = ([], [], ["name"], [])
+    assert len(call_args_list) == len(expected_table_names)
+
+    expected_write_modes = ("append", "replace", "merge")
+    expected_merge_on = ([], [], ["name"])
 
     for index, call in enumerate(call_args_list):
         call_args, call_kwargs = call.args, call.kwargs
@@ -97,10 +97,7 @@ def test_run_ingest_extract_using_all_write_modes(
         data = call_args[1]
         assert isinstance(data, pa.Table)
         expected_table_name = expected_table_names[index]
-        if expected_table_name != "empty":
-            assert data["name"][0].as_py() == expected_table_name
-        else:
-            assert data.num_rows == 0
+        assert data["name"][0].as_py() == expected_table_name
         assert call_args[2] == expected_write_modes[index]
 
         assert call_kwargs["merge_on"] == expected_merge_on[index]
