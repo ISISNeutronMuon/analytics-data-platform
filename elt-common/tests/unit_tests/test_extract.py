@@ -1,3 +1,4 @@
+import datetime as dt
 from pathlib import Path
 
 import pytest
@@ -5,6 +6,8 @@ import pytest
 from elt_common.extract import BaseExtract, Watermark, create_extract_obj
 from elt_common.sources.sqldatabase import SqlDatabaseExtract
 from elt_common.pipeline_types import ELTJobManifest
+
+_value_type_error_msg = "'value' must be a string, number, or ISO format datetime"
 
 
 @pytest.mark.parametrize(
@@ -18,9 +21,9 @@ from elt_common.pipeline_types import ELTJobManifest
         ('{"column": 123, "value": "non_string_column"}', "Watermark 'column' must be a string"),
         ('{"column": "null_value", "value": null}', "'value' was missing"),
         ('{"column": null, "value": "null_column"}', "'column' was missing"),
-        ('{"column": "bool_value", "value": true}', "'value' must be a string or number"),
-        ('{"column": "array_value", "value": [1]}', "'value' must be a string or number"),
-        ('{"column": "object_value", "value": {"a": 123}}', "'value' must be a string or number"),
+        ('{"column": "bool_value", "value": true}', _value_type_error_msg),
+        ('{"column": "array_value", "value": [1]}', _value_type_error_msg),
+        ('{"column": "object_value", "value": {"a": 123}}', _value_type_error_msg),
     ],
 )
 def test_deserialize_watermark_bad_values_value_error(serialized, expected_error_message):
@@ -34,6 +37,10 @@ def test_deserialize_watermark_bad_values_value_error(serialized, expected_error
         ('{"column": "string_value", "value": "123"}', Watermark("string_value", "123")),
         ('{"column": "int_value", "value": 123}', Watermark("int_value", 123)),
         ('{"column": "float_value", "value": 123.123}', Watermark("float_value", 123.123)),
+        (
+            '{"column": "datetime_value", "value": "2020-01-01T00:00:00"}',
+            Watermark("datetime_value", dt.datetime(2020, 1, 1)),
+        ),
     ],
 )
 def test_deserialize_watermark_good_values(serialized, expected):
