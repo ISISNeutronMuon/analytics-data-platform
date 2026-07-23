@@ -114,8 +114,9 @@ def _csv_section_to_df(file_name: str, lines: Sequence[str]) -> pd.DataFrame | N
     # clean up column names (strip any whitespace)
     df_raw.columns = df_raw.columns.str.strip()
     cols = [c for c in df_raw.columns]
-    assert len(cols) == 3
-    assert "power" in cols[2].lower()
+    if len(cols) != 3 or "power" not in cols[2].lower():
+        LOGGER.warning(f"Columns in {file_name} are an unexpected format: {cols}")
+        return None
 
     try:
         if cols[1].strip() == "Date":
