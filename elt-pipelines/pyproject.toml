@@ -15,13 +15,7 @@ statusdisplay = [
     "requests>=2.34.2",
 ]
 
-accelerator_sharepoint = [
-    "pandas >= 3.0.3",
-    "openpyxl >= 3.1.5",
-    "elt-common[m365]"
-]
-
-electricity_sharepoint = [
+sharepoint = [
     "pandas >= 3.0.3",
     "openpyxl >= 3.1.5",
     "elt-common[m365]"

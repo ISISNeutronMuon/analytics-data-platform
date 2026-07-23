@@ -521,12 +521,7 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-accelerator-sharepoint = [
-    { name = "elt-common", extra = ["m365"] },
-    { name = "openpyxl" },
-    { name = "pandas" },
-]
-electricity-sharepoint = [
+sharepoint = [
     { name = "elt-common", extra = ["m365"] },
     { name = "openpyxl" },
     { name = "pandas" },
@@ -544,17 +539,14 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "elt-common", editable = "../elt-common" },
-    { name = "elt-common", extras = ["m365"], marker = "extra == 'accelerator-sharepoint'", editable = "../elt-common" },
-    { name = "elt-common", extras = ["m365"], marker = "extra == 'electricity-sharepoint'", editable = "../elt-common" },
-    { name = "openpyxl", marker = "extra == 'accelerator-sharepoint'", specifier = ">=3.1.5" },
-    { name = "openpyxl", marker = "extra == 'electricity-sharepoint'", specifier = ">=3.1.5" },
-    { name = "pandas", marker = "extra == 'accelerator-sharepoint'", specifier = ">=3.0.3" },
-    { name = "pandas", marker = "extra == 'electricity-sharepoint'", specifier = ">=3.0.3" },
+    { name = "elt-common", extras = ["m365"], marker = "extra == 'sharepoint'", editable = "../elt-common" },
+    { name = "openpyxl", marker = "extra == 'sharepoint'", specifier = ">=3.1.5" },
+    { name = "pandas", marker = "extra == 'sharepoint'", specifier = ">=3.0.3" },
     { name = "pyarrow", marker = "extra == 'statusdisplay'", specifier = ">=24.0.0" },
     { name = "pydantic-settings", specifier = ">=2.14.2" },
     { name = "requests", marker = "extra == 'statusdisplay'", specifier = ">=2.34.2" },
 ]
-provides-extras = ["statusdisplay", "accelerator-sharepoint", "electricity-sharepoint"]
+provides-extras = ["statusdisplay", "sharepoint"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "prek", specifier = ">=0.4.5" }]
