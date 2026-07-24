@@ -181,3 +181,18 @@ def test_sql_database_watermarks_filter_results(tmp_path: Path):
         tables = [table for table in props.extractor(Watermark("age", 39))]
         data = pyarrow.lib.concat_tables(tables)
         assert len(data) == 1, "Only the one person with age > 39 should be returned"
+
+
+def test_sql_database_destination_table_name_yielded(tmp_path: Path):
+    db_path = tmp_path / "test.db"
+    _create_sqlite_database(db_path)
+    source_config = _create_config(db_path)
+
+    class Extract(SqlDatabaseExtract):
+        def table_info(self) -> dict[str, Optional[TableInfo]]:
+            return {"people": TableInfo(destination_table_name="a_different_name")}
+
+    e = Extract(source_config)
+
+    for table_name, _ in e.extract_resource_properties():
+        assert table_name == "a_different_name"

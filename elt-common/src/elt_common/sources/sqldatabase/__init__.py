@@ -51,10 +51,13 @@ class TableInfo(NamedTuple):
     destination. If omitted, will default to appending with no partitions or sorting.
     :ivar watermark_column: the column to use for watermarking. If omitted, the
     entire table will be queried on every run
+    :ivar destination_table_name: sets the name of the table in Iceberg, if it should
+    be different to the name of the DB table
     """
 
     write_properties: Optional[ResourceWriteProperties] = None
     watermark_column: Optional[str] = None
+    destination_table_name: Optional[str] = None
 
 
 class SqlDatabaseExtract(BaseExtract):
@@ -138,7 +141,11 @@ class SqlDatabaseExtract(BaseExtract):
                 watermark_column=watermark_column,
             )
 
-            yield name, properties
+            destination_table = name
+            if table_props is not None and table_props.destination_table_name is not None:
+                destination_table = table_props.destination_table_name
+
+            yield destination_table, properties
 
     def _extract_table(
         self,
