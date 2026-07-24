@@ -28,6 +28,10 @@ class SqlDatabaseSourceConfig(BaseSettings):
 
     # loading behaviour
     chunk_size: int = 5000
+    """If the query returns more than chunk_size rows, fetch them in multiple chunks of at most this size"""
+
+    row_limit: Optional[int] = None
+    """Maximum number of rows to return from each table, primarily for testing purposes. No limit if 'None'"""
 
     @property
     def connection_url(self):
@@ -82,6 +86,7 @@ class SqlDatabaseExtract(BaseExtract):
     def __init__(self, config: SqlDatabaseSourceConfig):
         super().__init__(config)
         self._chunk_size = config.chunk_size
+        self._row_limit = config.row_limit
 
         LOGGER.debug(
             f"Creating engine for {config.drivername} database at "
@@ -158,6 +163,8 @@ class SqlDatabaseExtract(BaseExtract):
             column, max_value = watermark.column, watermark.value
             LOGGER.debug(f"Cursor value detected. Limiting query to {column} > {max_value}")
             query = query.where(sa.column(column) > max_value)
+
+        query = query.limit(self._row_limit)
 
         result = conn.execution_options(yield_per=self._chunk_size).execute(query)
         for partition in result.mappings().partitions():
