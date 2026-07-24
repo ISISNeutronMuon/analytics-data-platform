@@ -1,17 +1,16 @@
-from elt_common.extract import ResourceWriteProperties
-from elt_common.sources.sqldatabase import SqlDatabaseSourceConfig, TableInfo
-from fase.utils.postgres import PostgresExtract
+from elt_common.extract import (
+    ResourceWriteProperties,
+    Watermark,  # noqa: F401
+)
+from elt_common.sources.sqldatabase import (
+    SqlDatabaseSourceConfig,
+    TableInfo,
+)
+from elt_common.sources.sqldatabase.postgres import PostgresExtract
 
 
 class PipelinePostgresConfig(SqlDatabaseSourceConfig):
-    model_config = {
-        "env_prefix": "proposal__",
-        "env_nested_delimiter": "__",
-        "extra": "ignore",
-        "protected_namespaces": (),
-    }
-
-    drivername: str = "postgresql+psycopg2"
+    drivername: str = "postgresql+psycopg"
     table: str
 
     @property

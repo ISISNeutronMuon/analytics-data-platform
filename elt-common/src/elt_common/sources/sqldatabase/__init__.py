@@ -1,5 +1,6 @@
 """Support for ingesting data from an SQL database."""
 
+import json
 import logging
 from abc import abstractmethod
 from typing import Generator, Iterator, NamedTuple, Optional
@@ -9,7 +10,7 @@ import sqlalchemy as sa
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 
-from elt_common.extract import ResourceProperties, ResourceWriteProperties, Watermark, BaseExtract
+from elt_common.extract import BaseExtract, ResourceProperties, ResourceWriteProperties, Watermark
 
 LOGGER = logging.getLogger(__name__)
 
@@ -160,5 +161,65 @@ class SqlDatabaseExtract(BaseExtract):
             query = query.where(sa.column(column) > max_value)
 
         result = conn.execution_options(yield_per=self._chunk_size).execute(query)
-        for partition in result.mappings().partitions():
-            yield pa.Table.from_pylist(partition)
+
+        target_schema = self.get_table_schema(name)
+
+        column_names = list(result.keys())
+
+        has_data = False
+        while True:
+            rows = result.fetchmany(self._chunk_size)
+
+            if not rows:
+                break
+
+            has_data = True
+
+            # Convert SQLAlchemy Row objects to column arrays
+            columns = {}
+
+            for idx, column_name in enumerate(column_names):
+                columns[column_name] = [row[idx] for row in rows]
+
+            arrow_arrays = []
+
+            for field in target_schema:
+                values = columns.get(
+                    field.name,
+                    [None] * len(rows),
+                )
+
+                # JSON / JSONB -> string for Iceberg
+                if pa.types.is_string(field.type):
+                    values = [
+                        json.dumps(v)
+                        if isinstance(v, (dict, list))
+                        else str(v)
+                        if v is not None and not isinstance(v, str)
+                        else v
+                        for v in values
+                    ]
+                elif pa.types.is_integer(field.type):
+                    values = [int(v) if v is not None else None for v in values]
+                elif pa.types.is_floating(field.type):
+                    values = [float(v) if v is not None else None for v in values]
+
+                array = pa.array(
+                    values,
+                    type=field.type,
+                )
+                arrow_arrays.append(array)
+
+            yield pa.Table.from_arrays(
+                arrow_arrays,
+                schema=target_schema,
+            )
+
+        # Return empty table with schema when no rows
+        if not has_data:
+            empty_arrays = [pa.array([], type=field.type) for field in target_schema]
+
+            yield pa.Table.from_arrays(
+                empty_arrays,
+                schema=target_schema,
+            )
