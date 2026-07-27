@@ -2,12 +2,13 @@
 
 import logging
 from abc import abstractmethod
-from typing import Generator, Iterator, NamedTuple, Optional
+from typing import Generator, Iterator, NamedTuple, Optional, Callable
 
 import pyarrow as pa
 import sqlalchemy as sa
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
+from sqlalchemy import Select
 
 from elt_common.extract import ResourceProperties, ResourceWriteProperties, Watermark, BaseExtract
 
@@ -151,6 +152,7 @@ class SqlDatabaseExtract(BaseExtract):
         *,
         conn: sa.Connection,
         watermark: Watermark | None = None,
+        query_filter: Callable[[Select], Select] | None = None,
     ) -> Iterator[pa.Table]:
         LOGGER.debug(f"Extracting table {name} in chunks of {self._chunk_size} rows.")
         table = sa.Table(
@@ -163,6 +165,9 @@ class SqlDatabaseExtract(BaseExtract):
             column, max_value = watermark.column, watermark.value
             LOGGER.debug(f"Cursor value detected. Limiting query to {column} > {max_value}")
             query = query.where(sa.column(column) > max_value)
+
+        if query_filter:
+            query = query_filter(query)
 
         query = query.limit(self._row_limit)
 
