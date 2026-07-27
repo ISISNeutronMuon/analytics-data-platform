@@ -1,160 +1,88 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = "==3.13.*"
-# dependencies = [
-#     "dlt[sql-database]",
-#     "html2text",
-#     "pandas",
-#     "elt-common",
-#     "pymssql",
-# ]
-#
-# [tool.uv.sources]
-# elt-common = { path = "../../../../../elt-common" }
-# ///
-from collections.abc import Generator
-from typing import List
-import datetime as dt
+from itertools import batched
 
-import dlt
-from dlt.sources import DltResource
-from dlt.sources.sql_database import sql_table
 from html2text import html2text
 import pyarrow as pa
 import sqlalchemy as sa
 
-from elt_common import cli_utils
+from elt_common.extract import ResourceWriteProperties, ResourceProperties, Watermark
+from elt_common.sources.sqldatabase import SqlDatabaseExtract, TableInfo
 
-OPRALOG_EPOCH = dt.datetime(2017, 4, 25, 0, 0, 0)
-SQL_TABLE_KWARGS = dict(
-    schema=dlt.config.value,
-    backend="pyarrow",
-    backend_kwargs={"tz": "UTC"},
-)
-
-# Pass around extracted EntryIds
-EXTRACTED_ENTRY_IDS: List[int] = []
-
-
-def with_resource_limit(
-    resource: DltResource, limit_max_items: int | None = None
-) -> DltResource:
-    if limit_max_items is not None:
-        resource.add_limit(limit_max_items)
-
-    return resource
+# Append only tables mapped to their id columns (for watermarking)
+_append_tables = {
+    "ChapterEntry": "LogbookEntryId",
+    "LogbookChapter": "LogbookChapterNo",
+    "Logbooks": "LogbookId",
+    "AdditionalColumns": "AdditionalColumnId",
+}
 
 
-@dlt.source()
-def opralogwebdb(
-    chunk_size: int = 50000, limit_max_items: int | None = None
-) -> Generator[DltResource]:
-    """Opralog usage began in 04/2017. We split tables into two categories:
+class Extract(SqlDatabaseExtract):
+    def __init__(self, config):
+        super().__init__(config)
+        self._entry_ids = []
 
-      - append-only tables: previous records are never updated, use 'append' write_disposition
-      - merge-tables: old records could have been updated, use 'merge' write_disposition
+    def table_info(self):
+        return {k: TableInfo(watermark_column=v) for k, v in _append_tables.items()}
 
-    Both have incremental cursors to only load new or changed records. Unfortunately
-    the MoreEntryColumns table has no 'last changed' column to indicate when old records
-    were updated. We use the 'LastChangedDate' column of 'Entries' to find the list of
-    new or updated EntryId values and load the MoreEntryColumn records for these Entries
-    into the destination.
+    def extract_resource_properties(self):
+        for name, props in super().extract_resource_properties():
+            yield name, props
 
-    `chunk_size` and `limit_max_items` are primarily used for testing and debugging
-    """
+        # Tables which require custom extractor behaviour
+        with self._engine.connect() as conn:
+            # Extracts 'Entries' and stores their ids in self._entry_ids
+            # Entries can be updated later, which will update their
+            # 'LastChangedDate', so we use that for watermarking
+            yield (
+                "Entries",
+                ResourceProperties(
+                    extractor=lambda w: self._extract_entries(conn, w),
+                    write_properties=ResourceWriteProperties(
+                        write_mode="merge", merge_on=["EntryId"]
+                    ),
+                    watermark_column="LastChangedDate",
+                ),
+            )
 
-    tables_append_records = {
-        "ChapterEntry": {"cursor": "LogbookEntryId"},
-        "LogbookChapter": {"cursor": "LogbookChapterNo"},
-        "Logbooks": {"cursor": "LogbookId"},
-        "AdditionalColumns": {"cursor": "AdditionalColumnId"},
-    }
-    # Deal with simple, append-only tables first
-    for name, info in tables_append_records.items():
-        resource = sql_table(
-            table=name,
-            incremental=dlt.sources.incremental(info["cursor"]),
-            write_disposition="append",
-            chunk_size=chunk_size,
-            **SQL_TABLE_KWARGS,
-        )
-        yield with_resource_limit(resource, limit_max_items)
+            yield (
+                "MoreEntryColumns",
+                ResourceProperties(
+                    extractor=lambda w: self._extract_more_entry_columns(conn, w),
+                    write_properties=ResourceWriteProperties(
+                        write_mode="merge", merge_on=["MoreEntryColumnId"]
+                    ),
+                    watermark_column=None,
+                ),
+            )
 
-    # Now the Entries table, with incremental cursor, that tells us what EntryIds have been updated
-    yield with_resource_limit(entries_table(chunk_size), limit_max_items)
+    def _extract_entries(self, conn: sa.Connection, w: Watermark | None):
+        for entries in self._extract_table("Entries", conn=conn, watermark=w):
+            chunk = _convert_comments_to_md(entries)
 
-    # Finally the MoreEntryColumns table based on the loaded EntryIds
-    yield with_resource_limit(more_entry_columns_table(chunk_size), limit_max_items)
+            # Track entry ids so we can fetch 'MoreEntryColumns' for them
+            self._entry_ids.extend(chunk["EntryId"].to_pylist())
 
+            yield chunk
 
-def entries_table(chunk_size: int) -> DltResource:
-    """Return a resource wrapper for the Entries table"""
-    resource = sql_table(
-        table="Entries",
-        incremental=dlt.sources.incremental(
-            "LastChangedDate",
-            initial_value=OPRALOG_EPOCH,
-            primary_key="EntryId",
-        ),
-        write_disposition={"disposition": "merge", "strategy": "upsert"},
-        chunk_size=chunk_size,
-        **SQL_TABLE_KWARGS,
-    )
-    return resource.add_map(additional_comment_to_markdown).add_map(
-        store_extracted_entry_ids
-    )
+    def _extract_more_entry_columns(self, conn: sa.Connection, _):
+        # IN clauses can't be too big, so we batch them
+        batched_ids = batched(self._entry_ids, 500)
+        for batch in batched_ids:
 
+            def entry_filter(query: sa.Select):
+                return query.where(sa.column("EntryId").in_(batch))
 
-def additional_comment_to_markdown(table: pa.Table) -> pa.Table:
-    """Transform the AdditionalComment column to markdown"""
-    column_name = "AdditionalComment"
-    table = table.set_column(
-        table.column_names.index(column_name),
-        column_name,
-        pa.array(
-            table[column_name]
-            .to_pandas()
-            .apply(lambda x: html2text(x) if isinstance(x, str) else x)
-        ),
-    )
-
-    return table
+            for chunk in self._extract_table(
+                "MoreEntryColumns", conn=conn, query_filter=entry_filter
+            ):
+                yield chunk
 
 
-def store_extracted_entry_ids(table: pa.Table) -> pa.Table:
-    """Keep track of the extracted EntryId values.
-
-    If there are more records than chunk_size, this will be called once per chunk
-    """
-    global EXTRACTED_ENTRY_IDS
-
-    EXTRACTED_ENTRY_IDS.extend(table["EntryId"].to_pylist())
-
-    return table
-
-
-def more_entry_columns_table(chunk_size: int) -> DltResource:
-    """Return a resource wrapper for the MoreEntryColumns table"""
-
-    def more_entry_columns_query(query: sa.Select, table):
-        return query.filter(table.c.EntryId.in_(EXTRACTED_ENTRY_IDS))
-
-    resource = sql_table(
-        table="MoreEntryColumns",
-        write_disposition={"disposition": "merge", "strategy": "upsert"},
-        query_adapter_callback=more_entry_columns_query,
-        chunk_size=chunk_size,
-        **SQL_TABLE_KWARGS,
-    )
-
-    return resource
-
-
-# ------------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    cli_utils.cli_main(
-        pipeline_name="opralogweb",
-        data_generator=opralogwebdb,
-        source_domain="accelerator",
-    )
+def _convert_comments_to_md(entries: pa.Table):
+    additional_comments_idx = entries.column_names.index("AdditionalComment")
+    additional_comments = entries[additional_comments_idx].to_pylist()
+    additional_comments = [
+        html2text(c) if isinstance(c, str) else c for c in additional_comments
+    ]
+    a = pa.array(additional_comments, type=pa.string())
+    return entries.set_column(additional_comments_idx, "AdditionalComment", a)
