@@ -18,6 +18,7 @@ from pyiceberg.types import (
     TimestampType,
     TimestamptzType,
     TimeType,
+    UUIDType,
 )
 
 
@@ -59,6 +60,8 @@ def arrow_type_to_iceberg(arrow_type: pa.DataType, field_id: int = 1) -> Iceberg
         or pa.types.is_fixed_size_binary(arrow_type)
     ):
         return BinaryType()
+    elif isinstance(arrow_type, pa.UuidType):
+        return UUIDType()
 
     elif pa.types.is_list(arrow_type):
         # The list itself uses field_id, the lists element type uses the subsequent id
