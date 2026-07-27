@@ -13,8 +13,6 @@ class Extract(BaseExtract):
             "table_default_write",
             ResourceProperties(
                 extractor=extract_with_name("table_default_write"),
-                write_properties=ResourceWriteProperties(),
-                watermark_column=None,
             ),
         )
         yield (
@@ -22,7 +20,6 @@ class Extract(BaseExtract):
             ResourceProperties(
                 extractor=extract_with_name("table_replace_mode"),
                 write_properties=ResourceWriteProperties(write_mode="replace"),
-                watermark_column=None,
             ),
         )
         yield (
@@ -30,15 +27,12 @@ class Extract(BaseExtract):
             ResourceProperties(
                 extractor=extract_with_name("table_merge_mode"),
                 write_properties=ResourceWriteProperties(write_mode="merge", merge_on=["name"]),
-                watermark_column=None,
             ),
         )
         yield (
             "empty",
             ResourceProperties(
                 extractor=extract_empty,
-                write_properties=ResourceWriteProperties(),
-                watermark_column=None,
             ),
         )
 

@@ -2,7 +2,7 @@ from typing import Iterator, Optional
 
 from pydantic_settings import BaseSettings
 
-from elt_common.extract import BaseExtract, ResourceProperties, ResourceWriteProperties
+from elt_common.extract import BaseExtract, ResourceProperties
 
 
 class ACustomConfig(BaseSettings):
@@ -19,8 +19,6 @@ class Extract(BaseExtract):
             "empty table",
             ResourceProperties(
                 extractor=extract_nothing,
-                write_properties=ResourceWriteProperties(),
-                watermark_column=None,
             ),
         )
 

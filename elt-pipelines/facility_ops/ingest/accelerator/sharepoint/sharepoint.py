@@ -26,7 +26,6 @@ class Extract(BaseExtract):
             ResourceProperties(
                 extractor=self.extract_equipment_downtime,
                 write_properties=ResourceWriteProperties(write_mode="replace"),
-                watermark_column=None,
             ),
         )
         yield (
@@ -34,7 +33,6 @@ class Extract(BaseExtract):
             ResourceProperties(
                 extractor=self.extract_equipment_mapping,
                 write_properties=ResourceWriteProperties(write_mode="replace"),
-                watermark_column=None,
             ),
         )
 
