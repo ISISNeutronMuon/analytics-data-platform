@@ -48,6 +48,7 @@ def test_builds_schema_from_multiple_columns():
         (sa.Numeric(), pa.float64()),
         (sa.DECIMAL(), pa.float64()),
         (sa.DECIMAL(10, 2), pa.decimal128(10, 2)),
+        (sa.DECIMAL(50, 2), pa.decimal256(50, 2)),
     ],
 )
 def test_supported_sqlalchemy_types(sql_type, expected_type):

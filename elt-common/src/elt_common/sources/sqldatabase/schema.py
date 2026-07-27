@@ -87,8 +87,22 @@ def _to_pyarrow_type(sql_type):
     if isinstance(sql_type, sa.Numeric) or isinstance(sql_type, sa.NUMERIC):
         precision = getattr(sql_type, "precision", None)
         scale = getattr(sql_type, "scale", None)
-        if precision is not None and scale is not None:
+        if precision is None or scale is None:
+            return pa.float64()
+
+        if not isinstance(precision, int):
+            raise TypeError(f"Numeric precision was non-integer '{precision}'")
+        elif not isinstance(scale, int):
+            raise TypeError(f"Numeric scale was non-integer '{precision}'")
+
+        # 38 and 76 are the maximum precision for decimal128 and decimal256
+        # https://arrow.apache.org/docs/python/generated/pyarrow.decimal128.html
+        # https://arrow.apache.org/docs/python/generated/pyarrow.decimal256.html
+        if precision < 39:
             return pa.decimal128(precision, scale)
-        return pa.float64()
+        elif precision < 77:
+            return pa.decimal256(precision, scale)
+        else:
+            raise TypeError(f"Numeric precision cannot be larger than 76, was {precision}")
 
     raise TypeError(f"Unsupported SQLAlchemy type: {type(sql_type).__name__}")
