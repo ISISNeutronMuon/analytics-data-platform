@@ -40,11 +40,14 @@ def test_builds_schema_from_multiple_columns():
         (sa.DateTime(), pa.timestamp("us")),
         (sa.Time(), pa.time64("us")),
         (sa.Float(), pa.float64()),
+        (sa.Double(), pa.float64()),
         (sa.REAL(), pa.float32()),
         (sa.LargeBinary(), pa.binary()),
         (sa.Uuid(), pa.uuid()),
         (sa.Numeric(12, 3), pa.decimal128(12, 3)),
         (sa.Numeric(), pa.float64()),
+        (sa.DECIMAL(), pa.float64()),
+        (sa.DECIMAL(10, 2), pa.decimal128(10, 2)),
     ],
 )
 def test_supported_sqlalchemy_types(sql_type, expected_type):
