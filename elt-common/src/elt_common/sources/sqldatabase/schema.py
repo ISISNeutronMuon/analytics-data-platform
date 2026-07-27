@@ -75,8 +75,12 @@ _PYTHON_TYPE_MAP = {
 
 
 def _to_pyarrow_type(sql_type):
-    p_factory = _PYTHON_TYPE_MAP.get(sql_type.python_type)
-    factory = _SQL_TYPE_MAP.get(type(sql_type), p_factory)
+    factory = _SQL_TYPE_MAP.get(type(sql_type))
+    if factory is not None:
+        return factory()
+
+    # If type is not a generic SQL type, see if it's represented by a python type
+    factory = _PYTHON_TYPE_MAP.get(sql_type.python_type)
     if factory is not None:
         return factory()
 
