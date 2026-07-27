@@ -51,7 +51,6 @@ _EXTENDED_SQL_TYPES = {
     sa.INTEGER: _SQL_ROOT_TYPES[sa.Integer],
     sa.FLOAT: _SQL_ROOT_TYPES[sa.Float],
     sa.INT: _SQL_ROOT_TYPES[sa.Integer],
-    sa.JSON: _SQL_ROOT_TYPES[sa.String],
     sa.NCHAR: _SQL_ROOT_TYPES[sa.String],
     sa.NVARCHAR: _SQL_ROOT_TYPES[sa.String],
     sa.SMALLINT: _SQL_ROOT_TYPES[sa.SmallInteger],
