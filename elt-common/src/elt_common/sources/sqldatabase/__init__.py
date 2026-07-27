@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings
 from sqlalchemy import Select
 
 from elt_common.extract import ResourceProperties, ResourceWriteProperties, Watermark, BaseExtract
+from elt_common.sources.sqldatabase.schema import to_pyarrow_schema
 
 LOGGER = logging.getLogger(__name__)
 
@@ -171,6 +172,11 @@ class SqlDatabaseExtract(BaseExtract):
 
         query = query.limit(self._row_limit)
 
+        # If all the values in a column are null pyarrow won't know what type
+        # the column should be, so we need to explicitly create a schema from
+        # the table
+        pa_schema = to_pyarrow_schema(table)
         result = conn.execution_options(yield_per=self._chunk_size).execute(query)
         for partition in result.mappings().partitions():
-            yield pa.Table.from_pylist(partition)
+            table = pa.Table.from_pylist(partition, schema=pa_schema)
+            yield table
