@@ -5,7 +5,6 @@ import pyarrow as pa
 from elt_common.extract import (
     BaseExtract,
     ResourceProperties,
-    ResourceWriteProperties,
     Watermark,
 )
 
@@ -16,7 +15,6 @@ class Extract(BaseExtract):
             "table_with_watermark",
             ResourceProperties(
                 extractor=table_with_id_watermark,
-                write_properties=ResourceWriteProperties(),
                 watermark_column="id",
             ),
         )
@@ -25,8 +23,6 @@ class Extract(BaseExtract):
             "table_without_watermark",
             ResourceProperties(
                 extractor=table_without_watermark,
-                write_properties=ResourceWriteProperties(),
-                watermark_column=None,
             ),
         )
 
@@ -34,7 +30,6 @@ class Extract(BaseExtract):
             "table_watermarked_out_of_order_data",
             ResourceProperties(
                 extractor=out_of_order_data,
-                write_properties=ResourceWriteProperties(),
                 watermark_column="id",
             ),
         )
