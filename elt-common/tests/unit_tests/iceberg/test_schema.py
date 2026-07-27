@@ -17,6 +17,7 @@ from pyiceberg.types import (
     TimestampType,
     TimestamptzType,
     TimeType,
+    UUIDType,
 )
 
 from elt_common.iceberg.schema import arrow_type_to_iceberg, create_schema, evolve_schema
@@ -65,6 +66,7 @@ def test_unsupported_arrow_type_raises():
         (pa.binary(), BinaryType),
         (pa.large_binary(), BinaryType),
         (pa.binary(8), BinaryType),
+        (pa.uuid(), UUIDType),
         (pa.struct([("test", pa.int32())]), StructType),
         (pa.struct([("nested", pa.struct([("test", pa.int32())]))]), StructType),
         (pa.list_(pa.int32()), ListType),
