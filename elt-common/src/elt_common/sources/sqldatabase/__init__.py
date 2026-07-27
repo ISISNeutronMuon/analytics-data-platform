@@ -14,11 +14,17 @@ from elt_common.extract import BaseExtract, ResourceProperties, ResourceWritePro
 
 LOGGER = logging.getLogger(__name__)
 
+DEFAULT_PA_TYPE_MAPPING = {
+    "bigint": pa.int64(),
+    "bool": pa.bool_(),
+    "double": pa.float64(),
+    "timestamp": pa.timestamp("us"),
+    "date": pa.date32(),
+    "text": pa.string(),
+}
+
 
 class SqlDatabaseSourceConfig(BaseSettings):
-    """Configuration required to connect to a database"""
-
-    # connection
     drivername: str
     database: str
     database_schema: Optional[str] = None
@@ -27,7 +33,6 @@ class SqlDatabaseSourceConfig(BaseSettings):
     username: Optional[str] = None
     password: Optional[SecretStr] = None
 
-    # loading behaviour
     chunk_size: int = 5000
 
     @property
@@ -90,6 +95,39 @@ class SqlDatabaseExtract(BaseExtract):
         )
         self._engine = sa.create_engine(config.connection_url)
         self._metadata = sa.MetaData(schema=config.database_schema)
+
+    def map_sql_to_pq_type(self, sql_type: Any) -> pa.DataType:  # noqa: F821
+        t = str(sql_type).lower()
+        if "int" in t:
+            return pa.int64()
+        if "double" in t or "float" in t or "numeric" in t:
+            return pa.float64()
+        if "bool" in t:
+            return pa.bool_()
+        if "timestamp" in t:
+            return pa.timestamp("us")
+        if "date" in t:
+            return pa.date32()
+        return pa.string()
+
+    def get_table_schema(self, table_name: str) -> pa.Schema:
+        inspector = sa.inspect(self._engine)
+        schema = getattr(self.config, "database_schema", None)
+        columns = inspector.get_columns(table_name, schema=schema)
+
+        arrow_fields = [
+            pa.field(
+                self.normalize_column_name(col["name"]),
+                self.map_sql_to_pq_type(col["type"]),
+                nullable=True,
+            )
+            for col in columns
+        ]
+
+        return pa.schema(arrow_fields)
+
+    def normalize_column_name(self, name: str) -> str:
+        return name
 
     @abstractmethod
     def table_info(self) -> dict[str, Optional[TableInfo]]:
