@@ -3,7 +3,7 @@
 import json
 import logging
 from abc import abstractmethod
-from typing import Generator, Iterator, NamedTuple, Optional
+from typing import Any, Generator, Iterator, NamedTuple, Optional
 
 import pyarrow as pa
 import sqlalchemy as sa
@@ -96,7 +96,7 @@ class SqlDatabaseExtract(BaseExtract):
         self._engine = sa.create_engine(config.connection_url)
         self._metadata = sa.MetaData(schema=config.database_schema)
 
-    def map_sql_to_pq_type(self, sql_type: Any) -> pa.DataType:  # noqa: F821
+    def map_sql_to_pq_type(self, sql_type: Any) -> pa.DataType:
         t = str(sql_type).lower()
         if "int" in t:
             return pa.int64()
