@@ -6,7 +6,7 @@ from typing import Generator, Iterator, NamedTuple, Optional, Callable
 
 import pyarrow as pa
 import sqlalchemy as sa
-from pydantic import SecretStr
+from pydantic import SecretStr, PositiveInt
 from pydantic_settings import BaseSettings
 from sqlalchemy import Select
 
@@ -32,7 +32,7 @@ class SqlDatabaseSourceConfig(BaseSettings):
     chunk_size: int = 5000
     """If the query returns more than chunk_size rows, fetch them in multiple chunks of at most this size"""
 
-    row_limit: Optional[int] = None
+    row_limit: Optional[PositiveInt] = None
     """Maximum number of rows to return from each table, primarily for testing purposes. No limit if 'None'"""
 
     @property
