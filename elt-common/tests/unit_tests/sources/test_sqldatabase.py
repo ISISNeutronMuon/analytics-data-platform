@@ -57,9 +57,13 @@ def _create_sqlite_database(db_path: Path) -> sa.engine.Engine:
     return engine
 
 
-def _create_config(db_path: Path, chunk_size: int = 5000):
+def _create_config(db_path: Path, chunk_size: int = 5000, row_limit=None):
     return SqlDatabaseSourceConfig(
-        drivername="sqlite", database=str(db_path), chunk_size=chunk_size, username=None
+        drivername="sqlite",
+        database=str(db_path),
+        chunk_size=chunk_size,
+        username=None,
+        row_limit=row_limit,
     )
 
 
@@ -102,6 +106,30 @@ def test_sql_database_reads_table_in_chunks(tmp_path: Path, chunk_size):
         for i, chunk in enumerate(chunks):
             expected_length = chunk_size if i < len(chunks) - 1 else expected_last_chunk_size
             assert len(chunk) == expected_length
+
+
+@pytest.mark.parametrize(
+    "row_limit",
+    [None, 1, 2, 3, len(person_values), len(person_values) + 1, len(person_values) + 100],
+)
+def test_sql_database_limited_by_row_limit(tmp_path: Path, row_limit):
+    db_path = tmp_path / "test.db"
+    _create_sqlite_database(db_path)
+    source_config = _create_config(db_path, chunk_size=2, row_limit=row_limit)
+
+    class Extract(SqlDatabaseExtract):
+        def table_info(self) -> dict[str, Optional[TableInfo]]:
+            return {"people": None}
+
+    e = Extract(source_config)
+
+    for table_name, props in e.extract_resource_properties():
+        data = props.extractor(None)
+        rows_returned = sum([chunk.num_rows for chunk in data])
+        if row_limit is None or row_limit > len(person_values):
+            assert rows_returned == len(person_values)
+        else:
+            assert rows_returned == row_limit
 
 
 def test_sql_database_reads_multiple_tables(tmp_path: Path):

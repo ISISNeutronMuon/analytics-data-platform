@@ -2,14 +2,16 @@
 
 import logging
 from abc import abstractmethod
-from typing import Generator, Iterator, NamedTuple, Optional
+from typing import Generator, Iterator, NamedTuple, Optional, Callable
 
 import pyarrow as pa
 import sqlalchemy as sa
-from pydantic import SecretStr
+from pydantic import SecretStr, PositiveInt
 from pydantic_settings import BaseSettings
+from sqlalchemy import Select
 
 from elt_common.extract import ResourceProperties, ResourceWriteProperties, Watermark, BaseExtract
+from elt_common.sources.sqldatabase.schema import to_pyarrow_schema
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,6 +30,10 @@ class SqlDatabaseSourceConfig(BaseSettings):
 
     # loading behaviour
     chunk_size: int = 5000
+    """If the query returns more than chunk_size rows, fetch them in multiple chunks of at most this size"""
+
+    row_limit: Optional[PositiveInt] = None
+    """Maximum number of rows to return from each table, primarily for testing purposes. No limit if 'None'"""
 
     @property
     def connection_url(self):
@@ -85,6 +91,7 @@ class SqlDatabaseExtract(BaseExtract):
     def __init__(self, config: SqlDatabaseSourceConfig):
         super().__init__(config)
         self._chunk_size = config.chunk_size
+        self._row_limit = config.row_limit
 
         LOGGER.debug(
             f"Creating engine for {config.drivername} database at "
@@ -153,6 +160,7 @@ class SqlDatabaseExtract(BaseExtract):
         *,
         conn: sa.Connection,
         watermark: Watermark | None = None,
+        query_filter: Callable[[Select], Select] | None = None,
     ) -> Iterator[pa.Table]:
         LOGGER.debug(f"Extracting table {name} in chunks of {self._chunk_size} rows.")
         table = sa.Table(
@@ -166,6 +174,16 @@ class SqlDatabaseExtract(BaseExtract):
             LOGGER.debug(f"Cursor value detected. Limiting query to {column} > {max_value}")
             query = query.where(sa.column(column) > max_value)
 
+        if query_filter:
+            query = query_filter(query)
+
+        query = query.limit(self._row_limit)
+
+        # If all the values in a column are null pyarrow won't know what type
+        # the column should be, so we need to explicitly create a schema from
+        # the table
+        pa_schema = to_pyarrow_schema(table)
         result = conn.execution_options(yield_per=self._chunk_size).execute(query)
         for partition in result.mappings().partitions():
-            yield pa.Table.from_pylist(partition)
+            table = pa.Table.from_pylist(partition, schema=pa_schema)
+            yield table
