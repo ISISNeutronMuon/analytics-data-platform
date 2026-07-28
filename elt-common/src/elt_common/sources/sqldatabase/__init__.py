@@ -3,14 +3,16 @@
 import json
 import logging
 from abc import abstractmethod
-from typing import Any, Generator, Iterator, NamedTuple, Optional
+from typing import Callable, Generator, Iterator, NamedTuple, Optional
 
 import pyarrow as pa
 import sqlalchemy as sa
-from pydantic import SecretStr
+from pydantic import PositiveInt, SecretStr
 from pydantic_settings import BaseSettings
+from sqlalchemy import Select
 
 from elt_common.extract import BaseExtract, ResourceProperties, ResourceWriteProperties, Watermark
+from elt_common.sources.sqldatabase.schema import to_pyarrow_schema
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,6 +36,10 @@ class SqlDatabaseSourceConfig(BaseSettings):
     password: Optional[SecretStr] = None
 
     chunk_size: int = 5000
+    """If the query returns more than chunk_size rows, fetch them in multiple chunks of at most this size"""
+
+    row_limit: Optional[PositiveInt] = None
+    """Maximum number of rows to return from each table, primarily for testing purposes. No limit if 'None'"""
 
     @property
     def connection_url(self):
@@ -57,10 +63,13 @@ class TableInfo(NamedTuple):
     destination. If omitted, will default to appending with no partitions or sorting.
     :ivar watermark_column: the column to use for watermarking. If omitted, the
     entire table will be queried on every run
+    :ivar destination_table_name: sets the name of the table in Iceberg, if it should
+    be different to the name of the DB table
     """
 
     write_properties: Optional[ResourceWriteProperties] = None
     watermark_column: Optional[str] = None
+    destination_table_name: Optional[str] = None
 
 
 class SqlDatabaseExtract(BaseExtract):
@@ -88,6 +97,7 @@ class SqlDatabaseExtract(BaseExtract):
     def __init__(self, config: SqlDatabaseSourceConfig):
         super().__init__(config)
         self._chunk_size = config.chunk_size
+        self._row_limit = config.row_limit
 
         LOGGER.debug(
             f"Creating engine for {config.drivername} database at "
@@ -96,35 +106,21 @@ class SqlDatabaseExtract(BaseExtract):
         self._engine = sa.create_engine(config.connection_url)
         self._metadata = sa.MetaData(schema=config.database_schema)
 
-    def map_sql_to_pq_type(self, sql_type: Any) -> pa.DataType:
-        t = str(sql_type).lower()
-        if "int" in t:
-            return pa.int64()
-        if "double" in t or "float" in t or "numeric" in t:
-            return pa.float64()
-        if "bool" in t:
-            return pa.bool_()
-        if "timestamp" in t:
-            return pa.timestamp("us")
-        if "date" in t:
-            return pa.date32()
-        return pa.string()
-
     def get_table_schema(self, table_name: str) -> pa.Schema:
-        inspector = sa.inspect(self._engine)
-        schema = getattr(self.config, "database_schema", None)
-        columns = inspector.get_columns(table_name, schema=schema)
+        """Autoloads the SQL table and constructs a PyArrow schema using schema.py."""
+        table = sa.Table(
+            table_name,
+            self._metadata,
+            autoload_with=self._engine,
+        )
+        schema = to_pyarrow_schema(table)
 
-        arrow_fields = [
-            pa.field(
-                self.normalize_column_name(col["name"]),
-                self.map_sql_to_pq_type(col["type"]),
-                nullable=True,
-            )
-            for col in columns
+        # Apply column normalization (e.g. lowercase) if overridden by subclasses
+        normalized_fields = [
+            pa.field(self.normalize_column_name(field.name), field.type, field.nullable)
+            for field in schema
         ]
-
-        return pa.schema(arrow_fields)
+        return pa.schema(normalized_fields)
 
     def normalize_column_name(self, name: str) -> str:
         return name
@@ -177,7 +173,11 @@ class SqlDatabaseExtract(BaseExtract):
                 watermark_column=watermark_column,
             )
 
-            yield name, properties
+            destination_table = name
+            if table_props is not None and table_props.destination_table_name is not None:
+                destination_table = table_props.destination_table_name
+
+            yield destination_table, properties
 
     def _extract_table(
         self,
@@ -185,6 +185,7 @@ class SqlDatabaseExtract(BaseExtract):
         *,
         conn: sa.Connection,
         watermark: Watermark | None = None,
+        query_filter: Callable[[Select], Select] | None = None,
     ) -> Iterator[pa.Table]:
         LOGGER.debug(f"Extracting table {name} in chunks of {self._chunk_size} rows.")
         table = sa.Table(
@@ -197,6 +198,11 @@ class SqlDatabaseExtract(BaseExtract):
             column, max_value = watermark.column, watermark.value
             LOGGER.debug(f"Cursor value detected. Limiting query to {column} > {max_value}")
             query = query.where(sa.column(column) > max_value)
+
+        if query_filter:
+            query = query_filter(query)
+
+        query = query.limit(self._row_limit)
 
         result = conn.execution_options(yield_per=self._chunk_size).execute(query)
 

@@ -3,10 +3,10 @@ from elt_common.extract import (
     Watermark,  # noqa: F401
 )
 from elt_common.sources.sqldatabase import (
+    SqlDatabaseExtract,
     SqlDatabaseSourceConfig,
     TableInfo,
 )
-from elt_common.sources.sqldatabase.postgres import PostgresExtract
 
 
 class PipelinePostgresConfig(SqlDatabaseSourceConfig):
@@ -18,7 +18,7 @@ class PipelinePostgresConfig(SqlDatabaseSourceConfig):
         return [t.strip() for t in self.table.split(",") if t.strip()]
 
 
-class Extract(PostgresExtract):
+class Extract(SqlDatabaseExtract):
     config_cls = PipelinePostgresConfig
 
     def table_info(self) -> dict[str, TableInfo]:

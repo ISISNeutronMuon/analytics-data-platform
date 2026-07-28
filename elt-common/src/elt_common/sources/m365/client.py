@@ -10,7 +10,7 @@ import tenacity
 from authlib.integrations.httpx_client import OAuth2Client
 from httpx import HTTPStatusError, NetworkError, Response, TimeoutException
 
-from elt_common.sources.m365.configuration import M365Config, base_url
+from elt_common.sources.m365.credentials import M365Credentials, base_url
 
 LOGGER = logging.getLogger(__name__)
 
@@ -51,10 +51,10 @@ class M365File:
 class SPListClient:
     """Client for searching for and downloading files from an M365 SharePoint list"""
 
-    def __init__(self, config: M365Config):
-        self.client: OAuth2Client = config.credentials.create_oauth_client()
+    def __init__(self, site_url: str, credentials: M365Credentials):
+        self.client: OAuth2Client = credentials.create_oauth_client()
         self.client.ensure_active_token(self.client.fetch_token())
-        self.drive_url = f"{_drives_api_url}/{self._get_site_drive_id(config.site_url)}"
+        self.drive_url = f"{_drives_api_url}/{self._get_site_drive_id(site_url)}"
 
     def read_file(self, path: str):
         """Retrieve the contents of a file"""

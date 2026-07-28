@@ -78,9 +78,10 @@ and points to a Traefik instance that routes traffic to the appropriate service.
 This definition means the `adp-router` domain on the host points to the local machine as it does
 inside the docker network.
 
-## Configure dlt secrets
+## Configure Iceberg connection
 
-Create (or append to) `$HOME/.dlt/secrets.toml` with the local development credentials:
+For the DLT based pipelines in `warehouses`, create (or append to) `$HOME/.dlt/secrets.toml` with the local development
+credentials:
 
 ```toml
 [destination.pyiceberg.credentials]
@@ -90,6 +91,23 @@ oauth2_server_uri = "http://localhost:50080/auth/realms/analytics-data-platform/
 client_id = "machine-infra"
 client_secret = "s3cr3t"
 scope = "lakekeeper"
+```
+
+For the `elt-common` based pipelines in `elt-pipelines`, create (or append to) `$HOME/.pyiceberg.yaml`:
+
+```yaml
+catalog:
+  default:
+    type: rest
+    uri: http://localhost:50080/iceberg/catalog
+    warehouse: "facility_ops_landing"
+    auth:
+      type: oauth2
+      oauth2:
+        client_id: machine-infra
+        client_secret: s3cr3t
+        token_url: http://localhost:50080/auth/realms/analytics-data-platform/protocol/openid-connect/token
+        scope: lakekeeper
 ```
 
 ## Start the local service stack

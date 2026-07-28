@@ -1,4 +1,4 @@
-from elt_common.typing import PartitionConfig
+from elt_common.pipeline_types import PartitionConfig
 from pyiceberg.partitioning import (
     UNPARTITIONED_PARTITION_SPEC,
     PartitionField,

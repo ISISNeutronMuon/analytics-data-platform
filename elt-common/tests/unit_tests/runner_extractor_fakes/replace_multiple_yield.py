@@ -14,7 +14,6 @@ class Extract(BaseExtract):
             ResourceProperties(
                 extractor=extract_multiple_chunks,
                 write_properties=ResourceWriteProperties(write_mode="replace"),
-                watermark_column=None,
             ),
         )
 
