@@ -96,7 +96,7 @@ def _find_matching_ingest_job(project: PipelinesProject, job_name: str) -> Optio
 
 @cli.command(
     help="Run a transform step. "
-    "This command is a thin argument around dbt; DBT_ARGS are passed "
+    "This command is a thin wrapper around dbt; DBT_ARGS are passed "
     "directly to dbt. Use 'elt transform -- --help' for dbt usage.\n\n"
     "Requires the 'transform' optional dependencies group to be installed."
 )
