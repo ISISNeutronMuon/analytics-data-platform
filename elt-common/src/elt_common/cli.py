@@ -98,7 +98,9 @@ def _find_matching_ingest_job(project: PipelinesProject, job_name: str) -> Optio
     help="Run a transform step. "
     "This command is a thin wrapper around dbt; DBT_ARGS are passed "
     "directly to dbt. Use 'elt transform -- --help' for dbt usage.\n\n"
-    "Requires the 'transform' optional dependencies group to be installed."
+    "Requires the 'transform' optional dependencies group to be installed.",
+    # Accept any args and options, they're passed on to dbt
+    context_settings={"ignore_unknown_options": True, "allow_extra_args": True},
 )
 @click.argument("dbt_args", nargs=-1, type=click.UNPROCESSED)
 def transform(dbt_args):
