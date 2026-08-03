@@ -94,5 +94,30 @@ def _find_matching_ingest_job(project: PipelinesProject, job_name: str) -> Optio
     return None
 
 
+@cli.command(
+    help="Run a transform step. "
+    "This command is a thin argument around dbt; DBT_ARGS are passed "
+    "directly to dbt. Use 'elt transform -- --help' for dbt usage.\n\n"
+    "Requires the 'transform' optional dependencies group to be installed."
+)
+@click.argument("dbt_args", nargs=-1, type=click.UNPROCESSED)
+def transform(dbt_args):
+    try:
+        from dbt.cli.main import dbtRunner
+    except ImportError:
+        click.echo(
+            "The transform command requires dbt. Install the 'transform' optional dependency group"
+        )
+        sys.exit(1)
+
+    runner = dbtRunner()
+    result = runner.invoke(list(dbt_args))
+    if not result.success:
+        if result.exception:
+            click.echo("dbt failed with exception:", err=True)
+            click.echo(str(result.exception), err=True)
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     cli()
