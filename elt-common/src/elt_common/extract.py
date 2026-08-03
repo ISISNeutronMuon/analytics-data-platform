@@ -87,6 +87,9 @@ class ResourceWriteProperties:
             raise ValueError("'merge_on' must be provided when mode='merge'")
 
 
+_default_write_properties = ResourceWriteProperties()
+
+
 @dc.dataclass(frozen=True, kw_only=True)
 class ResourceProperties:
     """Configuration for a single resource to be extracted.
@@ -97,8 +100,8 @@ class ResourceProperties:
     """
 
     extractor: Callable[[Optional[Watermark]], "Iterator[pa.Table]"]
-    write_properties: ResourceWriteProperties
-    watermark_column: Optional[str]
+    write_properties: ResourceWriteProperties = _default_write_properties
+    watermark_column: Optional[str] = None
 
 
 class BaseExtract(ABC):

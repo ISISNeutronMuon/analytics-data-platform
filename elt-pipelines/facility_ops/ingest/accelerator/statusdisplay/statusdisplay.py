@@ -16,7 +16,6 @@ class Extract(BaseExtract):
             ResourceProperties(
                 extractor=extract_cycles,
                 write_properties=ResourceWriteProperties(write_mode="replace"),
-                watermark_column=None,
             ),
         )
 
