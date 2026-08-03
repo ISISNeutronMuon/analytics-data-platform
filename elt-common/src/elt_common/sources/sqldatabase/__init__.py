@@ -106,6 +106,12 @@ class SqlDatabaseExtract(BaseExtract):
 
         Each key in the returned dict is a table name. Their values can include
         extra properties for controlling ingestion, see :class:`TableInfo`.
+
+        This is a convenience method for defining tables whose data can be
+        extracted in a straightforward way (all data is extracted, potentially
+        limited by a watermark). For tables requiring more complex behaviour
+        (e.g. filtering) extend :py:meth:`extract_resource_properties` with
+        custom extractors.
         """
         pass
 
