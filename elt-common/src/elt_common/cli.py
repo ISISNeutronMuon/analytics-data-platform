@@ -106,7 +106,8 @@ def transform(dbt_args):
         from dbt.cli.main import dbtRunner
     except ImportError:
         click.echo(
-            "The transform command requires dbt. Install the 'transform' optional dependency group"
+            "The transform command requires dbt. Install the 'transform' optional dependency group",
+            err=True,
         )
         sys.exit(1)
 
