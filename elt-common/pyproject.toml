@@ -9,7 +9,7 @@ description = "A set of common utility routines for data pipelines."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-  "click>=8.4.1",
+  "click>=8.4.2",
   "dlt[parquet,s3]==1.26.0", # Soon to remove, don't make any more updates: https://github.com/ISISNeutronMuon/analytics-data-platform/issues/321
   "pyiceberg[pyiceberg-core]>=0.11.1",
   "s3fs<2026.2.0", # See https://github.com/ISISNeutronMuon/analytics-data-platform/issues/237
@@ -20,9 +20,9 @@ dependencies = [
 
 [project.optional-dependencies]
 iceberg-maintenance = [
-  "click>=8.4.1",
+  "click>=8.4.2",
   "sqlalchemy>=2.0.51",
-  "trino>=0.336.0",
+  "trino>=0.338.0",
 ]
 m365 = ["authlib>=1.7.2", "httpx>=0.28.1", "tenacity>=9.1.2"]
 
@@ -36,13 +36,13 @@ iceberg-maintenance = "elt_common.iceberg.maintenance:cli"
 [dependency-groups]
 dev = [
   "minio>=7.2.20",
-  "prek>=0.4.5",
+  "prek>=0.4.11",
   "pytest>=9.1.1",
   "pytest-httpx>=0.36.2",
   "pytest-mock>=3.15.1",
   "requests>=2.34.2",
   "requests-mock>=1.12.1",
-  "ruff>=0.15.19",
+  "ruff>=0.16.0",
 ]
 
 
