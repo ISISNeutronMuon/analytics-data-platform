@@ -1,25 +1,32 @@
 """Support for ingesting data from an SQL database."""
 
+import json
 import logging
 from abc import abstractmethod
-from typing import Generator, Iterator, NamedTuple, Optional, Callable
+from typing import Callable, Generator, Iterator, NamedTuple, Optional
 
 import pyarrow as pa
 import sqlalchemy as sa
-from pydantic import SecretStr, PositiveInt
+from pydantic import PositiveInt, SecretStr
 from pydantic_settings import BaseSettings
 from sqlalchemy import Select
 
-from elt_common.extract import ResourceProperties, ResourceWriteProperties, Watermark, BaseExtract
+from elt_common.extract import BaseExtract, ResourceProperties, ResourceWriteProperties, Watermark
 from elt_common.sources.sqldatabase.schema import to_pyarrow_schema
 
 LOGGER = logging.getLogger(__name__)
 
+DEFAULT_PA_TYPE_MAPPING = {
+    "bigint": pa.int64(),
+    "bool": pa.bool_(),
+    "double": pa.float64(),
+    "timestamp": pa.timestamp("us"),
+    "date": pa.date32(),
+    "text": pa.string(),
+}
+
 
 class SqlDatabaseSourceConfig(BaseSettings):
-    """Configuration required to connect to a database"""
-
-    # connection
     drivername: str
     database: str
     database_schema: Optional[str] = None
@@ -28,7 +35,6 @@ class SqlDatabaseSourceConfig(BaseSettings):
     username: Optional[str] = None
     password: Optional[SecretStr] = None
 
-    # loading behaviour
     chunk_size: int = 5000
     """If the query returns more than chunk_size rows, fetch them in multiple chunks of at most this size"""
 
@@ -99,6 +105,25 @@ class SqlDatabaseExtract(BaseExtract):
         )
         self._engine = sa.create_engine(config.connection_url)
         self._metadata = sa.MetaData(schema=config.database_schema)
+
+    def get_table_schema(self, table_name: str) -> pa.Schema:
+        """Autoloads the SQL table and constructs a PyArrow schema using schema.py."""
+        table = sa.Table(
+            table_name,
+            self._metadata,
+            autoload_with=self._engine,
+        )
+        schema = to_pyarrow_schema(table)
+
+        # Apply column normalization (e.g. lowercase) if overridden by subclasses
+        normalized_fields = [
+            pa.field(self.normalize_column_name(field.name), field.type, field.nullable)
+            for field in schema
+        ]
+        return pa.schema(normalized_fields)
+
+    def normalize_column_name(self, name: str) -> str:
+        return name
 
     @abstractmethod
     def table_info(self) -> dict[str, Optional[TableInfo]]:
@@ -185,11 +210,66 @@ class SqlDatabaseExtract(BaseExtract):
 
         query = query.limit(self._row_limit)
 
-        # If all the values in a column are null pyarrow won't know what type
-        # the column should be, so we need to explicitly create a schema from
-        # the table
-        pa_schema = to_pyarrow_schema(table)
         result = conn.execution_options(yield_per=self._chunk_size).execute(query)
-        for partition in result.mappings().partitions():
-            table = pa.Table.from_pylist(partition, schema=pa_schema)
-            yield table
+
+        target_schema = self.get_table_schema(name)
+
+        column_names = list(result.keys())
+
+        has_data = False
+        while True:
+            rows = result.fetchmany(self._chunk_size)
+
+            if not rows:
+                break
+
+            has_data = True
+
+            # Convert SQLAlchemy Row objects to column arrays
+            columns = {}
+
+            for idx, column_name in enumerate(column_names):
+                columns[column_name] = [row[idx] for row in rows]
+
+            arrow_arrays = []
+
+            for field in target_schema:
+                values = columns.get(
+                    field.name,
+                    [None] * len(rows),
+                )
+
+                # JSON / JSONB -> string for Iceberg
+                if pa.types.is_string(field.type):
+                    values = [
+                        json.dumps(v)
+                        if isinstance(v, (dict, list))
+                        else str(v)
+                        if v is not None and not isinstance(v, str)
+                        else v
+                        for v in values
+                    ]
+                elif pa.types.is_integer(field.type):
+                    values = [int(v) if v is not None else None for v in values]
+                elif pa.types.is_floating(field.type):
+                    values = [float(v) if v is not None else None for v in values]
+
+                array = pa.array(
+                    values,
+                    type=field.type,
+                )
+                arrow_arrays.append(array)
+
+            yield pa.Table.from_arrays(
+                arrow_arrays,
+                schema=target_schema,
+            )
+
+        # Return empty table with schema when no rows
+        if not has_data:
+            empty_arrays = [pa.array([], type=field.type) for field in target_schema]
+
+            yield pa.Table.from_arrays(
+                empty_arrays,
+                schema=target_schema,
+            )

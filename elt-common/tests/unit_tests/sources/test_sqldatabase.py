@@ -1,10 +1,12 @@
 from pathlib import Path
 from typing import Optional
+from unittest.mock import patch
 
 import pyarrow as pa
 import pyarrow.lib
 import pytest
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 from elt_common.extract import ResourceWriteProperties, Watermark
 from elt_common.sources.sqldatabase import SqlDatabaseExtract, SqlDatabaseSourceConfig, TableInfo
@@ -224,3 +226,53 @@ def test_sql_database_destination_table_name_yielded(tmp_path: Path):
 
     for table_name, _ in e.extract_resource_properties():
         assert table_name == "a_different_name"
+
+
+def test_sql_database_json_jsonb_serialization(tmp_path: Path):
+    db_path = tmp_path / "test_json.db"
+    metadata = sa.MetaData()
+
+    db_table = sa.Table(
+        "json_table",
+        metadata,
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("json_col", sa.Text),
+        sa.Column("jsonb_col", sa.Text),
+    )
+
+    pg_table = sa.Table(
+        "json_table",
+        sa.MetaData(),
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("json_col", postgresql.JSON),
+        sa.Column("jsonb_col", postgresql.JSONB),
+    )
+
+    engine = sa.create_engine(f"sqlite:///{db_path}")
+    metadata.create_all(engine)
+
+    with engine.begin() as conn:
+        conn.execute(
+            db_table.insert(),
+            [
+                {"id": 1, "json_col": '{"key": "val1"}', "jsonb_col": '{"key": "val2"}'},
+            ],
+        )
+
+    source_config = _create_config(db_path)
+
+    class Extract(SqlDatabaseExtract):
+        def table_info(self) -> dict[str, Optional[TableInfo]]:
+            return {"json_table": None}
+
+    e = Extract(source_config)
+
+    with patch("sqlalchemy.Table", return_value=pg_table):
+        for _, props in e.extract_resource_properties():
+            tables = list(props.extractor(None))
+            data = pyarrow.lib.concat_tables(tables)
+
+            assert data.schema.field("json_col").type == pa.string()
+            assert data.schema.field("jsonb_col").type == pa.string()
+            assert data["json_col"].to_pylist() == ['{"key": "val1"}']
+            assert data["jsonb_col"].to_pylist() == ['{"key": "val2"}']
