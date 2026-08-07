@@ -1,4 +1,4 @@
-"""Tests for elt_common.runner"""
+"""Tests for elt_common.ingest"""
 
 import datetime as dt
 import json
@@ -11,7 +11,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from elt_common.iceberg.io import IcebergIO
-from elt_common.runner import (
+from elt_common.ingest import (
     INGEST_PROPERTY_KEY_LAST_UPDATED_AT,
     INGEST_PROPERTY_KEY_WATERMARK,
     run_ingest,
@@ -47,8 +47,8 @@ def elt_job(request) -> ELTIngestManifest:
 
 @pytest.fixture
 def mock_iceberg_io(mocker: MockerFixture):
-    mocker.patch("elt_common.runner.connect_catalog", autospec=True)
-    mock_iceberg_io_cls = mocker.patch("elt_common.runner.IcebergIO", autospec=True)
+    mocker.patch("elt_common.ingest.connect_catalog", autospec=True)
+    mock_iceberg_io_cls = mocker.patch("elt_common.ingest.IcebergIO", autospec=True)
     mock_iceberg_io_cls.return_value = MagicMock(spec=IcebergIO)
     mock_iceberg_io = mock_iceberg_io_cls.return_value
     mock_iceberg_io.read_property.side_effect = KeyError
