@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from .pipeline_types import ELTJobManifest
+from .pipeline_types import ELTIngestManifest
 
 INGEST = "ingest"
 
@@ -31,7 +31,7 @@ class PipelinesProject:
         return self._ingest_dir
 
     @property
-    def ingest_jobs(self) -> list[ELTJobManifest]:
+    def ingest_jobs(self) -> list[ELTIngestManifest]:
         if not self._ingest_jobs:
             self._ingest_jobs = _discover_jobs(self._warehouse, self._ingest_dir)
 
@@ -68,11 +68,10 @@ def _discover_jobs(warehouse_name: str, ingest_dir: Path):
     ]
 
 
-def _create_ingest_manifest(warehouse_name: str, job_dir: Path) -> ELTJobManifest:
-    return ELTJobManifest(
+def _create_ingest_manifest(warehouse_name: str, job_dir: Path) -> ELTIngestManifest:
+    return ELTIngestManifest(
         warehouse_name=warehouse_name,
         name=job_dir.name,
         domain=job_dir.parent.name,
-        ingest_job_dir=job_dir.resolve(),
-        is_ingest_job=True,
+        job_dir=job_dir.resolve(),
     )

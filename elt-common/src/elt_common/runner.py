@@ -19,7 +19,7 @@ from elt_common.extract import (
 )
 from elt_common.iceberg.catalog import connect_catalog, table_identifier
 from elt_common.iceberg.io import IcebergIO
-from elt_common.pipeline_types import ELTJobManifest, WriteMode
+from elt_common.pipeline_types import ELTIngestManifest, WriteMode
 
 INGEST_PROPERTY_KEY_LAST_UPDATED_AT = "ingest.last_updated_at"
 INGEST_PROPERTY_KEY_WATERMARK = "ingest.watermark"
@@ -27,7 +27,7 @@ INGEST_PROPERTY_KEY_WATERMARK = "ingest.watermark"
 LOGGER = logging.getLogger(__name__)
 
 
-def run_job(job: ELTJobManifest) -> None:
+def run_job(job: ELTIngestManifest) -> None:
     """Run an ELT job defined by the given manifest."""
     LOGGER.info(f"Starting job: {job.full_name}")
 
@@ -38,7 +38,7 @@ def run_job(job: ELTJobManifest) -> None:
     LOGGER.info(f"Job {job.full_name} completed in {elapsed:.1f}s")
 
 
-def run_ingest(job: ELTJobManifest) -> dict[str, int]:
+def run_ingest(job: ELTIngestManifest) -> dict[str, int]:
     """Import the extract function, call it, and write results to Iceberg."""
 
     # Create the object that will do the extraction.
@@ -46,7 +46,7 @@ def run_ingest(job: ELTJobManifest) -> dict[str, int]:
     # before reaching here.
     extract_obj = create_extract_obj(job)
 
-    iceberg_io = IcebergIO(connect_catalog(job.destination_warehouse))
+    iceberg_io = IcebergIO(connect_catalog(f"{job.warehouse_name}_landing"))
 
     namespace = job.destination_namespace
     iceberg_io.ensure_namespace(namespace)

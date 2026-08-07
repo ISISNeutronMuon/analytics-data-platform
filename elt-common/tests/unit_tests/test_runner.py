@@ -16,7 +16,7 @@ from elt_common.runner import (
     INGEST_PROPERTY_KEY_WATERMARK,
     run_ingest,
 )
-from elt_common.pipeline_types import ELTJobManifest
+from elt_common.pipeline_types import ELTIngestManifest
 
 FAKE_NOW = dt.datetime(2026, 1, 1, 0, 0, 0)
 TEST_DOMAIN = "test_runner"
@@ -33,16 +33,15 @@ def patch_datetime_now(monkeypatch):
 
 
 @pytest.fixture
-def elt_job(request) -> ELTJobManifest:
+def elt_job(request) -> ELTIngestManifest:
     this_dir = Path(__file__).parent
     job_name = request.param
 
-    return ELTJobManifest(
+    return ELTIngestManifest(
         warehouse_name="test_warehouse",
         name=job_name,
         domain=TEST_DOMAIN,
-        is_ingest_job=True,
-        ingest_job_dir=this_dir / "runner_extractor_fakes",
+        job_dir=this_dir / "runner_extractor_fakes",
     )
 
 
@@ -57,7 +56,7 @@ def mock_iceberg_io(mocker: MockerFixture):
     return mock_iceberg_io
 
 
-def _test_elt_job_table_id(elt_job: ELTJobManifest, table_name: str):
+def _test_elt_job_table_id(elt_job: ELTIngestManifest, table_name: str):
     return f"{elt_job.domain}_{elt_job.name}", table_name
 
 
@@ -75,7 +74,7 @@ def _assert_properties_as_expected(
 
 @pytest.mark.parametrize("elt_job", ["all_write_modes"], indirect=True)
 def test_run_ingest_extract_using_all_write_modes(
-    elt_job: ELTJobManifest, mock_iceberg_io: MagicMock, patch_datetime_now
+    elt_job: ELTIngestManifest, mock_iceberg_io: MagicMock, patch_datetime_now
 ):
     run_ingest(elt_job)
 
@@ -111,7 +110,7 @@ def test_run_ingest_extract_using_all_write_modes(
 
 @pytest.mark.parametrize("elt_job", ["watermark_handling"], indirect=True)
 def test_run_ingest_watermark_handling(
-    elt_job: ELTJobManifest, mock_iceberg_io: MagicMock, patch_datetime_now
+    elt_job: ELTIngestManifest, mock_iceberg_io: MagicMock, patch_datetime_now
 ):
     # Run first expecting full load
     rows_seen = run_ingest(elt_job)
@@ -180,7 +179,7 @@ def test_run_ingest_watermark_handling(
 
 @pytest.mark.parametrize("elt_job", ["replace_multiple_yield"], indirect=True)
 def test_run_ingest_with_write_mode_replace_first_replaces_then_appends(
-    elt_job: ELTJobManifest, mock_iceberg_io: MagicMock
+    elt_job: ELTIngestManifest, mock_iceberg_io: MagicMock
 ):
     run_ingest(elt_job)
 

@@ -9,7 +9,7 @@ import click
 
 from elt_common.pipeline import PipelinesProject
 from elt_common.runner import run_job
-from elt_common.pipeline_types import ELTJobManifest
+from elt_common.pipeline_types import ELTIngestManifest
 
 
 @click.group(context_settings={"show_default": True})
@@ -75,7 +75,9 @@ def run(root: Path, job_name: str, step: str = "all") -> None:
             sys.exit(1)
 
 
-def _find_matching_ingest_job(project: PipelinesProject, job_name: str) -> Optional[ELTJobManifest]:
+def _find_matching_ingest_job(
+    project: PipelinesProject, job_name: str
+) -> Optional[ELTIngestManifest]:
     exact_match = [j for j in project.ingest_jobs if j.full_name == job_name]
     if exact_match:
         return exact_match[0]
