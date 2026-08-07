@@ -5,7 +5,7 @@ import pytest
 
 from elt_common.extract import BaseExtract, Watermark, create_extract_obj
 from elt_common.sources.sqldatabase import SqlDatabaseExtract
-from elt_common.pipeline_types import ELTJobManifest
+from elt_common.pipeline_types import ELTIngestManifest
 
 _value_type_error_msg = "'value' must be a string, number, or ISO format datetime"
 
@@ -49,12 +49,11 @@ def test_deserialize_watermark_good_values(serialized, expected):
 
 def make_error_manifest(filename):
     this_dir = Path(__file__).parent
-    return ELTJobManifest(
+    return ELTIngestManifest(
         warehouse_name="warehouse",
         name=filename,
         domain="whatever",
-        is_ingest_job=True,
-        ingest_job_dir=this_dir / "create_extract_obj_fakes" / "errors",
+        job_dir=this_dir / "create_extract_obj_fakes" / "errors",
     )
 
 
@@ -77,12 +76,11 @@ def test_create_extract_obj_errors(filename, expected_error, expected_error_mess
 
 def make_manifest(filename):
     this_dir = Path(__file__).parent
-    return ELTJobManifest(
+    return ELTIngestManifest(
         warehouse_name="test_warehouse",
         name=filename,
         domain="whatever",
-        is_ingest_job=True,
-        ingest_job_dir=this_dir / "create_extract_obj_fakes",
+        job_dir=this_dir / "create_extract_obj_fakes",
     )
 
 

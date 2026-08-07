@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Callable, Iterator, Optional, get_args
 
 from pydantic_settings import BaseSettings
 
-from elt_common.pipeline_types import ELTJobManifest, PartitionConfig, SortOrderConfig, WriteMode
+from elt_common.pipeline_types import ELTIngestManifest, PartitionConfig, SortOrderConfig, WriteMode
 
 if TYPE_CHECKING:
     import pyarrow as pa
@@ -141,21 +141,21 @@ class BaseExtract(ABC):
         pass
 
 
-def create_extract_obj(job: ELTJobManifest) -> BaseExtract:
-    """Given a job directory and name, create the object that will perform the data extraction."""
-    extract_cls = _get_extract_cls(job)
+def create_extract_obj(manifest: ELTIngestManifest) -> BaseExtract:
+    """Create an object to perform data extraction for an ingest job."""
+    extract_cls = _get_extract_cls(manifest)
     config_cls = extract_cls.config_cls
 
-    return extract_cls(config_cls(_env_prefix=f"{job.name}__"))
+    return extract_cls(config_cls(_env_prefix=f"{manifest.name}__"))
 
 
-def _get_extract_cls(job: ELTJobManifest) -> type[BaseExtract]:
+def _get_extract_cls(manifest: ELTIngestManifest) -> type[BaseExtract]:
     """Get the class that will handle the extraction."""
-    extract_script = job.ingest_job_dir / f"{job.name}.py"
+    extract_script = manifest.job_dir / f"{manifest.name}.py"
     if not extract_script.exists():
         raise RuntimeError(f"No extraction class definition file found at '{extract_script}'")
 
-    module = _import_module_from_path(job.name, job.ingest_job_dir)
+    module = _import_module_from_path(manifest.name, manifest.job_dir)
     return _get_extract_cls_from_module(module)
 
 
