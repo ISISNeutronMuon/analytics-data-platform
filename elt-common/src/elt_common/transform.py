@@ -1,6 +1,8 @@
 import contextlib
 import logging
 
+from dbt.exceptions import UninstalledPackagesFoundError
+
 from elt_common.pipeline import PipelinesProject
 from elt_common.pipeline_types import ELTIngestManifest
 
@@ -24,4 +26,13 @@ def run_transform(project: PipelinesProject, ingest: ELTIngestManifest, remote: 
 
     with contextlib.chdir(project.transform_dir):
         runner = dbtRunner()
+        result = runner.invoke(args)
+        if result.success or not isinstance(result.exception, UninstalledPackagesFoundError):
+            return result
+
+        # dbt dependencies weren't installed. Try installing them and rerunning
+        LOGGER.info("Installing dbt dependencies")
+        runner.invoke(["deps"])
+
+        LOGGER.info(f"Retrying 'dbt {' '.join(args)}'")
         return runner.invoke(args)
