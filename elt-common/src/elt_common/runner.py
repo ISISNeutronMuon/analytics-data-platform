@@ -76,6 +76,10 @@ def run_ingest(job: ELTJobManifest) -> dict[str, int]:
 
         watermarks: list[Watermark] = []
         for data in table_props.extractor(watermark_before_extract):
+            if not data:
+                LOGGER.info("No rows extracted, skipping")
+                continue
+
             # 'replace' really means delete the contents of the table, then append the new data.
             # Extractors can return multiple chunks of data, in which case only the first chunk
             # should cause a deletion, whilst the remaining chunks should be appended.
