@@ -1,7 +1,7 @@
 # elt-common
 
-A thin package around [`dlt`](https://dlthub.com) to provide functionality common
-to each pipeline.
+A framework for orchestrating extract-load-transform pipelines targeting
+iceberg warehouses.
 
 ## Development setup
 
