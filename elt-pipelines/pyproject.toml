@@ -24,6 +24,11 @@ opralogweb = [
     "html2text>=2025.4.15",
     "sqlalchemy[mssql-pymssql]>=2.0.51",
 ]
+moderator-performance = [
+    "h5py>=3.16.0",
+    "numpy>=2.4.2,<3",
+    "scipy>=1.17.1,<2",
+]
 
 [tool.uv.sources]
 elt-common = { path = "../elt-common", editable = true }
