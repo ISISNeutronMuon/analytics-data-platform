@@ -1,31 +1,20 @@
-# /// script
-# requires-python = ">=3.13"
-# dependencies = [
-#     "elt-common",
-#     "numpy>=2.4.2,<3",
-#     "scipy>=1.17.1,<2",
-# ]
-#
-# [tool.uv.sources]
-# elt-common = { path = "../../../../../elt-common" }
-# ///
 """Pull raw data from defined beamlines and compute monitor peak positions
 
 It currently requires the ISIS archive to be mounted locally.
 """
 
+import logging
 from collections import namedtuple
 import functools
 from pathlib import Path
-from typing import Any, Dict, Literal, Sequence
+from typing import Any, Dict, Literal, Sequence, Iterator
 
-import dlt
-import dlt.common.logger as logger
-from elt_common import cli_utils
-from elt_common.dlt_destinations.pyiceberg.helpers import load_iceberg_table
-from elt_common.dlt_destinations.pyiceberg.pyiceberg_adapter import (
-    pyiceberg_adapter,
-    PartitionTrBuilder,
+from pydantic_settings import BaseSettings
+
+from elt_common.extract import (
+    BaseExtract,
+    ResourceProperties,
+    ResourceWriteProperties,
 )
 from fit_monitor import (
     MonitorFitConfig,
@@ -34,7 +23,9 @@ from fit_monitor import (
     gaussian_plus_flat,
 )
 import numpy as np
-from pyiceberg.expressions import EqualTo
+import pyarrow as pa
+
+LOGGER = logging.getLogger(__name__)
 
 RunFile = namedtuple("RunFile", ("run_number", "path"))
 RunMode = Literal["backfill", "incremental"]
@@ -59,39 +50,7 @@ FIT_CONFIGS = {
     )
 }
 
-
-def get_fitted_runs(beamline: str, pipeline: dlt.Pipeline) -> Dict[str, Sequence[int]]:
-    """Retrieve the list of run numbers that have already been loaded to the warehouse"""
-    existing_peaks_table = load_iceberg_table(pipeline, "monitor_peaks")
-    if existing_peaks_table is None:
-        logger.debug("Peaks table does not exist. No runs have been loaded.")
-        return {}
-
-    logger.debug("Peaks table exists, finding loaded runs.")
-    fitted_runs = {}
-    c_beamline, c_cycle, c_run_number = "beamline", "cycle_name", "run_number"
-    beamline_peaks = existing_peaks_table.scan(
-        row_filter=EqualTo(c_beamline, beamline),
-        selected_fields=(c_run_number, c_cycle),
-    ).to_arrow()
-    if beamline_peaks.num_rows > 0:
-        cycle_groups = (
-            beamline_peaks.sort_by(
-                [(c_cycle, "ascending"), (c_run_number, "ascending")]
-            )
-            .group_by(c_cycle)
-            .aggregate([(c_run_number, "list")])
-        )
-        fitted_runs = dict(
-            zip(
-                cycle_groups[c_cycle].to_pylist(),
-                cycle_groups[c_run_number + "_list"].to_pylist(),
-            )
-        )
-    else:
-        logger.debug(f"No runs loaded for '{beamline}'.")
-
-    return fitted_runs
+RUNS_CONFIG: Dict[str, Any] = {"pearl": {"cycle_start": "15_2", "skip": [95382]}}
 
 
 def find_available_runs_from_archive(
@@ -105,7 +64,7 @@ def find_available_runs_from_archive(
 
     If the mode=incremental only look at the most recent cycle.
     """
-    logger.debug(
+    LOGGER.debug(
         f"Finding available runs (mode={run_mode}) for {beamline} starting at cycle {cycle_start}"
     )
 
@@ -125,7 +84,7 @@ def find_available_runs_from_archive(
         reverse=True,
     )
     if not cycle_years:
-        logger.warning("No cycles directory found.")
+        LOGGER.warning("No cycles directory found.")
         return {}
 
     if run_mode == "incremental":
@@ -134,7 +93,7 @@ def find_available_runs_from_archive(
     available_runs = {}
     for cycle_year in cycle_years:
         cycle_dir = f"{CYCLE_DIR_PREFIX}{cycle_year[2:]}"
-        logger.debug(f"Checking cycle {cycle_dir}")
+        LOGGER.debug(f"Checking cycle {cycle_dir}")
         cycle_path = data_dir / cycle_dir
 
         # Find all .nxs files and extract run numbers
@@ -146,29 +105,22 @@ def find_available_runs_from_archive(
                 if run_number not in skip:
                     cycle_runs.append(RunFile(run_number, file))
             except (ValueError, IndexError):
-                logger.warning(f"Could not parse run number from {file.name}")
+                LOGGER.warning(f"Could not parse run number from {file.name}")
                 continue
 
         if cycle_runs:
             available_runs[cycle_dir] = sorted(cycle_runs)
-            logger.debug(f"Found {len(cycle_runs)} runs in {cycle_dir}")
+            LOGGER.debug(f"Found {len(cycle_runs)} runs in {cycle_dir}")
 
         # Stop if we've reached the cycle_start
         if cycle_start in cycle_dir:
             break
 
-    logger.debug(f"Found {len(available_runs)} cycles.")
+    LOGGER.debug(f"Found {len(available_runs)} cycles.")
     return available_runs
 
 
-@dlt.resource(
-    merge_key=["beamline", "run_number"],
-    write_disposition={"disposition": "merge", "strategy": "upsert"},
-)
-def monitor_peaks(
-    archive_mount: str = dlt.config.value,
-    run_mode: RunMode = "incremental",
-):
+def monitor_peaks(archive_mount: str, run_mode: RunMode = "incremental"):
     # This defines the column order
     def as_dict(cycle_name: str, peak: MonitorPeak):
         return {
@@ -185,13 +137,9 @@ def monitor_peaks(
             "peak_sigma_error": peak.sigma_error,
         }
 
-    pipeline = dlt.current.pipeline()
-    runs_config: Dict[str, Any] = dlt.config[
-        "moderator_performance.monitor_peaks.fit_config.runs"
-    ]
     for beamline, fit_config in FIT_CONFIGS.items():
-        logger.info(f"Fitting monitor peaks for '{beamline}'")
-        beamline_runs = runs_config[beamline.lower()]
+        LOGGER.info(f"Fitting monitor peaks for '{beamline}'")
+        beamline_runs = RUNS_CONFIG[beamline.lower()]
         archive = Path(archive_mount)
         available_runs = find_available_runs_from_archive(
             run_mode,
@@ -200,32 +148,33 @@ def monitor_peaks(
             beamline_runs["cycle_start"],
             beamline_runs["skip"],
         )
-        runs_already_fitted = get_fitted_runs(beamline, pipeline)
-        runs_to_fit = {
-            key: [
-                x
-                for x in available_runs[key]
-                if x.run_number not in set(runs_already_fitted.get(key, []))
-            ]
-            for key in available_runs
-        }
-        for cycle, runs in runs_to_fit.items():
+        for cycle, runs in available_runs.items():
             if not runs:
                 continue
-            logger.debug(f"Fitting runs {runs[0].run_number} -> {runs[-1].run_number}")
+            LOGGER.debug(f"Fitting runs {runs[0].run_number} -> {runs[-1].run_number}")
             peaks = [fit_monitor_peak(run.path, fit_config) for run in runs]
-            yield [as_dict(cycle, peak) for peak in peaks if peak]
+            yield pa.Table.from_pylist([as_dict(cycle, peak) for peak in peaks if peak])
 
 
-if __name__ == "__main__":
-    cli_utils.cli_main(
-        pipeline_name="moderator_performance",
-        source_domain="beamlines",
-        data_generator=pyiceberg_adapter(
-            monitor_peaks,
-            partition=[
-                PartitionTrBuilder.identity("beamline"),
-                PartitionTrBuilder.month("run_start"),
-            ],
-        ),
-    )
+class Configuration(BaseSettings):
+    archive_mount: str
+    run_mode: RunMode = "incremental"
+
+
+class Extract(BaseExtract):
+    config_cls = Configuration
+
+    def extract_resource_properties(self) -> Iterator[tuple[str, ResourceProperties]]:
+        yield (
+            "monitor_peaks",
+            ResourceProperties(
+                extractor=lambda _: monitor_peaks(
+                    self.config.archive_mount, self.config.run_mode
+                ),
+                write_properties=ResourceWriteProperties(
+                    write_mode="merge",
+                    merge_on=["beamline", "run_number"],
+                    partition={"beamline": "identity", "run_start": "month"},
+                ),
+            ),
+        )
