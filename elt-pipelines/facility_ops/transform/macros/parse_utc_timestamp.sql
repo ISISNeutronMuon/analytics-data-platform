@@ -9,7 +9,7 @@
     cast(
       parse_datetime({{ adapter.quote(date_col) }} || ' ' || {{ adapter.quote(time_col) }},
                      '{{ date_format ~ ' ' ~ time_format }}')
-                     as timestamp(6)
+                     as timestamp(3)
         ),
     '{{ src_timezone }}'
   ) at time zone 'UTC'
