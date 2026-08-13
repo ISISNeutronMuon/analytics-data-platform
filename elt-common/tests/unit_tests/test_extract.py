@@ -116,4 +116,4 @@ def test_create_extract_obj_sql_extract(monkeypatch):
 
     assert isinstance(extract_obj, BaseExtract)
     assert isinstance(extract_obj, SqlDatabaseExtract)
-    assert extract_obj._chunk_size == 100
+    assert extract_obj.config.chunk_size == 100

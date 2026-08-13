@@ -66,7 +66,7 @@ class TableInfo(NamedTuple):
     destination_table_name: Optional[str] = None
 
 
-class SqlDatabaseExtract(BaseExtract):
+class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
     """Base class for defining SQL ingest Extract classes.
 
     Example usage, for an ingest script that reads from 3 tables::
@@ -90,8 +90,6 @@ class SqlDatabaseExtract(BaseExtract):
 
     def __init__(self, config: SqlDatabaseSourceConfig):
         super().__init__(config)
-        self._chunk_size = config.chunk_size
-        self._row_limit = config.row_limit
 
         LOGGER.debug(
             f"Creating engine for {config.drivername} database at "
@@ -168,7 +166,7 @@ class SqlDatabaseExtract(BaseExtract):
         watermark: Watermark | None = None,
         query_filter: Callable[[Select], Select] | None = None,
     ) -> Iterator[pa.Table]:
-        LOGGER.debug(f"Extracting table {name} in chunks of {self._chunk_size} rows.")
+        LOGGER.debug(f"Extracting table {name} in chunks of {self.config.chunk_size} rows.")
         table = sa.Table(
             name,
             self._metadata,
@@ -183,13 +181,13 @@ class SqlDatabaseExtract(BaseExtract):
         if query_filter:
             query = query_filter(query)
 
-        query = query.limit(self._row_limit)
+        query = query.limit(self.config.row_limit)
 
         # If all the values in a column are null pyarrow won't know what type
         # the column should be, so we need to explicitly create a schema from
         # the table
         pa_schema = to_pyarrow_schema(table)
-        result = conn.execution_options(yield_per=self._chunk_size).execute(query)
+        result = conn.execution_options(yield_per=self.config.chunk_size).execute(query)
         for partition in result.mappings().partitions():
             table = pa.Table.from_pylist(partition, schema=pa_schema)
             yield table
