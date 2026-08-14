@@ -1,5 +1,6 @@
 """Provides functions to fit a function on the incident monitor to determine the peak centre position."""
 
+import logging
 from dataclasses import dataclass
 import datetime as dt
 from pathlib import Path
@@ -8,6 +9,9 @@ from typing import Any, Dict, Tuple, cast
 import h5py
 import numpy as np
 from scipy.optimize import curve_fit
+
+
+LOGGER = logging.getLogger(__name__)
 
 Range = Tuple[float, float]
 
@@ -171,5 +175,6 @@ def fit_monitor_peak(
             float(sigma),
             float(sigma_err),
         )
-    except Exception:
+    except Exception as e:
+        LOGGER.warning(f"Failed to fit {nxs_file}", e)
         return None

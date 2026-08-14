@@ -152,8 +152,9 @@ def monitor_peaks(archive_mount: str, run_mode: RunMode = "incremental"):
             if not runs:
                 continue
             LOGGER.debug(f"Fitting runs {runs[0].run_number} -> {runs[-1].run_number}")
-            peaks = [fit_monitor_peak(run.path, fit_config) for run in runs]
-            yield pa.Table.from_pylist([as_dict(cycle, peak) for peak in peaks if peak])
+            fitted_peaks = (fit_monitor_peak(run.path, fit_config) for run in runs)
+            peaks = (p for p in fitted_peaks if p is not None)
+            yield pa.Table.from_pylist([as_dict(cycle, peak) for peak in peaks])
 
 
 class Configuration(BaseSettings):
