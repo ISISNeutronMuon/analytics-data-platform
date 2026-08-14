@@ -14,21 +14,6 @@ from elt_common.sources.m365.credentials import M365Credentials, base_url
 
 LOGGER = logging.getLogger(__name__)
 
-_RETRY_ARGS = {
-    "wait": tenacity.wait_exponential(max=5),
-    "stop": tenacity.stop_after_attempt(5),
-    "reraise": True,
-    "retry": (
-        tenacity.retry_if_exception_type((NetworkError, TimeoutException))
-        | tenacity.retry_if_exception(
-            lambda e: isinstance(e, HTTPStatusError) and e.response.status_code >= 500
-        )
-        | tenacity.retry_if_exception(
-            lambda e: isinstance(e, HTTPStatusError) and e.response.status_code == 429
-        )
-    ),
-}
-
 _api_url = f"{base_url}/v1.0"
 _drives_api_url = f"{_api_url}/drives"
 
@@ -134,8 +119,8 @@ class SPListClient:
         if path:
             path = f":{path}:"
 
-        action = f"/{action}" if action else ""
-        return f"{self.drive_url}/root{path}{action}"
+        action_path = f"/{action}" if action else ""
+        return f"{self.drive_url}/root{path}{action_path}"
 
     def _get_site_drive_id(self, site_url: str) -> str:
         """Get the drive id for the SP site's URL
@@ -157,7 +142,20 @@ class SPListClient:
         drive_url = f"{_api_url}/sites/{site_id}/drive"
         return _get_id(drive_url)
 
-    @tenacity.retry(**_RETRY_ARGS)
+    @tenacity.retry(
+        wait=tenacity.wait_exponential(max=5),
+        stop=tenacity.stop_after_attempt(5),
+        reraise=True,
+        retry=(
+            tenacity.retry_if_exception_type((NetworkError, TimeoutException))
+            | tenacity.retry_if_exception(
+                lambda e: isinstance(e, HTTPStatusError) and e.response.status_code >= 500
+            )
+            | tenacity.retry_if_exception(
+                lambda e: isinstance(e, HTTPStatusError) and e.response.status_code == 429
+            )
+        ),
+    )
     def _msgraph_get(self, url: str, **kwargs) -> Response:
         response = self.client.request("GET", url, **kwargs)
         response.raise_for_status()
