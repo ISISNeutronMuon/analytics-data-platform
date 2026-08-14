@@ -104,11 +104,14 @@ elt-pipelines/
 |    |    |-- <domain>/
 |    |    |    |-- <job name>/
 |    |    |    |    |-- <job name>.py
+|    |-- transform/
 ```
 
 - This directory structure is required for using `elt-common`
-- Each 'target warehouse' is the name of an Iceberg warehouse. The data ingested by the pipelines inside that directory
-  end up in that warehouse.
-- Data from ingest pipelines is considered 'raw' data, and is loaded into a warehouse suffixed with `_landing`.
-- Under construction: Each warehouse will also have a `transform` subdirectory containing pipelines for converting the
-  raw data into its final state in the target warehouse.
+- Each 'target warehouse' is the name of an Iceberg warehouse. The data handled by the pipelines inside that directory
+  end up in that warehouse
+- Data from ingest pipelines is considered 'raw' data, and is loaded into a warehouse suffixed with `_landing` under
+  the `<domain>_<job name>` namespace
+- The `transform` directory contains a `dbt` project which defines ways of transforming the raw data in the landing
+  warehouse into cleaned 'models' in `<target warehouse>`. For more details see
+  [one of the project readmes](facility_ops/transform/README.md)

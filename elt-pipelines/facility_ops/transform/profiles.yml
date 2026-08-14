@@ -1,0 +1,31 @@
+local:
+  target: trino
+  outputs:
+    trino:
+      type: trino
+      method: ldap
+      user: machine-infra
+      password: s3cr3t
+      host: localhost
+      port: 58443
+      http_scheme: https
+      database: facility_ops
+      schema: analytics
+      threads: 8
+      cert: false
+      suppress_cert_warning: true
+
+remote:
+  target: trino
+  outputs:
+    trino:
+      type: trino
+      method: ldap
+      http_scheme: https
+      user: "{{ env_var('DBT_TRINO_USER') }}"
+      password: "{{ env_var('DBT_TRINO_PASSWORD') }}"
+      host: "{{ env_var('DBT_TRINO_HOST') }}"
+      port: "{{ env_var('DBT_TRINO_PORT') | int }}"
+      database: "{{ env_var('DBT_TRINO_CATALOG') }}"
+      schema: "{{ env_var('DBT_TRINO_CATALOG_SCHEMA_PREFIX') }}analytics"
+      threads: "{{ env_var('DBT_TRINO_THREADS', '8') | int }}"
