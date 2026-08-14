@@ -140,11 +140,12 @@ def make_table_row(cycle_name: str, peak: MonitorPeak):
     }
 
 
-def monitor_peaks(archive_mount: str, run_mode: RunMode = "incremental"):
+def extract_monitor_peaks(archive_mount: str, run_mode: RunMode = "incremental"):
+    archive = Path(archive_mount)
+
     for beamline, fit_config in FIT_CONFIGS.items():
         LOGGER.info(f"Fitting monitor peaks for '{beamline}'")
         beamline_runs = RUNS_CONFIG[beamline.lower()]
-        archive = Path(archive_mount)
         available_runs = find_available_runs_from_archive(
             run_mode,
             archive,
@@ -152,6 +153,7 @@ def monitor_peaks(archive_mount: str, run_mode: RunMode = "incremental"):
             beamline_runs["cycle_start"],
             beamline_runs["skip"],
         )
+
         for cycle, runs in available_runs.items():
             if not runs:
                 continue
@@ -173,7 +175,7 @@ class Extract(BaseExtract):
         yield (
             "monitor_peaks",
             ResourceProperties(
-                extractor=lambda _: monitor_peaks(
+                extractor=lambda _: extract_monitor_peaks(
                     self.config.archive_mount, self.config.run_mode
                 ),
                 write_properties=ResourceWriteProperties(
