@@ -120,23 +120,27 @@ def find_available_runs_from_archive(
     return available_runs
 
 
-def monitor_peaks(archive_mount: str, run_mode: RunMode = "incremental"):
-    # This defines the column order
-    def as_dict(cycle_name: str, peak: MonitorPeak):
-        return {
-            "beamline": peak.run.beamline,
-            "run_number": peak.run.run_number,
-            "cycle_name": cycle_name,
-            "run_start": peak.run.start_time,
-            "proton_charge": peak.run.proton_charge_uamps,
-            "peak_centre": peak.centre,
-            "peak_centre_error": peak.centre_error,
-            "peak_amplitude": peak.amplitude,
-            "peak_amplitude_error": peak.amplitude_error,
-            "peak_sigma": peak.sigma,
-            "peak_sigma_error": peak.sigma_error,
-        }
+def make_table_row(cycle_name: str, peak: MonitorPeak):
+    """Convert a peak into the format used in the output table
 
+    The order of the fields defines the column order in the table
+    """
+    return {
+        "beamline": peak.run.beamline,
+        "run_number": peak.run.run_number,
+        "cycle_name": cycle_name,
+        "run_start": peak.run.start_time,
+        "proton_charge": peak.run.proton_charge_uamps,
+        "peak_centre": peak.centre,
+        "peak_centre_error": peak.centre_error,
+        "peak_amplitude": peak.amplitude,
+        "peak_amplitude_error": peak.amplitude_error,
+        "peak_sigma": peak.sigma,
+        "peak_sigma_error": peak.sigma_error,
+    }
+
+
+def monitor_peaks(archive_mount: str, run_mode: RunMode = "incremental"):
     for beamline, fit_config in FIT_CONFIGS.items():
         LOGGER.info(f"Fitting monitor peaks for '{beamline}'")
         beamline_runs = RUNS_CONFIG[beamline.lower()]
@@ -154,7 +158,7 @@ def monitor_peaks(archive_mount: str, run_mode: RunMode = "incremental"):
             LOGGER.debug(f"Fitting runs {runs[0].run_number} -> {runs[-1].run_number}")
             fitted_peaks = (fit_monitor_peak(run.path, fit_config) for run in runs)
             peaks = (p for p in fitted_peaks if p is not None)
-            yield pa.Table.from_pylist([as_dict(cycle, peak) for peak in peaks])
+            yield pa.Table.from_pylist([make_table_row(cycle, peak) for peak in peaks])
 
 
 class Configuration(BaseSettings):
