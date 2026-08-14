@@ -1,12 +1,12 @@
 import dataclasses as dc
+import datetime as dt
 import importlib.util
 import json
 import sys
 from abc import ABC, abstractmethod
-import datetime as dt
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Callable, Iterator, Optional, get_args
+from typing import TYPE_CHECKING, Callable, ClassVar, Iterator, Optional, get_args
 
 from pydantic_settings import BaseSettings
 
@@ -104,10 +104,10 @@ class ResourceProperties:
     watermark_column: Optional[str] = None
 
 
-class BaseExtract(ABC):
+class BaseExtract[C: BaseSettings](ABC):
     """Base class for ingest Extract classes"""
 
-    config_cls: type[BaseSettings] = BaseSettings
+    config_cls: ClassVar[type[BaseSettings]] = BaseSettings
     """Class used to provide configuration options.
 
     Override this in subclasses to provide custom configuration.
@@ -115,11 +115,11 @@ class BaseExtract(ABC):
     Intended to be used with pydantic-settings.
     """
 
-    def __init__(self, config: BaseSettings):
+    def __init__(self, config: C):
         self._config = config
 
     @property
-    def config(self):
+    def config(self) -> C:
         return self._config
 
     @abstractmethod

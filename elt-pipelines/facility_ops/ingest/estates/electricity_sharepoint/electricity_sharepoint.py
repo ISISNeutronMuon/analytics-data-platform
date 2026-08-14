@@ -45,16 +45,12 @@ class Configuration(M365Credentials):
         return self.backfill_globs if self.backfill_globs else _default_backfill_globs
 
 
-class Extract(BaseExtract):
+class Extract(BaseExtract[Configuration]):
     config_cls = Configuration
 
     def __init__(self, cfg: Configuration):
         super().__init__(cfg)
         self._client = SPListClient(SITE_URL, cfg)
-        self._backfilling = cfg.backfill
-        self._glob_patterns = cfg.glob_patterns
-
-        LOGGER.debug(f"Searching for files matching: {self._glob_patterns}")
 
     def extract_resource_properties(self):
         yield (
@@ -69,8 +65,10 @@ class Extract(BaseExtract):
         )
 
     def _extract_electricity_usage(self, w: Watermark | None):
+        LOGGER.debug(f"Searching for files matching: {self.config.glob_patterns}")
+
         watermark_value: dt.datetime | None = None
-        if w and self._backfilling:
+        if w and self.config.backfill:
             LOGGER.debug("Ignoring watermark because this is a backfill")
         elif w:
             if not isinstance(w.value, dt.datetime):
@@ -82,7 +80,7 @@ class Extract(BaseExtract):
                 LOGGER.debug(f"Only fetching files modified after {watermark_value}")
 
         files = []
-        for pattern in self._glob_patterns:
+        for pattern in self.config.glob_patterns:
             files.extend(
                 self._client.glob(
                     _root_path, pattern=pattern, modified_after=watermark_value
