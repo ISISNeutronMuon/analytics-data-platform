@@ -175,6 +175,6 @@ def fit_monitor_peak(
             float(sigma),
             float(sigma_err),
         )
-    except Exception as e:
-        LOGGER.warning(f"Failed to fit {nxs_file}", e)
+    except Exception:
+        LOGGER.warning("Failed to fit file %s", nxs_file, exc_info=True)
         return None
