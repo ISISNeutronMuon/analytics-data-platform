@@ -160,7 +160,11 @@ def extract_monitor_peaks(archive_mount: str, run_mode: RunMode = "incremental")
             LOGGER.debug(f"Fitting runs {runs[0].run_number} -> {runs[-1].run_number}")
             fitted_peaks = (fit_monitor_peak(run.path, fit_config) for run in runs)
             peaks = (p for p in fitted_peaks if p is not None)
-            yield pa.Table.from_pylist([make_table_row(cycle, peak) for peak in peaks])
+            rows = [make_table_row(cycle, peak) for peak in peaks]
+            if not rows:
+                LOGGER.warning("Fitting failed for all runs")
+                continue
+            yield pa.Table.from_pylist(rows)
 
 
 class Configuration(BaseSettings):
