@@ -121,3 +121,6 @@ SUPERSET_LOGIN_PROVIDER=db
 
 # Make sure you set this to a unique secure random value on production
 SUPERSET_SECRET_KEY=0123456789
+
+# Airflow
+AIRFLOW_UID=1000

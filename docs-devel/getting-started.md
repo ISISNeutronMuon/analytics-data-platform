@@ -128,6 +128,7 @@ Once running, the following services are available:
 | Superset | <http://localhost:50080/workspace/facility_ops> | adpsuperuser / adppassword |
 | Trino | <https://localhost:58443> | (use `--insecure` flag) |
 | Marimo notebooks | <http://localhost:50080/marimo/> | — |
+| Airflow | <http://localhost:8080/dags> | aiflow /airflow |
 
 ## Run your first pipeline
 
