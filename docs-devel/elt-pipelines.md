@@ -116,3 +116,8 @@ uv pip install "elt-common @ git+https://github.com/ISISNeutronMuon/analytics-da
 
 For local development of `elt-common` itself, see the
 [Getting Started](./getting-started.md#set-up-elt-common-for-development) guide.
+
+## Airflow DAG pipelines
+
+In order to be inline with two-stage ELT pattern used in this platform, dags will also define two tasks in each dag- ingestion and transformation.
+In local, dags must be defined in [dags folder](../infra/local/dags)
