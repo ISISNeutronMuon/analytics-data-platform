@@ -110,6 +110,10 @@ catalog:
         scope: lakekeeper
 ```
 
+## Airflow as ELT Orchestration tool
+
+Our local setup has mainly followed this section of airflow documentation: <https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#fetching-docker-compose-yaml>
+
 ## Start the local service stack
 
 Bring up all services with Docker Compose:
@@ -117,6 +121,13 @@ Bring up all services with Docker Compose:
 ```bash
 cd infra/local
 docker compose --profile superset up --wait
+```
+
+Optionally,for monitoring the airflow environment, you can also launch flower app:
+
+```bash
+cd infra/local
+docker compose --profile flower up
 ```
 
 Once running, the following services are available:
@@ -128,7 +139,8 @@ Once running, the following services are available:
 | Superset | <http://localhost:50080/workspace/facility_ops> | adpsuperuser / adppassword |
 | Trino | <https://localhost:58443> | (use `--insecure` flag) |
 | Marimo notebooks | <http://localhost:50080/marimo/> | — |
-| Airflow | <http://localhost:8080/dags> | aiflow /airflow |
+| Airflow | <http://localhost:8080> | aiflow /airflow |
+| Flower App | <http://localhost:5555> | — |
 
 ## Run your first pipeline
 
