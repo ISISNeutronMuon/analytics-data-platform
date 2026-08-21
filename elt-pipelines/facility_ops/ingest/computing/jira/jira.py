@@ -4,6 +4,8 @@ from atlassian import Jira
 from elt_common.extract import BaseExtract, ResourceProperties
 import requests
 
+import pyarrow as pa
+
 
 class JiraCredentials:
     jira_url: str
@@ -53,12 +55,42 @@ def extract_jira_issues(
     project_names = list(filter(lambda p: p.startswith(prefix), project_names))
 
     issues = []
-    for name in project_names:
-        issues.append(jira_cloud.get_all_project_issues(name))
+    for project_name in project_names:
+        project_issues = jira_cloud.get_all_project_issues(
+            project_name,
+            fields="issueKey,issuetype,status,priority,created,updated,customfield_10591",
+        )
 
-    print(issues)
+        for project_issue in project_issues:
+            try:
+                issues.append(
+                    {
+                        "project_name": f"{project_name}",
+                        "issue_key": f"{project_issue['key']}",
+                        "issue_type": f"{project_issue['fields']['issuetype']}",
+                        "status": f"{project_issue['fields']['status']}",
+                        "priority": f"{project_issue['fields']['priority']}",
+                        "created": f"{project_issue['fields']['created']}",
+                        "updated": f"{project_issue['fields']['updated']}",
+                        "teams": f"{project_issue['fields']['customfield_10591']}",
+                    }
+                )
 
-    return issues
+            except KeyError:
+                issues.append(
+                    {
+                        "project_name": f"{project_name}",
+                        "issue_key": f"{project_issue['key']}",
+                        "issue_type": f"{project_issue['fields']['issuetype']}",
+                        "status": f"{project_issue['fields']['status']}",
+                        "priority": f"{project_issue['fields']['priority']}",
+                        "created": f"{project_issue['fields']['created']}",
+                        "updated": f"{project_issue['fields']['updated']}",
+                    }
+                )
+
+    issues_table = pa.Table.from_pylist(issues)
+    return issues_table
 
 
 if __name__ == "__main__":
