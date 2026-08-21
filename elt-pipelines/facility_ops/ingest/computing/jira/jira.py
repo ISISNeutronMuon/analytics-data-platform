@@ -34,15 +34,23 @@ def _value_or_env_variable(value: str | None, env_var_name: str) -> str:
             raise KeyError(f"Environment variable '{env_var_name}' not found.")
 
 
-def extract_jira_issues(
-    url: str | None = None, email: str | None = None, token: str | None = None
-):
+def jira_connection(
+    url: str | None = None,
+    email: str | None = None,
+    token: str | None = None,
+    cloud: bool = True,
+) -> Jira:
     url = _value_or_env_variable(url, "JIRA_URL")
     email = _value_or_env_variable(email, "EMAIL_ADDRESS")
     token = _value_or_env_variable(token, "ATLASSIAN_API_TOKEN")
 
     session = requests.Session()
-    jira_cloud = Jira(url, email, token, session=session, cloud=True)
+    jira_connection = Jira(url, email, token, session=session, cloud=cloud)
+    return jira_connection
+
+
+def extract_jira_issues():
+    jira_cloud = jira_connection()
 
     projects = jira_cloud.get_all_projects()
 
