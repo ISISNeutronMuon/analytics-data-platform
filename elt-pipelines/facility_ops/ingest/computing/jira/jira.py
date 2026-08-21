@@ -62,32 +62,18 @@ def extract_jira_issues(
         )
 
         for project_issue in project_issues:
-            try:
-                issues.append(
-                    {
-                        "project_name": f"{project_name}",
-                        "issue_key": f"{project_issue['key']}",
-                        "issue_type": f"{project_issue['fields']['issuetype']}",
-                        "status": f"{project_issue['fields']['status']}",
-                        "priority": f"{project_issue['fields']['priority']}",
-                        "created": f"{project_issue['fields']['created']}",
-                        "updated": f"{project_issue['fields']['updated']}",
-                        "teams": f"{project_issue['fields']['customfield_10591']}",
-                    }
-                )
-
-            except KeyError:
-                issues.append(
-                    {
-                        "project_name": f"{project_name}",
-                        "issue_key": f"{project_issue['key']}",
-                        "issue_type": f"{project_issue['fields']['issuetype']}",
-                        "status": f"{project_issue['fields']['status']}",
-                        "priority": f"{project_issue['fields']['priority']}",
-                        "created": f"{project_issue['fields']['created']}",
-                        "updated": f"{project_issue['fields']['updated']}",
-                    }
-                )
+            issues.append(
+                {
+                    "project_name": f"{project_name}",
+                    "issue_key": f"{project_issue['key']}",
+                    "issue_type": f"{project_issue['fields']['issuetype']}",
+                    "status": f"{project_issue['fields']['status']}",
+                    "priority": f"{project_issue['fields']['priority']}",
+                    "created": f"{project_issue['fields']['created']}",
+                    "updated": f"{project_issue['fields']['updated']}",
+                    "teams": f"{project_issue['fields'].get('customfield_10591')}",
+                }
+            )
 
     issues_table = pa.Table.from_pylist(issues)
     return issues_table
