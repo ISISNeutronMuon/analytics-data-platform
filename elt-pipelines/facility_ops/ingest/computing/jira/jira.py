@@ -13,21 +13,15 @@ FIELDS_TO_EXTRACT = (
 )
 
 
-class JiraCredentials:
-    jira_url: str
-    jira_username: str
-    jira_api_token: str
-
-    def create_client(self):
-        pass
-
-
 class Extract(BaseExtract):
     def __init__(self, config):
         super().__init__(config)
 
     def extract_resource_properties(self):
-        yield ("", ResourceProperties(extractor=self.extract_jira_issues))
+        yield (
+            ("", ResourceProperties(extractor=self.extract_jira_issues)),
+            ("", ResourceProperties(extractor=self.extract_time_spent_in_status)),
+        )
 
 
 def _value_or_env_variable(value: str | None, env_var_name: str) -> str:
@@ -55,7 +49,7 @@ def jira_connection(
     return jira_connection
 
 
-def extract_project_names_starting_with(project_prefix: str):
+def extract_project_names_starting_with(project_prefix: str) -> list[str]:
     jira_cloud = jira_connection()
 
     projects = jira_cloud.get_all_projects()
@@ -68,7 +62,7 @@ def extract_project_names_starting_with(project_prefix: str):
     return list(filter(lambda p: p.startswith(project_prefix), project_names))
 
 
-def extract_jira_issues():
+def extract_jira_issues() -> pa.Table:
     project_names = extract_project_names_starting_with(ISIS_PROJECT_PREFIX)
 
     jira_cloud = jira_connection()
@@ -97,7 +91,7 @@ def extract_jira_issues():
     return issues_table
 
 
-def extract_time_spent_in_status():
+def extract_time_spent_in_status() -> pa.Table:
     project_names = extract_project_names_starting_with(ISIS_PROJECT_PREFIX)
 
     jira_cloud = jira_connection()
@@ -168,8 +162,3 @@ def extract_time_spent_in_status():
     issues_table = pa.Table.from_pylist(issues)
     print(issues_table)
     return issues_table
-
-
-if __name__ == "__main__":
-    # extract_jira_issues()
-    extract_time_spent_in_status()
