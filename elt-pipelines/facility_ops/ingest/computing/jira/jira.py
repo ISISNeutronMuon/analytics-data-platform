@@ -3,8 +3,14 @@ import os
 from atlassian import Jira
 from elt_common.extract import BaseExtract, ResourceProperties
 import requests
+import datetime as dt
 
 import pyarrow as pa
+
+ISIS_PROJECT_PREFIX = "[ISIS]"
+FIELDS_TO_EXTRACT = (
+    "issueKey,issuetype,status,priority,created,updated,customfield_10591"
+)
 
 
 class JiraCredentials:
@@ -21,7 +27,7 @@ class Extract(BaseExtract):
         super().__init__(config)
 
     def extract_resource_properties(self):
-        yield ("", ResourceProperties(extractor=self.extract_jira_issue))
+        yield ("", ResourceProperties(extractor=self.extract_jira_issues))
 
 
 def _value_or_env_variable(value: str | None, env_var_name: str) -> str:
@@ -49,7 +55,7 @@ def jira_connection(
     return jira_connection
 
 
-def extract_jira_issues():
+def extract_project_names_starting_with(project_prefix: str):
     jira_cloud = jira_connection()
 
     projects = jira_cloud.get_all_projects()
@@ -59,14 +65,18 @@ def extract_jira_issues():
         if project["name"] not in project_names:
             project_names.append(project["name"])
 
-    prefix = "[ISIS]"
-    project_names = list(filter(lambda p: p.startswith(prefix), project_names))
+    return list(filter(lambda p: p.startswith(project_prefix), project_names))
+
+
+def extract_jira_issues():
+    project_names = extract_project_names_starting_with(ISIS_PROJECT_PREFIX)
+
+    jira_cloud = jira_connection()
 
     issues = []
     for project_name in project_names:
         project_issues = jira_cloud.get_all_project_issues(
-            project_name,
-            fields="issueKey,issuetype,status,priority,created,updated,customfield_10591",
+            project_name, fields=FIELDS_TO_EXTRACT
         )
 
         for project_issue in project_issues:
@@ -87,5 +97,79 @@ def extract_jira_issues():
     return issues_table
 
 
+def extract_time_spent_in_status():
+    project_names = extract_project_names_starting_with(ISIS_PROJECT_PREFIX)
+
+    jira_cloud = jira_connection()
+
+    issues = []
+
+    for project_name in project_names:
+        project_issues = jira_cloud.get_all_project_issues(
+            project_name, fields=FIELDS_TO_EXTRACT
+        )
+
+        for project_issue in project_issues:
+            issue_status_changelog = jira_cloud.get_issue_status_changelog(
+                project_issue["key"]
+            )
+
+            duration_of_status = {}
+
+            DATE_FORMAT_STRING = "%Y-%m-%dT%H:%M:%S.%f%z"
+
+            if len(issue_status_changelog) == 0:
+                duration_of_status[project_issue["fields"]["status"]["name"]] = (
+                    dt.datetime.now(dt.timezone.utc)
+                    - dt.datetime.strptime(
+                        project_issue["fields"]["created"], DATE_FORMAT_STRING
+                    )
+                )
+            else:
+                # reverse array as the data are in reverse chronological order
+                for i in range(len(issue_status_changelog), -1, -1):
+                    if i == len(issue_status_changelog):
+                        duration_of_status[issue_status_changelog[-1]["from"]] = (
+                            dt.datetime.strptime(
+                                issue_status_changelog[-1]["date"], DATE_FORMAT_STRING
+                            )
+                            - dt.datetime.strptime(
+                                project_issue["fields"]["created"], DATE_FORMAT_STRING
+                            )
+                        )
+                    elif i == 0:
+                        duration_of_status[issue_status_changelog[0]["to"]] = (
+                            dt.datetime.now(dt.timezone.utc)
+                            - dt.datetime.strptime(
+                                issue_status_changelog[0]["date"], DATE_FORMAT_STRING
+                            )
+                        )
+                    elif issue_status_changelog[i - 1] == issue_status_changelog[i]:
+                        duration_of_status[issue_status_changelog[i]["to"]] += (
+                            dt.datetime.strptime(
+                                issue_status_changelog[i + 1]["date"],
+                                DATE_FORMAT_STRING,
+                            )
+                            - dt.datetime.strptime(
+                                issue_status_changelog[i]["date"], DATE_FORMAT_STRING
+                            )
+                        )
+
+            issue_status = {
+                "project_name": f"{project_name}",
+                "issue_key": f"{project_issue['key']}",
+                "current_status": f"{project_issue['fields']['status']['name']}",
+                "created": f"{project_issue['fields']['created']}",
+                "updated": f"{project_issue['fields']['updated']}",
+                "duration_of_status": f"{duration_of_status}",
+            }
+            issues.append(issue_status)
+
+    issues_table = pa.Table.from_pylist(issues)
+    print(issues_table)
+    return issues_table
+
+
 if __name__ == "__main__":
-    extract_jira_issues()
+    # extract_jira_issues()
+    extract_time_spent_in_status()
