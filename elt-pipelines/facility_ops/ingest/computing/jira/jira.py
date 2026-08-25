@@ -80,16 +80,18 @@ def extract_jira_issues() -> pa.Table:
         )
 
         for project_issue in project_issues:
+            fields = project_issue["fields"]
+
             issues.append(
                 {
                     "project_name": f"{project_name}",
                     "issue_key": f"{project_issue[IssueField.IssueKey]}",
-                    "issue_type": f"{project_issue['fields'][IssueField.IssueType]}",
-                    "status": f"{project_issue['fields'][IssueField.Status]}",
-                    "priority": f"{project_issue['fields'][IssueField.Priority]}",
-                    "created": f"{project_issue['fields'][IssueField.Created]}",
-                    "updated": f"{project_issue['fields'][IssueField.Updated]}",
-                    "teams": f"{project_issue['fields'].get(IssueField.Teams)}",
+                    "issue_type": f"{fields[IssueField.IssueType]}",
+                    "status": f"{fields[IssueField.Status]}",
+                    "priority": f"{fields[IssueField.Priority]}",
+                    "created": f"{fields[IssueField.Created]}",
+                    "updated": f"{fields[IssueField.Updated]}",
+                    "teams": f"{fields.get(IssueField.Teams)}",
                 }
             )
 
@@ -113,6 +115,8 @@ def extract_time_spent_in_status() -> pa.Table:
             issue_status_changelog = jira_cloud.get_issue_status_changelog(
                 project_issue[IssueField.IssueKey]
             )
+
+            fields = project_issue["fields"]
 
             duration_of_status = {}
 
@@ -158,9 +162,9 @@ def extract_time_spent_in_status() -> pa.Table:
             issue_status = {
                 "project_name": f"{project_name}",
                 "issue_key": f"{project_issue[IssueField.IssueKey]}",
-                "current_status": f"{project_issue['fields'][IssueField.Status]['name']}",
-                "created": f"{project_issue['fields'][IssueField.Created]}",
-                "updated": f"{project_issue['fields'][IssueField.Updated]}",
+                "current_status": f"{fields[IssueField.Status]['name']}",
+                "created": f"{fields[IssueField.Created]}",
+                "updated": f"{fields[IssueField.Updated]}",
                 "duration_of_status": f"{duration_of_status}",
             }
             issues.append(issue_status)
