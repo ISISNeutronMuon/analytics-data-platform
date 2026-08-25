@@ -89,14 +89,13 @@ def extract_jira_issues() -> pa.Table:
                 {
                     "project_name": project_name,
                     "issue_key": project_issue[IssueField.IssueKey],
-                    "issue_type": fields[IssueField.IssueType],
-                    "status": fields[IssueField.Status],
-                    "priority": fields[IssueField.Priority],
+                    "issue_type": fields[IssueField.IssueType]["name"],
+                    "status": fields[IssueField.Status]["name"],
+                    "priority": fields[IssueField.Priority]["name"],
                     "created": fields[IssueField.Created],
                     "updated": fields[IssueField.Updated],
                     "teams": team_names,
                 }
             )
-    print(issues)
     issues_table = pa.Table.from_pylist(issues)
     return issues_table
