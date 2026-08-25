@@ -6,6 +6,9 @@ from elt_common.extract import BaseExtract, ResourceProperties
 import requests
 
 import pyarrow as pa
+import datetime as dt
+
+DATE_FORMAT_STRING = "%Y-%m-%dT%H:%M:%S.%f%z"
 
 
 class IssueField(enum.StrEnum):
@@ -77,8 +80,14 @@ def extract_jira_issues() -> pa.Table:
         for project_issue in project_issues:
             fields = project_issue["fields"]
 
-            teams = fields.get(IssueField.Teams)
+            created = dt.datetime.strptime(
+                fields[IssueField.Created], DATE_FORMAT_STRING
+            )
+            updated = dt.datetime.strptime(
+                fields[IssueField.Updated], DATE_FORMAT_STRING
+            )
 
+            teams = fields.get(IssueField.Teams)
             team_names = []
             if teams is not None:
                 for team in teams:
@@ -92,10 +101,15 @@ def extract_jira_issues() -> pa.Table:
                     "issue_type": fields[IssueField.IssueType]["name"],
                     "status": fields[IssueField.Status]["name"],
                     "priority": fields[IssueField.Priority]["name"],
-                    "created": fields[IssueField.Created],
-                    "updated": fields[IssueField.Updated],
+                    "created": created,
+                    "updated": updated,
                     "teams": team_names,
                 }
             )
+
     issues_table = pa.Table.from_pylist(issues)
     return issues_table
+
+
+if __name__ == "__main__":
+    extract_jira_issues()
