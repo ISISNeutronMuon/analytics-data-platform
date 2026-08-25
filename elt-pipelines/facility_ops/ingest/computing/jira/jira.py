@@ -88,11 +88,9 @@ def extract_jira_issues() -> pa.Table:
             )
 
             teams = fields.get(IssueField.Teams)
-            team_names = []
-            if teams is not None:
-                for team in teams:
-                    if team["value"] not in team_names:
-                        team_names.append(team["value"])
+            team_names = (
+                [team["value"] for team in teams] if teams is not None else None
+            )
 
             issues.append(
                 {
@@ -107,9 +105,6 @@ def extract_jira_issues() -> pa.Table:
                 }
             )
 
+    print(issues)
     issues_table = pa.Table.from_pylist(issues)
     return issues_table
-
-
-if __name__ == "__main__":
-    extract_jira_issues()
