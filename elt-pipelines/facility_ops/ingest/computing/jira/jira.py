@@ -22,8 +22,11 @@ class IssueField(enum.StrEnum):
 class Extract(BaseExtract):
     def extract_resource_properties(self):
         yield (
-            ("", ResourceProperties(extractor=self.extract_jira_issues)),
-            ("", ResourceProperties(extractor=self.extract_time_spent_in_status)),
+            ("all_jira_issues", ResourceProperties(extractor=self.extract_jira_issues)),
+            (
+                "time_spent_in_status_per_issue",
+                ResourceProperties(extractor=self.extract_time_spent_in_status),
+            ),
         )
 
 
