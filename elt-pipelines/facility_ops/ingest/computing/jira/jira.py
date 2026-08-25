@@ -1,3 +1,4 @@
+import enum
 import os
 
 from atlassian import Jira
@@ -7,10 +8,15 @@ import datetime as dt
 
 import pyarrow as pa
 
-ISIS_PROJECT_PREFIX = "[ISIS]"
-FIELDS_TO_EXTRACT = (
-    "issueKey,issuetype,status,priority,created,updated,customfield_10591"
-)
+
+class IssueField(enum.StrEnum):
+    IssueKey = "key"
+    IssueType = "issuetype"
+    Status = "status"
+    Priority = "priority"
+    Created = "created"
+    Updated = "updated"
+    Teams = "customfield_10591"
 
 
 class Extract(BaseExtract):
@@ -49,7 +55,7 @@ def jira_connection(
     return jira_connection
 
 
-def extract_project_names_starting_with(project_prefix: str) -> list[str]:
+def extract_isis_project_names() -> list[str]:
     jira_cloud = jira_connection()
 
     projects = jira_cloud.get_all_projects()
@@ -59,31 +65,31 @@ def extract_project_names_starting_with(project_prefix: str) -> list[str]:
         if project["name"] not in project_names:
             project_names.append(project["name"])
 
-    return list(filter(lambda p: p.startswith(project_prefix), project_names))
+    return list(filter(lambda p: p.startswith("[ISIS]"), project_names))
 
 
 def extract_jira_issues() -> pa.Table:
-    project_names = extract_project_names_starting_with(ISIS_PROJECT_PREFIX)
+    project_names = extract_isis_project_names()
 
     jira_cloud = jira_connection()
 
     issues = []
     for project_name in project_names:
         project_issues = jira_cloud.get_all_project_issues(
-            project_name, fields=FIELDS_TO_EXTRACT
+            project_name, fields=[field.value for field in IssueField]
         )
 
         for project_issue in project_issues:
             issues.append(
                 {
                     "project_name": f"{project_name}",
-                    "issue_key": f"{project_issue['key']}",
-                    "issue_type": f"{project_issue['fields']['issuetype']}",
-                    "status": f"{project_issue['fields']['status']}",
-                    "priority": f"{project_issue['fields']['priority']}",
-                    "created": f"{project_issue['fields']['created']}",
-                    "updated": f"{project_issue['fields']['updated']}",
-                    "teams": f"{project_issue['fields'].get('customfield_10591')}",
+                    "issue_key": f"{project_issue[IssueField.IssueKey]}",
+                    "issue_type": f"{project_issue['fields'][IssueField.IssueType]}",
+                    "status": f"{project_issue['fields'][IssueField.Status]}",
+                    "priority": f"{project_issue['fields'][IssueField.Priority]}",
+                    "created": f"{project_issue['fields'][IssueField.Created]}",
+                    "updated": f"{project_issue['fields'][IssueField.Updated]}",
+                    "teams": f"{project_issue['fields'].get(IssueField.Teams)}",
                 }
             )
 
@@ -92,7 +98,7 @@ def extract_jira_issues() -> pa.Table:
 
 
 def extract_time_spent_in_status() -> pa.Table:
-    project_names = extract_project_names_starting_with(ISIS_PROJECT_PREFIX)
+    project_names = extract_isis_project_names()
 
     jira_cloud = jira_connection()
 
@@ -100,12 +106,12 @@ def extract_time_spent_in_status() -> pa.Table:
 
     for project_name in project_names:
         project_issues = jira_cloud.get_all_project_issues(
-            project_name, fields=FIELDS_TO_EXTRACT
+            project_name, fields=[field.value for field in IssueField]
         )
 
         for project_issue in project_issues:
             issue_status_changelog = jira_cloud.get_issue_status_changelog(
-                project_issue["key"]
+                project_issue[IssueField.IssueKey]
             )
 
             duration_of_status = {}
@@ -113,11 +119,10 @@ def extract_time_spent_in_status() -> pa.Table:
             DATE_FORMAT_STRING = "%Y-%m-%dT%H:%M:%S.%f%z"
 
             if len(issue_status_changelog) == 0:
-                duration_of_status[project_issue["fields"]["status"]["name"]] = (
-                    dt.datetime.now(dt.timezone.utc)
-                    - dt.datetime.strptime(
-                        project_issue["fields"]["created"], DATE_FORMAT_STRING
-                    )
+                duration_of_status[
+                    project_issue["fields"][IssueField.Status]["name"]
+                ] = dt.datetime.now(dt.timezone.utc) - dt.datetime.strptime(
+                    project_issue["fields"][IssueField.Created], DATE_FORMAT_STRING
                 )
             else:
                 # reverse array as the data are in reverse chronological order
@@ -128,7 +133,8 @@ def extract_time_spent_in_status() -> pa.Table:
                                 issue_status_changelog[-1]["date"], DATE_FORMAT_STRING
                             )
                             - dt.datetime.strptime(
-                                project_issue["fields"]["created"], DATE_FORMAT_STRING
+                                project_issue["fields"][IssueField.Created],
+                                DATE_FORMAT_STRING,
                             )
                         )
                     elif i == 0:
@@ -151,10 +157,10 @@ def extract_time_spent_in_status() -> pa.Table:
 
             issue_status = {
                 "project_name": f"{project_name}",
-                "issue_key": f"{project_issue['key']}",
-                "current_status": f"{project_issue['fields']['status']['name']}",
-                "created": f"{project_issue['fields']['created']}",
-                "updated": f"{project_issue['fields']['updated']}",
+                "issue_key": f"{project_issue[IssueField.IssueKey]}",
+                "current_status": f"{project_issue['fields'][IssueField.Status]['name']}",
+                "created": f"{project_issue['fields'][IssueField.Created]}",
+                "updated": f"{project_issue['fields'][IssueField.Updated]}",
                 "duration_of_status": f"{duration_of_status}",
             }
             issues.append(issue_status)
