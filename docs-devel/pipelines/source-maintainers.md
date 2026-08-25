@@ -8,7 +8,7 @@ A version of this which includes the primary individual contacts within each of 
 
 | Pipeline | Source Maintainer Team |
 | --- | --- |
-| accelerator.statusdisplay | ISIS Accelerator Diagnostics |
 | accelerator.opralogweb | ISIS Computing Infrastructure |
-| accelerator.sharepoint | Accelerator Operations |
+| accelerator.sharepoint | ISIS Accelerator Operations |
+| accelerator.statusdisplay | ISIS Accelerator Diagnostics |
 | estates.electricity_sharepoint | STFC Estates |
