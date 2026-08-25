@@ -96,9 +96,9 @@ def extract_jira_issues() -> pa.Table:
 
             issues.append(
                 {
-                    "project_name": project_name,
                     "issue_key": project_issue[IssueField.IssueKey],
                     "issue_type": fields[IssueField.IssueType]["name"],
+                    "project_name": project_name,
                     "status": fields[IssueField.Status]["name"],
                     "priority": fields[IssueField.Priority]["name"],
                     "created": created,
@@ -107,5 +107,23 @@ def extract_jira_issues() -> pa.Table:
                 }
             )
 
-    issues_table = pa.Table.from_pylist(issues)
+    issues_schema = pa.schema(
+        [
+            pa.field("issue_key", pa.string()),
+            pa.field("issue_type", pa.string()),
+            pa.field("project_name", pa.string()),
+            pa.field("status", pa.string()),
+            pa.field("priority", pa.string()),
+            pa.field("created", pa.date32()),
+            pa.field("updated", pa.date32()),
+            pa.field("teams", pa.list_(pa.string())),
+        ]
+    )
+
+    issues_table = pa.Table.from_pylist(issues, schema=issues_schema)
+    print(issues_table)
     return issues_table
+
+
+if __name__ == "__main__":
+    extract_jira_issues()
