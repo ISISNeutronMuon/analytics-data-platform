@@ -105,6 +105,5 @@ def extract_jira_issues() -> pa.Table:
                 }
             )
 
-    print(issues)
     issues_table = pa.Table.from_pylist(issues)
     return issues_table
