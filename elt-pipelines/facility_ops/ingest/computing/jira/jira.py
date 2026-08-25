@@ -20,9 +20,6 @@ class IssueField(enum.StrEnum):
 
 
 class Extract(BaseExtract):
-    def __init__(self, config):
-        super().__init__(config)
-
     def extract_resource_properties(self):
         yield (
             ("", ResourceProperties(extractor=self.extract_jira_issues)),
