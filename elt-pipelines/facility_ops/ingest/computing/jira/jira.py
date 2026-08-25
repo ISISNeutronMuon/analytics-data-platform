@@ -84,14 +84,14 @@ def extract_jira_issues() -> pa.Table:
 
             issues.append(
                 {
-                    "project_name": f"{project_name}",
-                    "issue_key": f"{project_issue[IssueField.IssueKey]}",
-                    "issue_type": f"{fields[IssueField.IssueType]}",
-                    "status": f"{fields[IssueField.Status]}",
-                    "priority": f"{fields[IssueField.Priority]}",
-                    "created": f"{fields[IssueField.Created]}",
-                    "updated": f"{fields[IssueField.Updated]}",
-                    "teams": f"{fields.get(IssueField.Teams)}",
+                    "project_name": project_name,
+                    "issue_key": project_issue[IssueField.IssueKey],
+                    "issue_type": fields[IssueField.IssueType],
+                    "status": fields[IssueField.Status],
+                    "priority": fields[IssueField.Priority],
+                    "created": fields[IssueField.Created],
+                    "updated": fields[IssueField.Updated],
+                    "teams": fields.get(IssueField.Teams),
                 }
             )
 
@@ -160,12 +160,12 @@ def extract_time_spent_in_status() -> pa.Table:
                         )
 
             issue_status = {
-                "project_name": f"{project_name}",
-                "issue_key": f"{project_issue[IssueField.IssueKey]}",
-                "current_status": f"{fields[IssueField.Status]['name']}",
-                "created": f"{fields[IssueField.Created]}",
-                "updated": f"{fields[IssueField.Updated]}",
-                "duration_of_status": f"{duration_of_status}",
+                "project_name": project_name,
+                "issue_key": project_issue[IssueField.IssueKey],
+                "current_status": fields[IssueField.Status]["name"],
+                "created": fields[IssueField.Created],
+                "updated": fields[IssueField.Updated],
+                "duration_of_status": duration_of_status,
             }
             issues.append(issue_status)
 
