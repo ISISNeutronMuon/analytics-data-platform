@@ -35,7 +35,9 @@ def _value_or_env_variable(value: str | None, env_var_name: str) -> str:
         try:
             return os.environ[env_var_name]
         except KeyError:
-            raise KeyError(f"Environment variable '{env_var_name}' not found.")
+            raise KeyError(
+                f"Environment variable '{env_var_name}' not found."
+            ) from None
 
 
 def jira_connection(
