@@ -1,7 +1,7 @@
 import enum
 
 from atlassian import Jira
-from elt_common.extract import BaseExtract, ResourceProperties
+from elt_common.extract import BaseExtract, ResourceProperties, ResourceWriteProperties
 from pydantic_settings import BaseSettings
 
 import pyarrow as pa
@@ -21,7 +21,7 @@ class IssueField(enum.StrEnum):
 
 
 class AtlassianCredentials(BaseSettings):
-    jira_url: str
+    url: str
     email_address: str
     api_token: str
     cloud: bool = True
@@ -32,17 +32,19 @@ class Extract(BaseExtract[AtlassianCredentials]):
 
     def __init__(self, cfg: AtlassianCredentials):
         super().__init__(cfg)
-        self._client = Jira(
-            cfg.jira_url, cfg.email_address, cfg.api_token, cloud=cfg.cloud
-        )
+        self._client = Jira(cfg.url, cfg.email_address, cfg.api_token, cloud=cfg.cloud)
 
     def extract_resource_properties(self):
         yield (
-            ("all_jira_issues", ResourceProperties(extractor=self.extract_jira_issues)),
+            "isis_jira_issues",
+            ResourceProperties(
+                extractor=self.extract_isis_jira_issues,
+                write_properties=ResourceWriteProperties(write_mode="replace"),
+            ),
         )
 
-    def extract_jira_issues(self) -> pa.Table:
-        project_names = self.extract_isis_project_names()
+    def extract_isis_jira_issues(self, _) -> pa.Table:
+        project_names = self.get_isis_project_names()
 
         issues = []
         for project_name in project_names:
@@ -92,10 +94,9 @@ class Extract(BaseExtract[AtlassianCredentials]):
         )
 
         issues_table = pa.Table.from_pylist(issues, schema=issues_schema)
-        print(issues_table)
-        return issues_table
+        yield issues_table
 
-    def extract_isis_project_names(self) -> list[str]:
+    def get_isis_project_names(self) -> list[str]:
         projects = self._client.get_all_projects()
         return [
             project["name"]
