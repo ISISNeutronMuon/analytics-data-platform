@@ -1,0 +1,27 @@
+models:
+  - name: stg_jira_isis_jira_issues
+    description: >
+      Jira issues from ISIS projects
+    columns:
+      - name: issue_key
+        data_tests:
+        - not_null
+      - name: issue_type
+        data_tests:
+        - not_null
+      - name: project_name
+        data_tests:
+        - not_null
+      - name: status
+        data_tests:
+        - not_null
+      - name: priority
+        data_tests:
+        - not_null
+      - name: created_at
+        data_tests:
+        - not_null
+      - name: updated_at
+        data_tests:
+        - not_null
+      - name: teams
