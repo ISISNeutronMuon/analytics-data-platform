@@ -87,8 +87,8 @@ class Extract(BaseExtract[AtlassianCredentials]):
                 pa.field("project_name", pa.string()),
                 pa.field("status", pa.string()),
                 pa.field("priority", pa.string()),
-                pa.field("created", pa.timestamp()),
-                pa.field("updated", pa.timestamp()),
+                pa.field("created", pa.timestamp("s")),
+                pa.field("updated", pa.timestamp("s")),
                 pa.field("teams", pa.list_(pa.string())),
             ]
         )
