@@ -1,4 +1,4 @@
 docker-compose.yaml
-logs/*
-!logs/
-dags/__pycache__/*.pyc
+airflow/logs/*
+airflow/!logs/
+airflow/dags/__pycache__/*.pyc

@@ -1,27 +1,11 @@
-
-
 import pendulum
 from airflow.sdk import dag
 from airflow.providers.standard.operators.python import PythonVirtualenvOperator
 from airflow.providers.standard.operators.empty import EmptyOperator
 
 def run_statusdisplay_ingest():
-    from pathlib import Path
-    from elt_common.ingest import run_ingest
-    from elt_common.pipeline_types import ELTIngestManifest
-
-    import logging
-    logger = logging.getLogger(__name__)
-    logger.info("Running statusdisplay ingest job")
-    job = ELTIngestManifest(
-        warehouse_name="facility_ops",
-        name="statusdisplay",
-        domain="accelerator",
-        job_dir=Path(
-            "/opt/analytics-data-platform/elt-pipelines/facility_ops/ingest/accelerator/statusdisplay"
-        ),
-    )
-    run_ingest(job)
+    from elt_common.cli import cli as elt_cli
+    elt_cli(['run', '/opt/analytics-data-platform/elt-pipelines/facility_ops', '--step=ingest', 'accelerator.statusdisplay'],  standalone_mode=False)
 
 @dag(
     dag_id="statusdisplay",
