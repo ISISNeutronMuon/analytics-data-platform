@@ -11,7 +11,7 @@ cleaned as (
       issue_key as issue_key,
       issue_type as issue_type,
       project_name as project_name,
-      TRIM(REPLACE("status", '(migrated)', '') as "status",
+      TRIM(REPLACE("status", '(migrated)', '')) as "status",
       TRIM(REPLACE(priority, '(migrated)', '')) as priority,
       created as created_at,
       updated as updated_at,
