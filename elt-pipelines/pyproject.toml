@@ -24,6 +24,9 @@ opralogweb = [
     "html2text>=2025.4.15",
     "sqlalchemy[mssql-pymssql]>=2.0.51",
 ]
+jira = [
+    "atlassian-python-api>=5.0.3",
+]
 
 [tool.uv.sources]
 elt-common = { path = "../elt-common", editable = true }
