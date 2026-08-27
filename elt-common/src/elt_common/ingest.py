@@ -64,7 +64,7 @@ def run_ingest(job: ELTIngestManifest) -> dict[str, int]:
 
         watermarks: list[Watermark] = []
         for data in table_props.extractor(watermark_before_extract):
-            if not data:
+            if not data or data.num_rows == 0:
                 LOGGER.info("No rows extracted, skipping")
                 continue
 
