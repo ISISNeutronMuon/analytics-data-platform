@@ -1,7 +1,13 @@
 import enum
+from typing import Iterator
 
 from atlassian import Jira
-from elt_common.extract import BaseExtract, ResourceProperties, ResourceWriteProperties
+from elt_common.extract import (
+    BaseExtract,
+    ResourceProperties,
+    ResourceWriteProperties,
+    Watermark,
+)
 from pydantic_settings import BaseSettings
 
 import pyarrow as pa
@@ -43,7 +49,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
             ),
         )
 
-    def extract_isis_jira_issues(self, _) -> pa.Table:
+    def extract_isis_jira_issues(self, _: Watermark | None) -> Iterator[pa.Table]:
         project_names = self.get_isis_project_names()
 
         issues = []
@@ -103,8 +109,3 @@ class Extract(BaseExtract[AtlassianCredentials]):
             for project in projects
             if project["name"].startswith("[ISIS]")
         ]
-
-
-if __name__ == "__main__":
-    extract = Extract(AtlassianCredentials())
-    extract.extract_jira_issues()
