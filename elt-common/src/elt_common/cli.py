@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Literal, Optional, cast
 
 import click
+import requests
 
 from elt_common.pipeline import PipelinesProject
 from elt_common.pipeline_types import ELTIngestManifest
@@ -14,6 +15,11 @@ from elt_common.ingest import run_ingest
 from elt_common.transform import run_transform
 
 LOGGER = logging.getLogger(__name__)
+
+# Disable ipv6 for anything using requests, which includes pyiceberg
+# This is done to solve a performance problem when using WSL
+# https://github.com/ISISNeutronMuon/analytics-data-platform/issues/433
+requests.packages.urllib3.util.connection.HAS_IPV6 = False
 
 
 @click.group(context_settings={"show_default": True})
