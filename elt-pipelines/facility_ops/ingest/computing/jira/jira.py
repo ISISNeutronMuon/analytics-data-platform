@@ -114,7 +114,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
         issues_table = pa.Table.from_pylist(issues, schema=issues_schema)
         yield issues_table
 
-    def extract_issue_status_changelogs(self):
+    def extract_issue_status_changelogs(self, _: Watermark | None):
         payload = {
             "fieldIds": [IssueField.Status.value],
             "issueIdsOrKeys": self.issue_keys,
