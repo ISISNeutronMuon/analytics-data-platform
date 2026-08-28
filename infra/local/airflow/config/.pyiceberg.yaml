@@ -1,0 +1,12 @@
+catalog:
+  default:
+    type: rest
+    uri: http://adp-router:50080/iceberg/catalog
+    warehouse: "facility_ops_landing"
+    auth:
+      type: oauth2
+      oauth2:
+        client_id: machine-infra
+        client_secret: s3cr3t
+        token_url: http://adp-router:50080/auth/realms/analytics-data-platform/protocol/openid-connect/token
+        scope: lakekeeper
