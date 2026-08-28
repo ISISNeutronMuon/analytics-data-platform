@@ -1,7 +1,7 @@
 import enum
 from typing import Iterator
 
-from atlassian import Jira
+from atlassian import JiraCloud
 from elt_common.extract import (
     BaseExtract,
     ResourceProperties,
