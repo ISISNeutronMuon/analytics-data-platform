@@ -11,6 +11,7 @@ x-redis-image: &redis-image redis:8.4-bookworm
 x-superset-image: &superset-image ghcr.io/isisneutronmuon/analytics-data-platform-superset:a4f0e8011f34785d759269dceedfa2693db81c19
 x-traefik-image: &traefik-image traefik:v3.5.3
 x-trino-image: &trino-image trinodb/trino:477
+x-airflow-image: &airflow-image apache/airflow:3.3.0
 
 # environment
 x-env-file: &env-file
@@ -30,7 +31,7 @@ x-certs-volume: &certs-volume "mkcert_data:/certs"
 # superset options
 x-superset-user: &superset-user root
 x-superset-depends-on: &superset-depends-on
-  superset-redis:
+  shared-redis:
     condition: service_started
   shared-database-bootstrap:
     condition: service_completed_successfully
@@ -40,6 +41,33 @@ x-superset-volumes: &superset-volumes
   - ./superset/docker/requirements-local.txt:/app/docker/requirements-local.txt:ro
   - ./superset/docker/pythonpath:/app/docker/pythonpath:ro
   - *certs-volume
+
+x-airflow-common:
+  &airflow-common
+  # In order to add custom dependencies or upgrade provider distributions you can use your extended image.
+  # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
+  # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
+  image: *airflow-image
+  user: "${AIRFLOW_UID:-50000}:0"
+  env_file: *env-file
+  environment:
+    &airflow-common-env
+    AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+    PYICEBERG_HOME: /opt/airflow/config
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/config:/opt/airflow/config
+    - ./airflow/plugins:/opt/airflow/plugins
+    - ./airflow/airflow-init.sh:/opt/airflow/airflow-init.sh
+    - ./../..:/opt/analytics-data-platform
+  networks: *local-networks
+  depends_on:
+    &airflow-common-depends-on
+    shared-redis:
+      condition: service_healthy
+    shared-database:
+      condition: service_healthy
 
 services:
   #########################################################
@@ -134,6 +162,7 @@ services:
         create_db_if_not_exists $$SHARED_DB__LAKEKEEPER_DB_NAME
         create_db_if_not_exists $$SHARED_DB__SUPERSET_DB_NAME
         rename_schema $$SUPERSET_DB_NAME public $$SUPERSET_DB_SCHEMA_NAME
+        create_db_if_not_exists $$SHARED_DB__AIRFLOW_DB_NAME
     networks: *local-networks
 
   #########################################################
@@ -362,19 +391,25 @@ services:
     networks: *local-networks
 
   #########################################################
-  # Superset BI tool
+  # Shared Redis cache for Superset and Airflow
   #########################################################
-
-  superset-redis:
-    profiles:
-      - superset
-    container_name: local-lakehouse-superset-redis
+  shared-redis:
+    container_name: local-lakehouse-shared-redis
     env_file: *env-file
     image: *redis-image
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 30s
+      retries: 50
+      start_period: 30s
     restart: unless-stopped
     volumes:
       - shared_redis_data:/data
     networks: *local-networks
+  #########################################################
+  # Superset BI tool
+  #########################################################
 
   superset-app:
     profiles:
@@ -450,6 +485,137 @@ services:
     healthcheck:
       disable: true
 
+  #########################################################
+  # Apache Airflow ELT Orchestration
+  #########################################################
+  airflow-apiserver:
+    <<: *airflow-common
+    container_name: local-lakehouse-airflow-apiserver
+    env_file: *env-file
+    command: ["api-server", "--proxy-headers"]
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/airflow/api/v2/monitor/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: local-lakehouse-airflow-scheduler
+    command: scheduler
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    container_name: local-lakehouse-airflow-dag-processor
+    command: dag-processor
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type DagProcessorJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-worker:
+    <<: *airflow-common
+    container_name: local-lakehouse-airflow-worker
+    command: celery worker
+    healthcheck:
+      # yamllint disable rule:line-length
+      test: ["CMD-SHELL", 'celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}" || celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    environment:
+      <<: *airflow-common-env
+      # Required to handle warm shutdown of the celery workers properly
+      # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
+      DUMB_INIT_SETSID: "0"
+    restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-apiserver:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-triggerer:
+    <<: *airflow-common
+    container_name: local-lakehouse-airflow-triggerer
+    command: triggerer
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: local-lakehouse-airflow-init
+    env_file: *env-file
+    entrypoint: /bin/bash
+    # yamllint disable rule:line-length
+    command: ["/opt/airflow/airflow-init.sh"]
+    # yamllint enable rule:line-length
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_MIGRATE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+      _PIP_ADDITIONAL_REQUIREMENTS: ''
+    user: "0:0"
+
+  # You can enable flower by adding "--profile flower" option e.g. docker-compose --profile flower up
+  # or by explicitly targeted on the command line e.g. docker-compose up flower.
+  # See: https://docs.docker.com/compose/profiles/
+  flower:
+    <<: *airflow-common
+    container_name: local-lakehouse-airflow-flower
+    command: ["celery", "flower", "--url-prefix=airflow-flower"]
+    profiles:
+      - flower
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:5555/airflow-flower/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
 networks:
   local-lakehouse_net:
     name: local-lakehouse-network

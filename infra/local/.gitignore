@@ -1,1 +1,4 @@
 docker-compose.yaml
+airflow/logs/*
+!airflow/logs/.gitkeep
+airflow/dags/__pycache__/
