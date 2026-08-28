@@ -120,4 +120,4 @@ For local development of `elt-common` itself, see the
 ## Airflow DAG pipelines
 
 In order to be inline with two-stage ELT pattern used in this platform, dags will also define two tasks in each dag- ingestion and transformation.
-In local, dags must be defined in [dags folder](../infra/local/dags)
+In local, DAGs must be defined in the [dags folder](../infra/local/airflow/dags).
