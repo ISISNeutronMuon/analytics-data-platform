@@ -11,11 +11,7 @@ from elt_common.sources.sqldatabase import (
 
 class PipelinePostgresConfig(SqlDatabaseSourceConfig):
     drivername: str = "postgresql+psycopg"
-    table: str
-
-    @property
-    def target_tables(self) -> list[str]:
-        return [t.strip() for t in self.table.split(",") if t.strip()]
+    tables: list[str]
 
 
 class Extract(SqlDatabaseExtract):
@@ -27,5 +23,5 @@ class Extract(SqlDatabaseExtract):
             table_name: TableInfo(
                 write_properties=ResourceWriteProperties(write_mode="replace")
             )
-            for table_name in self.config.target_tables
+            for table_name in self.config.tables
         }

@@ -6,6 +6,7 @@ from abc import abstractmethod
 from typing import Callable, Generator, Iterator, NamedTuple, Optional
 
 import pyarrow as pa
+import pyarrow.compute as pc
 import sqlalchemy as sa
 from pydantic import PositiveInt, SecretStr
 from pydantic_settings import BaseSettings
@@ -24,6 +25,33 @@ DEFAULT_PA_TYPE_MAPPING = {
     "date": pa.date32(),
     "text": pa.string(),
 }
+
+
+def _serialize_json_values(row: dict) -> dict:
+    """Ensure dict/list objects in rows are serialized to JSON strings for PyArrow json_ types."""
+    return {k: json.dumps(v) if isinstance(v, (dict, list)) else v for k, v in row.items()}
+
+
+def json_to_str(table: pa.Table) -> pa.Table:
+    """Fast-path helper to cast any PyArrow JSON columns in a Table to String columns."""
+    # PyArrow JSON extension types are instances of pa.JsonType
+    json_field_indices = [
+        i for i, field in enumerate(table.schema) if isinstance(field.type, pa.JsonType)
+    ]
+
+    if not json_field_indices:
+        return table
+
+    new_schema = table.schema
+    new_columns = list(table.columns)
+
+    for i in json_field_indices:
+        field = table.schema.field(i)
+        new_field = field.with_type(pa.string())
+        new_schema = new_schema.set(i, new_field)
+        new_columns[i] = pc.cast(table.column(i), pa.string())
+
+    return pa.Table.from_arrays(new_columns, schema=new_schema)
 
 
 class SqlDatabaseSourceConfig(BaseSettings):
@@ -63,8 +91,7 @@ class TableInfo(NamedTuple):
     destination. If omitted, will default to appending with no partitions or sorting.
     :ivar watermark_column: the column to use for watermarking. If omitted, the
     entire table will be queried on every run
-    :ivar destination_table_name: sets the name of the table in Iceberg, if it should
-    be different to the name of the DB table
+
     """
 
     write_properties: Optional[ResourceWriteProperties] = None
@@ -113,14 +140,7 @@ class SqlDatabaseExtract(BaseExtract):
             self._metadata,
             autoload_with=self._engine,
         )
-        schema = to_pyarrow_schema(table)
-
-        # Apply column normalization (e.g. lowercase) if overridden by subclasses
-        normalized_fields = [
-            pa.field(self.normalize_column_name(field.name), field.type, field.nullable)
-            for field in schema
-        ]
-        return pa.schema(normalized_fields)
+        return to_pyarrow_schema(table)
 
     def normalize_column_name(self, name: str) -> str:
         return name
@@ -163,6 +183,11 @@ class SqlDatabaseExtract(BaseExtract):
                 if table_props and table_props.watermark_column
                 else None
             )
+            resource_name = (
+                table_props.destination_table_name
+                if table_props and table_props.destination_table_name
+                else name
+            )
 
             def extractor(watermark, *, _name=name):
                 return self._extract_table(_name, watermark=watermark, conn=conn)
@@ -173,11 +198,7 @@ class SqlDatabaseExtract(BaseExtract):
                 watermark_column=watermark_column,
             )
 
-            destination_table = name
-            if table_props is not None and table_props.destination_table_name is not None:
-                destination_table = table_props.destination_table_name
-
-            yield destination_table, properties
+            yield resource_name, properties
 
     def _extract_table(
         self,
@@ -204,66 +225,16 @@ class SqlDatabaseExtract(BaseExtract):
 
         query = query.limit(self._row_limit)
 
-        result = conn.execution_options(yield_per=self._chunk_size).execute(query)
-
-        target_schema = self.get_table_schema(name)
-
-        column_names = list(result.keys())
+        pa_schema = self.get_table_schema(name)
+        result = conn.execution_options(yield_per=self.config.chunk_size).execute(query)
 
         has_data = False
-        while True:
-            rows = result.fetchmany(self._chunk_size)
-
-            if not rows:
-                break
-
+        for partition in result.mappings().partitions():
             has_data = True
+            rows = [_serialize_json_values(row) for row in partition]
+            pa_table = pa.Table.from_pylist(rows, schema=pa_schema)
+            yield json_to_str(pa_table)
 
-            # Convert SQLAlchemy Row objects to column arrays
-            columns = {}
-
-            for idx, column_name in enumerate(column_names):
-                columns[column_name] = [row[idx] for row in rows]
-
-            arrow_arrays = []
-
-            for field in target_schema:
-                values = columns.get(
-                    field.name,
-                    [None] * len(rows),
-                )
-
-                # JSON / JSONB -> string for Iceberg
-                if pa.types.is_string(field.type):
-                    values = [
-                        json.dumps(v)
-                        if isinstance(v, (dict, list))
-                        else str(v)
-                        if v is not None and not isinstance(v, str)
-                        else v
-                        for v in values
-                    ]
-                elif pa.types.is_integer(field.type):
-                    values = [int(v) if v is not None else None for v in values]
-                elif pa.types.is_floating(field.type):
-                    values = [float(v) if v is not None else None for v in values]
-
-                array = pa.array(
-                    values,
-                    type=field.type,
-                )
-                arrow_arrays.append(array)
-
-            yield pa.Table.from_arrays(
-                arrow_arrays,
-                schema=target_schema,
-            )
-
-        # Return empty table with schema when no rows
         if not has_data:
-            empty_arrays = [pa.array([], type=field.type) for field in target_schema]
-
-            yield pa.Table.from_arrays(
-                empty_arrays,
-                schema=target_schema,
-            )
+            empty_table = pa.Table.from_batches([], schema=pa_schema)
+            yield json_to_str(empty_table)

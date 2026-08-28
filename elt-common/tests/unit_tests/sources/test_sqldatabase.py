@@ -255,7 +255,11 @@ def test_sql_database_json_jsonb_serialization(tmp_path: Path):
         conn.execute(
             db_table.insert(),
             [
-                {"id": 1, "json_col": '{"key": "val1"}', "jsonb_col": '{"key": "val2"}'},
+                {
+                    "id": 1,
+                    "json_col": '{"key": "val1", "nested": {"a": 1}}',
+                    "jsonb_col": '[1, 2, "a"]',
+                },
             ],
         )
 
@@ -274,5 +278,5 @@ def test_sql_database_json_jsonb_serialization(tmp_path: Path):
 
             assert data.schema.field("json_col").type == pa.string()
             assert data.schema.field("jsonb_col").type == pa.string()
-            assert data["json_col"].to_pylist() == ['{"key": "val1"}']
-            assert data["jsonb_col"].to_pylist() == ['{"key": "val2"}']
+            assert data["json_col"].to_pylist() == ['{"key": "val1", "nested": {"a": 1}}']
+            assert data["jsonb_col"].to_pylist() == ['[1, 2, "a"]']

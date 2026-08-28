@@ -50,9 +50,9 @@ def test_builds_schema_from_multiple_columns():
         (sa.DECIMAL(), pa.float64()),
         (sa.DECIMAL(10, 2), pa.decimal128(10, 2)),
         (sa.DECIMAL(50, 2), pa.decimal256(50, 2)),
-        (sa.JSON(), pa.string()),
-        (postgresql.JSON(), pa.string()),
-        (postgresql.JSONB(), pa.string()),
+        (sa.JSON(), pa.json_()),
+        (postgresql.JSON(), pa.json_()),
+        (postgresql.JSONB(), pa.json_()),
     ],
 )
 def test_supported_sqlalchemy_types(sql_type, expected_type):
