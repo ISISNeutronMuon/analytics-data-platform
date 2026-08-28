@@ -104,6 +104,9 @@ class Extract(BaseExtract[AtlassianCredentials]):
 
     def get_isis_project_names(self) -> list[str]:
         projects = self._client.get_all_projects()
+        if not projects:
+            return []
+
         return [
             project["name"]
             for project in projects
