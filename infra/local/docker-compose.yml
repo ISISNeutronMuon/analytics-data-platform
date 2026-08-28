@@ -490,6 +490,7 @@ services:
   #########################################################
   airflow-apiserver:
     <<: *airflow-common
+    container_name: local-lakehouse-airflow-apiserver
     env_file: *env-file
     command: ["api-server", "--proxy-headers"]
     healthcheck:
@@ -506,6 +507,7 @@ services:
 
   airflow-scheduler:
     <<: *airflow-common
+    container_name: local-lakehouse-airflow-scheduler
     command: scheduler
     healthcheck:
       test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
@@ -521,6 +523,7 @@ services:
 
   airflow-dag-processor:
     <<: *airflow-common
+    container_name: local-lakehouse-airflow-dag-processor
     command: dag-processor
     healthcheck:
       test: ["CMD-SHELL", 'airflow jobs check --job-type DagProcessorJob --hostname "$${HOSTNAME}"']
@@ -536,6 +539,7 @@ services:
 
   airflow-worker:
     <<: *airflow-common
+    container_name: local-lakehouse-airflow-worker
     command: celery worker
     healthcheck:
       # yamllint disable rule:line-length
@@ -561,6 +565,7 @@ services:
 
   airflow-triggerer:
     <<: *airflow-common
+    container_name: local-lakehouse-airflow-triggerer
     command: triggerer
     healthcheck:
       test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
@@ -576,6 +581,7 @@ services:
 
   airflow-init:
     <<: *airflow-common
+    container_name: local-lakehouse-airflow-init
     env_file: *env-file
     entrypoint: /bin/bash
     # yamllint disable rule:line-length
@@ -595,6 +601,7 @@ services:
   # See: https://docs.docker.com/compose/profiles/
   flower:
     <<: *airflow-common
+    container_name: local-lakehouse-airflow-flower
     command: ["celery", "flower", "--url-prefix=airflow-flower"]
     profiles:
       - flower
