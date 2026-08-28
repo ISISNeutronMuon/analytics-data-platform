@@ -17,10 +17,22 @@ statusdisplay = [
     "requests>=2.34.2",
 ]
 
-accelerator_sharepoint = [
+sharepoint = [
     "pandas >= 3.0.3",
     "openpyxl >= 3.1.5",
     "elt-common[m365]"
+]
+opralogweb = [
+    "html2text>=2025.4.15",
+    "sqlalchemy[mssql-pymssql]>=2.0.51",
+]
+moderator-performance = [
+    "h5py>=3.16.0",
+    "numpy>=2.4.2,<3",
+    "scipy>=1.17.1,<2",
+]
+jira = [
+    "atlassian-python-api>=5.0.3",
 ]
 
 [tool.uv.sources]

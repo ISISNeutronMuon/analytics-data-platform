@@ -99,7 +99,7 @@ class TableInfo(NamedTuple):
     destination_table_name: Optional[str] = None
 
 
-class SqlDatabaseExtract(BaseExtract):
+class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
     """Base class for defining SQL ingest Extract classes.
 
     Example usage, for an ingest script that reads from 3 tables::
@@ -123,8 +123,6 @@ class SqlDatabaseExtract(BaseExtract):
 
     def __init__(self, config: SqlDatabaseSourceConfig):
         super().__init__(config)
-        self._chunk_size = config.chunk_size
-        self._row_limit = config.row_limit
 
         LOGGER.debug(
             f"Creating engine for {config.drivername} database at "
@@ -151,6 +149,12 @@ class SqlDatabaseExtract(BaseExtract):
 
         Each key in the returned dict is a table name. Their values can include
         extra properties for controlling ingestion, see :class:`TableInfo`.
+
+        This is a convenience method for defining tables whose data can be
+        extracted in a straightforward way (all data is extracted, potentially
+        limited by a watermark). For tables requiring more complex behaviour
+        (e.g. filtering) extend :py:meth:`extract_resource_properties` with
+        custom extractors.
         """
         pass
 
@@ -208,7 +212,7 @@ class SqlDatabaseExtract(BaseExtract):
         watermark: Watermark | None = None,
         query_filter: Callable[[Select], Select] | None = None,
     ) -> Iterator[pa.Table]:
-        LOGGER.debug(f"Extracting table {name} in chunks of {self._chunk_size} rows.")
+        LOGGER.debug(f"Extracting table {name} in chunks of {self.config.chunk_size} rows.")
         table = sa.Table(
             name,
             self._metadata,
@@ -223,7 +227,7 @@ class SqlDatabaseExtract(BaseExtract):
         if query_filter:
             query = query_filter(query)
 
-        query = query.limit(self._row_limit)
+        query = query.limit(self.config.row_limit)
 
         pa_schema = self.get_table_schema(name)
         result = conn.execution_options(yield_per=self.config.chunk_size).execute(query)

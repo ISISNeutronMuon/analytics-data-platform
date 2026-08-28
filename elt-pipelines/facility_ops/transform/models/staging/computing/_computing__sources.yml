@@ -1,0 +1,7 @@
+version: 2
+
+sources:
+  - name: computing_jira
+    database: facility_ops_landing
+    tables:
+      - name: isis_jira_issues
