@@ -53,7 +53,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
         yield (
             "issue_status_changelog",
             ResourceProperties(
-                extractor=self.extract_issue_status_changelog,
+                extractor=self.extract_issue_status_changelogs,
                 write_properties=ResourceWriteProperties(write_mode="replace"),
             ),
         )
@@ -114,7 +114,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
         issues_table = pa.Table.from_pylist(issues, schema=issues_schema)
         yield issues_table
 
-    def extract_issue_status_changelog(self):
+    def extract_issue_status_changelogs(self):
         payload = {
             "fieldIds": [IssueField.Status.value],
             "issueIdsOrKeys": self.issue_keys,
