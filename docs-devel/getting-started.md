@@ -9,12 +9,12 @@ _Note: The steps defined here assume using a Linux-like terminal. On Windows you
 
 Install the following tools before proceeding:
 
-| Tool | Purpose | Install guide |
-| --- | --- | --- |
-| Docker | Runs the local service stack | Ensure at least 4 CPU / 8 GB RAM allocated |
-| [uv](https://docs.astral.sh/uv/) | Python and virtual environment management | [Installation](https://docs.astral.sh/uv/getting-started/installation/) |
-| [prek](https://pypi.org/project/prek/) | Pre-commit hooks / static checks | `pip install prek` |
-| [Git](https://git-scm.com/) | Version control | Your OS package manager |
+| Tool                                   | Purpose                                   | Install guide                                                           |
+| -------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------- |
+| Docker                                 | Runs the local service stack              | Ensure at least 4 CPU / 8 GB RAM allocated                              |
+| [uv](https://docs.astral.sh/uv/)       | Python and virtual environment management | [Installation](https://docs.astral.sh/uv/getting-started/installation/) |
+| [prek](https://pypi.org/project/prek/) | Pre-commit hooks / static checks          | `pip install prek`                                                      |
+| [Git](https://git-scm.com/)            | Version control                           | Your OS package manager                                                 |
 
 ## Clone the repository
 
@@ -132,15 +132,15 @@ docker compose --profile flower up
 
 Once running, the following services are available:
 
-| Service | URL | Credentials |
-| --- | --- | --- |
-| Keycloak (master realm) | <http://localhost:50080/auth> | admin / admin |
-| Lakekeeper UI | <http://localhost:50080/iceberg/ui> | adpsuperuser / adppassword |
-| Superset | <http://localhost:50080/workspace/facility_ops> | adpsuperuser / adppassword |
-| Trino | <https://localhost:58443> | (use `--insecure` flag) |
-| Marimo notebooks | <http://localhost:50080/marimo/> | — |
-| Airflow | <http://localhost:8080> | aiflow /airflow |
-| Flower App | <http://localhost:5555> | — |
+| Service                 | URL                                             | Credentials                |
+| ----------------------- | ----------------------------------------------- | -------------------------- |
+| Keycloak (master realm) | <http://localhost:50080/auth>                   | admin / admin              |
+| Lakekeeper UI           | <http://localhost:50080/iceberg/ui>             | adpsuperuser / adppassword |
+| Superset                | <http://localhost:50080/workspace/facility_ops> | adpsuperuser / adppassword |
+| Trino                   | <https://localhost:58443>                       | (use `--insecure` flag)    |
+| Marimo notebooks        | <http://localhost:50080/marimo/>                | —                          |
+| Airflow                 | <http://localhost:50080/airflow>                | airflow / airflow          |
+| Flower App              | <http://localhost:50080/airflow-flower>         | —                          |
 
 ## Run your first pipeline
 

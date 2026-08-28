@@ -17,6 +17,16 @@ http:
     #
     # Http
     #
+    airflow:
+      entryPoints: web
+      rule: PathPrefix(`/airflow`)
+      service: airflow
+
+    airflow-flower:
+      entryPoints: web
+      rule: PathPrefix(`/airflow-flower`)
+      service: airflow-flower
+
     keycloak:
       entryPoints: web
       rule: PathPrefix(`{{ env "KC_HTTP_RELATIVE_PATH" }}`)
@@ -90,6 +100,14 @@ http:
           - "/internal/traefik"
 
   services:
+    airflow:
+      loadBalancer:
+        servers:
+          - url: "http://airflow-apiserver:8080"
+    airflow-flower:
+      loadBalancer:
+        servers:
+          - url: "http://flower:5555"
     keycloak:
       loadBalancer:
         servers:
