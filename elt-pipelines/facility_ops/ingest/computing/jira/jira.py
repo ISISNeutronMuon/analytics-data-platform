@@ -1,8 +1,11 @@
 import enum
+from typing import Iterator
 
-from atlassian import Jira
+from atlassian import JiraCloud
 from elt_common.extract import BaseExtract, ResourceProperties, ResourceWriteProperties
 from pydantic_settings import BaseSettings
+
+from pathlib import Path
 
 import pyarrow as pa
 import datetime as dt
@@ -29,16 +32,24 @@ class AtlassianCredentials(BaseSettings):
 
 class Extract(BaseExtract[AtlassianCredentials]):
     config_cls = AtlassianCredentials
+    issueKeys: list[str] = []
 
     def __init__(self, cfg: AtlassianCredentials):
         super().__init__(cfg)
-        self._client = Jira(cfg.url, cfg.email_address, cfg.api_token, cloud=cfg.cloud)
+        self._client = JiraCloud(cfg.url, cfg.email_address, cfg.api_token)
 
-    def extract_resource_properties(self):
+    def extract_resource_properties(self) -> Iterator[tuple[str, ResourceProperties]]:
         yield (
             "isis_jira_issues",
             ResourceProperties(
                 extractor=self.extract_isis_jira_issues,
+                write_properties=ResourceWriteProperties(write_mode="replace"),
+            ),
+        )
+        yield (
+            "issue_status_changelog",
+            ResourceProperties(
+                extractor=self.extract_issue_status_changelog,
                 write_properties=ResourceWriteProperties(write_mode="replace"),
             ),
         )
@@ -48,8 +59,9 @@ class Extract(BaseExtract[AtlassianCredentials]):
 
         issues = []
         for project_name in project_names:
-            project_issues = self._client.get_all_project_issues(
-                project_name, fields=[field.value for field in IssueField]
+            jql = f'project = "{project_name}" ORDER BY key'
+            project_issues = self._client.enhanced_jql_get_list_of_tickets(
+                jql, fields=[field.value for field in IssueField]
             )
 
             for project_issue in project_issues:
@@ -66,6 +78,8 @@ class Extract(BaseExtract[AtlassianCredentials]):
                 team_names = (
                     [team["value"] for team in teams] if teams is not None else None
                 )
+
+                self.issueKeys.append(project_issue[IssueField.IssueKey.value])
 
                 issues.append(
                     {
@@ -96,6 +110,32 @@ class Extract(BaseExtract[AtlassianCredentials]):
         issues_table = pa.Table.from_pylist(issues, schema=issues_schema)
         yield issues_table
 
+    def extract_issue_status_changelog(self):
+        payload = {
+            "fieldIds": [IssueField.Status.value],
+            "issueIdsOrKeys": self.issueKeys,
+        }
+
+        raw_changelog = self._client.get_bulk_changelogs(payload)
+
+        print(raw_changelog)
+
+        issue_status_changelog: list[dict] = []
+
+        issue_status_changelog_schema = pa.schema(
+            [
+                pa.field("issue_key", pa.string()),
+                pa.field("from_status", pa.string()),
+                pa.field("to_status", pa.string()),
+                pa.field("changed_at", pa.timestamp("s")),
+            ]
+        )
+
+        issue_status_changelog_table = pa.Table.from_pylist(
+            issue_status_changelog, schema=issue_status_changelog_schema
+        )
+        yield issue_status_changelog_table
+
     def get_isis_project_names(self) -> list[str]:
         projects = self._client.get_all_projects()
         return [
@@ -106,5 +146,8 @@ class Extract(BaseExtract[AtlassianCredentials]):
 
 
 if __name__ == "__main__":
-    extract = Extract(AtlassianCredentials())
-    extract.extract_jira_issues()
+    extract = Extract(
+        AtlassianCredentials(_env_prefix=f"{Path(__file__).stem.upper()}__")
+    )
+    next(extract.extract_isis_jira_issues(None))
+    next(extract.extract_issue_status_changelog())
