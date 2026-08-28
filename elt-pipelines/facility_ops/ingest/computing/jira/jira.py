@@ -5,7 +5,6 @@ from atlassian import JiraCloud
 from elt_common.extract import BaseExtract, ResourceProperties, ResourceWriteProperties
 from pydantic_settings import BaseSettings
 
-from pathlib import Path
 
 import pyarrow as pa
 import datetime as dt
@@ -118,9 +117,26 @@ class Extract(BaseExtract[AtlassianCredentials]):
 
         raw_changelog = self._client.get_bulk_changelogs(payload)
 
-        print(raw_changelog)
+        issue_changelogs = raw_changelog["issueChangeLogs"]
 
-        issue_status_changelog: list[dict] = []
+        changes = []
+
+        for issue in issue_changelogs:
+            for changeHistory in issue["changeHistories"]:
+                # conversion to milliseconds
+                changed_at = dt.datetime.fromtimestamp(
+                    changeHistory[IssueField.Created] / 1000, dt.timezone.utc
+                )
+
+                for change in changeHistory["items"]:
+                    changes.append(
+                        {
+                            "issue_key": issue["issueId"],
+                            "from_status": change["fromString"],
+                            "to_status": change["toString"],
+                            "changed_at": changed_at,
+                        }
+                    )
 
         issue_status_changelog_schema = pa.schema(
             [
@@ -132,7 +148,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
         )
 
         issue_status_changelog_table = pa.Table.from_pylist(
-            issue_status_changelog, schema=issue_status_changelog_schema
+            changes, schema=issue_status_changelog_schema
         )
         yield issue_status_changelog_table
 
@@ -143,11 +159,3 @@ class Extract(BaseExtract[AtlassianCredentials]):
             for project in projects
             if project["name"].startswith("[ISIS]")
         ]
-
-
-if __name__ == "__main__":
-    extract = Extract(
-        AtlassianCredentials(_env_prefix=f"{Path(__file__).stem.upper()}__")
-    )
-    next(extract.extract_isis_jira_issues(None))
-    next(extract.extract_issue_status_changelog())
