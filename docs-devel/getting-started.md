@@ -123,11 +123,11 @@ cd infra/local
 docker compose --profile superset up --wait
 ```
 
-Optionally, for monitoring the Airflow environment, you can also launch the Flower app:
+Optionally, to provision and monitoring the Airflow services, use `airflow` profile:
 
 ```bash
 cd infra/local
-docker compose --profile flower up
+docker compose --profile airflow up --wait
 ```
 
 Once running, the following services are available:
