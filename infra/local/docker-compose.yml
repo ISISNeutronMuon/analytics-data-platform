@@ -491,6 +491,8 @@ services:
   airflow-apiserver:
     <<: *airflow-common
     container_name: local-lakehouse-airflow-apiserver
+    profiles:
+      - airflow
     env_file: *env-file
     command: ["api-server", "--proxy-headers"]
     healthcheck:
@@ -508,6 +510,8 @@ services:
   airflow-scheduler:
     <<: *airflow-common
     container_name: local-lakehouse-airflow-scheduler
+    profiles:
+      - airflow
     command: scheduler
     healthcheck:
       test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
@@ -524,6 +528,8 @@ services:
   airflow-dag-processor:
     <<: *airflow-common
     container_name: local-lakehouse-airflow-dag-processor
+    profiles:
+      - airflow
     command: dag-processor
     healthcheck:
       test: ["CMD-SHELL", 'airflow jobs check --job-type DagProcessorJob --hostname "$${HOSTNAME}"']
@@ -540,6 +546,8 @@ services:
   airflow-worker:
     <<: *airflow-common
     container_name: local-lakehouse-airflow-worker
+    profiles:
+      - airflow
     command: celery worker
     healthcheck:
       # yamllint disable rule:line-length
@@ -566,6 +574,8 @@ services:
   airflow-triggerer:
     <<: *airflow-common
     container_name: local-lakehouse-airflow-triggerer
+    profiles:
+      - airflow
     command: triggerer
     healthcheck:
       test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
@@ -582,6 +592,8 @@ services:
   airflow-init:
     <<: *airflow-common
     container_name: local-lakehouse-airflow-init
+    profiles:
+      - airflow
     env_file: *env-file
     entrypoint: /bin/bash
     # yamllint disable rule:line-length
@@ -596,15 +608,13 @@ services:
       _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "0:0"
 
-  # You can enable flower by adding "--profile flower" option e.g. docker-compose --profile flower up
-  # or by explicitly targeted on the command line e.g. docker-compose up flower.
-  # See: https://docs.docker.com/compose/profiles/
+  # Airflow cluster monitoring
   flower:
     <<: *airflow-common
     container_name: local-lakehouse-airflow-flower
     command: ["celery", "flower", "--url-prefix=airflow-flower"]
     profiles:
-      - flower
+      - airflow
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:5555/airflow-flower/"]
       interval: 30s
