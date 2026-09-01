@@ -116,6 +116,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
 
     def extract_issue_status_changelogs(self, _: Watermark | None):
         issue_ids_to_keys = {}
+        issue_changelogs = []
 
         for key in self._issue_keys:
             payload = {
@@ -124,12 +125,10 @@ class Extract(BaseExtract[AtlassianCredentials]):
             }
 
             raw_changelog = self._client.get_bulk_changelogs(payload)
-            issue_changelogs = raw_changelog["issueChangeLogs"]
-            issue_ids = list(map(lambda x: x["issueId"], issue_changelogs))
 
-            for issue_id in issue_ids:
-                if issue_id not in issue_ids_to_keys.keys():
-                    issue_ids_to_keys[issue_id] = key
+            for issue in raw_changelog["issueChangeLogs"]:
+                issue_ids_to_keys[issue["issueId"]] = key
+                issue_changelogs.append(issue)
 
         changes = []
 
