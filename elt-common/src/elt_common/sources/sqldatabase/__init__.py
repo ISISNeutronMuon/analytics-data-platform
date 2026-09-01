@@ -3,7 +3,8 @@
 import json
 import logging
 from abc import abstractmethod
-from typing import Callable, Generator, Iterator, NamedTuple, Optional
+from collections.abc import Callable, Generator, Iterable, Iterator
+from typing import NamedTuple
 
 import pyarrow as pa
 import pyarrow.compute as pc
@@ -16,15 +17,6 @@ from elt_common.extract import BaseExtract, ResourceProperties, ResourceWritePro
 from elt_common.sources.sqldatabase.schema import to_pyarrow_schema
 
 LOGGER = logging.getLogger(__name__)
-
-DEFAULT_PA_TYPE_MAPPING = {
-    "bigint": pa.int64(),
-    "bool": pa.bool_(),
-    "double": pa.float64(),
-    "timestamp": pa.timestamp("us"),
-    "date": pa.date32(),
-    "text": pa.string(),
-}
 
 
 def _serialize_json_values(row: dict) -> dict:
@@ -54,19 +46,26 @@ def json_to_str(table: pa.Table) -> pa.Table:
     return pa.Table.from_arrays(new_columns, schema=new_schema)
 
 
+def _partition_to_pyarrow_table(partition: Iterable[dict], schema: pa.Schema) -> pa.Table:
+    """Converts a partition of mapping rows into a PyArrow Table, handling JSON serialization and schema casting."""
+    rows = [_serialize_json_values(row) for row in partition]
+    pa_table = pa.Table.from_pylist(rows, schema=schema)
+    return json_to_str(pa_table)
+
+
 class SqlDatabaseSourceConfig(BaseSettings):
     drivername: str
     database: str
-    database_schema: Optional[str] = None
-    port: Optional[int] = None
-    host: Optional[str] = None
-    username: Optional[str] = None
-    password: Optional[SecretStr] = None
+    database_schema: str | None = None
+    port: int | None = None
+    host: str | None = None
+    username: str | None = None
+    password: SecretStr | None = None
 
     chunk_size: int = 5000
     """If the query returns more than chunk_size rows, fetch them in multiple chunks of at most this size"""
 
-    row_limit: Optional[PositiveInt] = None
+    row_limit: PositiveInt | None = None
     """Maximum number of rows to return from each table, primarily for testing purposes. No limit if 'None'"""
 
     @property
@@ -91,12 +90,13 @@ class TableInfo(NamedTuple):
     destination. If omitted, will default to appending with no partitions or sorting.
     :ivar watermark_column: the column to use for watermarking. If omitted, the
     entire table will be queried on every run
-
+    :ivar destination_table_name: sets the name of the table in Iceberg, if it should
+    be different to the name of the DB table
     """
 
-    write_properties: Optional[ResourceWriteProperties] = None
-    watermark_column: Optional[str] = None
-    destination_table_name: Optional[str] = None
+    write_properties: ResourceWriteProperties | None = None
+    watermark_column: str | None = None
+    destination_table_name: str | None = None
 
 
 class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
@@ -131,20 +131,8 @@ class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
         self._engine = sa.create_engine(config.connection_url)
         self._metadata = sa.MetaData(schema=config.database_schema)
 
-    def get_table_schema(self, table_name: str) -> pa.Schema:
-        """Autoloads the SQL table and constructs a PyArrow schema using schema.py."""
-        table = sa.Table(
-            table_name,
-            self._metadata,
-            autoload_with=self._engine,
-        )
-        return to_pyarrow_schema(table)
-
-    def normalize_column_name(self, name: str) -> str:
-        return name
-
     @abstractmethod
-    def table_info(self) -> dict[str, Optional[TableInfo]]:
+    def table_info(self) -> dict[str, TableInfo | None]:
         """Define the tables to be extracted from the DB.
 
         Each key in the returned dict is a table name. Their values can include
@@ -156,7 +144,6 @@ class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
         (e.g. filtering) extend :py:meth:`extract_resource_properties` with
         custom extractors.
         """
-        pass
 
     def extract_resource_properties(self):
         """Open a connection to the DB and return ingest properties for tables
@@ -229,16 +216,17 @@ class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
 
         query = query.limit(self.config.row_limit)
 
-        pa_schema = self.get_table_schema(name)
+        # If all the values in a column are null pyarrow won't know what type
+        # the column should be, so we need to explicitly create a schema from
+        # the table
+        pa_schema = to_pyarrow_schema(table)
         result = conn.execution_options(yield_per=self.config.chunk_size).execute(query)
 
         has_data = False
         for partition in result.mappings().partitions():
             has_data = True
-            rows = [_serialize_json_values(row) for row in partition]
-            pa_table = pa.Table.from_pylist(rows, schema=pa_schema)
-            yield json_to_str(pa_table)
+            yield _partition_to_pyarrow_table(partition, schema=pa_schema)
 
         if not has_data:
             empty_table = pa.Table.from_batches([], schema=pa_schema)
-            yield json_to_str(empty_table)
+            yield empty_table
