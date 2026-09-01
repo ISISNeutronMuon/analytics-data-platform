@@ -39,7 +39,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
 
     def __init__(self, cfg: AtlassianCredentials):
         super().__init__(cfg)
-        self.issue_keys: list[str] = []
+        self._issue_keys: list[str] = []
         self._client = JiraCloud(cfg.url, cfg.email_address, cfg.api_token)
 
     def extract_resource_properties(self) -> Iterator[tuple[str, ResourceProperties]]:
@@ -83,7 +83,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
                     [team["value"] for team in teams] if teams is not None else None
                 )
 
-                self.issue_keys.append(project_issue[IssueField.IssueKey.value])
+                self._issue_keys.append(project_issue[IssueField.IssueKey.value])
 
                 issues.append(
                     {
@@ -117,13 +117,11 @@ class Extract(BaseExtract[AtlassianCredentials]):
     def extract_issue_status_changelogs(self, _: Watermark | None):
         payload = {
             "fieldIds": [IssueField.Status.value],
-            "issueIdsOrKeys": self.issue_keys,
+            "issueIdsOrKeys": self._issue_keys,
         }
 
         raw_changelog = self._client.get_bulk_changelogs(payload)
-
         issue_changelogs = raw_changelog["issueChangeLogs"]
-
         changes = []
 
         for issue in issue_changelogs:
