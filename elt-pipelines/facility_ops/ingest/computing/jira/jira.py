@@ -115,13 +115,22 @@ class Extract(BaseExtract[AtlassianCredentials]):
         yield issues_table
 
     def extract_issue_status_changelogs(self, _: Watermark | None):
-        payload = {
-            "fieldIds": [IssueField.Status.value],
-            "issueIdsOrKeys": self._issue_keys,
-        }
+        issue_ids_to_keys = {}
 
-        raw_changelog = self._client.get_bulk_changelogs(payload)
-        issue_changelogs = raw_changelog["issueChangeLogs"]
+        for key in self._issue_keys:
+            payload = {
+                "fieldIds": [IssueField.Status.value],
+                "issueIdsOrKeys": [key],
+            }
+
+            raw_changelog = self._client.get_bulk_changelogs(payload)
+            issue_changelogs = raw_changelog["issueChangeLogs"]
+            issue_ids = list(map(lambda x: x["issueId"], issue_changelogs))
+
+            for issue_id in issue_ids:
+                if issue_id not in issue_ids_to_keys.keys():
+                    issue_ids_to_keys[issue_id] = key
+
         changes = []
 
         for issue in issue_changelogs:
@@ -134,7 +143,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
                 for change in changeHistory["items"]:
                     changes.append(
                         {
-                            "issue_key": issue["issueId"],
+                            "issue_key": issue_ids_to_keys[issue["issueId"]],
                             "from_status": change["fromString"],
                             "to_status": change["toString"],
                             "changed_at": changed_at,
@@ -153,6 +162,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
         issue_status_changelog_table = pa.Table.from_pylist(
             changes, schema=issue_status_changelog_schema
         )
+        print(issue_status_changelog_table)
         yield issue_status_changelog_table
 
     def get_isis_project_names(self) -> list[str]:
