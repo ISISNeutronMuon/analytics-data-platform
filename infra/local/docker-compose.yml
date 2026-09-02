@@ -52,6 +52,7 @@ x-airflow-common:
   env_file: *env-file
   environment:
     &airflow-common-env
+    UV_CACHE_DIR: /opt/airflow/uv_cache
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
     PYICEBERG_HOME: /opt/airflow/config
   volumes:
@@ -61,6 +62,7 @@ x-airflow-common:
     - ./airflow/plugins:/opt/airflow/plugins
     - ./airflow/airflow-init.sh:/opt/airflow/airflow-init.sh
     - ./../..:/opt/analytics-data-platform
+    - uv_cache:/opt/airflow/uv_cache
   networks: *local-networks
   depends_on:
     &airflow-common-depends-on
@@ -643,3 +645,5 @@ volumes:
     name: local-lakehouse_shared_database_data
   shared_redis_data:
     name: local-lakehouse_shared_redis_data
+  uv_cache:
+    name: local-lakehouse_uv_cache
