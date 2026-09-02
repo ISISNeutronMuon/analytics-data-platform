@@ -41,4 +41,5 @@ elt-common = { path = "../elt-common", editable = true }
 [dependency-groups]
 dev = [
     "prek>=0.4.5",
+    "pytest>=9.1.1",
 ]
