@@ -3,8 +3,8 @@
 
 # image versions
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
-x-openfga-image: &openfga-image openfga/openfga:v1.11.2
-x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.11.1
+x-openfga-image: &openfga-image openfga/openfga:v1.19.0
+x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.13.3
 x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
 x-postgres-image: &postgres-image postgres:18-bookworm
 x-redis-image: &redis-image redis:8.4-bookworm
