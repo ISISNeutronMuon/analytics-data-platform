@@ -39,18 +39,6 @@ http:
         - lakekeeper-strip-prefix
       service: lakekeeper
 
-    minioapi:
-      entryPoints: minioapi
-      rule: PathPrefix(`/`)
-      service: minioapi
-
-    minioconsole:
-      entryPoints: web
-      rule: PathPrefix(`/minio-console`)
-      service: minioconsole
-      middlewares:
-        - minioconsole-strip-prefix
-
     openfga:
       entryPoints: web
       rule: PathPrefix(`/authz`)
@@ -64,6 +52,11 @@ http:
       service: marimo
       middlewares:
         - marimo-strip-prefix
+
+    s3api:
+      entryPoints: s3api
+      rule: PathPrefix(`/`)
+      service: s3api
 
     superset:
       entryPoints: web
@@ -86,10 +79,6 @@ http:
       stripPrefix:
         prefixes:
           - "/marimo"
-    minioconsole-strip-prefix:
-      stripPrefix:
-        prefixes:
-          - "/minio-console"
     openfga-strip-prefix:
       stripPrefix:
         prefixes:
@@ -116,14 +105,10 @@ http:
       loadBalancer:
         servers:
           - url: "http://marimo:8080"
-    minioapi:
+    s3api:
       loadBalancer:
         servers:
-          - url: "http://minio:59000"
-    minioconsole:
-      loadBalancer:
-        servers:
-          - url: "http://minio:59001"
+          - url: "http://seaweedfs:59000"
     lakekeeper:
       loadBalancer:
         servers:

@@ -5,7 +5,7 @@
 x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
 x-openfga-image: &openfga-image openfga/openfga:v1.19.0
 x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.13.3
-x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+x-seaweedfs-image: &seaweedfs-image chrislusf/seaweedfs:4.45
 x-postgres-image: &postgres-image postgres:18-bookworm
 x-redis-image: &redis-image redis:8.4-bookworm
 x-superset-image: &superset-image ghcr.io/isisneutronmuon/analytics-data-platform-superset:a4f0e8011f34785d759269dceedfa2693db81c19
@@ -106,8 +106,8 @@ services:
       retries: 5
       start_period: 5s
     ports:
-      - "50080:50080"
-      - "59000:59000" # MinIO api
+      - "50080:50080" # Web entry point
+      - "59000:59000" # S3 entrypoint
       - "58443:8443" # TLS entrypoint for Trino (cannot run on non-root path prefix or without https with auth enabled)
     volumes:
       - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
@@ -220,29 +220,28 @@ services:
       - "./keycloak/bootstrap.sh:/opt/keycloak/bootstrap.sh:ro"
 
   #########################################################
-  # MinIO - Object store emulating the Ceph object store
-  # in SCD. This is exposed directly rather than through traefik
-  # as the service needs to be accessible for clients such as
-  # PyIcberg.
-  # Service name needs to match the endpoint value in bootstrap-warehouse.json
+  # SeaweedFS - Object store emulating the Ceph object store.
   #########################################################
-  minio:
-    container_name: local-lakehouse-minio
-    image: *minio-image
+  seaweedfs:
+    container_name: local-lakehouse-seaweedfs
+    image: *seaweedfs-image
     env_file: *env-file
     # Match ports on host & container to use the same port inside and outside the container
     # network
     command:
-      ["server", "/data", "--address", ":59000", "--console-address", ":59001"]
+      - "mini"
+      - "-dir=/data"
+      - "-s3.iam.config=/etc/seaweedfs/iam.json"
+      - "-s3.port=59000"
     healthcheck:
-      test: ["CMD-SHELL", "healthcheck-localhost.sh 59000 /minio/health/live"]
-      start_period: 10s
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:59000/status || exit 1"]
+      start_period: 15s
       interval: 30s
-      timeout: 30s
-      retries: 3
+      timeout: 10s
+      retries: 5
     volumes:
-      - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
-      - "minio_data:/data"
+      - "./seaweedfs/s3-iam-config.json:/etc/seaweedfs/iam.json:ro"
+      - "seaweedfs_data:/data"
     networks: *local-networks
 
   #########################################################
@@ -637,8 +636,8 @@ volumes:
     name: local-lakehouse_keycloak_data
   marimo_data:
     name: local-lakehouse_marimo_data
-  minio_data:
-    name: local-lakehouse_minio_data
+  seaweedfs_data:
+    name: local-lakehouse_seaweedfs_data
   shared_database_data:
     name: local-lakehouse_shared_database_data
   shared_redis_data:
