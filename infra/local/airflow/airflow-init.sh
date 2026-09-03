@@ -47,24 +47,16 @@ if [[ "${warning_resources}" == "true" ]]; then
 fi
 
 echo
-echo "Creating missing directories..."
-mkdir -p /opt/airflow/{logs,dags,plugins,config}
+echo "Creating airflow directories in /opt/airflow if they do not exist."
+mkdir -p /opt/airflow/{logs,dags,plugins,config,uv_cache}
 
 echo
 echo "Airflow version:"
 /entrypoint airflow version
 
 echo
-echo "Files in shared volumes:"
-ls -la /opt/airflow/{logs,dags,plugins,config}
-
-echo
-echo "Generating airflow.cfg if required..."
-/entrypoint airflow config list >/dev/null
-
-echo
-echo "Change ownership of files in /opt/airflow to ${AIRFLOW_UID:-1000}:0"
-chown -R "${AIRFLOW_UID:-1000}:0" /opt/airflow/
+echo "Change ownership of files in logs to ${AIRFLOW_UID:-50000}:0"
+chown -R "${AIRFLOW_UID:-50000}:0" /opt/airflow/{logs,uv_cache}
 
 echo
 echo "Files in shared volumes:"
