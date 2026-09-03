@@ -85,8 +85,8 @@ class Extract(BaseExtract[AtlassianCredentials]):
                     [team["value"] for team in teams] if teams is not None else None
                 )
 
-                self._issue_keys[project_issue[IssueField.Id.value]] = project_issue[
-                    IssueField.IssueKey.value
+                self._issue_keys[project_issue[IssueField.Id]] = project_issue[
+                    IssueField.IssueKey
                 ]
 
                 issues.append(
@@ -122,7 +122,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
         issue_changelogs = []
 
         payload = {
-            "fieldIds": [IssueField.Status.value],
+            "fieldIds": [IssueField.Status],
             "issueIdsOrKeys": list(self._issue_keys.values()),
         }
 
