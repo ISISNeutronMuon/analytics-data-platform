@@ -119,33 +119,29 @@ class Extract(BaseExtract[AtlassianCredentials]):
         yield issues_table
 
     def extract_issue_status_changelogs(self, _: Watermark | None):
-        issue_changelogs = []
-
         payload = {
             "fieldIds": [IssueField.Status],
             "issueIdsOrKeys": list(self._issue_keys.values()),
         }
 
-        issue_changelogs = self.get_bulk_changelogs_with_pagination(payload)
-
+        change_histories = self.get_change_histories(payload)
         changes = []
 
-        for issue in issue_changelogs:
-            for changeHistory in issue["changeHistories"]:
+        for issue_id, change_history in change_histories:
+            for change in change_history:
                 # conversion to milliseconds
                 changed_at = dt.datetime.fromtimestamp(
-                    changeHistory[IssueField.Created] / 1000, dt.timezone.utc
+                    change[IssueField.Created] / 1000, dt.timezone.utc
                 )
 
-                for change in changeHistory["items"]:
-                    changes.append(
-                        {
-                            "issue_key": self._issue_keys[issue[IssueField.IssueId]],
-                            "from_status": change["fromString"],
-                            "to_status": change["toString"],
-                            "changed_at": changed_at,
-                        }
-                    )
+                changes.append(
+                    {
+                        "issue_key": self._issue_keys[issue_id],
+                        "from_status": change["items"][0]["fromString"],
+                        "to_status": change["items"][0]["toString"],
+                        "changed_at": changed_at,
+                    }
+                )
 
         issue_status_changelog_schema = pa.schema(
             [
@@ -173,7 +169,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
             if project["name"].startswith("[ISIS]")
         ]
 
-    def get_bulk_changelogs_with_pagination(self, payload, **request_kwargs):
+    def get_change_histories(self, payload, **request_kwargs):
         url = self._client.resource_url(
             "changelog/bulkfetch",
             api_root="rest/api",
@@ -184,7 +180,10 @@ class Extract(BaseExtract[AtlassianCredentials]):
 
         while True:
             response = self._client.post(url, data=payload, **request_kwargs)
-            results.extend(response.get("issueChangeLogs", []))
+            issue_change_logs = response.get("issueChangeLogs", [])
+            results.extend(
+                [(log["issueId"], log["changeHistories"]) for log in issue_change_logs]
+            )
             payload["nextPageToken"] = response.get("nextPageToken")
             if response.get("isLast", False) or not payload.get("nextPageToken"):
                 break
