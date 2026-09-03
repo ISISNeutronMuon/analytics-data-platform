@@ -19,7 +19,6 @@ DATE_FORMAT_STRING = "%Y-%m-%dT%H:%M:%S.%f%z"
 
 class IssueField(enum.StrEnum):
     Id = "id"
-    IssueId = "issueId"
     IssueKey = "key"
     IssueType = "issuetype"
     Status = "status"
@@ -27,6 +26,18 @@ class IssueField(enum.StrEnum):
     Created = "created"
     Updated = "updated"
     Teams = "customfield_10591"
+
+
+class ChangeLogField(enum.StrEnum):
+    IssueId = "issueId"
+    FromStatus = "fromString"
+    ToStatus = "toString"
+    NextPageToken = "nextPageToken"
+    ChangeHistories = "changeHistories"
+    Items = "items"
+    Created = "created"
+    IsLast = "isLast"
+    IssueChangeLogs = "issueChangeLogs"
 
 
 class AtlassianCredentials(BaseSettings):
@@ -131,14 +142,18 @@ class Extract(BaseExtract[AtlassianCredentials]):
             for change in change_history:
                 # conversion to milliseconds
                 changed_at = dt.datetime.fromtimestamp(
-                    change[IssueField.Created] / 1000, dt.timezone.utc
+                    change[ChangeLogField.Created] / 1000, dt.timezone.utc
                 )
 
                 changes.append(
                     {
                         "issue_key": self._issue_keys[issue_id],
-                        "from_status": change["items"][0]["fromString"],
-                        "to_status": change["items"][0]["toString"],
+                        "from_status": change[ChangeLogField.Items][0][
+                            ChangeLogField.FromStatus
+                        ],
+                        "to_status": change[ChangeLogField.Items][0][
+                            ChangeLogField.ToStatus
+                        ],
                         "changed_at": changed_at,
                     }
                 )
@@ -155,7 +170,6 @@ class Extract(BaseExtract[AtlassianCredentials]):
         issue_status_changelog_table = pa.Table.from_pylist(
             changes, schema=issue_status_changelog_schema
         )
-        print(issue_status_changelog_table)
         yield issue_status_changelog_table
 
     def get_isis_project_names(self) -> list[str]:
@@ -175,17 +189,24 @@ class Extract(BaseExtract[AtlassianCredentials]):
             api_root="rest/api",
             api_version=self._client.api_version,
         )
-        payload["nextPageToken"] = None
+        payload[ChangeLogField.NextPageToken] = None
         results = []
 
         while True:
             response = self._client.post(url, data=payload, **request_kwargs)
-            issue_change_logs = response.get("issueChangeLogs", [])
+            issue_change_logs = response.get(ChangeLogField.IssueChangeLogs, [])
             results.extend(
-                [(log["issueId"], log["changeHistories"]) for log in issue_change_logs]
+                [
+                    (log[ChangeLogField.IssueId], log[ChangeLogField.ChangeHistories])
+                    for log in issue_change_logs
+                ]
             )
-            payload["nextPageToken"] = response.get("nextPageToken")
-            if response.get("isLast", False) or not payload.get("nextPageToken"):
+            payload[ChangeLogField.NextPageToken] = response.get(
+                ChangeLogField.NextPageToken
+            )
+            if response.get(ChangeLogField.IsLast, False) or not payload.get(
+                ChangeLogField.NextPageToken
+            ):
                 break
 
         return results
