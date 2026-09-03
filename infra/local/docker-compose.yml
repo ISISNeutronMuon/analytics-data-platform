@@ -48,7 +48,6 @@ x-airflow-common:
   # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
   image: *airflow-image
-  user: "${AIRFLOW_UID:-50000}:0"
   env_file: *env-file
   environment:
     &airflow-common-env
@@ -56,11 +55,11 @@ x-airflow-common:
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
     PYICEBERG_HOME: /opt/airflow/config
   volumes:
-    - ./airflow/dags:/opt/airflow/dags
     - ./airflow/logs:/opt/airflow/logs
-    - ./airflow/config:/opt/airflow/config
     - ./airflow/plugins:/opt/airflow/plugins
-    - ./airflow/airflow-init.sh:/opt/airflow/airflow-init.sh
+    - ./airflow/dags:/opt/airflow/dags:ro
+    - ./airflow/config:/opt/airflow/config:ro
+    - ./airflow/airflow-init.sh:/opt/airflow/airflow-init.sh:ro
     - ./../..:/opt/analytics-data-platform
     - uv_cache:/opt/airflow/uv_cache
   networks: *local-networks
