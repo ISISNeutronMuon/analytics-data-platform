@@ -18,6 +18,8 @@ DATE_FORMAT_STRING = "%Y-%m-%dT%H:%M:%S.%f%z"
 
 
 class IssueField(enum.StrEnum):
+    Id = "id"
+    IssueId = "issueId"
     IssueKey = "key"
     IssueType = "issuetype"
     Status = "status"
@@ -39,7 +41,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
 
     def __init__(self, cfg: AtlassianCredentials):
         super().__init__(cfg)
-        self._issue_keys: list[str] = []
+        self._issue_keys: dict[int, str] = {}
         self._client = JiraCloud(cfg.url, cfg.email_address, cfg.api_token)
 
     def extract_resource_properties(self) -> Iterator[tuple[str, ResourceProperties]]:
@@ -83,7 +85,9 @@ class Extract(BaseExtract[AtlassianCredentials]):
                     [team["value"] for team in teams] if teams is not None else None
                 )
 
-                self._issue_keys.append(project_issue[IssueField.IssueKey.value])
+                self._issue_keys[project_issue[IssueField.Id.value]] = project_issue[
+                    IssueField.IssueKey.value
+                ]
 
                 issues.append(
                     {
@@ -115,20 +119,15 @@ class Extract(BaseExtract[AtlassianCredentials]):
         yield issues_table
 
     def extract_issue_status_changelogs(self, _: Watermark | None):
-        issue_ids_to_keys = {}
         issue_changelogs = []
 
-        for key in self._issue_keys:
-            payload = {
-                "fieldIds": [IssueField.Status.value],
-                "issueIdsOrKeys": [key],
-            }
+        payload = {
+            "fieldIds": [IssueField.Status.value],
+            "issueIdsOrKeys": list(self._issue_keys.values()),
+        }
 
-            raw_changelog = self._client.get_bulk_changelogs(payload)
-
-            for issue in raw_changelog["issueChangeLogs"]:
-                issue_ids_to_keys[issue["issueId"]] = key
-                issue_changelogs.append(issue)
+        raw_changelog = self._client.get_bulk_changelogs(payload)
+        issue_changelogs = raw_changelog["issueChangeLogs"]
 
         changes = []
 
@@ -142,7 +141,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
                 for change in changeHistory["items"]:
                     changes.append(
                         {
-                            "issue_key": issue_ids_to_keys[issue["issueId"]],
+                            "issue_key": self._issue_keys[issue[IssueField.IssueId]],
                             "from_status": change["fromString"],
                             "to_status": change["toString"],
                             "changed_at": changed_at,
