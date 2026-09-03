@@ -126,8 +126,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
             "issueIdsOrKeys": list(self._issue_keys.values()),
         }
 
-        raw_changelog = self._client.get_bulk_changelogs(payload)
-        issue_changelogs = raw_changelog["issueChangeLogs"]
+        issue_changelogs = self.get_bulk_changelogs_with_pagination(payload)
 
         changes = []
 
@@ -173,3 +172,21 @@ class Extract(BaseExtract[AtlassianCredentials]):
             for project in projects
             if project["name"].startswith("[ISIS]")
         ]
+
+    def get_bulk_changelogs_with_pagination(self, payload, **request_kwargs):
+        url = self._client.resource_url(
+            "changelog/bulkfetch",
+            api_root="rest/api",
+            api_version=self._client.api_version,
+        )
+        payload["nextPageToken"] = None
+        results = []
+
+        while True:
+            response = self._client.post(url, data=payload, **request_kwargs)
+            results.extend(response.get("issueChangeLogs", []))
+            payload["nextPageToken"] = response.get("nextPageToken")
+            if response.get("isLast", False) or not payload.get("nextPageToken"):
+                break
+
+        return results
