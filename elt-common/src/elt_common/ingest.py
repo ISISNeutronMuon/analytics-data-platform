@@ -10,6 +10,7 @@ from typing import Optional
 
 import pyarrow as pa
 import pyarrow.compute as pc
+import requests
 from pyiceberg.exceptions import NoSuchTableError
 
 from elt_common.extract import (
@@ -24,6 +25,12 @@ INGEST_PROPERTY_KEY_LAST_UPDATED_AT = "ingest.last_updated_at"
 INGEST_PROPERTY_KEY_WATERMARK = "ingest.watermark"
 
 LOGGER = logging.getLogger(__name__)
+
+
+# Disable ipv6 for anything using requests, which includes pyiceberg
+# This is done to solve a performance problem when using WSL
+# https://github.com/ISISNeutronMuon/analytics-data-platform/issues/433
+requests.packages.urllib3.util.connection.HAS_IPV6 = False
 
 
 def run_ingest(job: ELTIngestManifest) -> dict[str, int]:
