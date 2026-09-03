@@ -5,6 +5,7 @@ on:
       - "main"
     paths:
       - ".github/workflows/rest-catalog-tests.yml"
+      - "infra/local/docker-compose.yml"
       - "infra/ansible/roles/lakekeeper/files/bootstrap-warehouse.py"
       - "elt-common/**"
       - "warehouses/facility_ops_landing/ingest/accelerator/opralogweb/**"
@@ -13,6 +14,7 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - ".github/workflows/rest-catalog-tests.yml"
+      - "infra/local/docker-compose.yml"
       - "infra/ansible/roles/lakekeeper/files/bootstrap-warehouse.py"
       - "elt-common/**"
       - "warehouses/facility_ops_landing/ingest/accelerator/opralogweb/**"
@@ -36,11 +38,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Cache Docker images.
+        uses: ScribeMD/docker-cache@0.5.0
+        with:
+          key: docker-${{ runner.os }}-${{ hashFiles('infra/local/docker-compose.yml') }}
+
       - name: Bring up Docker Compose services
         uses: hoverkraft-tech/compose-action@v2.5.0
         with:
           compose-file: infra/local/docker-compose.yml
-          up-flags: --wait --wait-timeout 300
+          up-flags: --wait --wait-timeout 600
           down-flags: --volumes --remove-orphans
 
       - name: Add adp-router to /etc/hosts
