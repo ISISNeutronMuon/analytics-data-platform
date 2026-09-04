@@ -8,3 +8,4 @@ sources:
       - name: ChapterEntry
       - name: Entries
       - name: LogBookChapter
+      - name: Logbooks
