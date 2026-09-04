@@ -3,17 +3,17 @@
 
 with
 
-staging_entries as ( select * from {{ ref('base_opralogweb__entries') }} ),
+staging_entries as ( select * from {{ ref('stg_opralogweb_entries') }} ),
 
-staging_chapter_entry as ( select * from {{ ref('base_opralogweb__chapter_entry') }} ),
+staging_chapter_entry as ( select * from {{ ref('stg_opralogweb_chapter_entry') }} ),
 
-staging_logbook_chapter as ( select * from {{ ref('base_opralogweb__logbook_chapter') }} ),
+staging_logbook_chapter as ( select * from {{ ref('stg_opralogweb_logbook_chapter') }} ),
 
-staging_logbooks as ( select * from {{ ref('base_opralogweb__logbooks') }} ),
+staging_logbooks as ( select * from {{ ref('stg_opralogweb_logbooks') }} ),
 
-staging_more_entry_columns as ( select * from {{ ref('base_opralogweb__more_entry_columns') }} ),
+staging_more_entry_columns as ( select * from {{ ref('stg_opralogweb_more_entry_columns') }} ),
 
-staging_additional_columns as ( select * from {{ ref('base_opralogweb__additional_columns') }} ),
+staging_additional_columns as ( select * from {{ ref('stg_opralogweb_additional_columns') }} ),
 
 denormalized as (
   select
