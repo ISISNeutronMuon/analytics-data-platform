@@ -13,6 +13,12 @@ dependencies = [
 proposal = [
     "sqlalchemy[postgresql-psycopgbinary]>=2.0.0",
 ]
+
+isisuserdb = [
+    "oracledb>=2.0.0",
+    "sqlalchemy>=2.0.0",
+]
+
 statusdisplay = [
     "requests>=2.34.2",
 ]

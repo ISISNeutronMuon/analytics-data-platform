@@ -205,7 +205,24 @@ class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
             self._metadata,
             autoload_with=self._engine,
         )
-        query = sa.select(table)
+
+        # Apply UTC extraction strictly to Oracle databases to avoid Thin mode DPY-3022 errors
+        is_oracle = self._engine.dialect.name == "oracle"
+
+        selected_cols = []
+        for col in table.columns:
+            if is_oracle:
+                col_type_str = str(col.type).upper()
+                is_tz = getattr(col.type, "timezone", False) or "WITH TIME ZONE" in col_type_str
+
+                if is_tz:
+                    selected_cols.append(sa.func.sys_extract_utc(col).label(col.name))
+                else:
+                    selected_cols.append(col)
+            else:
+                selected_cols.append(col)
+
+        query = sa.select(*selected_cols)
         if watermark is not None:
             column, max_value = watermark.column, watermark.value
             LOGGER.debug(f"Cursor value detected. Limiting query to {column} > {max_value}")
@@ -214,11 +231,9 @@ class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
         if query_filter:
             query = query_filter(query)
 
-        query = query.limit(self.config.row_limit)
+        if self.config.row_limit:
+            query = query.limit(self.config.row_limit)
 
-        # If all the values in a column are null pyarrow won't know what type
-        # the column should be, so we need to explicitly create a schema from
-        # the table
         pa_schema = to_pyarrow_schema(table)
         result = conn.execution_options(yield_per=self.config.chunk_size).execute(query)
 
