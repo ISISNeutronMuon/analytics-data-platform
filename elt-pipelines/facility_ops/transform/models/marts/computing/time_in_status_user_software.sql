@@ -49,25 +49,25 @@ time_in_status_user_software as (
     ) as time_in_implementing_secs,
     MAX(
         case
-        when status = 'implementing_mvp' then time_in_status
+        when status = 'implementing (mvp)' then time_in_status
         else null
         end
     ) as time_in_implementing_mvp_secs,
     MAX(
         case
-        when status = 'implementing_persevere' then time_in_status
+        when status = 'implementing (persevere)' then time_in_status
         else null
         end
     ) as time_in_implementing_persevere_secs,
     MAX(
         case
-        when status = 'in_progress' then time_in_status
+        when status = 'in progress' then time_in_status
         else null
         end
     ) as time_in_in_progress_secs,
     MAX(
         case
-        when status = 'portfolio_backlog' then time_in_status
+        when status = 'portfolio backlog' then time_in_status
         else null
         end
     ) as time_in_portfolio_backlog_secs,
@@ -82,7 +82,13 @@ time_in_status_user_software as (
         when status = 'reviewing' then time_in_status
         else null
         end
-    ) as time_in_reviewing_secs
+    ) as time_in_reviewing_secs,
+    MAX(
+        case
+        when status = 'selected for development' then time_in_status
+        else null
+        end
+    ) as time_in_selected_for_development_secs,
     from times_in_status
     group by issue_key
 
