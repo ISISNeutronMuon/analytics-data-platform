@@ -7,3 +7,4 @@ sources:
       - name: AdditionalColumns
       - name: ChapterEntry
       - name: Entries
+      - name: LogBookChapter

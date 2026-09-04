@@ -1,5 +1,5 @@
 models:
-  - name: base_opralogweb__logbook_chapter
+  - name: stg_opralogweb_logbook_chapter
     description: Opralogweb logbook_chapter table with basic cleaning
     columns:
       - name: logbook_chapter_no
