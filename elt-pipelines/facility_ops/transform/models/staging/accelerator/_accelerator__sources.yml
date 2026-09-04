@@ -5,3 +5,4 @@ sources:
     database: facility_ops_landing
     tables:
       - name: AdditionalColumns
+      - name: ChapterEntry
