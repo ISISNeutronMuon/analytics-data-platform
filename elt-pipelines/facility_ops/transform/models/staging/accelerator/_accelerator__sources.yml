@@ -9,3 +9,4 @@ sources:
       - name: Entries
       - name: LogBookChapter
       - name: Logbooks
+      - name: MoreEntryColumns
