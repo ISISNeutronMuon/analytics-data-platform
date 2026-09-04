@@ -1,0 +1,22 @@
+models:
+  - name: time_spent_in_status
+    description: >
+      Get length of time an issue spends in each status for user software issues.
+    columns:
+      - name: issue_key
+        data_tests:
+        - not_null
+      - name: time_in_analysing_secs
+      - name: time_in_backlog_secs
+      - name: time_in_blocked_secs
+      - name: time_in_closed_secs
+      - name: time_in_done_secs
+      - name: time_in_funnel_secs
+      - name: time_in_implementing_secs
+      - name: time_in_implementing_mvp_secs
+      - name: time_in_implementing_persevere_secs
+      - name: time_in_in_progress_secs
+      - name: time_in_portfolio_backlog_secs
+      - name: time_in_ready_secs
+      - name: time_in_reviewing_secs
+      - name: time_in_selected_for_development_secs
