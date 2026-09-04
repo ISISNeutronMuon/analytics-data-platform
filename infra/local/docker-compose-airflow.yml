@@ -1,0 +1,200 @@
+# environment
+x-env-file: &env-file
+  - path: ./env-local
+    required: true
+
+# network
+x-networks: &local-networks
+  - local-lakehouse_net
+
+x-airflow-image: &airflow-image apache/airflow:3.3.0
+
+x-airflow-common: &airflow-common
+  # In order to add custom dependencies or upgrade provider distributions you can use your extended image.
+  # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
+  # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
+  image: *airflow-image
+  env_file: *env-file
+  environment: &airflow-common-env
+    UV_CACHE_DIR: /opt/airflow/uv_cache
+    AIRFLOW_CONFIG: "/opt/airflow/config/airflow.cfg"
+    PYICEBERG_HOME: /opt/airflow/config
+  volumes:
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/plugins:/opt/airflow/plugins
+    - ./airflow/dags:/opt/airflow/dags:ro
+    - ./airflow/config:/opt/airflow/config:ro
+    - ./airflow/airflow-init.sh:/opt/airflow/airflow-init.sh:ro
+    - ./../..:/opt/analytics-data-platform
+    - uv_cache:/opt/airflow/uv_cache
+  networks: *local-networks
+  depends_on: &airflow-common-depends-on
+    shared-redis:
+      condition: service_healthy
+    shared-database:
+      condition: service_healthy
+
+#########################################################
+# Apache Airflow ELT Orchestration
+#########################################################
+services:
+  airflow-apiserver:
+    <<: *airflow-common
+    container_name: local-lakehouse-airflow-apiserver
+    profiles:
+      - airflow
+    env_file: *env-file
+    command: ["api-server", "--proxy-headers"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "--fail",
+          "http://localhost:8080/airflow/api/v2/monitor/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: local-lakehouse-airflow-scheduler
+    profiles:
+      - airflow
+    command: scheduler
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    container_name: local-lakehouse-airflow-dag-processor
+    profiles:
+      - airflow
+    command: dag-processor
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'airflow jobs check --job-type DagProcessorJob --hostname "$${HOSTNAME}"',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-worker:
+    <<: *airflow-common
+    container_name: local-lakehouse-airflow-worker
+    profiles:
+      - airflow
+    command: celery worker
+    healthcheck:
+      # yamllint disable rule:line-length
+      test:
+        [
+          "CMD-SHELL",
+          'celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}" || celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    environment:
+      <<: *airflow-common-env
+      # Required to handle warm shutdown of the celery workers properly
+      # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
+      DUMB_INIT_SETSID: "0"
+    restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-apiserver:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-triggerer:
+    <<: *airflow-common
+    container_name: local-lakehouse-airflow-triggerer
+    profiles:
+      - airflow
+    command: triggerer
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: local-lakehouse-airflow-init
+    profiles:
+      - airflow
+    env_file: *env-file
+    entrypoint: /bin/bash
+    # yamllint disable rule:line-length
+    command: ["/opt/airflow/airflow-init.sh"]
+    # yamllint enable rule:line-length
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+      _PIP_ADDITIONAL_REQUIREMENTS: ""
+    user: "0:0"
+
+  # Airflow cluster monitoring
+  flower:
+    <<: *airflow-common
+    container_name: local-lakehouse-airflow-flower
+    command: ["celery", "flower", "--url-prefix=airflow-flower"]
+    profiles:
+      - airflow
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:5555/airflow-flower/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully

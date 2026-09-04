@@ -38,11 +38,6 @@ function client_scope_with_aud_mapper() {
 EOF
 }
 
-# Expected environment variables
-admin_user=$KC_BOOTSTRAP_ADMIN_USERNAME
-admin_pass=$KC_BOOTSTRAP_ADMIN_PASSWORD
-target_realm=$KC_REALM_NAME
-
 # Args
 kc_server=$1
 
@@ -50,40 +45,40 @@ kc_server=$1
 $KC_ADM config credentials \
   --server "$kc_server" \
   --realm master \
-  --user "$admin_user" \
-  --password "$admin_pass"
+  --user "$KC_BOOTSTRAP_ADMIN_USERNAME" \
+  --password "$KC_BOOTSTRAP_ADMIN_PASSWORD"
 
 
 ####################
 # realms
 ####################
-realm_id=$(get_resource_id realms "id,realm" ".realm==\"$target_realm\"")
+realm_id=$(get_resource_id realms "id,realm" ".realm==\"$KC_REALM_NAME\"")
 if [ -n "$realm_id" ]; then
-  echo Realm "$target_realm" already exists. Skipping bootstrap.
+  echo Realm "$KC_REALM_NAME" already exists. Skipping bootstrap.
   exit 0
 fi
 
 $KC_ADM create realms \
-  --set realm="$target_realm" \
+  --set realm="$KC_REALM_NAME" \
   --set enabled=true
 
 ####################
 # client scopes
 ####################
 $KC_ADM create client-scopes \
-  --target-realm "$target_realm" \
+  --target-realm "$KC_REALM_NAME" \
   --body "$(client_scope_with_aud_mapper lakekeeper lakekeeper)"
 $KC_ADM create client-scopes \
-  --target-realm "$target_realm" \
+  --target-realm "$KC_REALM_NAME" \
   --body "$(client_scope_with_aud_mapper trino trino)"
 
 # # by default the 'roles' claim is not included in userinfo but we need it for Superset to see the roles
-id_scope_roles=$(get_resource_id realms/"$target_realm"/client-scopes "id,name" '.name=="roles"')
+id_scope_roles=$(get_resource_id realms/"$KC_REALM_NAME"/client-scopes "id,name" '.name=="roles"')
 id_scope_mappper_roles=$(get_resource_id \
-  realms/"$target_realm"/client-scopes/"$id_scope_roles"/protocol-mappers/models \
+  realms/"$KC_REALM_NAME"/client-scopes/"$id_scope_roles"/protocol-mappers/models \
   "id,protocolMapper" \
   '.protocolMapper=="oidc-usermodel-realm-role-mapper"')
-$KC_ADM update realms/"$target_realm"/client-scopes/"$id_scope_roles"/protocol-mappers/models/"$id_scope_mappper_roles" \
+$KC_ADM update realms/"$KC_REALM_NAME"/client-scopes/"$id_scope_roles"/protocol-mappers/models/"$id_scope_mappper_roles" \
    --merge \
    --set 'config."userinfo.token.claim"="true"'
 
@@ -93,7 +88,7 @@ $KC_ADM update realms/"$target_realm"/client-scopes/"$id_scope_roles"/protocol-m
 ####################
 # Confidential clients
 $KC_ADM create clients \
-  --target-realm "$target_realm" \
+  --target-realm "$KC_REALM_NAME" \
   --set clientId=machine-infra \
   --set publicClient=false \
   --set standardFlowEnabled=false \
@@ -105,13 +100,13 @@ $KC_ADM create clients \
   --set 'secret=s3cr3t'
 # Allow this account to administer the realm
 $KC_ADM add-roles \
-  --target-realm "$target_realm" \
+  --target-realm "$KC_REALM_NAME" \
   --uusername service-account-machine-infra \
   --cclientid realm-management \
   --rolename realm-admin
 
 $KC_ADM create clients \
-  --target-realm "$target_realm" \
+  --target-realm "$KC_REALM_NAME" \
   --set clientId=trino \
   --set publicClient=false \
   --set standardFlowEnabled=true \
@@ -125,7 +120,7 @@ $KC_ADM create clients \
 
 # Public clients
 $KC_ADM create clients \
-  --target-realm "$target_realm" \
+  --target-realm "$KC_REALM_NAME" \
   --set clientId=lakekeeper \
   --set publicClient=true \
   --set 'redirectUris=["*"]' \
@@ -134,7 +129,7 @@ $KC_ADM create clients \
   --set 'attributes={ "access.token.lifespan": 3600 }'
 
 $KC_ADM create clients \
-  --target-realm "$target_realm" \
+  --target-realm "$KC_REALM_NAME" \
   --set clientId=superset \
   --set publicClient=true \
   --set 'redirectUris=["*"]' \
@@ -145,13 +140,13 @@ $KC_ADM create clients \
 # Users
 ####################
 $KC_ADM create users \
-    --target-realm "$target_realm" \
-    --set username="$ADP_SUPERUSER" \
-    --set firstName=Super \
+    --target-realm "$KC_REALM_NAME" \
+    --set username="$ADMIN_USER" \
+    --set firstName=Admin \
     --set lastName=User \
-    --set email=adpsuperuser@dev.com \
+    --set email=admin@local.dev \
     --set enabled=true
 $KC_ADM set-password \
-  --target-realm "$target_realm" \
-  --username "$ADP_SUPERUSER" \
-  --new-password "$ADP_SUPERUSER_PASS"
+  --target-realm "$KC_REALM_NAME" \
+  --username "$ADMIN_USER" \
+  --new-password "$ADMIN_PASSWORD"

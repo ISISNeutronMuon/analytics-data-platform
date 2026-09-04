@@ -1,0 +1,96 @@
+# environment
+x-env-file: &env-file
+  - path: ./env-local
+    required: true
+
+# network
+x-networks: &local-networks
+  - local-lakehouse_net
+
+# superset values
+x-superset-image: &superset-image ghcr.io/isisneutronmuon/analytics-data-platform-superset:a4f0e8011f34785d759269dceedfa2693db81c19
+
+x-superset-user: &superset-user root
+x-superset-depends-on: &superset-depends-on
+  shared-redis:
+    condition: service_started
+  shared-database-bootstrap:
+    condition: service_completed_successfully
+x-superset-volumes: &superset-volumes
+  - ./superset/docker/docker-init.sh:/app/docker/docker-init.sh:ro
+  - ./superset/docker/docker-bootstrap-cert.sh:/app/docker/docker-bootstrap-cert.sh:ro
+  - ./superset/docker/requirements-local.txt:/app/docker/requirements-local.txt:ro
+  - ./superset/docker/pythonpath:/app/docker/pythonpath:ro
+
+services:
+  superset-app:
+    container_name: local-lakehouse-superset-app
+    env_file: *env-file
+    image: *superset-image
+    command: ["/app/docker/docker-bootstrap-cert.sh", "app-gunicorn"]
+    user: *superset-user
+    restart: unless-stopped
+    depends_on:
+      <<: *superset-depends-on
+      superset-init:
+        condition: service_completed_successfully
+    volumes: *superset-volumes
+    networks: *local-networks
+
+  superset-init:
+    profiles:
+      - superset
+    container_name: local-lakehouse-superset-init
+    env_file: *env-file
+    image: *superset-image
+    command: ["/app/docker/docker-init.sh"]
+    depends_on:
+      <<: *superset-depends-on
+      shared-database:
+        condition: service_healthy
+    user: *superset-user
+    volumes: *superset-volumes
+    networks: *local-networks
+    healthcheck:
+      disable: true
+
+  superset-worker:
+    profiles:
+      - superset-worker
+    container_name: local-lakehouse-superset-worker
+    env_file: *env-file
+    image: *superset-image
+    command: ["/app/docker/docker-bootstrap.sh", "worker"]
+    restart: unless-stopped
+    depends_on:
+      <<: *superset-depends-on
+      superset-app:
+        condition: service_healthy
+    user: *superset-user
+    volumes: *superset-volumes
+    networks: *local-networks
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME",
+        ]
+      interval: 15s
+
+  superset-worker-beat:
+    profiles:
+      - superset-worker
+    container_name: local-lakehouse-superset-worker-beat
+    env_file: *env-file
+    image: *superset-image
+    command: ["/app/docker/docker-bootstrap.sh", "beat"]
+    restart: unless-stopped
+    depends_on:
+      <<: *superset-depends-on
+      superset-app:
+        condition: service_healthy
+    user: *superset-user
+    volumes: *superset-volumes
+    networks: *local-networks
+    healthcheck:
+      disable: true
