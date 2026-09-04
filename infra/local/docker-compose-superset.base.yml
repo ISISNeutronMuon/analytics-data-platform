@@ -1,0 +1,85 @@
+# Shared Superset service definitions.
+#
+# This file is NOT meant to be run directly. Per-instance compose files
+# (docker-compose-superset-<instance>.yml) pull these definitions in using
+# `extends:` and override the instance-specific bits (container_name, env_file,
+# the pythonpath volume mount and depends_on wiring).
+#
+# `extends:` (unlike `include:`) reads the service definition from this file
+# without instantiating the services defined here, so the templates below never
+# start on their own.
+
+# network
+x-networks: &local-networks
+  - local-lakehouse_net
+
+# superset values
+x-superset-image: &superset-image ghcr.io/isisneutronmuon/analytics-data-platform-superset:a4f0e8011f34785d759269dceedfa2693db81c19
+
+x-superset-user: &superset-user root
+
+# Shared script mounts. The per-instance pythonpath mount is added in the
+# instance compose file (docker-compose merges `volumes:` by replacement, so the
+# instance file repeats these entries and appends its own pythonpath mount).
+x-superset-volumes: &superset-volumes
+  - ./superset/docker/docker-init.sh:/app/docker/docker-init.sh:ro
+  - ./superset/docker/docker-bootstrap-cert.sh:/app/docker/docker-bootstrap-cert.sh:ro
+  - ./superset/docker/requirements-local.txt:/app/docker/requirements-local.txt:ro
+
+services:
+  #########################################################
+  # Template services. Instance files extend these.
+  #########################################################
+  superset-app:
+    image: *superset-image
+    command: ["/app/docker/docker-bootstrap-cert.sh", "app-gunicorn"]
+    user: *superset-user
+    restart: unless-stopped
+    volumes: *superset-volumes
+    networks: *local-networks
+
+  superset-init:
+    image: *superset-image
+    command: ["/app/docker/docker-init.sh"]
+    user: *superset-user
+    volumes: *superset-volumes
+    networks: *local-networks
+    healthcheck:
+      disable: true
+
+  superset-worker:
+    image: *superset-image
+    command: ["/app/docker/docker-bootstrap.sh", "worker"]
+    user: *superset-user
+    restart: unless-stopped
+    volumes: *superset-volumes
+    networks: *local-networks
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME",
+        ]
+      interval: 15s
+
+  superset-worker-beat:
+    image: *superset-image
+    command: ["/app/docker/docker-bootstrap.sh", "beat"]
+    user: *superset-user
+    restart: unless-stopped
+    volumes: *superset-volumes
+    networks: *local-networks
+    healthcheck:
+      disable: true
+
+  # Creates this instance's Superset metadata database before init runs.
+  superset-db-bootstrap:
+    image: postgres:18-bookworm
+    entrypoint:
+      - /bin/bash
+      - -c
+      - '/postgres-ensuredb.sh "$$SUPERSET_DB_HOST" "$$POSTGRES_USER" "$$SUPERSET_DB_NAME"'
+    restart: "no"
+    volumes:
+      - ./postgres-ensuredb.sh:/postgres-ensuredb.sh:ro
+    networks: *local-networks

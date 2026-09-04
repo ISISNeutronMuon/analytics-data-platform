@@ -1,0 +1,104 @@
+# Superset instance: facility_ops
+#
+# Shared service definitions live in docker-compose-superset.base.yml and are
+# pulled in with `extends:`. Only instance-specific configuration is set here.
+
+# environment
+x-env-file: &env-file
+  - path: ./env-local
+    required: true
+  - path: ./env-superset-facility_ops
+    required: true
+
+# network
+x-networks: &local-networks
+  - local-lakehouse_net
+
+x-base-file: &base-file docker-compose-superset.base.yml
+
+# Shared depends-on for app/worker/init services.
+x-superset-depends-on: &superset-depends-on
+  redis-shared:
+    condition: service_started
+
+# Instance volumes: shared script mounts + this instance's pythonpath.
+x-superset-volumes: &superset-volumes
+  - ./superset/docker/docker-init.sh:/app/docker/docker-init.sh:ro
+  - ./superset/docker/docker-bootstrap-cert.sh:/app/docker/docker-bootstrap-cert.sh:ro
+  - ./superset/docker/requirements-local.txt:/app/docker/requirements-local.txt:ro
+  - ./superset/facility_ops/pythonpath:/app/docker/pythonpath:ro
+
+include:
+  - docker-compose.yml
+
+services:
+  superset-facility_ops-app:
+    extends:
+      file: *base-file
+      service: superset-app
+    container_name: local-lakehouse-superset-facility_ops-app
+    env_file: *env-file
+    volumes: *superset-volumes
+    networks: *local-networks
+    depends_on:
+      <<: *superset-depends-on
+      superset-facility_ops-init:
+        condition: service_completed_successfully
+
+  superset-facility_ops-init:
+    extends:
+      file: *base-file
+      service: superset-init
+    profiles:
+      - superset
+    container_name: local-lakehouse-superset-facility_ops-init
+    env_file: *env-file
+    volumes: *superset-volumes
+    networks: *local-networks
+    depends_on:
+      <<: *superset-depends-on
+      superset-facility_ops-db-bootstrap:
+        condition: service_completed_successfully
+
+  superset-facility_ops-db-bootstrap:
+    extends:
+      file: *base-file
+      service: superset-db-bootstrap
+    profiles:
+      - superset
+    container_name: local-lakehouse-superset-facility_ops-db-bootstrap
+    env_file: *env-file
+    networks: *local-networks
+    depends_on:
+      postgres-shared:
+        condition: service_healthy
+
+  superset-facility_ops-worker:
+    extends:
+      file: *base-file
+      service: superset-worker
+    profiles:
+      - superset-worker
+    container_name: local-lakehouse-superset-facility_ops-worker
+    env_file: *env-file
+    volumes: *superset-volumes
+    networks: *local-networks
+    depends_on:
+      <<: *superset-depends-on
+      superset-facility_ops-app:
+        condition: service_healthy
+
+  superset-facility_ops-worker-beat:
+    extends:
+      file: *base-file
+      service: superset-worker-beat
+    profiles:
+      - superset-worker
+    container_name: local-lakehouse-superset-facility_ops-worker-beat
+    env_file: *env-file
+    volumes: *superset-volumes
+    networks: *local-networks
+    depends_on:
+      <<: *superset-depends-on
+      superset-facility_ops-app:
+        condition: service_healthy

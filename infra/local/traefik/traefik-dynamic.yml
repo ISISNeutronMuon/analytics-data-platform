@@ -58,10 +58,15 @@ http:
       rule: PathPrefix(`/`)
       service: s3api
 
-    superset:
+    superset-facility_ops:
       entryPoints: web
-      rule: PathPrefix(`{{ env "SUPERSET_APP_ROOT" }}`)
-      service: superset
+      rule: PathPrefix(`/workspace/facility_ops`)
+      service: superset-facility_ops
+
+    superset-fase:
+      entryPoints: web
+      rule: PathPrefix(`/workspace/fase`)
+      service: superset-fase
 
     traefik:
       entryPoints: web
@@ -121,7 +126,11 @@ http:
       loadBalancer:
         servers:
           - url: "http://trino:8080"
-    superset:
+    superset-facility_ops:
       loadBalancer:
         servers:
-          - url: "http://superset-app:8088"
+          - url: "http://superset-facility_ops-app:8088"
+    superset-fase:
+      loadBalancer:
+        servers:
+          - url: "http://superset-fase-app:8088"
