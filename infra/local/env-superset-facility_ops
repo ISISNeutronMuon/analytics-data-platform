@@ -1,0 +1,10 @@
+###############################################################################
+# WARNING=DO NOT USE THIS FILE FOR PRODUCTION
+###############################################################################
+# Per-instance overrides for the facility_ops Superset stack.
+# Shared Superset config lives in env-local; values here take precedence
+# because this file is listed after env-local in the compose env_file list.
+###############################################################################
+
+# Dedicated metadata database for this instance.
+SUPERSET_DB_NAME=superset_facility_ops
