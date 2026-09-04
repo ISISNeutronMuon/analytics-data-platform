@@ -1,6 +1,6 @@
 from typing import Iterator
 
-from elt_common.extract import BaseExtract, ResourceProperties, ResourceWriteProperties
+from elt_common.extract import BaseExtract, ResourceProperties
 
 
 class Extract(BaseExtract):
@@ -10,8 +10,6 @@ class Extract(BaseExtract):
                 str(i),
                 ResourceProperties(
                     extractor=extract_empty,
-                    write_properties=ResourceWriteProperties(),
-                    watermark_column=None,
                 ),
             )
 

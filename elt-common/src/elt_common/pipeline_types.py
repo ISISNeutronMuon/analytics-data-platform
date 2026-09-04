@@ -38,22 +38,17 @@ DataChunks = Iterator["pa.Table"]
 
 
 @dc.dataclass(frozen=True)
-class ELTJobManifest:
-    """Parsed representation of an ELT job"""
+class ELTIngestManifest:
+    """Parsed representation of an ELT ingest job"""
 
     warehouse_name: str
     name: str
     domain: str
-    is_ingest_job: bool
-    ingest_job_dir: Path
+    job_dir: Path
 
     @property
     def full_name(self) -> str:
         return f"{self.domain}.{self.name}"
-
-    @property
-    def destination_warehouse(self):
-        return f"{self.warehouse_name}_landing" if self.is_ingest_job else self.warehouse_name
 
     @property
     def destination_namespace(self) -> str:

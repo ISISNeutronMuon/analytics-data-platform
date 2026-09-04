@@ -1,11 +1,10 @@
-"""Pipeline runner: orchestrates extract -> load for an elt job.
+"""Ingest pipeline runner: orchestrates extract -> load for an elt job.
 
 To be run, a job must define a class called Extract which extends :py:class:`elt_common.extract.BaseExtract`.
 """
 
 import datetime as dt
 import logging
-import time
 from collections import defaultdict
 from typing import Optional
 
@@ -19,7 +18,7 @@ from elt_common.extract import (
 )
 from elt_common.iceberg.catalog import connect_catalog, table_identifier
 from elt_common.iceberg.io import IcebergIO
-from elt_common.typing import ELTJobManifest, WriteMode
+from elt_common.pipeline_types import ELTIngestManifest, WriteMode
 
 INGEST_PROPERTY_KEY_LAST_UPDATED_AT = "ingest.last_updated_at"
 INGEST_PROPERTY_KEY_WATERMARK = "ingest.watermark"
@@ -27,18 +26,7 @@ INGEST_PROPERTY_KEY_WATERMARK = "ingest.watermark"
 LOGGER = logging.getLogger(__name__)
 
 
-def run_job(job: ELTJobManifest) -> None:
-    """Run an ELT job defined by the given manifest."""
-    LOGGER.info(f"Starting job: {job.full_name}")
-
-    t0 = time.monotonic()
-    run_ingest(job)
-    elapsed = time.monotonic() - t0
-
-    LOGGER.info(f"Job {job.full_name} completed in {elapsed:.1f}s")
-
-
-def run_ingest(job: ELTJobManifest) -> dict[str, int]:
+def run_ingest(job: ELTIngestManifest) -> dict[str, int]:
     """Import the extract function, call it, and write results to Iceberg."""
 
     # Create the object that will do the extraction.
@@ -46,7 +34,7 @@ def run_ingest(job: ELTJobManifest) -> dict[str, int]:
     # before reaching here.
     extract_obj = create_extract_obj(job)
 
-    iceberg_io = IcebergIO(connect_catalog(job.destination_warehouse))
+    iceberg_io = IcebergIO(connect_catalog(f"{job.warehouse_name}_landing"))
 
     namespace = job.destination_namespace
     iceberg_io.ensure_namespace(namespace)
@@ -76,6 +64,10 @@ def run_ingest(job: ELTJobManifest) -> dict[str, int]:
 
         watermarks: list[Watermark] = []
         for data in table_props.extractor(watermark_before_extract):
+            if not data or data.num_rows == 0:
+                LOGGER.info("No rows extracted, skipping")
+                continue
+
             # 'replace' really means delete the contents of the table, then append the new data.
             # Extractors can return multiple chunks of data, in which case only the first chunk
             # should cause a deletion, whilst the remaining chunks should be appended.

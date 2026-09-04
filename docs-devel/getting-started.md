@@ -9,12 +9,12 @@ _Note: The steps defined here assume using a Linux-like terminal. On Windows you
 
 Install the following tools before proceeding:
 
-| Tool | Purpose | Install guide |
-| --- | --- | --- |
-| Docker | Runs the local service stack | Ensure at least 4 CPU / 8 GB RAM allocated |
-| [uv](https://docs.astral.sh/uv/) | Python and virtual environment management | [Installation](https://docs.astral.sh/uv/getting-started/installation/) |
-| [prek](https://pypi.org/project/prek/) | Pre-commit hooks / static checks | `pip install prek` |
-| [Git](https://git-scm.com/) | Version control | Your OS package manager |
+| Tool                                   | Purpose                                   | Install guide                                                           |
+| -------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------- |
+| Docker                                 | Runs the local service stack              | Ensure at least 4 CPU / 8 GB RAM allocated                              |
+| [uv](https://docs.astral.sh/uv/)       | Python and virtual environment management | [Installation](https://docs.astral.sh/uv/getting-started/installation/) |
+| [prek](https://pypi.org/project/prek/) | Pre-commit hooks / static checks          | `pip install prek`                                                      |
+| [Git](https://git-scm.com/)            | Version control                           | Your OS package manager                                                 |
 
 ## Clone the repository
 
@@ -78,9 +78,10 @@ and points to a Traefik instance that routes traffic to the appropriate service.
 This definition means the `adp-router` domain on the host points to the local machine as it does
 inside the docker network.
 
-## Configure dlt secrets
+## Configure Iceberg connection
 
-Create (or append to) `$HOME/.dlt/secrets.toml` with the local development credentials:
+For the DLT based pipelines in `warehouses`, create (or append to) `$HOME/.dlt/secrets.toml` with the local development
+credentials:
 
 ```toml
 [destination.pyiceberg.credentials]
@@ -92,6 +93,27 @@ client_secret = "s3cr3t"
 scope = "lakekeeper"
 ```
 
+For the `elt-common` based pipelines in `elt-pipelines`, create (or append to) `$HOME/.pyiceberg.yaml`:
+
+```yaml
+catalog:
+  default:
+    type: rest
+    uri: http://localhost:50080/iceberg/catalog
+    warehouse: "facility_ops_landing"
+    auth:
+      type: oauth2
+      oauth2:
+        client_id: machine-infra
+        client_secret: s3cr3t
+        token_url: http://localhost:50080/auth/realms/analytics-data-platform/protocol/openid-connect/token
+        scope: lakekeeper
+```
+
+## Airflow as ELT Orchestration tool
+
+Our local setup has mainly followed this section of airflow documentation: <https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#fetching-docker-compose-yaml>
+
 ## Start the local service stack
 
 Bring up all services with Docker Compose:
@@ -101,15 +123,24 @@ cd infra/local
 docker compose --profile superset up --wait
 ```
 
+Optionally,for provisioning the Airflow cluster and Flower service for monitoring the Airflow environment:
+
+```bash
+cd infra/local
+docker compose --profile airflow up --wait
+```
+
 Once running, the following services are available:
 
-| Service | URL | Credentials |
-| --- | --- | --- |
-| Keycloak (master realm) | <http://localhost:50080/auth> | admin / admin |
-| Lakekeeper UI | <http://localhost:50080/iceberg/ui> | adpsuperuser / adppassword |
-| Superset | <http://localhost:50080/workspace/facility_ops> | adpsuperuser / adppassword |
-| Trino | <https://localhost:58443> | (use `--insecure` flag) |
-| Marimo notebooks | <http://localhost:50080/marimo/> | — |
+| Service                 | URL                                             | Credentials                |
+| ----------------------- | ----------------------------------------------- | -------------------------- |
+| Keycloak (master realm) | <http://localhost:50080/auth>                   | admin / admin              |
+| Lakekeeper UI           | <http://localhost:50080/iceberg/ui>             | adpsuperuser / adppassword |
+| Superset                | <http://localhost:50080/workspace/facility_ops> | adpsuperuser / adppassword |
+| Trino                   | <https://localhost:58443>                       | (use `--insecure` flag)    |
+| Marimo notebooks        | <http://localhost:50080/marimo/>                | —                          |
+| Airflow                 | <http://localhost:50080/airflow>                | airflow / airflow          |
+| Flower App              | <http://localhost:50080/airflow-flower>         | —                          |
 
 ## Run your first pipeline
 

@@ -1,13 +1,16 @@
 import dataclasses as dc
+import datetime as dt
 import importlib.util
 import json
+import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Iterator, Optional, get_args
+from types import ModuleType
+from typing import TYPE_CHECKING, Callable, ClassVar, Iterator, Optional, get_args
 
 from pydantic_settings import BaseSettings
 
-from elt_common.typing import ELTJobManifest, PartitionConfig, SortOrderConfig, WriteMode
+from elt_common.pipeline_types import ELTIngestManifest, PartitionConfig, SortOrderConfig, WriteMode
 
 if TYPE_CHECKING:
     import pyarrow as pa
@@ -19,10 +22,11 @@ EXTRACT_CLS_NAME = "Extract"
 @dc.dataclass(frozen=True)
 class Watermark:
     column: str
-    value: str | int | float
+    value: str | int | float | dt.datetime
 
     def serialize(self) -> str:
-        return json.dumps({"column": self.column, "value": self.value})
+        value = self.value if not isinstance(self.value, dt.datetime) else self.value.isoformat()
+        return json.dumps({"column": self.column, "value": value})
 
     @staticmethod
     def deserialize(watermark_str: str) -> "Watermark":
@@ -41,9 +45,16 @@ class Watermark:
             raise ValueError(f"Watermark 'column' must be a string, '{column}' is not valid")
 
         value = as_json["value"]
-        if type(value) not in (str, int, float):
+        # Parse value as a datetime if it's in ISO format
+        if isinstance(value, str):
+            try:
+                value = dt.datetime.fromisoformat(value)
+            except ValueError:
+                pass
+
+        if type(value) not in (str, int, float, dt.datetime):
             raise ValueError(
-                f"Watermark 'value' must be a string or number, '{value}' is not valid"
+                f"Watermark 'value' must be a string, number, or ISO format datetime, '{value}' is not valid"
             )
 
         return Watermark(column=column, value=value)
@@ -76,6 +87,9 @@ class ResourceWriteProperties:
             raise ValueError("'merge_on' must be provided when mode='merge'")
 
 
+_default_write_properties = ResourceWriteProperties()
+
+
 @dc.dataclass(frozen=True, kw_only=True)
 class ResourceProperties:
     """Configuration for a single resource to be extracted.
@@ -86,14 +100,14 @@ class ResourceProperties:
     """
 
     extractor: Callable[[Optional[Watermark]], "Iterator[pa.Table]"]
-    write_properties: ResourceWriteProperties
-    watermark_column: Optional[str]
+    write_properties: ResourceWriteProperties = _default_write_properties
+    watermark_column: Optional[str] = None
 
 
-class BaseExtract(ABC):
+class BaseExtract[C: BaseSettings](ABC):
     """Base class for ingest Extract classes"""
 
-    config_cls: type[BaseSettings] = BaseSettings
+    config_cls: ClassVar[type[BaseSettings]] = BaseSettings
     """Class used to provide configuration options.
 
     Override this in subclasses to provide custom configuration.
@@ -101,11 +115,11 @@ class BaseExtract(ABC):
     Intended to be used with pydantic-settings.
     """
 
-    def __init__(self, config: BaseSettings):
+    def __init__(self, config: C):
         self._config = config
 
     @property
-    def config(self):
+    def config(self) -> C:
         return self._config
 
     @abstractmethod
@@ -127,58 +141,54 @@ class BaseExtract(ABC):
         pass
 
 
-def create_extract_obj(job: ELTJobManifest) -> BaseExtract:
-    """Given a job directory and name, create the object that will perform the data extraction."""
-    extract_cls = _get_extract_cls(job)
+def create_extract_obj(manifest: ELTIngestManifest) -> BaseExtract:
+    """Create an object to perform data extraction for an ingest job."""
+    extract_cls = _get_extract_cls(manifest)
     config_cls = extract_cls.config_cls
 
-    return extract_cls(config_cls(_env_prefix=f"{job.name}__"))
+    return extract_cls(config_cls(_env_prefix=f"{manifest.name}__"))
 
 
-def _get_extract_cls(job: ELTJobManifest) -> type[BaseExtract]:
+def _get_extract_cls(manifest: ELTIngestManifest) -> type[BaseExtract]:
     """Get the class that will handle the extraction."""
-    extract_script = job.ingest_job_dir / f"{job.name}.py"
-    if extract_script.exists():
-        return _get_extract_cls_from_module_path(job.name, extract_script)
-    else:
+    extract_script = manifest.job_dir / f"{manifest.name}.py"
+    if not extract_script.exists():
         raise RuntimeError(f"No extraction class definition file found at '{extract_script}'")
 
+    module = _import_module_from_path(manifest.name, manifest.job_dir)
+    return _get_extract_cls_from_module(module)
 
-def _get_extract_cls_from_module_path(module_name: str, file_path: Path) -> type[BaseExtract]:
+
+def _import_module_from_path(module_name: str, module_dir: Path):
+    """Import a module given its name and directory"""
+    without_module_dir = [p for p in sys.path]
+    try:
+        sys.path.insert(0, str(module_dir))
+        return importlib.import_module(module_name)
+    finally:
+        sys.path = without_module_dir
+
+
+def _get_extract_cls_from_module(module: ModuleType) -> type[BaseExtract]:
     """Get the class attribute that will handle extraction.
 
     :raises AttributeError: if the module doesn't include an 'Extract' attribute
     :raises TypeError: if 'Extract' in the module isn't a subclass of BaseExtract
     """
-    module = _import_module_from_path(module_name, file_path)
     try:
         extract_cls = getattr(module, EXTRACT_CLS_NAME)
     except AttributeError:
         raise AttributeError(
-            f"Module '{module_name}' doesn't include an "
+            f"Module '{module.__name__}' doesn't include an "
             f"'{EXTRACT_CLS_NAME}' class, which is required for defining an ingest job"
         )
 
     if not isinstance(extract_cls, type):
-        raise TypeError(f"'{EXTRACT_CLS_NAME}' in module '{module_name}' is not a class")
+        raise TypeError(f"'{EXTRACT_CLS_NAME}' in module '{module.__name__}' is not a class")
 
     if not issubclass(extract_cls, BaseExtract):
         raise TypeError(
-            f"'{EXTRACT_CLS_NAME}' in module '{module_name}' doesn't subclass elt_common.extract.BaseExtract"
+            f"'{EXTRACT_CLS_NAME}' in module '{module.__name__}' doesn't subclass elt_common.extract.BaseExtract"
         )
 
     return extract_cls
-
-
-def _import_module_from_path(module_name: str, file_path: Path):
-    """Import a module given its name and file location."""
-    spec = importlib.util.spec_from_file_location(module_name, file_path)
-    if spec is None:
-        raise ImportError(f"Unable to find module spec for '{module_name}' at '{file_path}'")
-    module = importlib.util.module_from_spec(spec)
-    if spec.loader is not None:
-        spec.loader.exec_module(module)
-    else:
-        raise ImportError(f"Module spec for {module_name} @ '{file_path}' has no loader attribute")
-
-    return module

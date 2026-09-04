@@ -1,4 +1,4 @@
-from elt_common.typing import SortOrderConfig
+from elt_common.pipeline_types import SortOrderConfig
 import pyiceberg.transforms as transforms
 from pyiceberg.schema import Schema
 from pyiceberg.table.sorting import (

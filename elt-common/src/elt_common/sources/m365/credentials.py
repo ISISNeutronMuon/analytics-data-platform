@@ -1,5 +1,5 @@
 from authlib.integrations.httpx_client import OAuth2Client
-from pydantic import SecretStr, BaseModel
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 
 base_url = "https://graph.microsoft.com"
@@ -7,8 +7,8 @@ _default_scope = f"{base_url}/.default"
 _login_url = "https://login.microsoftonline.com"
 
 
-class M365Credentials(BaseModel):
-    """Configuration class for M365 credentials"""
+class M365Credentials(BaseSettings):
+    """Settings class for M365 credentials"""
 
     tenant_id: str
     client_id: str
@@ -31,8 +31,3 @@ class M365Credentials(BaseModel):
             grant_type="client_credentials",
             follow_redirects=True,
         )
-
-
-class M365Config(BaseSettings):
-    site_url: str
-    credentials: M365Credentials

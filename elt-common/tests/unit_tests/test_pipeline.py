@@ -5,37 +5,22 @@ from pathlib import Path
 import pytest
 
 from elt_common.pipeline import (
-    ELTJobManifest,
+    ELTIngestManifest,
     PipelinesProject,
 )
 
 
 def test_properties():
-    manifest = ELTJobManifest(
+    manifest = ELTIngestManifest(
         warehouse_name="test_warehouse",
         name="source_a",
         domain="facility_ops",
-        is_ingest_job=True,
-        ingest_job_dir=Path("/some/path"),
+        job_dir=Path("/some/path"),
     )
     assert manifest.destination_namespace == "facility_ops_source_a", (
         "Destination namespace should be 'domain'_'name'"
     )
     assert manifest.full_name == "facility_ops.source_a", "Name should be 'domain'.'name'"
-    assert manifest.destination_warehouse == "test_warehouse_landing", (
-        "Ingest job destination should have _landing appended"
-    )
-
-    non_ingest_manifest = ELTJobManifest(
-        warehouse_name="test_warehouse",
-        name="source_a",
-        domain="facility_ops",
-        is_ingest_job=False,
-        ingest_job_dir=Path("/some/path"),
-    )
-    assert non_ingest_manifest.destination_warehouse == "test_warehouse", (
-        "Non-ingest manifest shouldn't change warehouse name"
-    )
 
 
 def test_init_stores_root_and_derives_name(tmp_path: Path):
@@ -61,7 +46,7 @@ def test_ingest_jobs_property_discovers_jobs_lazily(tmp_path: Path):
     jobs = project.ingest_jobs
 
     assert len(jobs) == 3
-    assert all(isinstance(job, ELTJobManifest) for job in jobs)
+    assert all(isinstance(job, ELTIngestManifest) for job in jobs)
 
 
 def test_ingest_jobs_caches_results(tmp_path: Path):

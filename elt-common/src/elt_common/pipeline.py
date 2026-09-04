@@ -2,13 +2,24 @@
 
 from pathlib import Path
 
-from .typing import ELTJobManifest
+from .pipeline_types import ELTIngestManifest
 
 INGEST = "ingest"
+TRANSFORM = "transform"
 
 
 class PipelinesProject:
-    """Captures a set of elt pipelines based at a given root directory"""
+    """Captures a set of elt pipelines based at a given root directory
+
+    Two types of 'pipeline' can be included in a project:
+    - 'ingest' pipelines, which can be run by the ingest module to extract
+    and load data into iceberg
+    - 'transform' pipelines, which are models in a dbt project
+
+    ingest pipelines are required for the project to be valid. transforms are
+    optional, but an error will be thrown if a nonexistent transform directory
+    is used.
+    """
 
     def __init__(self, root: Path) -> None:
         ingest_dir = root / INGEST
@@ -19,6 +30,7 @@ class PipelinesProject:
         self._root = resolved
         self._warehouse = resolved.parts[-1]
         self._ingest_dir = ingest_dir
+        self._transform_dir = root / TRANSFORM
         self._name = root.name
         self._ingest_jobs = []
 
@@ -31,7 +43,13 @@ class PipelinesProject:
         return self._ingest_dir
 
     @property
-    def ingest_jobs(self) -> list[ELTJobManifest]:
+    def transform_dir(self):
+        if not self._transform_dir.is_dir():
+            raise ValueError("Project doesn't have a transform directory")
+        return self._transform_dir
+
+    @property
+    def ingest_jobs(self) -> list[ELTIngestManifest]:
         if not self._ingest_jobs:
             self._ingest_jobs = _discover_jobs(self._warehouse, self._ingest_dir)
 
@@ -68,11 +86,10 @@ def _discover_jobs(warehouse_name: str, ingest_dir: Path):
     ]
 
 
-def _create_ingest_manifest(warehouse_name: str, job_dir: Path) -> ELTJobManifest:
-    return ELTJobManifest(
+def _create_ingest_manifest(warehouse_name: str, job_dir: Path) -> ELTIngestManifest:
+    return ELTIngestManifest(
         warehouse_name=warehouse_name,
         name=job_dir.name,
         domain=job_dir.parent.name,
-        ingest_job_dir=job_dir.resolve(),
-        is_ingest_job=True,
+        job_dir=job_dir.resolve(),
     )

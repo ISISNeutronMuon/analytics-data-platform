@@ -6,7 +6,7 @@ from pydantic import SecretStr
 from pytest_httpx import HTTPXMock
 
 from elt_common.sources.m365.client import M365File, SPListClient, _api_url
-from elt_common.sources.m365.configuration import M365Config, M365Credentials
+from elt_common.sources.m365.credentials import M365Credentials
 
 hostname = "site.domain.com"
 site_path = "sites/MySite"
@@ -43,12 +43,7 @@ def list_client(httpx_mock: HTTPXMock):
         json={"id": library_id},
     )
 
-    return SPListClient(
-        M365Config(
-            site_url=site_url,
-            credentials=_credentials,
-        )
-    )
+    return SPListClient(site_url, _credentials)
 
 
 @pytest.fixture

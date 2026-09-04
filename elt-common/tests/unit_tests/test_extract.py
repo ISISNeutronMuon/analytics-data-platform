@@ -1,10 +1,13 @@
+import datetime as dt
 from pathlib import Path
 
 import pytest
 
 from elt_common.extract import BaseExtract, Watermark, create_extract_obj
 from elt_common.sources.sqldatabase import SqlDatabaseExtract
-from elt_common.typing import ELTJobManifest
+from elt_common.pipeline_types import ELTIngestManifest
+
+_value_type_error_msg = "'value' must be a string, number, or ISO format datetime"
 
 
 @pytest.mark.parametrize(
@@ -18,9 +21,9 @@ from elt_common.typing import ELTJobManifest
         ('{"column": 123, "value": "non_string_column"}', "Watermark 'column' must be a string"),
         ('{"column": "null_value", "value": null}', "'value' was missing"),
         ('{"column": null, "value": "null_column"}', "'column' was missing"),
-        ('{"column": "bool_value", "value": true}', "'value' must be a string or number"),
-        ('{"column": "array_value", "value": [1]}', "'value' must be a string or number"),
-        ('{"column": "object_value", "value": {"a": 123}}', "'value' must be a string or number"),
+        ('{"column": "bool_value", "value": true}', _value_type_error_msg),
+        ('{"column": "array_value", "value": [1]}', _value_type_error_msg),
+        ('{"column": "object_value", "value": {"a": 123}}', _value_type_error_msg),
     ],
 )
 def test_deserialize_watermark_bad_values_value_error(serialized, expected_error_message):
@@ -34,6 +37,10 @@ def test_deserialize_watermark_bad_values_value_error(serialized, expected_error
         ('{"column": "string_value", "value": "123"}', Watermark("string_value", "123")),
         ('{"column": "int_value", "value": 123}', Watermark("int_value", 123)),
         ('{"column": "float_value", "value": 123.123}', Watermark("float_value", 123.123)),
+        (
+            '{"column": "datetime_value", "value": "2020-01-01T00:00:00"}',
+            Watermark("datetime_value", dt.datetime(2020, 1, 1)),
+        ),
     ],
 )
 def test_deserialize_watermark_good_values(serialized, expected):
@@ -42,12 +49,11 @@ def test_deserialize_watermark_good_values(serialized, expected):
 
 def make_error_manifest(filename):
     this_dir = Path(__file__).parent
-    return ELTJobManifest(
+    return ELTIngestManifest(
         warehouse_name="warehouse",
         name=filename,
         domain="whatever",
-        is_ingest_job=True,
-        ingest_job_dir=this_dir / "create_extract_obj_fakes" / "errors",
+        job_dir=this_dir / "create_extract_obj_fakes" / "errors",
     )
 
 
@@ -70,12 +76,11 @@ def test_create_extract_obj_errors(filename, expected_error, expected_error_mess
 
 def make_manifest(filename):
     this_dir = Path(__file__).parent
-    return ELTJobManifest(
+    return ELTIngestManifest(
         warehouse_name="test_warehouse",
         name=filename,
         domain="whatever",
-        is_ingest_job=True,
-        ingest_job_dir=this_dir / "create_extract_obj_fakes",
+        job_dir=this_dir / "create_extract_obj_fakes",
     )
 
 
@@ -111,4 +116,4 @@ def test_create_extract_obj_sql_extract(monkeypatch):
 
     assert isinstance(extract_obj, BaseExtract)
     assert isinstance(extract_obj, SqlDatabaseExtract)
-    assert extract_obj._chunk_size == 100
+    assert extract_obj.config.chunk_size == 100
