@@ -5,6 +5,7 @@ import uuid
 
 import pyarrow as pa
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 
 def to_pyarrow_schema(table: sa.Table) -> pa.Schema:
@@ -25,6 +26,7 @@ _SQL_ROOT_TYPES = {
     sa.Float: pa.float64,
     sa.Integer: pa.int32,
     sa.Interval: lambda: pa.duration("us"),
+    sa.JSON: pa.json_,
     sa.LargeBinary: pa.binary,
     sa.SmallInteger: pa.int16,
     sa.String: pa.string,
@@ -59,6 +61,8 @@ _EXTENDED_SQL_TYPES = {
     sa.TIMESTAMP: _SQL_ROOT_TYPES[sa.DateTime],
     sa.UUID: _SQL_ROOT_TYPES[sa.Uuid],
     sa.VARCHAR: _SQL_ROOT_TYPES[sa.String],
+    postgresql.JSON: _SQL_ROOT_TYPES[sa.JSON],
+    postgresql.JSONB: _SQL_ROOT_TYPES[sa.JSON],
 }
 
 _SQL_TYPE_MAP = _SQL_ROOT_TYPES | _EXTENDED_SQL_TYPES
