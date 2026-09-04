@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: accelerator_opralogweb
+    database: facility_ops_landing
+    tables:
+      - name: AdditionalColumns
+      - name: ChapterEntry
+      - name: Entries
+      - name: LogBookChapter
+      - name: Logbooks
+      - name: MoreEntryColumns

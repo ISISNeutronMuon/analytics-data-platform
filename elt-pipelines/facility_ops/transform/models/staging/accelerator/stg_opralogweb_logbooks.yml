@@ -1,5 +1,5 @@
 models:
-  - name: base_opralogweb__logbooks
+  - name: stg_opralogweb_logbooks
     description: Opralogweb logbooks table with basic cleaning
     columns:
       - name: logbook_id
