@@ -10,8 +10,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+proposal = [
+    "sqlalchemy[postgresql-psycopgbinary]>=2.0.0",
+]
 statusdisplay = [
-    "pyarrow>=24.0.0",
     "requests>=2.34.2",
 ]
 

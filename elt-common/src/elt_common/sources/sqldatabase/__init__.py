@@ -1,38 +1,71 @@
 """Support for ingesting data from an SQL database."""
 
+import json
 import logging
 from abc import abstractmethod
-from typing import Generator, Iterator, NamedTuple, Optional, Callable
+from collections.abc import Callable, Generator, Iterable, Iterator
+from typing import NamedTuple
 
 import pyarrow as pa
+import pyarrow.compute as pc
 import sqlalchemy as sa
-from pydantic import SecretStr, PositiveInt
+from pydantic import PositiveInt, SecretStr
 from pydantic_settings import BaseSettings
 from sqlalchemy import Select
 
-from elt_common.extract import ResourceProperties, ResourceWriteProperties, Watermark, BaseExtract
+from elt_common.extract import BaseExtract, ResourceProperties, ResourceWriteProperties, Watermark
 from elt_common.sources.sqldatabase.schema import to_pyarrow_schema
 
 LOGGER = logging.getLogger(__name__)
 
 
-class SqlDatabaseSourceConfig(BaseSettings):
-    """Configuration required to connect to a database"""
+def _serialize_json_values(row: dict) -> dict:
+    """Ensure dict/list objects in rows are serialized to JSON strings for PyArrow json_ types."""
+    return {k: json.dumps(v) if isinstance(v, (dict, list)) else v for k, v in row.items()}
 
-    # connection
+
+def json_to_str(table: pa.Table) -> pa.Table:
+    """Fast-path helper to cast any PyArrow JSON columns in a Table to String columns."""
+    # PyArrow JSON extension types are instances of pa.JsonType
+    json_field_indices = [
+        i for i, field in enumerate(table.schema) if isinstance(field.type, pa.JsonType)
+    ]
+
+    if not json_field_indices:
+        return table
+
+    new_schema = table.schema
+    new_columns = list(table.columns)
+
+    for i in json_field_indices:
+        field = table.schema.field(i)
+        new_field = field.with_type(pa.string())
+        new_schema = new_schema.set(i, new_field)
+        new_columns[i] = pc.cast(table.column(i), pa.string())
+
+    return pa.Table.from_arrays(new_columns, schema=new_schema)
+
+
+def _partition_to_pyarrow_table(partition: Iterable[dict], schema: pa.Schema) -> pa.Table:
+    """Converts a partition of mapping rows into a PyArrow Table, handling JSON serialization and schema casting."""
+    rows = [_serialize_json_values(row) for row in partition]
+    pa_table = pa.Table.from_pylist(rows, schema=schema)
+    return json_to_str(pa_table)
+
+
+class SqlDatabaseSourceConfig(BaseSettings):
     drivername: str
     database: str
-    database_schema: Optional[str] = None
-    port: Optional[int] = None
-    host: Optional[str] = None
-    username: Optional[str] = None
-    password: Optional[SecretStr] = None
+    database_schema: str | None = None
+    port: int | None = None
+    host: str | None = None
+    username: str | None = None
+    password: SecretStr | None = None
 
-    # loading behaviour
     chunk_size: int = 5000
     """If the query returns more than chunk_size rows, fetch them in multiple chunks of at most this size"""
 
-    row_limit: Optional[PositiveInt] = None
+    row_limit: PositiveInt | None = None
     """Maximum number of rows to return from each table, primarily for testing purposes. No limit if 'None'"""
 
     @property
@@ -61,9 +94,9 @@ class TableInfo(NamedTuple):
     be different to the name of the DB table
     """
 
-    write_properties: Optional[ResourceWriteProperties] = None
-    watermark_column: Optional[str] = None
-    destination_table_name: Optional[str] = None
+    write_properties: ResourceWriteProperties | None = None
+    watermark_column: str | None = None
+    destination_table_name: str | None = None
 
 
 class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
@@ -99,7 +132,7 @@ class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
         self._metadata = sa.MetaData(schema=config.database_schema)
 
     @abstractmethod
-    def table_info(self) -> dict[str, Optional[TableInfo]]:
+    def table_info(self) -> dict[str, TableInfo | None]:
         """Define the tables to be extracted from the DB.
 
         Each key in the returned dict is a table name. Their values can include
@@ -111,7 +144,6 @@ class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
         (e.g. filtering) extend :py:meth:`extract_resource_properties` with
         custom extractors.
         """
-        pass
 
     def extract_resource_properties(self):
         """Open a connection to the DB and return ingest properties for tables
@@ -142,6 +174,11 @@ class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
                 if table_props and table_props.watermark_column
                 else None
             )
+            resource_name = (
+                table_props.destination_table_name
+                if table_props and table_props.destination_table_name
+                else name
+            )
 
             def extractor(watermark, *, _name=name):
                 return self._extract_table(_name, watermark=watermark, conn=conn)
@@ -152,11 +189,7 @@ class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
                 watermark_column=watermark_column,
             )
 
-            destination_table = name
-            if table_props is not None and table_props.destination_table_name is not None:
-                destination_table = table_props.destination_table_name
-
-            yield destination_table, properties
+            yield resource_name, properties
 
     def _extract_table(
         self,
@@ -188,6 +221,12 @@ class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
         # the table
         pa_schema = to_pyarrow_schema(table)
         result = conn.execution_options(yield_per=self.config.chunk_size).execute(query)
+
+        has_data = False
         for partition in result.mappings().partitions():
-            table = pa.Table.from_pylist(partition, schema=pa_schema)
-            yield table
+            has_data = True
+            yield _partition_to_pyarrow_table(partition, schema=pa_schema)
+
+        if not has_data:
+            empty_table = pa.Table.from_batches([], schema=pa_schema)
+            yield empty_table

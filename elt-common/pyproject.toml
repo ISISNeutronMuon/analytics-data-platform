@@ -47,6 +47,13 @@ dev = [
   "ruff>=0.16.1",
 ]
 
+test = [
+    "authlib>=1.7.2",
+    "httpx>=0.28.1",
+    "tenacity>=9.1.2",
+    "sqlalchemy>=2.0.51",
+    "trino>=0.336.0",
+]
 
 [tool.ruff]
 line-length = 100
