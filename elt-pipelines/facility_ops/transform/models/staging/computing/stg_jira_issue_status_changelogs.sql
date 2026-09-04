@@ -1,5 +1,5 @@
 with source as (
-select * from facility_ops_landing.computing_jira.issue_status_changelog
+select * from {{source('computing_jira', 'issue_status_changelogs')}}
 ),
 
 cleaned as (
