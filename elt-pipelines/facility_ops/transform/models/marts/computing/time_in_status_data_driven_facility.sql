@@ -1,5 +1,5 @@
 with times_in_status as (
-  select * from {{ ref('int_times_in_status') }}
+  select * from {{ ref('int_times_in_status') }} where issue_key like 'DD-%'
 ),
 
 time_in_status_data_driven_facility as (
