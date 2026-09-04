@@ -6,3 +6,4 @@ sources:
     tables:
       - name: AdditionalColumns
       - name: ChapterEntry
+      - name: Entries
