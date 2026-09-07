@@ -1,5 +1,4 @@
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 from pyiceberg.catalog import Catalog as PyIcebergCatalog
 from pyiceberg.catalog import load_catalog
@@ -8,9 +7,9 @@ from elt_common.dlt_destinations.pyiceberg.configuration import PyIcebergSqlCata
 
 
 class SqlCatalogWarehouse:
-    def __init__(self, warehouse_name: str, directory: Path | None = None):
+    def __init__(self, warehouse_name: str, workdir: Path):
         self.name = warehouse_name
-        self.workdir = directory if directory else TemporaryDirectory().name
+        self.workdir = workdir
         self.uri = f"sqlite:///{self.workdir}/{warehouse_name}.db"
         self.warehouse_path = f"file://{self.workdir}/{warehouse_name}"
 
