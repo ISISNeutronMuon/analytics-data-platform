@@ -1,3 +1,9 @@
+{{
+  config(
+    on_table_exists = 'drop'
+)
+}}
+
 with times_in_status as (
   select * from {{ ref('int_times_in_status') }} where issue_key like 'CI-%'
 ),
