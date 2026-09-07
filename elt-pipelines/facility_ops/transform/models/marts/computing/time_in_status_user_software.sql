@@ -94,7 +94,7 @@ time_in_status_user_software as (
         when status = 'selected for development' then time_in_status
         else null
         end
-    ) as time_in_selected_for_development_secs,
+    ) as time_in_selected_for_development_secs
     from times_in_status
     group by issue_key
 
