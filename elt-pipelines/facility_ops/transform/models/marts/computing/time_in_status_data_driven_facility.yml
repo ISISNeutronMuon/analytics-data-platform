@@ -1,7 +1,7 @@
 models:
-  - name: time_spent_in_status
+  - name: time_in_status_data_driven_facility
     description: >
-      Get length of time an issue spends in each status for user software issues.
+      Get length of time a Data-Driven Facility issue spends in each status for user software issues.
     columns:
       - name: issue_key
         data_tests:
