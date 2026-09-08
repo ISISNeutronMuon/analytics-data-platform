@@ -39,10 +39,12 @@ Pipelines are run using the `elt` CLI tool. As an example, with `elt-pipelines` 
   connection, so configuration follows [their approach](https://py.iceberg.apache.org/configuration/). See
   the [getting started guide](../docs-devel/getting-started.md#configure-iceberg-connection) for the local configuration
   values
-- Any pipelines that include a `config_cls` require/have optional configuration values to be set
+- Any pipelines that include a `config_cls` require/have optional configuration values
    - These use [`pydantic_settings`](https://pydantic.dev/docs/validation/latest/concepts/pydantic_settings/)
    - Environment variables are used to set the values. The name of the variable(s) must be prefixed with
      `<JOB_NAME>__`, where `<JOB_NAME>` is the name of the pipeline
+   - Values for variables can also be specified in a `.env` file in the working directory. If a value is present both
+     in the `.env` file and as an environment variable, the environment variable is preferred
 
 ## Writing a pipeline
 

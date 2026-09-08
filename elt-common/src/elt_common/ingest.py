@@ -11,6 +11,7 @@ from typing import Optional
 import pyarrow as pa
 import pyarrow.compute as pc
 import requests
+from dotenv import load_dotenv, find_dotenv
 from pyiceberg.exceptions import NoSuchTableError
 
 from elt_common.extract import (
@@ -35,6 +36,8 @@ requests.packages.urllib3.util.connection.HAS_IPV6 = False
 
 def run_ingest(job: ELTIngestManifest) -> dict[str, int]:
     """Import the extract function, call it, and write results to Iceberg."""
+
+    load_dotenv(find_dotenv(usecwd=True), verbose=True)
 
     # Create the object that will do the extraction.
     # Environment variables for the object's configuration must have been set
