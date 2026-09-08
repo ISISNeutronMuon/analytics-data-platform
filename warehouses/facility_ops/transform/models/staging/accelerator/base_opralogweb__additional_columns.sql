@@ -2,7 +2,7 @@ with
 
 source as (
 
-  select * from {{ source('accelerator_opralogweb', 'AdditionalColumns') }}
+  select * from {{ source('accelerator_opralogweb', 'additional_columns') }}
 
 ),
 
@@ -10,8 +10,8 @@ renamed as (
 
   select
 
-    AdditionalColumnId as additional_column_id,
-    trim(ColTitle) as column_title
+    additional_column_id,
+    trim(col_title) as column_title
 
 from
 

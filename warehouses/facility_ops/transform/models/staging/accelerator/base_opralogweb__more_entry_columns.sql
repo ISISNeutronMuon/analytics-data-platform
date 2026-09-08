@@ -1,17 +1,17 @@
 with
 
 source as (
-  select * from {{ source('accelerator_opralogweb', 'MoreEntryColumns') }}
+  select * from {{ source('accelerator_opralogweb', 'more_entry_columns') }}
 ),
 
 renamed as (
 
   select
 
-    EntryId as entry_id,
-    {{ normalize_whitespace('ColData') }} as string_data,
-    NumberValue as number_data,
-    AdditionalColumnId as additional_column_id
+    entry_id,
+    {{ normalize_whitespace('col_data') }} as string_data,
+    number_value as number_data,
+    additional_column_id
 
   from
 

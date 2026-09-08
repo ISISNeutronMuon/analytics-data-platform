@@ -2,7 +2,7 @@ with
 
 source as (
 
-  select * from {{ source('accelerator_opralogweb', 'Logbooks') }}
+  select * from {{ source('accelerator_opralogweb', 'logbooks') }}
 
 ),
 
@@ -10,8 +10,8 @@ renamed as (
 
   select
 
-      LogbookId as logbook_id,
-      LogbookName as logbook_name
+      logbook_id,
+      logbook_name
 
   from
 
