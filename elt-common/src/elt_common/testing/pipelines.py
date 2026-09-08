@@ -97,11 +97,15 @@ def test_catalog(sql_warehouses, request, monkeypatch):
     monkeypatch.setenv("PYICEBERG_CATALOG__DEFAULT__WAREHOUSE", test_warehouse_name)
 
     catalog = warehouse.connect()
+    ret = AssertableCatalog(catalog)
 
     try:
-        yield AssertableCatalog(catalog)
+        yield ret
     finally:
-        catalog.close()
+        try:
+            ret.clean_catalog()
+        finally:
+            catalog.close()
 
 
 @pytest.fixture
