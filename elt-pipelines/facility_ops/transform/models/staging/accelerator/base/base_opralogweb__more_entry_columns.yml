@@ -1,0 +1,7 @@
+models:
+  - name: base_opralogweb__more_entry_columns
+    description: Opralogweb more_entry_columns table with basic cleaning
+    columns:
+      - name: entry_id
+        tests:
+          - not_null
