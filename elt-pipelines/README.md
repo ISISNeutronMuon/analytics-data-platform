@@ -102,6 +102,8 @@ Tests are invoked with `pytest --disable-plugin-autoload -p elt_common.testing.p
 are needed temporarily, until the `elt_common.testing.fixtures` module (which provides fixtures for `dlt` based
 testing) is removed.
 
+**Configuration values need to be set for any pipeline(s) under test, as per [above](#configuration).**
+
 ## Directory structure
 
 The project uses the following directory structure:
