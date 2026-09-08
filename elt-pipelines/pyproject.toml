@@ -9,6 +9,9 @@ dependencies = [
     "pydantic-settings>=2.14.2",
 ]
 
+[tool.setuptools]
+packages = ["facility_ops", "fase"]
+
 [project.optional-dependencies]
 proposal = [
     "sqlalchemy[postgresql-psycopgbinary]>=2.0.0",
