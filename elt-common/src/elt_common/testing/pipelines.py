@@ -19,7 +19,6 @@ directory as the pipeline it tests, in the elt-common directory structure:
 """
 
 import logging
-from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -47,8 +46,9 @@ class AssertableCatalog:
 
             self._catalog.drop_namespace(ns)
 
-    def do_something(self, something: Callable[[Catalog], None]):
-        something(self._catalog)
+    @property
+    def catalog(self):
+        return self._catalog
 
     def assert_has_exact_tables(self, namespace: str, tables: list[str]):
         actual = self._catalog.list_tables(namespace)
@@ -66,10 +66,7 @@ class AssertableCatalog:
     def get_num_rows(self, table_id: tuple[str, ...]):
         assert self._catalog.table_exists(table_id)
         t = self._catalog.load_table(table_id)
-        snapshot = t.current_snapshot()
-        assert snapshot is not None
-        assert snapshot.summary is not None
-        return int(snapshot.summary.additional_properties["total-records"])
+        return t.scan().count()
 
 
 @pytest.fixture(scope="session")
