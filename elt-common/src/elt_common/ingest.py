@@ -10,6 +10,7 @@ from typing import Optional
 
 import pyarrow as pa
 import pyarrow.compute as pc
+from dotenv import load_dotenv, find_dotenv
 from pyiceberg.exceptions import NoSuchTableError
 
 from elt_common.extract import (
@@ -28,6 +29,8 @@ LOGGER = logging.getLogger(__name__)
 
 def run_ingest(job: ELTIngestManifest) -> dict[str, int]:
     """Import the extract function, call it, and write results to Iceberg."""
+
+    load_dotenv(find_dotenv(usecwd=True), verbose=True)
 
     # Create the object that will do the extraction.
     # Environment variables for the object's configuration must have been set
