@@ -34,7 +34,7 @@ services:
 
   adp-router:
     container_name: local-lakehouse-traefik
-    image: traefik:v3.7.12
+    image: traefik:v3.7.13
     env_file: &env_file-common
       - path: ./env-local
         required: true
@@ -98,7 +98,7 @@ services:
   #########################################################
   keycloak:
     container_name: local-lakehouse-keycloak
-    image: &keycloak_image quay.io/keycloak/keycloak:26.3
+    image: &keycloak_image quay.io/keycloak/keycloak:26.7
     env_file: *env_file-common
     command:
       [
@@ -152,7 +152,7 @@ services:
   #########################################################
   seaweedfs:
     container_name: local-lakehouse-seaweedfs
-    image: chrislusf/seaweedfs:4.45
+    image: chrislusf/seaweedfs:4.46
     env_file: *env_file-common
     # Match ports on host & container to use the same port inside and outside the container
     # network
@@ -177,7 +177,7 @@ services:
   #########################################################
   openfga-migrate:
     container_name: local-lakehouse-openfga-migrate
-    image: &openfga-image openfga/openfga:v1.19.0
+    image: &openfga-image openfga/openfga:v1.20.0
     env_file: *env_file-common
     command: migrate
     depends_on:
@@ -205,7 +205,7 @@ services:
   #########################################################
   lakekeeper:
     container_name: local-lakehouse-lakekeeper
-    image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.13.3
+    image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.13.4
     env_file: *env_file-common
     environment:
       #      - SSL_CERT_FILE=/certs/rootCA.pem
@@ -243,7 +243,7 @@ services:
 
   lakekeeper-bootstrap:
     container_name: local-lakehouse-lakekeeper-bootstrap
-    image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
+    image: ghcr.io/astral-sh/uv:python3.14-trixie-slim
     env_file: *env_file-common
     entrypoint:
       - /bin/bash
@@ -272,47 +272,46 @@ services:
       - "./warehouses/lakekeeper:/opt/work/warehouses:ro"
     networks: *networks-common
 
-#########################################################
-# Shared Redis cache for Superset and Airflow
-#########################################################
-redis-shared:
-  container_name: local-lakehouse-redis-shared
-  env_file: *env_file-common
-  image: redis:8.4-bookworm
-  healthcheck:
-    test: ["CMD", "redis-cli", "ping"]
-    interval: 30s
-    timeout: 30s
-    retries: 50
-    start_period: 30s
-  restart: unless-stopped
-  volumes:
-    - shared_redis_data:/data
-  networks: *networks-common
+  #########################################################
+  # Shared Redis cache
+  #########################################################
+  redis-shared:
+    container_name: local-lakehouse-redis-shared
+    env_file: *env_file-common
+    image: redis:8.4-bookworm
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 30s
+      retries: 50
+      start_period: 30s
+    restart: unless-stopped
+    volumes:
+      - shared_redis_data:/data
+    networks: *networks-common
 
-#########################################################
-# Trino query engine
-#########################################################
-
-trino:
-  container_name: local-lakehouse-trino
-  image: trinodb/trino:477
-  env_file: *env_file-common
-  depends_on:
-    keycloak:
-      condition: service_healthy
-    adp-router:
-      condition: service_healthy
-  healthcheck:
-    test: ["CMD", "curl", "-I", "http://localhost:8080/v1/status"]
-    start_period: 10s
-    interval: 30s
-    timeout: 30s
-    retries: 2
-  volumes:
-    - "./trino/etc:/etc/trino"
-    - "./warehouses/trino:/etc/trino/catalog"
-  networks: *networks-common
+  #########################################################
+  # Trino query engine
+  #########################################################
+  trino:
+    container_name: local-lakehouse-trino
+    image: trinodb/trino:483
+    env_file: *env_file-common
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      adp-router:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-I", "http://localhost:8080/v1/status"]
+      start_period: 10s
+      interval: 30s
+      timeout: 30s
+      retries: 2
+    volumes:
+      - "./trino/etc:/etc/trino"
+      - "./warehouses/trino:/etc/trino/catalog"
+    networks: *networks-common
 
 networks:
   local-lakehouse_net:
@@ -322,16 +321,10 @@ volumes:
   mkcert_data:
     name: local-lakehouse_mkcert_data
   postgres-shared_data:
-    name: local-lakehouse_postgres-shared_data
+    name: local-lakehouse_postgres_data
   keycloak_data:
     name: local-lakehouse_keycloak_data
+  shared_redis_data:
+    name: local-lakehouse_redis_data
   seaweedfs_data:
     name: local-lakehouse_seaweedfs_data
-
-
-  # marimo_data:
-  #   name: local-lakehouse_marimo_data
-  # shared_redis_data:
-  #   name: local-lakehouse_shared_redis_data
-  # uv_cache:
-  #   name: local-lakehouse_uv_cache
