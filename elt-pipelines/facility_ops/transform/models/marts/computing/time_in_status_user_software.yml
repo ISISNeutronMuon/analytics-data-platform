@@ -6,7 +6,7 @@ models:
       - name: issue_key
         data_tests:
         - not_null
-      - name: time_in_analysing_secs
+      - name: time_in_analyzing_secs
       - name: time_in_backlog_secs
       - name: time_in_blocked_secs
       - name: time_in_closed_secs

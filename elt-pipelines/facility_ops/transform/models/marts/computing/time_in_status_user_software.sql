@@ -16,7 +16,7 @@ time_in_status_user_software as (
         when status = 'analyzing' then time_in_status
         else null
         end
-    ) as time_in_analysing_secs,
+    ) as time_in_analyzing_secs,
     MAX(
         case
         when status = 'backlog' then time_in_status
