@@ -64,7 +64,7 @@ class Extract(BaseExtract[AtlassianCredentials]):
             ),
         )
         yield (
-            "issue_status_changelog",
+            "issue_status_changelogs",
             ResourceProperties(
                 extractor=self.extract_issue_status_changelogs,
                 write_properties=ResourceWriteProperties(write_mode="replace"),
