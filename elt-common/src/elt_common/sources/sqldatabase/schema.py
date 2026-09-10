@@ -6,6 +6,7 @@ import uuid
 import pyarrow as pa
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.dialects.oracle import RAW
 
 
 def to_pyarrow_schema(table: sa.Table) -> pa.Schema:
@@ -63,6 +64,7 @@ _EXTENDED_SQL_TYPES = {
     sa.VARCHAR: _SQL_ROOT_TYPES[sa.String],
     postgresql.JSON: _SQL_ROOT_TYPES[sa.JSON],
     postgresql.JSONB: _SQL_ROOT_TYPES[sa.JSON],
+    RAW: _SQL_ROOT_TYPES[sa.LargeBinary],
 }
 
 _SQL_TYPE_MAP = _SQL_ROOT_TYPES | _EXTENDED_SQL_TYPES
