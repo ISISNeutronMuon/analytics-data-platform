@@ -15,8 +15,7 @@ proposal = [
 ]
 
 isisuserdb = [
-    "oracledb>=2.0.0",
-    "sqlalchemy>=2.0.0",
+    "sqlalchemy[oracle-oracledb]>=2.0.0",
 ]
 
 statusdisplay = [
