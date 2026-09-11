@@ -4,7 +4,7 @@ import json
 import logging
 from abc import abstractmethod
 from collections.abc import Callable, Generator, Iterable, Iterator
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import pyarrow as pa
 import pyarrow.compute as pc
@@ -191,6 +191,21 @@ class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
 
             yield resource_name, properties
 
+    def _columns_for_select(self, table: sa.Table) -> Iterable[Any]:
+        """Retrieve columns for selection applying any DB-specific requirements."""
+        if self._engine.dialect.name == "oracle":
+            # Apply UTC extraction strictly to Oracle databases to avoid Thin mode DPY-3022 errors
+            selected_cols = []
+            for col in table.columns:
+                col_type_str = str(col.type).upper()
+                if getattr(col.type, "timezone", False) or "WITH TIME ZONE" in col_type_str:
+                    selected_cols.append(sa.func.sys_extract_utc(col).label(col.name))
+                else:
+                    selected_cols.append(col)
+            return selected_cols
+        else:
+            return table.columns
+
     def _extract_table(
         self,
         name: str,
@@ -206,23 +221,7 @@ class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
             autoload_with=self._engine,
         )
 
-        # Apply UTC extraction strictly to Oracle databases to avoid Thin mode DPY-3022 errors
-        is_oracle = self._engine.dialect.name == "oracle"
-
-        selected_cols = []
-        for col in table.columns:
-            if is_oracle:
-                col_type_str = str(col.type).upper()
-                is_tz = getattr(col.type, "timezone", False) or "WITH TIME ZONE" in col_type_str
-
-                if is_tz:
-                    selected_cols.append(sa.func.sys_extract_utc(col).label(col.name))
-                else:
-                    selected_cols.append(col)
-            else:
-                selected_cols.append(col)
-
-        query = sa.select(*selected_cols)
+        query = sa.select(*self._columns_for_select(table))
         if watermark is not None:
             column, max_value = watermark.column, watermark.value
             LOGGER.debug(f"Cursor value detected. Limiting query to {column} > {max_value}")

@@ -9,7 +9,6 @@ from elt_common.sources.sqldatabase import (
 
 class PipelineOracleConfig(SqlDatabaseSourceConfig):
     drivername: str = "oracle+oracledb"
-    database_schema: str = "isisuserdb"  # Source schema of this pipeline
     tables: list[str]
 
     @property
@@ -27,7 +26,7 @@ class PipelineOracleConfig(SqlDatabaseSourceConfig):
 class Extract(SqlDatabaseExtract):
     config_cls = PipelineOracleConfig
 
-    def table_info(self) -> dict[str, TableInfo]:
+    def table_info(self) -> dict[str, TableInfo | None]:
         """Defines the target tables and their ingestion strategy."""
         return {
             table_name: TableInfo(
