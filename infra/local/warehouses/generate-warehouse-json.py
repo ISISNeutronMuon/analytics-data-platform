@@ -29,8 +29,8 @@ def build(name: str) -> dict:
         "warehouse-name": name,
         "storage-credential": {
             "type": "s3",
-            "aws-access-key-id": os.environ["ADMIN_USER"],
-            "aws-secret-access-key": os.environ["ADMIN_PASSWORD"],
+            "aws-access-key-id": os.environ["LOCAL_ADMIN_MACHINE"],
+            "aws-secret-access-key": os.environ["LOCAL_PASSWORD"],
             "credential-type": "access-key",
         },
         "storage-profile": {
@@ -49,7 +49,7 @@ def build(name: str) -> dict:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 4:
+    if len(argv) != 2:
         print(
             "Usage: generate-warehouse-json.py <warehouse_name>",
             file=sys.stderr,

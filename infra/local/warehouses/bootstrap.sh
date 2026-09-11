@@ -10,16 +10,15 @@ WAREHOUSE_PREFIXES="facility_ops fase"
 
 function bootstrap-lakekeeper-warehouse() {
     local name=$1
-    # Generate the Lakekeeper warehouse config to a temporary file.
-    uv run $BOOTSTRAP_SCRIPTS_DIR/generate-warehouse-json.py "$name" "$ADMIN_USER" "$ADMIN_PASSWORD" > "/tmp/$name.json"
+    uv run $BOOTSTRAP_SCRIPTS_DIR/generate-warehouse-json.py "$name" > "/tmp/$name.json"
     uv run $BOOTSTRAP_SCRIPTS_DIR/bootstrap-warehouse.py \
         --lakekeeper-project-name "$KC_REALM_NAME" \
         --keycloak-url "$KEYCLOAK_URL_INTERNAL" \
         --keycloak-admin-credentials "$KC_BOOTSTRAP_ADMIN_USERNAME:$KC_BOOTSTRAP_ADMIN_PASSWORD" \
         --keycloak-user-realm "$KC_REALM_NAME" \
-        --bootstrap-credentials "machine-infra:s3cr3t" \
+        --bootstrap-credentials "$LOCAL_ADMIN_MACHINE:$LOCAL_PASSWORD" \
         --token-scope lakekeeper \
-        --server-admin "$ADMIN_USER" \
+        --server-admin "$LOCAL_ADMIN_USER" \
         --log-level=DEBUG \
         --warehouse-json-file "/tmp/$name.json" \
         "http://lakekeeper:8181"
