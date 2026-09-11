@@ -241,35 +241,54 @@ services:
         condition: service_healthy
     networks: *networks-common
 
-  lakekeeper-bootstrap:
-    container_name: local-lakehouse-lakekeeper-bootstrap
-    image: ghcr.io/astral-sh/uv:python3.14-trixie-slim
+  #########################################################
+  # Warehouse bootstrap
+  #
+  # Creates Lakekeeper warehouses and the matching Trino
+  # Iceberg catalogs. Lakekeeper warehouse config is
+  # generated into a temporary JSON file at runtime and
+  # Trino catalogs are created dynamically via the Trino
+  # REST API (no static config files are stored under
+  # ./warehouses/).
+  #########################################################
+  warehouse-bootstrap:
+    container_name: local-lakehouse-warehouse-bootstrap
+    image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
     env_file: *env_file-common
     entrypoint:
       - /bin/bash
       - -c
       - |
         set -euo pipefail
-        for name in "$${WAREHOUSE_NAME}_landing" "$${WAREHOUSE_NAME}"; do \
-          uv run /opt/work/bootstrap-warehouse.py \
-            --lakekeeper-project-name "$$KC_REALM_NAME" \
-            --keycloak-url "$$KEYCLOAK_URL_INTERNAL" \
-            --keycloak-admin-credentials "$$KC_BOOTSTRAP_ADMIN_USERNAME:$$KC_BOOTSTRAP_ADMIN_PASSWORD" \
-            --keycloak-user-realm "$$KC_REALM_NAME" \
-            --bootstrap-credentials "machine-infra:s3cr3t" \
-            --token-scope lakekeeper \
-            --server-admin "$$ADMIN_USER" \
-            --log-level=DEBUG \
-            --warehouse-json-file "/opt/work/warehouses/$$name.json" \
-            "http://lakekeeper:8181"; \
+        for base in $${WAREHOUSE_NAMES}; do
+          for name in "$${base}_landing" "$${base}"; do
+            # Generate the Lakekeeper warehouse config to a temporary file.
+            uv run /opt/work/generate-warehouse-json.py "$$name" > "/tmp/$$name.json"
+            uv run /opt/work/bootstrap-warehouse.py \
+              --lakekeeper-project-name "$$KC_REALM_NAME" \
+              --keycloak-url "$$KEYCLOAK_URL_INTERNAL" \
+              --keycloak-admin-credentials "$$KC_BOOTSTRAP_ADMIN_USERNAME:$$KC_BOOTSTRAP_ADMIN_PASSWORD" \
+              --keycloak-user-realm "$$KC_REALM_NAME" \
+              --bootstrap-credentials "machine-infra:s3cr3t" \
+              --token-scope lakekeeper \
+              --server-admin "$$ADMIN_USER" \
+              --log-level=DEBUG \
+              --warehouse-json-file "/tmp/$$name.json" \
+              "http://lakekeeper:8181"
+            # Create the matching Trino Iceberg catalog dynamically.
+            uv run /opt/work/create-trino-catalog.py "$$name"
+          done
         done
     restart: "no"
     depends_on:
       lakekeeper:
         condition: service_healthy
+      trino:
+        condition: service_healthy
     volumes:
       - "../ansible/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py"
-      - "./warehouses/lakekeeper:/opt/work/warehouses:ro"
+      - "./generate-warehouse-json.py:/opt/work/generate-warehouse-json.py:ro"
+      - "./create-trino-catalog.py:/opt/work/create-trino-catalog.py:ro"
     networks: *networks-common
 
   #########################################################
@@ -310,7 +329,9 @@ services:
       retries: 2
     volumes:
       - "./trino/etc:/etc/trino"
-      - "./warehouses/trino:/etc/trino/catalog"
+      # Persist the node data dir so dynamically created catalogs
+      # (catalog.store=file) survive container recreation.
+      - "trino_data:/data/trino"
     networks: *networks-common
 
 networks:
@@ -328,3 +349,5 @@ volumes:
     name: local-lakehouse_redis_data
   seaweedfs_data:
     name: local-lakehouse_seaweedfs_data
+  trino_data:
+    name: local-lakehouse_trino_data
