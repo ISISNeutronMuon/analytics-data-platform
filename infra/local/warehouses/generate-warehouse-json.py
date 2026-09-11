@@ -29,8 +29,8 @@ def build(name: str) -> dict:
         "warehouse-name": name,
         "storage-credential": {
             "type": "s3",
-            "aws-access-key-id": os.environ["ADP_SUPERUSER"],
-            "aws-secret-access-key": os.environ["ADP_SUPERUSER_PASS"],
+            "aws-access-key-id": os.environ["ADMIN_USER"],
+            "aws-secret-access-key": os.environ["ADMIN_PASSWORD"],
             "credential-type": "access-key",
         },
         "storage-profile": {
@@ -49,8 +49,11 @@ def build(name: str) -> dict:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 2:
-        print("Usage: generate-warehouse-json.py <warehouse_name>", file=sys.stderr)
+    if len(argv) != 4:
+        print(
+            "Usage: generate-warehouse-json.py <warehouse_name>",
+            file=sys.stderr,
+        )
         return 1
     json.dump(build(argv[1]), sys.stdout, indent=2)
     return 0

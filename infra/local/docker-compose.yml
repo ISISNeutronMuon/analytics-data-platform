@@ -1,5 +1,22 @@
 # A development stack to emulate the Lakehouse. This is intended for local development only.
 # See ./README.md
+networks:
+  local-lakehouse_net:
+    name: local-lakehouse-network
+
+volumes:
+  cert_data:
+    name: local-lakehouse_cert_data
+  postgres-shared_data:
+    name: local-lakehouse_postgres_data
+  keycloak_data:
+    name: local-lakehouse_keycloak_data
+  shared_redis_data:
+    name: local-lakehouse_redis_data
+  seaweedfs_data:
+    name: local-lakehouse_seaweedfs_data
+  trino_data:
+    name: local-lakehouse_trino_data
 
 services:
   #########################################################
@@ -221,55 +238,6 @@ services:
         condition: service_healthy
     networks: *networks-common
 
-  #########################################################
-  # Warehouse bootstrap
-  #
-  # Creates Lakekeeper warehouses and the matching Trino
-  # Iceberg catalogs. Lakekeeper warehouse config is
-  # generated into a temporary JSON file at runtime and
-  # Trino catalogs are created dynamically via the Trino
-  # REST API (no static config files are stored under
-  # ./warehouses/).
-  #########################################################
-  warehouse-bootstrap:
-    container_name: local-lakehouse-warehouse-bootstrap
-    image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
-    env_file: *env_file-common
-    entrypoint:
-      - /bin/bash
-      - -c
-      - |
-        set -euo pipefail
-        for base in $${WAREHOUSE_NAMES}; do
-          for name in "$${base}_landing" "$${base}"; do
-            # Generate the Lakekeeper warehouse config to a temporary file.
-            uv run /opt/work/generate-warehouse-json.py "$$name" > "/tmp/$$name.json"
-            uv run /opt/work/bootstrap-warehouse.py \
-              --lakekeeper-project-name "$$KC_REALM_NAME" \
-              --keycloak-url "$$KEYCLOAK_URL_INTERNAL" \
-              --keycloak-admin-credentials "$$KC_BOOTSTRAP_ADMIN_USERNAME:$$KC_BOOTSTRAP_ADMIN_PASSWORD" \
-              --keycloak-user-realm "$$KC_REALM_NAME" \
-              --bootstrap-credentials "machine-infra:s3cr3t" \
-              --token-scope lakekeeper \
-              --server-admin "$$ADMIN_USER" \
-              --log-level=DEBUG \
-              --warehouse-json-file "/tmp/$$name.json" \
-              "http://lakekeeper:8181"
-            # Create the matching Trino Iceberg catalog dynamically.
-            uv run /opt/work/create-trino-catalog.py "$$name"
-          done
-        done
-    restart: "no"
-    depends_on:
-      lakekeeper:
-        condition: service_healthy
-      trino:
-        condition: service_healthy
-    volumes:
-      - "../ansible/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py"
-      - "./generate-warehouse-json.py:/opt/work/generate-warehouse-json.py:ro"
-      - "./create-trino-catalog.py:/opt/work/create-trino-catalog.py:ro"
-    networks: *networks-common
 
   #########################################################
   # Shared Redis cache
@@ -314,20 +282,26 @@ services:
       - "trino_data:/data/trino"
     networks: *networks-common
 
-networks:
-  local-lakehouse_net:
-    name: local-lakehouse-network
-
-volumes:
-  mkcert_data:
-    name: local-lakehouse_mkcert_data
-  postgres-shared_data:
-    name: local-lakehouse_postgres_data
-  keycloak_data:
-    name: local-lakehouse_keycloak_data
-  shared_redis_data:
-    name: local-lakehouse_redis_data
-  seaweedfs_data:
-    name: local-lakehouse_seaweedfs_data
-  trino_data:
-    name: local-lakehouse_trino_data
+  #########################################################
+  # Warehouses bootstrap
+  #
+  # Creates Lakekeeper warehouses and the matching Trino
+  # Iceberg catalogs.
+  #########################################################
+  warehouses-bootstrap:
+    container_name: local-lakehouse-warehouse-bootstrap
+    image: ghcr.io/astral-sh/uv:python3.14-trixie-slim
+    env_file: *env_file-common
+    entrypoint: ["/bin/bash", "/opt/work/bootstrap.sh"]
+    restart: "no"
+    depends_on:
+      lakekeeper:
+        condition: service_healthy
+      trino:
+        condition: service_healthy
+    volumes:
+      - "./warehouses/bootstrap.sh:/opt/work/bootstrap.sh:ro"
+      - "./warehouses/create-trino-catalog.py:/opt/work/create-trino-catalog.py:ro"
+      - "./warehouses/generate-warehouse-json.py:/opt/work/generate-warehouse-json.py:ro"
+      - "../ansible/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py:ro"
+    networks: *networks-common
