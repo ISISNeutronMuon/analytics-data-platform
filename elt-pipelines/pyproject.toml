@@ -16,6 +16,11 @@ packages = ["facility_ops", "fase"]
 proposal = [
     "sqlalchemy[postgresql-psycopgbinary]>=2.0.0",
 ]
+
+isisuserdb = [
+    "sqlalchemy[oracle-oracledb]>=2.0.0",
+]
+
 statusdisplay = [
     "requests>=2.34.2",
 ]
