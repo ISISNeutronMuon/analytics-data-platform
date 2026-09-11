@@ -42,3 +42,5 @@ models:
       +materialized: table
       accelerator:
         +schema: accelerator
+      computing:
+        +schema: computing
