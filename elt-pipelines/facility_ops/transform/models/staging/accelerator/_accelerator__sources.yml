@@ -10,3 +10,8 @@ sources:
       - name: LogBookChapter
       - name: Logbooks
       - name: MoreEntryColumns
+  - name: accelerator_statusdisplay
+    database: facility_ops_landing
+    tables:
+      - name: cycles__phases
+      - name: cycles

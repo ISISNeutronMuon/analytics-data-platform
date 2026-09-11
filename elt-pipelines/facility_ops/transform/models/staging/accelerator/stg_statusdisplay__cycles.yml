@@ -1,0 +1,25 @@
+models:
+  - name: stg_statusdisplay__cycles
+    description: >
+      Each record defines a phase of a cycle, including which target was
+      running. Multiple records exist for a given period of time if more than
+      one target station was running.
+
+unit_tests:
+  - name: test_stg_statusdisplay__cycles
+    model: stg_statusdisplay__cycles
+    given:
+      - input: ref('base_statusdisplay__cycles')
+        format: sql
+        fixture: base_statusdisplay__cycles
+      - input: ref('base_statusdisplay__cycles__phases')
+        format: sql
+        fixture: base_statusdisplay__cycles__phases
+    expect:
+      rows:
+        - {
+            name: "2024/2",
+            started_at: "2024-07-09 07:30:00 UTC",
+            ended_at: "2024-07-24 07:30:00 UTC",
+            target: 1,
+          }
