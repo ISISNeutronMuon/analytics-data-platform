@@ -63,7 +63,7 @@ services:
   #########################################################
   postgres-shared:
     container_name: local-lakehouse-postgres-shared
-    image: postgres:18-bookworm
+    image: postgres:18-trixie
     env_file: *env_file-common
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -p 5432"]
@@ -74,24 +74,7 @@ services:
     networks: *networks-common
     volumes:
       - "postgres-shared_data:/var/lib/postgresql"
-
-  postgres-shared-bootstrap:
-    container_name: local-lakehouse-postgres-shared-bootstrap
-    image: postgres:18-bookworm
-    entrypoint:
-      - /bin/bash
-      - -c
-      - |
-        /postgres-ensuredb.sh postgres-shared $$POSTGRES_USER $$OPENFGA_DB_NAME
-        /postgres-ensuredb.sh postgres-shared $$POSTGRES_USER $$LAKEKEEPER_DB_NAME
-    env_file: *env_file-common
-    restart: "no"
-    depends_on:
-      postgres-shared:
-        condition: service_healthy
-    networks: *networks-common
-    volumes:
-      - "./postgres-ensuredb.sh:/postgres-ensuredb.sh:ro"
+      - "./postgres/initdb.d:/docker-entrypoint-initdb.d:ro"
 
   #########################################################
   # Keycloak identity provider
@@ -181,8 +164,8 @@ services:
     env_file: *env_file-common
     command: migrate
     depends_on:
-      postgres-shared-bootstrap:
-        condition: service_completed_successfully
+      postgres-shared:
+        condition: service_healthy
     networks: *networks-common
 
   openfga:
@@ -224,8 +207,8 @@ services:
         condition: service_healthy
       keycloak-bootstrap:
         condition: service_completed_successfully
-      postgres-shared-bootstrap:
-        condition: service_completed_successfully
+      postgres-shared:
+        condition: service_started
     networks: *networks-common
 
   lakekeeper-migrate:
@@ -235,8 +218,6 @@ services:
     restart: "no"
     command: ["migrate"]
     depends_on:
-      postgres-shared-bootstrap:
-        condition: service_completed_successfully
       openfga:
         condition: service_healthy
     networks: *networks-common
