@@ -2,18 +2,19 @@
 
 import tempfile
 import time
-from typing import Generator
 import urllib.parse
-import shutil
 import warnings
+from collections.abc import Generator
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
-from minio import Minio
 import pytest
 import tenacity
+from minio import Minio
 
 from . import DEFAULT_RETRY_ARGS
 from .dlt import PyIcebergDestinationTestConfiguration
-from .lakekeeper import Settings, Server
+from .lakekeeper import Server, Settings
 from .sqlcatalog import SqlCatalogWarehouse
 
 
@@ -28,10 +29,11 @@ def warehouse(settings: Settings) -> Generator:
         )
 
     if settings.catalog_type == "sql":
-        warehouse = SqlCatalogWarehouse(settings.warehouse_name)
+        d = TemporaryDirectory()
+        warehouse = SqlCatalogWarehouse(settings.warehouse_name, Path(d.name))
 
         def cleanup_func():
-            shutil.rmtree(warehouse.workdir.name)
+            d.cleanup()
     else:
         server = Server(settings)
         storage_config = settings.storage_config()

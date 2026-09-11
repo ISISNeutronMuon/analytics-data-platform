@@ -95,6 +95,17 @@ class Extract(BaseExtract):
 There is functionality built in to `elt_common` for some common types of pipeline. These can be found in the
 [`sources` package](../elt-common/src/elt_common/sources).
 
+### Testing
+
+To test a pipeline, create a `test_<job name>.py` file in the same directory as the pipeline script and use
+the `test_catalog` and `run_test_ingest` fixtures defined in `elt_common.testing.pipelines`.
+
+Tests are invoked with `pytest --disable-plugin-autoload -p elt_common.testing.pipelines`. The plugin arguments
+are needed temporarily, until the `elt_common.testing.fixtures` module (which provides fixtures for `dlt` based
+testing) is removed.
+
+**Configuration values need to be set for any pipeline(s) under test, as per [above](#configuration).**
+
 ## Directory structure
 
 The project uses the following directory structure:

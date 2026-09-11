@@ -78,7 +78,7 @@ def _discover_jobs(warehouse_name: str, ingest_dir: Path):
     """
 
     return [
-        _create_ingest_manifest(warehouse_name, job_dir)
+        create_ingest_manifest(warehouse_name, job_dir)
         for domain_dir in ingest_dir.iterdir()
         if domain_dir.is_dir()
         for job_dir in domain_dir.iterdir()
@@ -86,7 +86,7 @@ def _discover_jobs(warehouse_name: str, ingest_dir: Path):
     ]
 
 
-def _create_ingest_manifest(warehouse_name: str, job_dir: Path) -> ELTIngestManifest:
+def create_ingest_manifest(warehouse_name: str, job_dir: Path) -> ELTIngestManifest:
     return ELTIngestManifest(
         warehouse_name=warehouse_name,
         name=job_dir.name,
