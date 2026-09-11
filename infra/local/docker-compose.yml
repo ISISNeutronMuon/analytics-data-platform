@@ -27,37 +27,13 @@ services:
   # This is primarily for Trino that requires the use of
   # HTTPS when authentication is enabled.
   #########################################################
-  mkcert:
-    container_name: local-lakehouse-mkcert
-    image: alpine/mkcert
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        certfile=/certs/localdev.pem
-        if [ ! -f "$$certfile" ]; then
-          echo "$$certfile not found. Creating new CA and certificate."
-          cd /certs || exit 1
-          mkcert -cert-file "$$certfile" -key-file localdev-key.pem localhost 127.0.0.1 ::1
-          cp "$$(mkcert -CAROOT)"/* .
-        else
-          echo "$$certfile exists, skipping certificate creation."
-        fi
-    restart: "no"
-    networks: &networks-common
-      - local-lakehouse_net
-    volumes:
-      - "mkcert_data:/certs"
-
   adp-router:
     container_name: local-lakehouse-traefik
     image: traefik:v3.7.13
     env_file: &env_file-common
-      - path: ./env-local
+      - path: ./env-common
         required: true
-    depends_on:
-      mkcert:
-        condition: service_completed_successfully
+    entrypoint: ["/bin/sh", "/entrypoint-ssl.sh"]
     healthcheck:
       test: ["CMD-SHELL", "traefik healthcheck"]
       interval: 30s
@@ -69,10 +45,12 @@ services:
       - "59000:59000" # S3 entrypoint
       - "58443:8443" # TLS entrypoint for Trino (cannot run on non-root path prefix or without https with auth enabled)
     volumes:
-      - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
-      - "./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
-      - "mkcert_data:/certs"
-    networks: *networks-common
+      - "./adp-router/entrypoint-ssl.sh:/entrypoint-ssl.sh:ro"
+      - "./adp-router/traefik.yml:/etc/traefik/traefik.yml:ro"
+      - "./adp-router/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
+      - "cert_data:/certs"
+    networks: &networks-common
+      - local-lakehouse_net
 
   #########################################################
   # Database shared by all services
@@ -237,7 +215,6 @@ services:
       openfga:
         condition: service_healthy
     networks: *networks-common
-
 
   #########################################################
   # Shared Redis cache
