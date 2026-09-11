@@ -68,6 +68,14 @@ LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
 LAKEKEEPER__UI__OPENID_SCOPE="lakekeeper openid profile email"
 
 WAREHOUSE_NAME=facility_ops
+# Space-separated list of warehouses to bootstrap. Each entry creates a
+# "<name>" and "<name>_landing" Lakekeeper warehouse plus matching Trino catalog.
+WAREHOUSE_NAMES=facility_ops
+# S3 credentials for warehouse storage (must match the seaweedfs IAM config in
+# seaweedfs/s3-iam-config.json). Used by both the Lakekeeper warehouse config
+# and the Trino Iceberg catalogs.
+ADP_SUPERUSER=adpsuperuser
+ADP_SUPERUSER_PASS=adppassword
 ###############################################################################
 # Trino
 ###############################################################################
