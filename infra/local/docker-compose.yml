@@ -254,9 +254,6 @@ services:
       retries: 2
     volumes:
       - "./trino/etc:/etc/trino"
-      # Persist the node data dir so dynamically created catalogs
-      # (catalog.store=file) survive container recreation.
-      - "trino_data:/data/trino"
     networks: *networks-common
 
   #########################################################
