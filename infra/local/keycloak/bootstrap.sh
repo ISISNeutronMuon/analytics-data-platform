@@ -1,6 +1,6 @@
 #!/bin/bash
 # See https://docs.redhat.com/en/documentation/red_hat_build_of_keycloak/26.2/html/server_administration_guide/admin_cli
-set -ux
+set -euo pipefail
 
 KC_ADM=/opt/keycloak/bin/kcadm.sh
 

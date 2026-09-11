@@ -4,8 +4,8 @@
       "name": "lakekeeper",
       "credentials": [
         {
-          "accessKey": "adpsuperuser",
-          "secretKey": "adppassword"
+          "accessKey": "admin",
+          "secretKey": "s3cr3t"
         }
       ],
       "actions": ["Admin", "Read", "List", "Tagging", "Write"]
