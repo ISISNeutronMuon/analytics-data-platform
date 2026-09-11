@@ -34,8 +34,8 @@ LOGGER = logging.getLogger(__name__)
 def _get_connection():
     host = os.environ["ROUTER_HOSTNAME_INTERNAL"]
     port = int(os.environ.get("TRINO_HTTPS_PORT", "8443"))
-    user = os.environ["ADMIN_USER"]
-    password = os.environ["ADMIN_PASSWORD"]
+    user = os.environ["LOCAL_ADMIN_MACHINE"]
+    password = os.environ["LOCAL_PASSWORD"]
 
     # TLS entrypoint for Trino on Traefik. Password auth requires HTTPS, so we
     # go through the router that terminates TLS. This runs inside the compose
@@ -67,12 +67,7 @@ def catalog_exists(name: str) -> bool:
 
 
 def create_catalog_sql(name: str) -> str:
-    """Build the CREATE CATALOG statement.
-
-    Property names are double-quoted (they contain dashes); values are
-    single-quoted varchars as required by Trino. Environment-derived values use
-    ``${ENV:...}`` so the Trino coordinator resolves them.
-    """
+    """Build the CREATE CATALOG statement."""
     # The landing warehouses share the same connector configuration; only the
     # Lakekeeper warehouse name differs, which equals the Trino catalog name.
     properties = {
@@ -87,7 +82,7 @@ def create_catalog_sql(name: str) -> str:
         "iceberg.rest-catalog.oauth2.server-uri": (
             "${ENV:KEYCLOAK_REALM_INTERNAL}/protocol/openid-connect/token"
         ),
-        "iceberg.rest-catalog.oauth2.credential": "machine-infra:s3cr3t",
+        "iceberg.rest-catalog.oauth2.credential": "${ENV:LOCAL_ADMIN_MACHINE}:${ENV:LOCAL_PASSWORD}",
         "iceberg.rest-catalog.oauth2.scope": "lakekeeper",
         # Our local S3 implementation has STS enabled but our production S3
         # doesn't, so we keep vended credentials off and provide the S3 access
@@ -96,8 +91,8 @@ def create_catalog_sql(name: str) -> str:
         "s3.endpoint": "http://${ENV:ROUTER_HOSTNAME_INTERNAL}:59000",
         "s3.region": "local-01",
         "s3.path-style-access": "true",
-        "s3.aws-access-key": "${ENV:ADMIN_USER}",
-        "s3.aws-secret-key": "${ENV:ADMIN_PASSWORD}",
+        "s3.aws-access-key": "${ENV:LOCAL_ADMIN_MACHINE}",
+        "s3.aws-secret-key": "${ENV:LOCAL_PASSWORD}",
     }
     with_clause = ",\n  ".join(
         f"\"{key}\" = '{value}'" for key, value in properties.items()

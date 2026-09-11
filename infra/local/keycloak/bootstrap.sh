@@ -89,7 +89,7 @@ $KC_ADM update realms/"$KC_REALM_NAME"/client-scopes/"$id_scope_roles"/protocol-
 # Confidential clients
 $KC_ADM create clients \
   --target-realm "$KC_REALM_NAME" \
-  --set clientId=machine-infra \
+  --set clientId="$LOCAL_ADMIN_MACHINE" \
   --set publicClient=false \
   --set standardFlowEnabled=false \
   --set serviceAccountsEnabled=true \
@@ -97,11 +97,11 @@ $KC_ADM create clients \
   --set 'defaultClientScopes=["web-origins", "acr", "profile", "roles", "basic", "email"]' \
   --set 'optionalClientScopes=["lakekeeper", "address", "phone", "offline_access", "organization", "microprofile-jwt"]' \
   --set 'attributes={ "access.token.lifespan": 600 }' \
-  --set 'secret=s3cr3t'
+  --set secret="$LOCAL_PASSWORD"
 # Allow this account to administer the realm
 $KC_ADM add-roles \
   --target-realm "$KC_REALM_NAME" \
-  --uusername service-account-machine-infra \
+  --uusername "service-account-$LOCAL_ADMIN_MACHINE" \
   --cclientid realm-management \
   --rolename realm-admin
 
@@ -141,12 +141,12 @@ $KC_ADM create clients \
 ####################
 $KC_ADM create users \
     --target-realm "$KC_REALM_NAME" \
-    --set username="$ADMIN_USER" \
+    --set username="$LOCAL_ADMIN_USER" \
     --set firstName=Admin \
     --set lastName=User \
     --set email=admin@local.dev \
     --set enabled=true
 $KC_ADM set-password \
   --target-realm "$KC_REALM_NAME" \
-  --username "$ADMIN_USER" \
-  --new-password "$ADMIN_PASSWORD"
+  --username "$LOCAL_ADMIN_USER" \
+  --new-password "$LOCAL_PASSWORD"

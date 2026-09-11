@@ -4,7 +4,7 @@
       "name": "lakekeeper",
       "credentials": [
         {
-          "accessKey": "admin",
+          "accessKey": "localadmin_machine",
           "secretKey": "s3cr3t"
         }
       ],

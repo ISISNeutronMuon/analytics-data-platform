@@ -26,14 +26,14 @@ superset db upgrade
 echo_step "Complete" "Applying DB migrations"
 
 # Create an admin user (if supplied)
-if [ -n "$SUPERSET_ADMIN_USER" ]; then
+if [ -n "$SUPERSET_LOCAL_ADMIN_USER" ]; then
   echo_step "Starting" "Setting up admin user"
   superset fab create-admin \
-                --username "$SUPERSET_ADMIN_USER" \
+                --username "$SUPERSET_LOCAL_ADMIN_USER" \
                 --firstname "$SUPERSET_ADMIN_FIRSTNAME" \
                 --lastname "$SUPERSET_ADMIN_LASTNAME" \
                 --email "$SUPERSET_ADMIN_EMAIL" \
-                --password "$SUPERSET_ADMIN_PASSWORD"
+                --password "$SUPERSET_LOCAL_PASSWORD"
   echo_step "Complete" "Setting up admin user"
 fi
 

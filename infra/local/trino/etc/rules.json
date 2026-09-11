@@ -6,7 +6,7 @@
       "allow": "read-only"
     },
     {
-      "user": "admin",
+      "user": "localadmin_machine",
       "catalog": ".*",
       "allow": "owner"
     }
