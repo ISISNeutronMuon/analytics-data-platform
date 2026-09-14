@@ -7,7 +7,6 @@ from flask_appbuilder.security.manager import AUTH_OAUTH
 from flask_caching.backends.rediscache import RedisCache
 from superset.security import SupersetSecurityManager
 
-
 logger = logging.getLogger()
 
 #####
@@ -20,18 +19,19 @@ if LOG_LEVEL == logging.DEBUG:
     SILENCE_FAB = False
 
 #####
-# Supersets own database details
-SUPERSET_DB_DIALECT = os.getenv("SUPERSET_DB_DIALECT")
-SUPERSET_DB_USER = os.getenv("SUPERSET_DB_USER")
-SUPERSET_DB_PASSWORD = os.getenv("SUPERSET_DB_PASSWORD")
-SUPERSET_DB_HOST = os.getenv("SUPERSET_DB_HOST")
-SUPERSET_DB_PORT = os.getenv("SUPERSET_DB_PORT")
-SUPERSET_DB_NAME = os.getenv("SUPERSET_DB_NAME")
-# The SQLAlchemy connection string.
+# Superset DB
+pg_user, pg_passwd, pg_host, pg_port, db_name = (
+    os.environ[key]
+    for key in (
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_HOST",
+        "POSTGRES_PORT",
+        "SUPERSET_FOPS_DB_NAME",
+    )
+)
 SQLALCHEMY_DATABASE_URI = (
-    f"{SUPERSET_DB_DIALECT}://"
-    f"{SUPERSET_DB_USER}:{SUPERSET_DB_PASSWORD}@"
-    f"{SUPERSET_DB_HOST}:{SUPERSET_DB_PORT}/{SUPERSET_DB_NAME}"
+    f"postgresql://{pg_user}:{pg_passwd}@{pg_host}:{pg_port}/{db_name}"
 )
 
 #####
@@ -110,15 +110,16 @@ AUTH_ROLES_SYNC_AT_LOGIN = True
 
 #####
 # Caching layer
-REDIS_HOST = os.getenv("REDIS_HOST", "redis")
-REDIS_PORT = os.getenv("REDIS_PORT", "6379")
-REDIS_DB = int(os.getenv("REDIS_DB", "0"))
+redis_host, redis_port, redis_db = (
+    os.environ[key] for key in ("REDIS_HOST", "REDIS_PORT", "SUPERSET_REDIS_DB")
+)
+
 COMMON_CACHE_CONFIG = {
     "CACHE_TYPE": "RedisCache",
     "CACHE_DEFAULT_TIMEOUT": 300,
-    "CACHE_REDIS_HOST": REDIS_HOST,
-    "CACHE_REDIS_PORT": REDIS_PORT,
-    "CACHE_REDIS_DB": REDIS_DB,
+    "CACHE_REDIS_HOST": redis_host,
+    "CACHE_REDIS_PORT": redis_port,
+    "CACHE_REDIS_DB": redis_db,
 }
 CACHE_CONFIG = dict(**COMMON_CACHE_CONFIG, CACHE_KEY_PREFIX="superset_metadata_cache")
 DATA_CACHE_CONFIG = dict(
@@ -126,7 +127,10 @@ DATA_CACHE_CONFIG = dict(
 )
 # SQL lab
 RESULTS_BACKEND = RedisCache(
-    host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, key_prefix="superset_results_backend"
+    host=COMMON_CACHE_CONFIG["CACHE_REDIS_HOST"],
+    port=COMMON_CACHE_CONFIG["CACHE_REDIS_PORT"],
+    db=COMMON_CACHE_CONFIG["CACHE_REDIS_DB"],
+    key_prefix="superset_results_backend",
 )
 SQLLAB_CTAS_NO_LIMIT = True
 
@@ -134,9 +138,9 @@ SQLLAB_CTAS_NO_LIMIT = True
 #####
 # Celery
 class CeleryConfig:
-    broker_url = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+    broker_url = f"redis://{redis_host}:{redis_port}/{redis_db}"
     imports = ("superset.sql_lab",)
-    result_backend = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+    result_backend = broker_url
     worker_prefetch_multiplier = 1
     task_acks_late = False
     beat_schedule = {
@@ -152,14 +156,11 @@ class CeleryConfig:
 
 
 CELERY_CONFIG = CeleryConfig
-WEBDRIVER_BASEURL = f"http://localhost:8088{os.environ.get('SUPERSET_APP_ROOT', '')}/"
+WEBDRIVER_BASEURL = f"http://localhost:8088{os.environ['SUPERSET_APP_ROOT']}/"
 # The base URL for the email report hyperlinks.
 WEBDRIVER_BASEURL_USER_FRIENDLY = (
-    f"https://localhost:50080{os.environ.get('SUPERSET_APP_ROOT', '')}/"
+    f"https://localhost:50080{os.environ['SUPERSET_APP_ROOT']}/"
 )
-
-
-#####
 
 #####
 # Misc features

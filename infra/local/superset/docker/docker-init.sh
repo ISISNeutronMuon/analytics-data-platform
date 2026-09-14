@@ -26,14 +26,14 @@ superset db upgrade
 echo_step "Complete" "Applying DB migrations"
 
 # Create an admin user (if supplied)
-if [ -n "$SUPERSET_LOCAL_ADMIN_USER" ]; then
+if [ -n "$SUPERSET_ADMIN_USER" ]; then
   echo_step "Starting" "Setting up admin user"
   superset fab create-admin \
-                --username "$SUPERSET_LOCAL_ADMIN_USER" \
+                --username "$SUPERSET_ADMIN_USER" \
                 --firstname "$SUPERSET_ADMIN_FIRSTNAME" \
                 --lastname "$SUPERSET_ADMIN_LASTNAME" \
                 --email "$SUPERSET_ADMIN_EMAIL" \
-                --password "$SUPERSET_LOCAL_PASSWORD"
+                --password "$SUPERSET_ADMIN_PASSWORD"
   echo_step "Complete" "Setting up admin user"
 fi
 
@@ -43,8 +43,8 @@ superset init
 echo_step "Complete" "Setting up roles and perms"
 
 # Create a database connection
-echo_step "Starting" "Setting up Iceberg catalog connection"
+echo_step "Starting" "Setting up Iceberg connection to $WAREHOUSE"
 superset set-database-uri \
-  --database_name "$WAREHOUSE_NAME" \
-  --uri "trino://$TRINO_USER:$TRINO_PASSWORD@$ROUTER_HOSTNAME_INTERNAL:$TRINO_HTTPS_PORT/$WAREHOUSE_NAME?verify=false"
-echo_step "Complete" "Setting up Iceberg catalog connection"
+  --database_name "$WAREHOUSE" \
+  --uri "trino://$TRINO_USER:$TRINO_PASSWORD@$ROUTER_HOSTNAME_INTERNAL:$TRINO_HTTPS_PORT/$WAREHOUSE?verify=false"
+echo_step "Complete" "Setting up Iceberg connection to $WAREHOUSE"

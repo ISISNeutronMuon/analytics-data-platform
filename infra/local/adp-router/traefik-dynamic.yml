@@ -129,7 +129,7 @@ http:
     superset-facility_ops:
       loadBalancer:
         servers:
-          - url: "http://superset-facility_ops-app:8088"
+          - url: "http://superset-fops-app:8088"
     superset-fase:
       loadBalancer:
         servers:

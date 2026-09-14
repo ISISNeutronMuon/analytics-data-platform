@@ -1,0 +1,59 @@
+# Superset instance: facility_ops
+include:
+  - ./docker-compose.yml
+
+x-base-file: &base-file docker-compose-superset.base.yml
+
+x-environment: &environ
+  SUPERSET_APP_ROOT: /workspace/facility_ops
+  SUPERSET_CONFIG_PATH: /app/docker/pythonpath/superset_config_fops.py
+  SUPERSET_REDIS_DB: 1
+  WAREHOUSE: facility_ops
+
+services:
+  superset-fops-app:
+    container_name: local-lakehouse-superset-fops-app
+    extends:
+      file: *base-file
+      service: superset-app
+    environment: *environ
+    depends_on:
+      superset-fops-bootstrap:
+        condition: service_completed_successfully
+
+  superset-fops-bootstrap:
+    container_name: local-lakehouse-superset-fops-bootstrap
+    extends:
+      file: *base-file
+      service: superset-bootstrap
+    environment: *environ
+
+  # superset-facility_ops-worker:
+  #   extends:
+  #     file: *base-file
+  #     service: superset-worker
+  #   profiles:
+  #     - superset-worker
+  #   container_name: local-lakehouse-superset-facility_ops-worker
+  #   env_file: *env-file
+  #   volumes: *superset-volumes
+  #   networks: *local-networks
+  #   depends_on:
+  #     <<: *superset-depends-on
+  #     superset-facility_ops-app:
+  #       condition: service_healthy
+
+  # superset-facility_ops-worker-beat:
+  #   extends:
+  #     file: *base-file
+  #     service: superset-worker-beat
+  #   profiles:
+  #     - superset-worker
+  #   container_name: local-lakehouse-superset-facility_ops-worker-beat
+  #   env_file: *env-file
+  #   volumes: *superset-volumes
+  #   networks: *local-networks
+  #   depends_on:
+  #     <<: *superset-depends-on
+  #     superset-facility_ops-app:
+  #       condition: service_healthy
