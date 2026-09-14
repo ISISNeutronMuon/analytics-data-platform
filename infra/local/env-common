@@ -5,11 +5,10 @@ ROUTER_HOSTNAME_EXTERNAL=localhost
 ROUTER_HOSTNAME_INTERNAL=adp-router
 ROUTER_PORT_HTTP=50080
 # These details are also present in files under the and `seaweedfs/` directory
+# and airflow/.pyiceberg.yaml
 LOCAL_ADMIN_USER=localadmin
 LOCAL_ADMIN_MACHINE=localadmin_machine
 LOCAL_PASSWORD=s3cr3t
-SHARED_DB__HOST=postgres-shared
-SHARED_DB__PORT=5432
 
 ###############################################################################
 # UV
@@ -18,13 +17,15 @@ UV_LINK_MODE=copy
 UV_PROJECT_ENVIRONMENT=/opt/uv-venv
 
 ###############################################################################
-# Postgres image
+# Postgres
 ###############################################################################
 POSTGRES_USER=$LOCAL_ADMIN_USER
 POSTGRES_PASSWORD=$LOCAL_PASSWORD
 PGPASSWORD=$POSTGRES_PASSWORD
 # we create the databases with a separate script
 POSTGRES_DATABASE=unused
+POSTGRES_HOST=postgres-shared
+POSTGRES_PORT=5432
 
 ###############################################################################
 # Keycloak
@@ -44,7 +45,7 @@ KEYCLOAK_REALM_EXTERNAL=$KEYCLOAK_URL_EXTERNAL/realms/$KC_REALM_NAME
 ###############################################################################
 OPENFGA_DB_NAME=openfga
 OPENFGA_DATASTORE_ENGINE=postgres
-OPENFGA_DATASTORE_URI=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$SHARED_DB__HOST:$SHARED_DB__PORT/$OPENFGA_DB_NAME?sslmode=disable
+OPENFGA_DATASTORE_URI=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$OPENFGA_DB_NAME?sslmode=disable
 OPENFGA_DATASTORE_MAX_OPEN_CONNS=50
 OPENFGA_DATASTORE_MAX_IDLE_CONNS=50
 OPENFGA_CACHE_CONTROLLER_ENABLED=true
@@ -57,8 +58,8 @@ OPENFGA_PLAYGROUND_ENABLED=false
 ###############################################################################
 LAKEKEEPER_DB_NAME=lakekeeper
 LAKEKEEPER__PG_ENCRYPTION_KEY=This-is-NOT-Secure!
-LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$SHARED_DB__HOST:$SHARED_DB__PORT/$LAKEKEEPER_DB_NAME
-LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$SHARED_DB__HOST:$SHARED_DB__PORT/$LAKEKEEPER_DB_NAME
+LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$LAKEKEEPER_DB_NAME
+LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$LAKEKEEPER_DB_NAME
 LAKEKEEPER__OPENID_PROVIDER_URI=$KEYCLOAK_REALM_INTERNAL
 LAKEKEEPER__OPENID_ADDITIONAL_ISSUERS=$KEYCLOAK_REALM_EXTERNAL
 LAKEKEEPER__OPENID_AUDIENCE=lakekeeper
@@ -69,50 +70,21 @@ LAKEKEEPER__UI__OPENID_PROVIDER_URI=$KEYCLOAK_REALM_EXTERNAL
 LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
 LAKEKEEPER__UI__OPENID_SCOPE="lakekeeper openid profile email"
 
-WAREHOUSE_NAME=facility_ops
-
 ###############################################################################
 # Trino
 ###############################################################################
 TRINO_USER=superset
 TRINO_PASSWORD=s3cr3t
 TRINO_HTTPS_PORT=8443
-TRINO_CATALOG_STORE=${TRINO_CATALOG_STORE:-file}
 
 ###############################################################################
-# Superset
+# Redis
 ###############################################################################
-# Metadata DB
-SHARED_DB__SUPERSET_DB_NAME=superset
-SUPERSET_DB_HOST=postgres-shared
-SUPERSET_DB_USER=$LOCAL_ADMIN_USER
-SUPERSET_DB_PASSWORD=$LOCAL_PASSWORD
-SUPERSET_DB_NAME=$SHARED_DB__SUPERSET_DB_NAME
-SUPERSET_DB_PORT=5432
-SUPERSET_DB_DIALECT=postgresql
-
-# Caching layer (match service name and port in compose file)
 REDIS_HOST=redis-shared
 REDIS_PORT=6379
-SUPERSET_REDIS_DB=1
 
-# Admin user
-SUPERSET_LOCAL_ADMIN_USER=$LOCAL_ADMIN_USER
-SUPERSET_ADMIN_FIRSTNAME=Superset
-SUPERSET_ADMIN_LASTNAME=Admin
-SUPERSET_ADMIN_EMAIL=superset_admin@dev.com
-SUPERSET_LOCAL_PASSWORD=$LOCAL_PASSWORD
-
-# Environment/development settings
-SUPERSET_CA_BUNDLE=/certs/rootCA.pem
-PYTHONPATH=/app/docker/pythonpath
-SCARF_ANALYTICS=false
-FLASK_DEBUG=False
-SUPERSET_LOG_LEVEL=info
-SUPERSET_ENV=development
-SUPERSET_PORT=8088
-SUPERSET_APP_ROOT=/workspace/$WAREHOUSE_NAME
-SUPERSET_LOGIN_PROVIDER=db
-
-# Make sure you set this to a unique secure random value on production
-SUPERSET_SECRET_KEY=0123456789
+###############################################################################
+# Additional databases
+# See postgres/boostrap.sql
+###############################################################################
+AIRFLOW_DB_NAME=airflow
