@@ -5,8 +5,7 @@ import uuid
 
 import pyarrow as pa
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
-from sqlalchemy.dialects.oracle import RAW
+from sqlalchemy.dialects import oracle, postgresql
 
 
 def to_pyarrow_schema(table: sa.Table) -> pa.Schema:
@@ -64,7 +63,7 @@ _EXTENDED_SQL_TYPES = {
     sa.VARCHAR: _SQL_ROOT_TYPES[sa.String],
     postgresql.JSON: _SQL_ROOT_TYPES[sa.JSON],
     postgresql.JSONB: _SQL_ROOT_TYPES[sa.JSON],
-    RAW: _SQL_ROOT_TYPES[sa.LargeBinary],
+    oracle.RAW: _SQL_ROOT_TYPES[sa.LargeBinary],
 }
 
 _SQL_TYPE_MAP = _SQL_ROOT_TYPES | _EXTENDED_SQL_TYPES
@@ -90,7 +89,7 @@ def _to_pyarrow_type(sql_type):
     if factory is not None:
         return factory()
 
-    if isinstance(sql_type, sa.Numeric) or isinstance(sql_type, sa.NUMERIC):
+    if isinstance(sql_type, (sa.Numeric, sa.NUMERIC)):
         precision = getattr(sql_type, "precision", None)
         scale = getattr(sql_type, "scale", None)
         if precision is None or scale is None:
