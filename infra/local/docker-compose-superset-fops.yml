@@ -11,6 +11,13 @@ x-environment: &environ
   WAREHOUSE: facility_ops
 
 services:
+  superset-fops-bootstrap:
+    container_name: local-lakehouse-superset-fops-bootstrap
+    extends:
+      file: *base-file
+      service: superset-bootstrap
+    environment: *environ
+
   superset-fops-app:
     container_name: local-lakehouse-superset-fops-app
     extends:
@@ -21,39 +28,20 @@ services:
       superset-fops-bootstrap:
         condition: service_completed_successfully
 
-  superset-fops-bootstrap:
-    container_name: local-lakehouse-superset-fops-bootstrap
+  superset-facility_ops-worker:
+    container_name: local-lakehouse-superset-fops-worker
     extends:
       file: *base-file
-      service: superset-bootstrap
-    environment: *environ
+      service: superset-worker
+    depends_on:
+      superset-fops-app:
+        condition: service_healthy
 
-  # superset-facility_ops-worker:
-  #   extends:
-  #     file: *base-file
-  #     service: superset-worker
-  #   profiles:
-  #     - superset-worker
-  #   container_name: local-lakehouse-superset-facility_ops-worker
-  #   env_file: *env-file
-  #   volumes: *superset-volumes
-  #   networks: *local-networks
-  #   depends_on:
-  #     <<: *superset-depends-on
-  #     superset-facility_ops-app:
-  #       condition: service_healthy
-
-  # superset-facility_ops-worker-beat:
-  #   extends:
-  #     file: *base-file
-  #     service: superset-worker-beat
-  #   profiles:
-  #     - superset-worker
-  #   container_name: local-lakehouse-superset-facility_ops-worker-beat
-  #   env_file: *env-file
-  #   volumes: *superset-volumes
-  #   networks: *local-networks
-  #   depends_on:
-  #     <<: *superset-depends-on
-  #     superset-facility_ops-app:
-  #       condition: service_healthy
+  superset-facility_ops-worker-beat:
+    container_name: local-lakehouse-superset-fops-worker-beat
+    extends:
+      file: *base-file
+      service: superset-worker-beat
+    depends_on:
+      superset-fops-app:
+        condition: service_healthy
