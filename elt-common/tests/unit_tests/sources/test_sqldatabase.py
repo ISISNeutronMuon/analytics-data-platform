@@ -1,12 +1,11 @@
 from pathlib import Path
-from typing import Optional
 from unittest.mock import patch
 
 import pyarrow as pa
 import pyarrow.lib
 import pytest
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+from sqlalchemy.dialects import oracle, postgresql
 
 from elt_common.extract import ResourceWriteProperties, Watermark
 from elt_common.sources.sqldatabase import SqlDatabaseExtract, SqlDatabaseSourceConfig, TableInfo
@@ -79,7 +78,7 @@ def test_sql_database_no_table_info_nothing_returned(tmp_path: Path):
     source_config = _create_config(db_path)
 
     class Extract(SqlDatabaseExtract):
-        def table_info(self) -> dict[str, Optional[TableInfo]]:
+        def table_info(self) -> dict[str, TableInfo | None]:
             return {}
 
     e = Extract(source_config)
@@ -93,7 +92,7 @@ def test_sql_database_reads_table_in_chunks(tmp_path: Path, chunk_size):
     source_config = _create_config(db_path, chunk_size=chunk_size)
 
     class Extract(SqlDatabaseExtract):
-        def table_info(self) -> dict[str, Optional[TableInfo]]:
+        def table_info(self) -> dict[str, TableInfo | None]:
             return {"people": None}
 
     e = Extract(source_config)
@@ -120,7 +119,7 @@ def test_sql_database_limited_by_row_limit(tmp_path: Path, row_limit):
     source_config = _create_config(db_path, chunk_size=2, row_limit=row_limit)
 
     class Extract(SqlDatabaseExtract):
-        def table_info(self) -> dict[str, Optional[TableInfo]]:
+        def table_info(self) -> dict[str, TableInfo | None]:
             return {"people": None}
 
     e = Extract(source_config)
@@ -140,7 +139,7 @@ def test_sql_database_reads_multiple_tables(tmp_path: Path):
     source_config = _create_config(db_path)
 
     class Extract(SqlDatabaseExtract):
-        def table_info(self) -> dict[str, Optional[TableInfo]]:
+        def table_info(self) -> dict[str, TableInfo | None]:
             return {"people": None, "pets": None}
 
     e = Extract(source_config)
@@ -173,7 +172,7 @@ def test_sql_database_write_properties_returned(tmp_path: Path):
     pet_write_properties = ResourceWriteProperties(write_mode="replace")
 
     class Extract(SqlDatabaseExtract):
-        def table_info(self) -> dict[str, Optional[TableInfo]]:
+        def table_info(self) -> dict[str, TableInfo | None]:
             return {
                 "people": TableInfo(write_properties=people_write_properties),
                 "pets": TableInfo(write_properties=pet_write_properties),
@@ -193,7 +192,7 @@ def test_sql_database_watermarks_filter_results(tmp_path: Path):
     source_config = _create_config(db_path)
 
     class Extract(SqlDatabaseExtract):
-        def table_info(self) -> dict[str, Optional[TableInfo]]:
+        def table_info(self) -> dict[str, TableInfo | None]:
             return {"people": None}
 
     e = Extract(source_config)
@@ -219,7 +218,7 @@ def test_sql_database_destination_table_name_yielded(tmp_path: Path):
     source_config = _create_config(db_path)
 
     class Extract(SqlDatabaseExtract):
-        def table_info(self) -> dict[str, Optional[TableInfo]]:
+        def table_info(self) -> dict[str, TableInfo | None]:
             return {"people": TableInfo(destination_table_name="a_different_name")}
 
     e = Extract(source_config)
@@ -266,7 +265,7 @@ def test_sql_database_json_jsonb_serialization(tmp_path: Path):
     source_config = _create_config(db_path)
 
     class Extract(SqlDatabaseExtract):
-        def table_info(self) -> dict[str, Optional[TableInfo]]:
+        def table_info(self) -> dict[str, TableInfo | None]:
             return {"json_table": None}
 
     e = Extract(source_config)
@@ -280,3 +279,52 @@ def test_sql_database_json_jsonb_serialization(tmp_path: Path):
             assert data.schema.field("jsonb_col").type == pa.string()
             assert data["json_col"].to_pylist() == ['{"key": "val1", "nested": {"a": 1}}']
             assert data["jsonb_col"].to_pylist() == ['[1, 2, "a"]']
+
+
+def test_sql_database_oracle_raw_serialization(tmp_path: Path):
+    db_path = tmp_path / "test_oracle_raw.db"
+    metadata = sa.MetaData()
+
+    db_table = sa.Table(
+        "raw_table",
+        metadata,
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("raw_col", sa.LargeBinary),
+    )
+
+    oracle_table = sa.Table(
+        "raw_table",
+        sa.MetaData(),
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("raw_col", oracle.RAW),
+    )
+
+    engine = sa.create_engine(f"sqlite:///{db_path}")
+    metadata.create_all(engine)
+
+    with engine.begin() as conn:
+        conn.execute(
+            db_table.insert(),
+            [
+                {
+                    "id": 1,
+                    "raw_col": b"binary_data",
+                },
+            ],
+        )
+
+    source_config = _create_config(db_path)
+
+    class Extract(SqlDatabaseExtract):
+        def table_info(self) -> dict[str, TableInfo | None]:
+            return {"raw_table": None}
+
+    e = Extract(source_config)
+
+    with patch("sqlalchemy.Table", return_value=oracle_table):
+        for _, props in e.extract_resource_properties():
+            tables = list(props.extractor(None))
+            data = pyarrow.lib.concat_tables(tables)
+
+            assert data.schema.field("raw_col").type == pa.binary()
+            assert data["raw_col"].to_pylist() == [b"binary_data"]
