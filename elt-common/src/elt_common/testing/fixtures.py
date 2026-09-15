@@ -2,20 +2,39 @@
 
 import tempfile
 import time
-import urllib.parse
 import warnings
 from collections.abc import Generator
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Any
 
+import boto3
+import botocore.exceptions
 import pytest
 import tenacity
-from minio import Minio
 
 from . import DEFAULT_RETRY_ARGS
 from .dlt import PyIcebergDestinationTestConfiguration
 from .lakekeeper import Server, Settings
 from .sqlcatalog import SqlCatalogWarehouse
+
+
+def _ensure_s3_bucket_exists(storage_credential: dict[str, Any], storage_profile: dict[str, Any]):
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=storage_credential["aws-access-key-id"],
+        aws_secret_access_key=storage_credential["aws-secret-access-key"],
+        endpoint_url=storage_profile["endpoint"],
+    )
+    bucket = storage_profile["bucket"]
+    try:
+        s3.create_bucket(Bucket=bucket)
+    except botocore.exceptions.ClientError as exc:
+        code = str(exc.response.get("Error", {}).get("Code", ""))
+        if code not in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
+            raise
+
+    return s3, bucket
 
 
 @pytest.fixture(scope="session")
@@ -37,24 +56,16 @@ def warehouse(settings: Settings) -> Generator:
     else:
         server = Server(settings)
         storage_config = settings.storage_config()
-        s3_hostname = urllib.parse.urlparse(storage_config["storage-profile"]["endpoint"]).netloc
-        minio_client = Minio(
-            endpoint=s3_hostname,
-            access_key=storage_config["storage-credential"]["aws-access-key-id"],
-            secret_key=storage_config["storage-credential"]["aws-secret-access-key"],
-            secure=False,
-        )
-        bucket_name = storage_config["storage-profile"]["bucket"]
-        if not minio_client.bucket_exists(bucket_name=bucket_name):
-            minio_client.make_bucket(bucket_name=bucket_name)
-            print(f"Bucket {bucket_name} created.")
 
+        s3, bucket_name = _ensure_s3_bucket_exists(
+            storage_config["storage-credential"], storage_config["storage-profile"]
+        )
         warehouse = server.create_warehouse(settings.warehouse_name, storage_config)
 
         def cleanup_func():
             @tenacity.retry(**DEFAULT_RETRY_ARGS)
             def _remove_bucket(bucket_name):
-                minio_client.remove_bucket(bucket_name=bucket_name)
+                s3.delete_bucket(Bucket=bucket_name)
 
             try:
                 # Allow a brief pause for the test operations to complete

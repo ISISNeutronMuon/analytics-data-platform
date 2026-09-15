@@ -38,7 +38,6 @@ iceberg-maintenance = "elt_common.iceberg.maintenance:cli"
 
 [dependency-groups]
 dev = [
-  "minio>=7.2.20",
   "prek>=0.4.12",
   "pytest>=9.1.1",
   "pytest-httpx>=0.36.2",
@@ -54,6 +53,9 @@ test = [
     "tenacity>=9.1.2",
     "sqlalchemy>=2.0.51",
     "trino>=0.336.0",
+]
+test-rest = [
+    "boto3>1.42,<2",
 ]
 
 [tool.ruff]
