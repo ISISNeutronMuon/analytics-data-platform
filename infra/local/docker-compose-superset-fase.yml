@@ -29,6 +29,7 @@ services:
     extends:
       file: *base-file
       service: superset-worker
+    environment: *environ
     depends_on:
       superset-fase-app:
         condition: service_healthy
@@ -38,6 +39,7 @@ services:
     extends:
       file: *base-file
       service: superset-worker-beat
+    environment: *environ
     depends_on:
       superset-fase-app:
         condition: service_healthy
