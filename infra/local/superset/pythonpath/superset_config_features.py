@@ -3,11 +3,9 @@ import os
 # -----------------------------------------------------------------------------
 # Feature configuration
 # -----------------------------------------------------------------------------
-WEBDRIVER_BASEURL = f"http://localhost:8088{os.environ['SUPERSET_APP_ROOT']}/"
-# The base URL for the email report hyperlinks.
-WEBDRIVER_BASEURL_USER_FRIENDLY = (
-    f"https://localhost:50080{os.environ['SUPERSET_APP_ROOT']}/"
-)
+WEBDRIVER_BASEURL = f"http://{os.environ['ROUTER_HOSTNAME_EXTERNAL']}:{os.environ['ROUTER_PORT_HTTP']}{os.environ['SUPERSET_APP_ROOT']}/"
+WEBDRIVER_BASEURL_USER_FRIENDLY = WEBDRIVER_BASEURL
+
 # fmt: off
 FEATURE_FLAGS = {
     "ALERT_REPORTS": True,
