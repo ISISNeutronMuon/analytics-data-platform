@@ -21,5 +21,6 @@ unit_tests:
             name: "2024/2",
             started_at: "2024-07-09 07:30:00 UTC",
             ended_at: "2024-07-24 07:30:00 UTC",
+            phase: "user-time",
             target: 1,
           }
