@@ -1,35 +1,17 @@
--- Simple join to denormalize the cycles and cycles__phases tables
--- that are not much use as separated table.
-
-{# Denormalize cycles & cycles__phases to include the cycle label for each phase #}
-
 with
-
-base_cycles as (
-
-  select * from {{ ref('base_statusdisplay__cycles') }}
-
+source as (
+    select * from {{source('accelerator_statusdisplay', 'elt_cycles')}}
 ),
 
-base_cycles__phases as (
-
-  select * from {{ ref('base_statusdisplay__cycles__phases') }}
-
-),
-
-join_cycle_labels_and_phases as (
-
-  select
-
-    {{ adapter.quote('name') }},
-    started_at,
-    ended_at,
-    phase,
-    {{ adapter.quote('target') }}
-
-  from base_cycles
-  join base_cycles__phases on base_cycles.dlt_id = base_cycles__phases.dlt_cycles_id
-
+status_display as (
+    select
+        source.label as name,
+        json_extract_scalar(phase, '$.start') as started_at,
+        json_extract_scalar(phase, '$.end') as ended_at,
+        json_extract_scalar(phase, '$.type') as phase,
+        json_extract_scalar(phase, '$.target') as target
+        from source
+        cross join unnest(cast(source.phases as array(json))) as u(phase)
 )
 
-select * from join_cycle_labels_and_phases
+select * from status_display
