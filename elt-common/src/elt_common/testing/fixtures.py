@@ -8,10 +8,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
 
-import boto3
-import botocore.exceptions
 import pytest
-import tenacity
 
 from . import DEFAULT_RETRY_ARGS
 from .dlt import PyIcebergDestinationTestConfiguration
@@ -20,6 +17,10 @@ from .sqlcatalog import SqlCatalogWarehouse
 
 
 def _ensure_s3_bucket_exists(storage_credential: dict[str, Any], storage_profile: dict[str, Any]):
+    """For REST catalog, ensure a bucket exists"""
+    import boto3
+    import botocore.exceptions
+
     s3 = boto3.client(
         "s3",
         aws_access_key_id=storage_credential["aws-access-key-id"],
@@ -63,6 +64,8 @@ def warehouse(settings: Settings) -> Generator:
         warehouse = server.create_warehouse(settings.warehouse_name, storage_config)
 
         def cleanup_func():
+            import tenacity
+
             @tenacity.retry(**DEFAULT_RETRY_ARGS)
             def _remove_bucket(bucket_name):
                 s3.delete_bucket(Bucket=bucket_name)

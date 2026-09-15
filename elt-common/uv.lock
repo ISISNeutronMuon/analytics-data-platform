@@ -653,11 +653,11 @@ test = [
     { name = "authlib" },
     { name = "httpx" },
     { name = "sqlalchemy" },
-    { name = "tenacity" },
     { name = "trino" },
 ]
 test-rest = [
     { name = "boto3" },
+    { name = "tenacity" },
 ]
 
 [package.metadata]
@@ -694,10 +694,12 @@ test = [
     { name = "authlib", specifier = ">=1.7.2" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "sqlalchemy", specifier = ">=2.0.51" },
-    { name = "tenacity", specifier = ">=9.1.2" },
     { name = "trino", specifier = ">=0.336.0" },
 ]
-test-rest = [{ name = "boto3", specifier = ">1.42,<2" }]
+test-rest = [
+    { name = "boto3", specifier = ">1.42,<2" },
+    { name = "tenacity", specifier = ">=9.1.2" },
+]
 
 [[package]]
 name = "frozenlist"
