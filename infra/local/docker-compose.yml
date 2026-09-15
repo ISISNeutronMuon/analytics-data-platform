@@ -1,22 +1,22 @@
 # A development stack to emulate the Lakehouse. This is intended for local development only.
 # See ./README.md
 networks:
-  local-lakehouse_net:
-    name: local-lakehouse-network
+  lakehouse_net:
+    name: lakehouse-network
 
 volumes:
   cert_data:
-    name: local-lakehouse_cert_data
+    name: lakehouse_cert_data
   postgres-shared_data:
-    name: local-lakehouse_postgres_data
+    name: lakehouse_postgres_data
   keycloak_data:
-    name: local-lakehouse_keycloak_data
+    name: lakehouse_keycloak_data
   shared_redis_data:
-    name: local-lakehouse_redis_data
+    name: lakehouse_redis_data
   seaweedfs_data:
-    name: local-lakehouse_seaweedfs_data
-  trino_data:
-    name: local-lakehouse_trino_data
+    name: lakehouse_seaweedfs_data
+  warehouses_bootstrap_data:
+    name: lakehouse_warehouses_bootstrap_data
 
 services:
   #########################################################
@@ -28,7 +28,7 @@ services:
   # HTTPS when authentication is enabled.
   #########################################################
   adp-router:
-    container_name: local-lakehouse-traefik
+    container_name: lakehouse-traefik
     image: traefik:v3.7.13
     env_file: &env_file-common
       - path: ./env-common
@@ -50,14 +50,14 @@ services:
       - "./adp-router/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
       - "cert_data:/certs"
     networks: &networks-common
-      - local-lakehouse_net
+      - lakehouse_net
 
   #########################################################
   # Database shared by all services
   # Do not do this in production!
   #########################################################
   postgres-shared:
-    container_name: local-lakehouse-postgres-shared
+    container_name: lakehouse-postgres-shared
     image: postgres:18-trixie
     env_file: *env_file-common
     healthcheck:
@@ -75,7 +75,7 @@ services:
   # Keycloak identity provider
   #########################################################
   keycloak:
-    container_name: local-lakehouse-keycloak
+    container_name: lakehouse-keycloak
     image: &keycloak_image quay.io/keycloak/keycloak:26.7
     env_file: *env_file-common
     command:
@@ -105,7 +105,7 @@ services:
     networks: *networks-common
 
   keycloak-bootstrap:
-    container_name: local-lakehouse-keycloak-bootstrap
+    container_name: lakehouse-keycloak-bootstrap
     build:
       context: keycloak
       dockerfile: Dockerfile-kcadm.dockerfile
@@ -128,7 +128,7 @@ services:
   # SeaweedFS - Object store emulating the Ceph object store.
   #########################################################
   seaweedfs:
-    container_name: local-lakehouse-seaweedfs
+    container_name: lakehouse-seaweedfs
     image: chrislusf/seaweedfs:4.46
     env_file: *env_file-common
     # Match ports on host & container to use the same port inside and outside the container
@@ -153,7 +153,7 @@ services:
   # OpenFGA - Permissioning
   #########################################################
   openfga-migrate:
-    container_name: local-lakehouse-openfga-migrate
+    container_name: lakehouse-openfga-migrate
     image: &openfga-image openfga/openfga:v1.20.0
     env_file: *env_file-common
     command: migrate
@@ -163,7 +163,7 @@ services:
     networks: *networks-common
 
   openfga:
-    container_name: local-lakehouse-openfga
+    container_name: lakehouse-openfga
     image: *openfga-image
     env_file: *env_file-common
     command: run
@@ -181,7 +181,7 @@ services:
   # Lakekeeper - Iceberg REST catalog
   #########################################################
   lakekeeper:
-    container_name: local-lakehouse-lakekeeper
+    container_name: lakehouse-lakekeeper
     image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.13.4
     env_file: *env_file-common
     environment:
@@ -206,7 +206,7 @@ services:
     networks: *networks-common
 
   lakekeeper-migrate:
-    container_name: local-lakehouse-lakekeeper-migrate
+    container_name: lakehouse-lakekeeper-migrate
     image: *lakekeeper-image
     env_file: *env_file-common
     restart: "no"
@@ -220,7 +220,7 @@ services:
   # Shared Redis cache
   #########################################################
   redis-shared:
-    container_name: local-lakehouse-redis-shared
+    container_name: lakehouse-redis-shared
     env_file: *env_file-common
     image: redis:8.4-bookworm
     healthcheck:
@@ -238,7 +238,7 @@ services:
   # Trino query engine
   #########################################################
   trino:
-    container_name: local-lakehouse-trino
+    container_name: lakehouse-trino
     image: trinodb/trino:483
     env_file: *env_file-common
     depends_on:
@@ -253,7 +253,8 @@ services:
       timeout: 30s
       retries: 2
     volumes:
-      - "./trino/etc:/etc/trino"
+      - "./trino/etc:/etc/trino:ro"
+      - "warehouses_bootstrap_data:/opt/data"
     networks: *networks-common
 
   #########################################################
@@ -263,7 +264,7 @@ services:
   # Iceberg catalogs.
   #########################################################
   warehouses-bootstrap:
-    container_name: local-lakehouse-warehouse-bootstrap
+    container_name: lakehouse-warehouse-bootstrap
     image: ghcr.io/astral-sh/uv:python3.14-trixie-slim
     env_file: *env_file-common
     entrypoint: ["/bin/bash", "/opt/work/bootstrap.sh"]
@@ -278,4 +279,5 @@ services:
       - "./warehouses/create-trino-catalog.py:/opt/work/create-trino-catalog.py:ro"
       - "./warehouses/generate-warehouse-json.py:/opt/work/generate-warehouse-json.py:ro"
       - "../ansible/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py:ro"
+      - "warehouses_bootstrap_data:/opt/data"
     networks: *networks-common

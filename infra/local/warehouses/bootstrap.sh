@@ -6,11 +6,20 @@
 set -euo pipefail
 
 BOOTSTRAP_SCRIPTS_DIR=/opt/work
+LAKEKEEPER_JSON_DIR=/opt/data/lakekeeper
+TRINO_CATALOG_DIR=/opt/data/trino/catalog
 WAREHOUSE_PREFIXES="facility_ops fase"
 
 function bootstrap-lakekeeper-warehouse() {
     local name=$1
-    uv run $BOOTSTRAP_SCRIPTS_DIR/generate-warehouse-json.py "$name" > "/tmp/$name.json"
+    local json_file="$LAKEKEEPER_JSON_DIR/$name.json"
+
+    if [[ -f "$json_file" ]]; then
+        echo "Lakekeeper warehouse '$name' JSON already exists ($json_file). Skipping warehouse creation."
+        return 0
+    fi
+
+    uv run $BOOTSTRAP_SCRIPTS_DIR/generate-warehouse-json.py "$name" > "$json_file"
     uv run $BOOTSTRAP_SCRIPTS_DIR/bootstrap-warehouse.py \
         --lakekeeper-project-name "$KC_REALM_NAME" \
         --keycloak-url "$KEYCLOAK_URL_INTERNAL" \
@@ -20,15 +29,32 @@ function bootstrap-lakekeeper-warehouse() {
         --token-scope lakekeeper \
         --server-admin "$LOCAL_ADMIN_USER" \
         --log-level=DEBUG \
-        --warehouse-json-file "/tmp/$name.json" \
+        --warehouse-json-file "$json_file" \
         "http://lakekeeper:8181"
 }
 
 function bootstrap-trino-catalog() {
     local name=$1
+    local props_file="$TRINO_CATALOG_DIR/$name.properties"
+
+    if [[ -f "$props_file" ]]; then
+        echo "Trino catalog '$name' already exists ($props_file). Skipping catalog creation."
+        return 0
+    fi
+
     uv run $BOOTSTRAP_SCRIPTS_DIR/create-trino-catalog.py "$name"
 }
 
+# -----------------------------------------------------------------------------
+# Create data directories and set permissions
+# -----------------------------------------------------------------------------
+mkdir -p $LAKEKEEPER_JSON_DIR
+mkdir -p $TRINO_CATALOG_DIR
+chown -R 1000:1000 $TRINO_CATALOG_DIR
+
+# -----------------------------------------------------------------------------
+# Bootstrap
+# -----------------------------------------------------------------------------
 for prefix in ${WAREHOUSE_PREFIXES}; do
     for name in "${prefix}_landing" "${prefix}"; do
         bootstrap-lakekeeper-warehouse "$name"

@@ -6,9 +6,6 @@
 # ///
 """Create an Iceberg REST catalog in Trino.
 
-Catalogs are created dynamically at bootstrap time
-(Trino must be configured with ``catalog.management=dynamic``).
-
 Usage:
     uv run create-trino-catalog.py <catalog_name>
 """
@@ -87,7 +84,7 @@ def create_catalog_sql(name: str) -> str:
         # Our local S3 implementation has STS enabled but our production S3
         # doesn't, so we keep vended credentials off and provide the S3 access
         # credentials here to mimic prod.
-        "fs.native-s3.enabled": "true",
+        "fs.s3.enabled": "true",
         "s3.endpoint": "http://${ENV:ROUTER_HOSTNAME_INTERNAL}:59000",
         "s3.region": "local-01",
         "s3.path-style-access": "true",

@@ -17,7 +17,7 @@ x-superset-common: &airflow-common
     - ./superset/docker/requirements-local.txt:/app/docker/requirements-local.txt:ro
     - ./superset/pythonpath:/app/docker/pythonpath:ro
   networks:
-    - local-lakehouse_net
+    - lakehouse_net
   user: root
   restart: unless-stopped
   depends_on: &superset-depends-on

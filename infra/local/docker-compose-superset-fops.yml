@@ -12,14 +12,14 @@ x-environment: &environ
 
 services:
   superset-fops-bootstrap:
-    container_name: local-lakehouse-superset-fops-bootstrap
+    container_name: lakehouse-superset-fops-bootstrap
     extends:
       file: *base-file
       service: superset-bootstrap
     environment: *environ
 
   superset-fops-app:
-    container_name: local-lakehouse-superset-fops-app
+    container_name: lakehouse-superset-fops-app
     extends:
       file: *base-file
       service: superset-app
@@ -29,7 +29,7 @@ services:
         condition: service_completed_successfully
 
   superset-facility_ops-worker:
-    container_name: local-lakehouse-superset-fops-worker
+    container_name: lakehouse-superset-fops-worker
     extends:
       file: *base-file
       service: superset-worker
@@ -38,7 +38,7 @@ services:
         condition: service_healthy
 
   superset-facility_ops-worker-beat:
-    container_name: local-lakehouse-superset-fops-worker-beat
+    container_name: lakehouse-superset-fops-worker-beat
     extends:
       file: *base-file
       service: superset-worker-beat
