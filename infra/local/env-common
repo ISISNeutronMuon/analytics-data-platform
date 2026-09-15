@@ -89,3 +89,4 @@ REDIS_PORT=6379
 ###############################################################################
 AIRFLOW_DB_NAME=airflow
 SUPERSET_FOPS_DB_NAME=superset_fops
+SUPERSET_FASE_DB_NAME=superset_fase

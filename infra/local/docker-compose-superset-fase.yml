@@ -1,0 +1,43 @@
+# Superset instance: fase
+include:
+  - ./docker-compose.yml
+
+services:
+  superset-fase-bootstrap:
+    container_name: lakehouse-superset-fase-bootstrap
+    extends:
+      file: &base-file docker-compose-superset.base.yml
+      service: superset-bootstrap
+    environment: &environ
+      SUPERSET_APP_ROOT: /workspace/fase
+      SUPERSET_CONFIG_PATH: /app/docker/pythonpath/superset_config_fase.py
+      SUPERSET_REDIS_DB: 2
+      WAREHOUSE: fase
+
+  superset-fase-app:
+    container_name: lakehouse-superset-fase-app
+    extends:
+      file: *base-file
+      service: superset-app
+    environment: *environ
+    depends_on:
+      superset-fase-bootstrap:
+        condition: service_completed_successfully
+
+  superset-fase-worker:
+    container_name: lakehouse-superset-fase-worker
+    extends:
+      file: *base-file
+      service: superset-worker
+    depends_on:
+      superset-fase-app:
+        condition: service_healthy
+
+  superset-fase-worker-beat:
+    container_name: lakehouse-superset-fase-worker-beat
+    extends:
+      file: *base-file
+      service: superset-worker-beat
+    depends_on:
+      superset-fase-app:
+        condition: service_healthy

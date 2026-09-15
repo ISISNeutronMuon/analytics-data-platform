@@ -100,7 +100,6 @@ catalog:
   default:
     type: rest
     uri: http://localhost:50080/iceberg/catalog
-    warehouse: "facility_ops_landing"
     auth:
       type: oauth2
       oauth2:
@@ -112,17 +111,17 @@ catalog:
 
 ## Start the local services
 
-Bring up all services with Docker Compose:
+A Superset instance exists for each warehouse.
+Choose the warehouse you are working with and from the `infra/local` directory:
 
-```bash
-cd infra/local
-docker compose -f docker-compose-superset-fops.yml up --wait
-```
+| Warehouse      | Command                                                        |
+| -------------- | -------------------------------------------------------------- |
+| `facility_ops` | `docker compose -f docker-compose-superset-fops.yml up --wait` |
+| `fase`         | `docker compose -f docker-compose-superset-fase.yml up --wait` |
 
 Optionally, for provisioning the Airflow cluster and Flower service for monitoring the Airflow environment:
 
 ```bash
-cd infra/local
 docker compose -f docker-compose-airflow.yml up --wait
 ```
 
@@ -135,6 +134,7 @@ Once running, the following services are available:
 | Keycloak (master realm) | <http://localhost:50080/auth>                   |
 | Lakekeeper UI           | <http://localhost:50080/iceberg/ui>             |
 | Superset (facility_ops) | <http://localhost:50080/workspace/facility_ops> |
+| Superset (fase)         | <http://localhost:50080/workspace/fase>         |
 | Trino                   | <https://localhost:58443>                       |
 | Airflow                 | <http://localhost:50080/airflow>                |
 | Flower App              | <http://localhost:50080/airflow-flower>         |
@@ -144,16 +144,15 @@ Credentials for all services are set to
 - username: `localadmin`
 - password: `s3cr3t`
 
-### Base Iceberg services
+### Core Iceberg services
 
-To run just the base services providing the Iceberg catalog use the standard
+To run just the base services providing the Iceberg catalog run:
 
 ```bash
-cd infra/local
 docker compose up --wait
 ```
 
-command. _This is not required if using the `-f` argument as the base services are started automatically_.
+_This is not required if using the `-f` argument as the base services are started automatically_.
 
 ## Run your first pipeline
 
