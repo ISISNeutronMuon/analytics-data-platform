@@ -123,6 +123,7 @@ services:
     networks: *networks-common
     volumes:
       - "./keycloak/bootstrap.sh:/opt/keycloak/bootstrap.sh:ro"
+      - keycloak_data:/opt/keycloak/data
 
   #########################################################
   # SeaweedFS - Object store emulating the Ceph object store.

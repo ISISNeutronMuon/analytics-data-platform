@@ -3,6 +3,7 @@
 set -euo pipefail
 
 KC_ADM=/opt/keycloak/bin/kcadm.sh
+KC_BOOTSTRAP_DONE=/opt/keycloak/data/BOOTSTRAP_DONE
 
 function get_resource_id() {
   local endpoint=$1
@@ -38,7 +39,17 @@ function client_scope_with_aud_mapper() {
 EOF
 }
 
-# Args
+# -----------------------------------------------------------------------------
+# Check if complete
+# -----------------------------------------------------------------------------
+if [[ -f "$KC_BOOTSTRAP_DONE" ]]; then
+    echo "$KC_BOOTSTRAP_DONE exists. Skipping Keycloak bootstrap."
+    exit 0
+fi
+
+# -----------------------------------------------------------------------------
+# Authenticate for this session
+# -----------------------------------------------------------------------------
 kc_server=$1
 
 # authenticate
@@ -48,23 +59,16 @@ $KC_ADM config credentials \
   --user "$KC_BOOTSTRAP_ADMIN_USERNAME" \
   --password "$KC_BOOTSTRAP_ADMIN_PASSWORD"
 
-
-####################
-# realms
-####################
-realm_id=$(get_resource_id realms "id,realm" ".realm==\"$KC_REALM_NAME\"")
-if [ -n "$realm_id" ]; then
-  echo Realm "$KC_REALM_NAME" already exists. Skipping bootstrap.
-  exit 0
-fi
-
+# -----------------------------------------------------------------------------
+# Realms
+# -----------------------------------------------------------------------------
 $KC_ADM create realms \
   --set realm="$KC_REALM_NAME" \
   --set enabled=true
 
-####################
-# client scopes
-####################
+# -----------------------------------------------------------------------------
+# Client scopes
+# -----------------------------------------------------------------------------
 $KC_ADM create client-scopes \
   --target-realm "$KC_REALM_NAME" \
   --body "$(client_scope_with_aud_mapper lakekeeper lakekeeper)"
@@ -82,10 +86,10 @@ $KC_ADM update realms/"$KC_REALM_NAME"/client-scopes/"$id_scope_roles"/protocol-
    --merge \
    --set 'config."userinfo.token.claim"="true"'
 
-####################
+# -----------------------------------------------------------------------------
 # Clients
 # If optionalClientScopes are provided then defaultClientScopes must be or they are all deleted
-####################
+# -----------------------------------------------------------------------------
 # Confidential clients
 $KC_ADM create clients \
   --target-realm "$KC_REALM_NAME" \
@@ -136,9 +140,9 @@ $KC_ADM create clients \
   --set 'attributes={ "access.token.lifespan": 3600 }'
 
 
-####################
+# -----------------------------------------------------------------------------
 # Users
-####################
+# -----------------------------------------------------------------------------
 $KC_ADM create users \
     --target-realm "$KC_REALM_NAME" \
     --set username="$LOCAL_ADMIN_USER" \
@@ -150,3 +154,10 @@ $KC_ADM set-password \
   --target-realm "$KC_REALM_NAME" \
   --username "$LOCAL_ADMIN_USER" \
   --new-password "$LOCAL_PASSWORD"
+
+
+# -----------------------------------------------------------------------------
+# Mark as done
+# -----------------------------------------------------------------------------
+echo "Bootstrap complete. Creating $KC_BOOTSTRAP_DONE."
+touch "$KC_BOOTSTRAP_DONE"
