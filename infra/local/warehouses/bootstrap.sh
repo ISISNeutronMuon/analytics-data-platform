@@ -12,10 +12,11 @@ WAREHOUSE_PREFIXES="facility_ops fase"
 
 function bootstrap-lakekeeper-warehouse() {
     local name=$1
-    local json_file="$LAKEKEEPER_JSON_DIR/$name.json"
+    local json_file="/tmp/$name.json"
+    local warehouse_marker="$LAKEKEEPER_JSON_DIR/$name.json"
 
-    if [[ -f "$json_file" ]]; then
-        echo "Lakekeeper warehouse '$name' JSON already exists ($json_file). Skipping warehouse creation."
+    if [[ -f "$warehouse_marker" ]]; then
+        echo "Lakekeeper warehouse '$name' JSON already exists ($warehouse_marker). Skipping warehouse creation."
         return 0
     fi
 
@@ -31,6 +32,9 @@ function bootstrap-lakekeeper-warehouse() {
         --log-level=DEBUG \
         --warehouse-json-file "$json_file" \
         "http://lakekeeper:8181"
+
+    # Mark as done
+    mv "$json_file" "$warehouse_marker"
 }
 
 function bootstrap-trino-catalog() {
