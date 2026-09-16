@@ -7,7 +7,7 @@ status_display as (
     select
         source.label as {{ adapter.quote("name") }},
         cast(json_extract_scalar(phase, '$.start') as timestamp(6)) at time zone 'UTC' as started_at,
-        cast(json_extract_scalar(phase, '$.end') as timestamp(6)) as ended_at,
+        cast(json_extract_scalar(phase, '$.end') as timestamp(6)) at time zone 'UTC' as ended_at,
         json_extract_scalar(phase, '$.type') as phase,
         cast(json_extract_scalar(phase, '$.target') as int) as {{ adapter.quote("target") }}
         from source
