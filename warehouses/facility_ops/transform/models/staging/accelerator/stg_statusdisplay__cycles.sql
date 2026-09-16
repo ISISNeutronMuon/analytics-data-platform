@@ -1,7 +1,7 @@
 -- Simple join to denormalize the cycles and cycles__phases tables
 -- that are not much use as separated table.
 
-{# Denormalize cycles & cycles__phases to include the cyce label for each phase #}
+{# Denormalize cycles & cycles__phases to include the cycle label for each phase #}
 
 with
 
