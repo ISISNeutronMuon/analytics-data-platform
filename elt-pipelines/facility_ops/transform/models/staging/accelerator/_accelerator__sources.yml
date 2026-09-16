@@ -13,5 +13,4 @@ sources:
   - name: accelerator_statusdisplay
     database: facility_ops_landing
     tables:
-      - name: cycles__phases
-      - name: cycles
+      - name: elt_cycles
