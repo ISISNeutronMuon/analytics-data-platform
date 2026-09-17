@@ -1,4 +1,6 @@
-docker-compose.yaml
+# General Python cache
+__pycache__/
+
+# Airflow
 airflow/logs/*
 !airflow/logs/.gitkeep
-airflow/dags/__pycache__/

@@ -39,18 +39,6 @@ http:
         - lakekeeper-strip-prefix
       service: lakekeeper
 
-    minioapi:
-      entryPoints: minioapi
-      rule: PathPrefix(`/`)
-      service: minioapi
-
-    minioconsole:
-      entryPoints: web
-      rule: PathPrefix(`/minio-console`)
-      service: minioconsole
-      middlewares:
-        - minioconsole-strip-prefix
-
     openfga:
       entryPoints: web
       rule: PathPrefix(`/authz`)
@@ -65,10 +53,20 @@ http:
       middlewares:
         - marimo-strip-prefix
 
-    superset:
+    s3api:
+      entryPoints: s3api
+      rule: PathPrefix(`/`)
+      service: s3api
+
+    superset-facility_ops:
       entryPoints: web
-      rule: PathPrefix(`{{ env "SUPERSET_APP_ROOT" }}`)
-      service: superset
+      rule: PathPrefix(`/workspace/facility_ops`)
+      service: superset-facility_ops
+
+    superset-fase:
+      entryPoints: web
+      rule: PathPrefix(`/workspace/fase`)
+      service: superset-fase
 
     traefik:
       entryPoints: web
@@ -86,10 +84,6 @@ http:
       stripPrefix:
         prefixes:
           - "/marimo"
-    minioconsole-strip-prefix:
-      stripPrefix:
-        prefixes:
-          - "/minio-console"
     openfga-strip-prefix:
       stripPrefix:
         prefixes:
@@ -116,14 +110,10 @@ http:
       loadBalancer:
         servers:
           - url: "http://marimo:8080"
-    minioapi:
+    s3api:
       loadBalancer:
         servers:
-          - url: "http://minio:59000"
-    minioconsole:
-      loadBalancer:
-        servers:
-          - url: "http://minio:59001"
+          - url: "http://seaweedfs:59000"
     lakekeeper:
       loadBalancer:
         servers:
@@ -136,7 +126,11 @@ http:
       loadBalancer:
         servers:
           - url: "http://trino:8080"
-    superset:
+    superset-facility_ops:
       loadBalancer:
         servers:
-          - url: "http://superset-app:8088"
+          - url: "http://superset-fops-app:8088"
+    superset-fase:
+      loadBalancer:
+        servers:
+          - url: "http://superset-fase-app:8088"

@@ -5,7 +5,7 @@ We do not use https for local development, with the exception of Trino that requ
 complications of ensuring self-signed certificates are trusted correctly across the host and
 all service containers.
 
-:exclamation: *Repeat: This configuration should not be used in production.*. :exclamation:
+:exclamation: _Repeat: This configuration should not be used in production._. :exclamation:
 
 ## Local set-up
 

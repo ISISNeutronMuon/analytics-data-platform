@@ -17,7 +17,7 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Lakekeeper warehouses, see infra/ansible/group_vars/all/all.yml#lakekeeper_catalog.
-warehouse_names=(facility_ops_landing facility_ops)
+warehouse_names=(facility_ops_landing facility_ops fase_landing fase)
 
 usage() {
   echo "Usage: $0 <local|dev|qa>" >&2
@@ -35,16 +35,16 @@ command -v duckdb >/dev/null 2>&1 || {
 case "$deploy_env" in
 local)
   # shellcheck disable=SC1091
-  source "${script_dir}/../local/env-local"
+  source "${script_dir}/../local/env-common"
 
-  s3_access_key_id="${MINIO_ROOT_USER}"
-  s3_access_secret="${MINIO_ROOT_PASSWORD}"
-  # MinIO API port, see the adp-router service in infra/local/docker-compose.yml.
+  s3_access_key_id="${LOCAL_ADMIN_MACHINE}"
+  s3_access_secret="${LOCAL_PASSWORD}"
+  # S3 API port, see the adp-router service in infra/local/docker-compose.yml.
   s3_endpoint="http://${ROUTER_HOSTNAME_EXTERNAL}:59000"
   keycloak_token_uri="${KEYCLOAK_REALM_EXTERNAL}/protocol/openid-connect/token"
   lakekeeper_catalog_uri="http://${ROUTER_HOSTNAME_EXTERNAL}:${ROUTER_PORT_HTTP}/iceberg/catalog"
   # Fixed local-only client credential, see infra/local/keycloak/bootstrap.sh. Not a real secret.
-  oauth2_client_id="machine-infra"
+  oauth2_client_id="localadmin_machine"
   oauth2_client_secret="s3cr3t"
   ;;
 dev | qa)

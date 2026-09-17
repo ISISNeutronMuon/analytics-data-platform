@@ -1,0 +1,45 @@
+# Superset instance: facility_ops
+include:
+  - ./docker-compose.yml
+
+services:
+  superset-fops-bootstrap:
+    container_name: lakehouse-superset-fops-bootstrap
+    extends:
+      file: &base-file docker-compose-superset.base.yml
+      service: superset-bootstrap
+    environment: &environ
+      SUPERSET_APP_ROOT: /workspace/facility_ops
+      SUPERSET_CONFIG_PATH: /app/docker/pythonpath/superset_config_fops.py
+      SUPERSET_REDIS_DB: 1
+      WAREHOUSE: facility_ops
+
+  superset-fops-app:
+    container_name: lakehouse-superset-fops-app
+    extends:
+      file: *base-file
+      service: superset-app
+    environment: *environ
+    depends_on:
+      superset-fops-bootstrap:
+        condition: service_completed_successfully
+
+  superset-fops-worker:
+    container_name: lakehouse-superset-fops-worker
+    extends:
+      file: *base-file
+      service: superset-worker
+    environment: *environ
+    depends_on:
+      superset-fops-app:
+        condition: service_healthy
+
+  superset-fops-worker-beat:
+    container_name: lakehouse-superset-fops-worker-beat
+    extends:
+      file: *base-file
+      service: superset-worker-beat
+    environment: *environ
+    depends_on:
+      superset-fops-app:
+        condition: service_healthy

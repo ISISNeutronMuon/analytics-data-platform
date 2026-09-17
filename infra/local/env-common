@@ -1,0 +1,92 @@
+###############################################################################
+# WARNING=DO NOT USE THIS FILE FOR PRODUCTION
+###############################################################################
+ROUTER_HOSTNAME_EXTERNAL=localhost
+ROUTER_HOSTNAME_INTERNAL=adp-router
+ROUTER_PORT_HTTP=50080
+# These details are also present in files under the and `seaweedfs/` directory
+# and airflow/.pyiceberg.yaml
+LOCAL_ADMIN_USER=localadmin
+LOCAL_ADMIN_MACHINE=localadmin_machine
+LOCAL_PASSWORD=s3cr3t
+
+###############################################################################
+# UV
+###############################################################################
+UV_LINK_MODE=copy
+UV_PROJECT_ENVIRONMENT=/opt/uv-venv
+
+###############################################################################
+# Postgres
+###############################################################################
+POSTGRES_USER=$LOCAL_ADMIN_USER
+POSTGRES_PASSWORD=$LOCAL_PASSWORD
+PGPASSWORD=$POSTGRES_PASSWORD
+# we create the databases with a separate script
+POSTGRES_DATABASE=unused
+POSTGRES_HOST=postgres-shared
+POSTGRES_PORT=5432
+
+###############################################################################
+# Keycloak
+###############################################################################
+# This is for the temporary admin account that keycloak creates
+KC_BOOTSTRAP_ADMIN_USERNAME=kcadmin
+KC_BOOTSTRAP_ADMIN_PASSWORD=kcadmin
+KC_HTTP_RELATIVE_PATH=/auth
+KC_REALM_NAME=analytics-data-platform
+KEYCLOAK_URL_INTERNAL=http://$ROUTER_HOSTNAME_INTERNAL:$ROUTER_PORT_HTTP$KC_HTTP_RELATIVE_PATH
+KEYCLOAK_URL_EXTERNAL=http://$ROUTER_HOSTNAME_EXTERNAL:$ROUTER_PORT_HTTP$KC_HTTP_RELATIVE_PATH
+KEYCLOAK_REALM_INTERNAL=$KEYCLOAK_URL_INTERNAL/realms/$KC_REALM_NAME
+KEYCLOAK_REALM_EXTERNAL=$KEYCLOAK_URL_EXTERNAL/realms/$KC_REALM_NAME
+
+###############################################################################
+# OpenFGA
+###############################################################################
+OPENFGA_DB_NAME=openfga
+OPENFGA_DATASTORE_ENGINE=postgres
+OPENFGA_DATASTORE_URI=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$OPENFGA_DB_NAME?sslmode=disable
+OPENFGA_DATASTORE_MAX_OPEN_CONNS=50
+OPENFGA_DATASTORE_MAX_IDLE_CONNS=50
+OPENFGA_CACHE_CONTROLLER_ENABLED=true
+OPENFGA_CHECK_QUERY_CACHE_ENABLED=true
+OPENFGA_CHECK_ITERATOR_CACHE_ENABLED=true
+OPENFGA_PLAYGROUND_ENABLED=false
+
+###############################################################################
+# Iceberg catalog
+###############################################################################
+LAKEKEEPER_DB_NAME=lakekeeper
+LAKEKEEPER__PG_ENCRYPTION_KEY=This-is-NOT-Secure!
+LAKEKEEPER__PG_DATABASE_URL_READ=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$LAKEKEEPER_DB_NAME
+LAKEKEEPER__PG_DATABASE_URL_WRITE=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$LAKEKEEPER_DB_NAME
+LAKEKEEPER__OPENID_PROVIDER_URI=$KEYCLOAK_REALM_INTERNAL
+LAKEKEEPER__OPENID_ADDITIONAL_ISSUERS=$KEYCLOAK_REALM_EXTERNAL
+LAKEKEEPER__OPENID_AUDIENCE=lakekeeper
+LAKEKEEPER__AUTHZ_BACKEND=openfga
+LAKEKEEPER__OPENFGA__ENDPOINT=http://openfga:8081
+# Use host-accessible URI for browser-based UI
+LAKEKEEPER__UI__OPENID_PROVIDER_URI=$KEYCLOAK_REALM_EXTERNAL
+LAKEKEEPER__UI__OPENID_CLIENT_ID=lakekeeper
+LAKEKEEPER__UI__OPENID_SCOPE="lakekeeper openid profile email"
+
+###############################################################################
+# Trino
+###############################################################################
+TRINO_USER=superset
+TRINO_PASSWORD=s3cr3t
+TRINO_HTTPS_PORT=8443
+
+###############################################################################
+# Redis
+###############################################################################
+REDIS_HOST=redis-shared
+REDIS_PORT=6379
+
+###############################################################################
+# Additional databases
+# See postgres/boostrap.sql
+###############################################################################
+AIRFLOW_DB_NAME=airflow
+SUPERSET_FOPS_DB_NAME=superset_fops
+SUPERSET_FASE_DB_NAME=superset_fase

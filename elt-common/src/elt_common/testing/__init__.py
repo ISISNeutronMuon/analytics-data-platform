@@ -2,8 +2,8 @@ import dataclasses
 import urllib.parse
 from typing import Any, Dict
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
 import tenacity
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_RETRY_ARGS = {
     "wait": tenacity.wait_exponential(max=10),
@@ -49,13 +49,13 @@ class Settings(BaseSettings):
     # to set up remote debugging
     host_netloc: str = "localhost:50080"
     docker_netloc: str = "adp-router:50080"
-    s3_access_key: str = "adpsuperuser"
-    s3_secret_key: str = "adppassword"
+    s3_access_key: str = "localadmin_machine"
+    s3_secret_key: str = "s3cr3t"
     s3_bucket: str = "e2e-tests"
     s3_endpoint: str = "http://adp-router:59000"
     s3_region: str = "local-01"
     s3_path_style_access: bool = True
-    openid_client_id: str = "machine-infra"
+    openid_client_id: str = "localadmin_machine"
     openid_client_secret: str = "s3cr3t"
     openid_scope: str = "lakekeeper"
 
@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     trino_http_scheme: str = "https"
     trino_host: str = "localhost"
     trino_port: str = "58443"
-    trino_user: str = "machine-infra"
+    trino_user: str = "localadmin_machine"
     trino_password: str = "s3cr3t"
 
     @property

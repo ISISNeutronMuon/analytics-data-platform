@@ -731,7 +731,6 @@ provides-extras = ["iceberg-maintenance", "m365"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "minio", specifier = ">=7.2.20" },
     { name = "prek", specifier = ">=0.4.12" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-httpx", specifier = ">=0.36.2" },
@@ -744,8 +743,11 @@ test = [
     { name = "authlib", specifier = ">=1.7.2" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "sqlalchemy", specifier = ">=2.0.51" },
-    { name = "tenacity", specifier = ">=9.1.2" },
     { name = "trino", specifier = ">=0.336.0" },
+]
+test-rest = [
+    { name = "boto3", specifier = ">1.42,<2" },
+    { name = "tenacity", specifier = ">=9.1.2" },
 ]
 
 [[package]]
