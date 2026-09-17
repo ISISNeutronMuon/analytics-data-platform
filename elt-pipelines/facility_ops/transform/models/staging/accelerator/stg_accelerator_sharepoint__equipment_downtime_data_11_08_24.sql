@@ -1,6 +1,6 @@
 with source as (
 
-    select * from {{ source('accelerator_accelerator_sharepoint', 'equipment_downtime_data_11_08_24') }}
+    select * from {{ source('accelerator_sharepoint', 'equipment_downtime_data_11_08_24') }}
 
 ),
 
@@ -8,15 +8,15 @@ cropped as (
 
     select
         equipment,
-        user_run,
-        downtime_minutesx,
+        "user run" as user_run,
+        "downtime (minutes)" as downtime_minutesx,
         -- fault_date column has a full timestamp after the Opralog epoch a mix of timestamp
         -- with date and 00:00:00 portion or just the date. Chop the date out
-        substring(fault_date, 1, 10) as fault_date_str,
+        substring(faultdate, 1, 10) as fault_date_str,
         -- keep the time portion of any possible string
-        substring(fault_time, -8) as fault_time_str,
+        substring(faulttime, -8) as fault_time_str,
         {{ adapter.quote('group') }},
-        fault_description,
+        faultdescription,
         managerscomments
 
     from source
@@ -41,11 +41,19 @@ renamed as (
         {{ parse_utc_timestamp('fault_date_str', 'yyyy-MM-dd', 'fault_time_str', src_timezone='Europe/London') }} as fault_occurred_at,
 
         {{ adapter.quote('group') }},
-        fault_description,
+        faultdescription as fault_description,
         managerscomments as managers_comments
 
     from cropped
 
 )
 
-select * from renamed
+select
+equipment,
+cycle_name,
+downtime_mins,
+fault_date,
+cast(fault_occurred_at as timestamp(6)) as fault_occurred_at,
+fault_description,
+managers_comments
+from renamed
