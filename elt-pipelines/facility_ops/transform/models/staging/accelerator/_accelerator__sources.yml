@@ -14,3 +14,8 @@ sources:
     database: facility_ops_landing
     tables:
       - name: elt_cycles
+  - name: accelerator_sharepoint
+    database: facility_ops_landing
+    tables:
+      - name: edr_equipment_mapping
+      - name: equipment_downtime_data_11_08_24
