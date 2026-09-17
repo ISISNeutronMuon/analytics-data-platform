@@ -88,7 +88,7 @@ credentials:
 uri = "http://localhost:50080/iceberg/catalog"
 warehouse = "facility_ops_landing"
 oauth2_server_uri = "http://localhost:50080/auth/realms/analytics-data-platform/protocol/openid-connect/token"
-client_id = "machine-infra"
+client_id = "localadmin_machine"
 client_secret = "s3cr3t"
 scope = "lakekeeper"
 ```
@@ -100,47 +100,59 @@ catalog:
   default:
     type: rest
     uri: http://localhost:50080/iceberg/catalog
-    warehouse: "facility_ops_landing"
     auth:
       type: oauth2
       oauth2:
-        client_id: machine-infra
+        client_id: localadmin_machine
         client_secret: s3cr3t
         token_url: http://localhost:50080/auth/realms/analytics-data-platform/protocol/openid-connect/token
         scope: lakekeeper
 ```
 
-## Airflow as ELT Orchestration tool
+## Start the local services
 
-Our local setup has mainly followed this section of airflow documentation: <https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#fetching-docker-compose-yaml>
+A Superset instance exists for each warehouse.
+Choose the warehouse you are working with and from the `infra/local` directory:
 
-## Start the local service stack
+| Warehouse      | Command                                                        |
+| -------------- | -------------------------------------------------------------- |
+| `facility_ops` | `docker compose -f docker-compose-superset-fops.yml up --wait` |
+| `fase`         | `docker compose -f docker-compose-superset-fase.yml up --wait` |
 
-Bring up all services with Docker Compose:
-
-```bash
-cd infra/local
-docker compose --profile superset up --wait
-```
-
-Optionally,for provisioning the Airflow cluster and Flower service for monitoring the Airflow environment:
+Optionally, for provisioning the Airflow cluster and Flower service for monitoring the Airflow environment:
 
 ```bash
-cd infra/local
-docker compose --profile airflow up --wait
+docker compose -f docker-compose-airflow.yml up --wait
 ```
+
+Our local Airflow setup has mainly followed this section of airflow documentation: <https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#fetching-docker-compose-yaml>
 
 Once running, the following services are available:
 
-| Service                 | URL                                             | Credentials                |
-| ----------------------- | ----------------------------------------------- | -------------------------- |
-| Keycloak (master realm) | <http://localhost:50080/auth>                   | admin / admin              |
-| Lakekeeper UI           | <http://localhost:50080/iceberg/ui>             | adpsuperuser / adppassword |
-| Superset                | <http://localhost:50080/workspace/facility_ops> | adpsuperuser / adppassword |
-| Trino                   | <https://localhost:58443>                       | (use `--insecure` flag)    |
-| Marimo notebooks        | <http://localhost:50080/marimo/>                | —                          |
-| Airflow                 | <http://localhost:50080/airflow>                | airflow / airflow          |
-| Flower App              | <http://localhost:50080/airflow-flower>         | —                          |
+| Service                 | URL                                             |
+| ----------------------- | ----------------------------------------------- |
+| Keycloak (master realm) | <http://localhost:50080/auth>                   |
+| Lakekeeper UI           | <http://localhost:50080/iceberg/ui>             |
+| Superset (facility_ops) | <http://localhost:50080/workspace/facility_ops> |
+| Superset (fase)         | <http://localhost:50080/workspace/fase>         |
+| Trino                   | <https://localhost:58443>                       |
+| Airflow                 | <http://localhost:50080/airflow>                |
+| Flower App              | <http://localhost:50080/airflow-flower>         |
+
+Credentials for all services are set to
+
+- username: `localadmin`
+- password: `s3cr3t`
+
+### Core Iceberg services
+
+To run just the base services providing the Iceberg catalog run:
+
+```bash
+docker compose up --wait
+```
+
+_This is not required if using the `-f` argument as the base services are started automatically_.
 
 ## Run your first pipeline
 

@@ -1,10 +1,7 @@
 #!/bin/bash
-#
 # Script to perform some initial checks on recommended memory, CPUs and disk space for running Airflow in Docker.
 # Also creates missing directories in /opt/airflow and sets ownership to the user running the container.
-#
-
-set -e
+set -eou pipefail
 
 if [[ -z "${AIRFLOW_UID}" ]]; then
   echo

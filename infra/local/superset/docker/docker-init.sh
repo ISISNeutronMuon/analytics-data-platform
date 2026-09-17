@@ -43,8 +43,8 @@ superset init
 echo_step "Complete" "Setting up roles and perms"
 
 # Create a database connection
-echo_step "Starting" "Setting up Iceberg catalog connection"
+echo_step "Starting" "Setting up Iceberg connection to $WAREHOUSE"
 superset set-database-uri \
-  --database_name "$WAREHOUSE_NAME" \
-  --uri "trino://$TRINO_USER:$TRINO_PASSWORD@$ROUTER_HOSTNAME_INTERNAL:$TRINO_HTTPS_PORT/$WAREHOUSE_NAME?verify=false"
-echo_step "Complete" "Setting up Iceberg catalog connection"
+  --database_name "$WAREHOUSE" \
+  --uri "trino://$TRINO_USER:$TRINO_PASSWORD@$ROUTER_HOSTNAME_INTERNAL:$TRINO_HTTPS_PORT/$WAREHOUSE?verify=false"
+echo_step "Complete" "Setting up Iceberg connection to $WAREHOUSE"

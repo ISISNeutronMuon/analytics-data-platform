@@ -1,0 +1,64 @@
+# Shared Superset service definitions.
+#
+# This file is NOT meant to be run directly. Per-instance compose files
+# (docker-compose-superset-<instance>.yml) pull these definitions in using
+# `extends:` and override the instance-specific parts.
+#
+
+x-superset-common: &airflow-common
+  image: ghcr.io/isisneutronmuon/analytics-data-platform-superset:a4f0e8011f34785d759269dceedfa2693db81c19
+  env_file:
+    - path: ./env-common
+      required: true
+    - path: ./superset/env-superset-common
+      required: true
+  volumes:
+    - ./superset/docker/docker-init.sh:/app/docker/docker-init.sh:ro
+    - ./superset/docker/requirements-local.txt:/app/docker/requirements-local.txt:ro
+    - ./superset/pythonpath:/app/docker/pythonpath:ro
+  networks:
+    - lakehouse_net
+  user: root
+  restart: unless-stopped
+  depends_on: &superset-depends-on
+    redis-shared:
+      condition: service_healthy
+    postgres-shared:
+      condition: service_healthy
+
+services:
+  #########################################################
+  # Template services. Instance files extend these.
+  #########################################################
+  superset-app:
+    <<: *airflow-common
+    command: ["/app/docker/docker-bootstrap.sh", "app-gunicorn"]
+    depends_on:
+      <<: *superset-depends-on
+
+  superset-bootstrap:
+    <<: *airflow-common
+    command: ["/app/docker/docker-init.sh"]
+    restart: no
+    healthcheck:
+      disable: true
+
+  superset-worker:
+    <<: *airflow-common
+    command: ["/app/docker/docker-bootstrap.sh", "worker"]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  superset-worker-beat:
+    <<: *airflow-common
+    command: ["/app/docker/docker-bootstrap.sh", "beat"]
+    healthcheck:
+      disable: true

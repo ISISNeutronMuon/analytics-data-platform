@@ -15,7 +15,7 @@ log:
 entryPoints:
   web:
     address: :50080
-  minioapi:
+  s3api:
     address: :59000
   trinosecure:
     address: :8443

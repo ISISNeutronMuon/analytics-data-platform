@@ -4,7 +4,7 @@ local:
     trino:
       type: trino
       method: ldap
-      user: machine-infra
+      user: localadmin_machine
       password: s3cr3t
       host: localhost
       port: 58443

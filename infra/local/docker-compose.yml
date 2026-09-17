@@ -1,105 +1,39 @@
 # A development stack to emulate the Lakehouse. This is intended for local development only.
 # See ./README.md
+networks:
+  lakehouse_net:
+    name: lakehouse-network
 
-# image versions
-x-keycloak-image: &keycloak-image quay.io/keycloak/keycloak:26.3
-x-openfga-image: &openfga-image openfga/openfga:v1.19.0
-x-lakekeeper-image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.13.3
-x-minio-image: &minio-image quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
-x-postgres-image: &postgres-image postgres:18-bookworm
-x-redis-image: &redis-image redis:8.4-bookworm
-x-superset-image: &superset-image ghcr.io/isisneutronmuon/analytics-data-platform-superset:a4f0e8011f34785d759269dceedfa2693db81c19
-x-traefik-image: &traefik-image traefik:v3.5.3
-x-trino-image: &trino-image trinodb/trino:477
-x-airflow-image: &airflow-image apache/airflow:3.3.0
-
-# environment
-x-env-file: &env-file
-  - path: ./env-local
-    required: true
-
-# network
-x-networks: &local-networks
-  - local-lakehouse_net
-
-# certs
-x-mkcert-depends: &mkcert-depends
-  mkcert:
-    condition: service_completed_successfully
-x-certs-volume: &certs-volume "mkcert_data:/certs"
-
-# superset options
-x-superset-user: &superset-user root
-x-superset-depends-on: &superset-depends-on
-  shared-redis:
-    condition: service_started
-  shared-database-bootstrap:
-    condition: service_completed_successfully
-x-superset-volumes: &superset-volumes
-  - ./superset/docker/docker-init.sh:/app/docker/docker-init.sh:ro
-  - ./superset/docker/docker-bootstrap-cert.sh:/app/docker/docker-bootstrap-cert.sh:ro
-  - ./superset/docker/requirements-local.txt:/app/docker/requirements-local.txt:ro
-  - ./superset/docker/pythonpath:/app/docker/pythonpath:ro
-  - *certs-volume
-
-x-airflow-common:
-  &airflow-common
-  # In order to add custom dependencies or upgrade provider distributions you can use your extended image.
-  # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
-  # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
-  image: *airflow-image
-  env_file: *env-file
-  environment:
-    &airflow-common-env
-    UV_CACHE_DIR: /opt/airflow/uv_cache
-    AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
-    PYICEBERG_HOME: /opt/airflow/config
-  volumes:
-    - ./airflow/logs:/opt/airflow/logs
-    - ./airflow/plugins:/opt/airflow/plugins
-    - ./airflow/dags:/opt/airflow/dags:ro
-    - ./airflow/config:/opt/airflow/config:ro
-    - ./airflow/airflow-init.sh:/opt/airflow/airflow-init.sh:ro
-    - ./../..:/opt/analytics-data-platform
-    - uv_cache:/opt/airflow/uv_cache
-  networks: *local-networks
-  depends_on:
-    &airflow-common-depends-on
-    shared-redis:
-      condition: service_healthy
-    shared-database:
-      condition: service_healthy
+volumes:
+  cert_data:
+    name: lakehouse_cert_data
+  postgres-shared_data:
+    name: lakehouse_postgres_data
+  keycloak_data:
+    name: lakehouse_keycloak_data
+  shared_redis_data:
+    name: lakehouse_redis_data
+  seaweedfs_data:
+    name: lakehouse_seaweedfs_data
+  warehouses_bootstrap_data:
+    name: lakehouse_warehouses_bootstrap_data
 
 services:
   #########################################################
   # Ingress
+  #
+  # We make a certificate so that Traefik can be configured
+  # with an enpoints with TLS-termination enabled.
+  # This is primarily for Trino that requires the use of
+  # HTTPS when authentication is enabled.
   #########################################################
-  mkcert:
-    container_name: local-lakehouse-mkcert
-    image: alpine/mkcert
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        certfile=/certs/localdev.pem
-        if [ ! -f "$$certfile" ]; then
-          echo "$$certfile not found. Creating new CA and certificate."
-          cd /certs || exit 1
-          mkcert -cert-file "$$certfile" -key-file localdev-key.pem localhost 127.0.0.1 ::1
-          cp "$$(mkcert -CAROOT)"/* .
-        else
-          echo "$$certfile exists, skipping certificate creation."
-        fi
-    restart: "no"
-    volumes:
-      - *certs-volume
-    networks: *local-networks
-
   adp-router:
-    container_name: local-lakehouse-traefik
-    image: *traefik-image
-    env_file: *env-file
-    depends_on: *mkcert-depends
+    container_name: lakehouse-traefik
+    image: traefik:v3.7.13
+    env_file: &env_file-common
+      - path: ./env-common
+        required: true
+    entrypoint: ["/bin/sh", "/entrypoint-ssl.sh"]
     healthcheck:
       test: ["CMD-SHELL", "traefik healthcheck"]
       interval: 30s
@@ -107,86 +41,43 @@ services:
       retries: 5
       start_period: 5s
     ports:
-      - "50080:50080"
-      - "59000:59000" # MinIO api
+      - "50080:50080" # Web entry point
+      - "59000:59000" # S3 entrypoint
       - "58443:8443" # TLS entrypoint for Trino (cannot run on non-root path prefix or without https with auth enabled)
     volumes:
-      - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
-      - "./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
-      - *certs-volume
-    networks: *local-networks
+      - "./adp-router/entrypoint-ssl.sh:/entrypoint-ssl.sh:ro"
+      - "./adp-router/traefik.yml:/etc/traefik/traefik.yml:ro"
+      - "./adp-router/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml"
+      - "cert_data:/certs"
+    networks: &networks-common
+      - lakehouse_net
 
   #########################################################
   # Database shared by all services
   # Do not do this in production!
   #########################################################
-  shared-database:
-    container_name: local-lakehouse-shared-database
-    image: *postgres-image
-    env_file: *env-file
+  postgres-shared:
+    container_name: lakehouse-postgres-shared
+    image: postgres:18-trixie
+    env_file: *env_file-common
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -p 5432"]
       interval: 30s
       timeout: 10s
       retries: 2
       start_period: 10s
-    ports:
-      # Open the port for easy access to viewing the database
-      - "55432:5432"
+    networks: *networks-common
     volumes:
-      - "shared_database_data:/var/lib/postgresql"
-    networks: *local-networks
-
-  shared-database-bootstrap:
-    container_name: local-lakehouse-shared-database-bootstrap
-    image: *postgres-image
-    env_file: *env-file
-    restart: "no"
-    depends_on:
-      shared-database:
-        condition: service_healthy
-    entrypoint:
-      - /bin/bash
-      - -c
-      - |
-        create_db_if_not_exists() {
-          psql -v ON_ERROR_STOP=1 --host=shared-database --username="$$ADP_SUPERUSER" <<-EOSQL
-            SELECT 'CREATE DATABASE $1' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$1')\\gexec
-        EOSQL
-        }
-        rename_schema() {
-          psql -v ON_ERROR_STOP=1 --host=shared-database --username="$$ADP_SUPERUSER" $1 <<-EOSQL
-            SELECT 'ALTER SCHEMA $2 RENAME TO $3' WHERE NOT EXISTS (select schema_name from information_schema.schemata WHERE schema_name = '$3')\\gexec
-        EOSQL
-        }
-        create_db_if_not_exists $$SHARED_DB__OPENFGA_DB_NAME
-        create_db_if_not_exists $$SHARED_DB__LAKEKEEPER_DB_NAME
-        create_db_if_not_exists $$SHARED_DB__SUPERSET_DB_NAME
-        rename_schema $$SUPERSET_DB_NAME public $$SUPERSET_DB_SCHEMA_NAME
-        create_db_if_not_exists $$SHARED_DB__AIRFLOW_DB_NAME
-    networks: *local-networks
+      - "postgres-shared_data:/var/lib/postgresql"
+      - "./postgres/initdb.d:/docker-entrypoint-initdb.d:ro"
 
   #########################################################
   # Keycloak identity provider
   #########################################################
   keycloak:
-    container_name: local-lakehouse-keycloak
-    image: *keycloak-image
-    env_file: *env-file
-    volumes:
-      - keycloak_data:/opt/keycloak/data
-      - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "healthcheck-localhost.sh 8080 $$KC_HTTP_RELATIVE_PATH/realms/master/.well-known/openid-configuration jwks_uri",
-        ]
-      start_period: 20s
-      start_interval: 2s
-      interval: 15s
-      timeout: 30s
-      retries: 5
+    container_name: lakehouse-keycloak
+    image: &keycloak_image quay.io/keycloak/keycloak:26.7
+    env_file: *env_file-common
     command:
       [
         "start-dev",
@@ -195,19 +86,32 @@ services:
         "--features=token-exchange",
         "--hostname-debug=true",
         "--proxy-headers=xforwarded",
-        "--verbose",
-        "--log-level=INFO",
+        "--log-level=ERROR",
       ]
-    networks: *local-networks
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      - "./request-get.sh:/usr/local/bin/request-get.sh:ro"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "request-get.sh 8080 $$KC_HTTP_RELATIVE_PATH/realms/master/.well-known/openid-configuration jwks_uri",
+        ]
+      start_period: 20s
+      start_interval: 5s
+      interval: 15s
+      timeout: 30s
+      retries: 15
+    networks: *networks-common
 
   keycloak-bootstrap:
-    container_name: local-lakehouse-keycloak-bootstrap
+    container_name: lakehouse-keycloak-bootstrap
     build:
       context: keycloak
       dockerfile: Dockerfile-kcadm.dockerfile
       args:
-        base: *keycloak-image
-    env_file: *env-file
+        base: *keycloak_image
+    env_file: *env_file-common
     entrypoint:
       - /bin/sh
       - -c
@@ -216,58 +120,58 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
-    networks: *local-networks
+    networks: *networks-common
     volumes:
       - "./keycloak/bootstrap.sh:/opt/keycloak/bootstrap.sh:ro"
+      - keycloak_data:/opt/keycloak/data
 
   #########################################################
-  # MinIO - Object store emulating the Ceph object store
-  # in SCD. This is exposed directly rather than through traefik
-  # as the service needs to be accessible for clients such as
-  # PyIcberg.
-  # Service name needs to match the endpoint value in bootstrap-warehouse.json
+  # SeaweedFS - Object store emulating the Ceph object store.
   #########################################################
-  minio:
-    container_name: local-lakehouse-minio
-    image: *minio-image
-    env_file: *env-file
+  seaweedfs:
+    container_name: lakehouse-seaweedfs
+    image: chrislusf/seaweedfs:4.46
+    env_file: *env_file-common
     # Match ports on host & container to use the same port inside and outside the container
     # network
     command:
-      ["server", "/data", "--address", ":59000", "--console-address", ":59001"]
+      - "mini"
+      - "-dir=/data"
+      - "-s3.iam.config=/etc/seaweedfs/iam.json"
+      - "-s3.port=59000"
     healthcheck:
-      test: ["CMD-SHELL", "healthcheck-localhost.sh 59000 /minio/health/live"]
-      start_period: 10s
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:59000/status || exit 1"]
+      start_period: 15s
       interval: 30s
-      timeout: 30s
-      retries: 3
+      timeout: 10s
+      retries: 5
     volumes:
-      - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
-      - "minio_data:/data"
-    networks: *local-networks
+      - "./seaweedfs/s3-iam-config.json:/etc/seaweedfs/iam.json:ro"
+      - "seaweedfs_data:/data"
+    networks: *networks-common
 
   #########################################################
   # OpenFGA - Permissioning
   #########################################################
   openfga-migrate:
-    container_name: local-lakehouse-openfga-migrate
-    image: *openfga-image
-    env_file: *env-file
+    container_name: lakehouse-openfga-migrate
+    image: &openfga-image openfga/openfga:v1.20.0
+    env_file: *env_file-common
     command: migrate
     depends_on:
-      shared-database-bootstrap:
-        condition: service_completed_successfully
-    networks: *local-networks
+      postgres-shared:
+        condition: service_healthy
+    networks: *networks-common
 
   openfga:
-    container_name: local-lakehouse-openfga
+    container_name: lakehouse-openfga
     image: *openfga-image
-    env_file: *env-file
+    env_file: *env_file-common
     command: run
     depends_on:
       openfga-migrate:
         condition: service_completed_successfully
-    networks: *local-networks
+    networks: *networks-common
     healthcheck:
       test: ["CMD", "/usr/local/bin/grpc_health_probe", "-addr=openfga:8081"]
       interval: 10s
@@ -278,11 +182,11 @@ services:
   # Lakekeeper - Iceberg REST catalog
   #########################################################
   lakekeeper:
-    container_name: local-lakehouse-lakekeeper
-    image: *lakekeeper-image
-    env_file: *env-file
+    container_name: lakehouse-lakekeeper
+    image: &lakekeeper-image quay.io/lakekeeper/catalog:v0.13.4
+    env_file: *env_file-common
     environment:
-      - SSL_CERT_FILE=/certs/rootCA.pem
+      #      - SSL_CERT_FILE=/certs/rootCA.pem
       - RUST_LOG=info,lakekeeper=${LAKEKEEPER_LOG_LEVEL:-info},lakekeeper_bin=${LAKEKEEPER_LOG_LEVEL:-info},iceberg_ext=${LAKEKEEPER_LOG_LEVEL:-info}
     command: ["serve"]
     healthcheck:
@@ -298,82 +202,46 @@ services:
         condition: service_healthy
       keycloak-bootstrap:
         condition: service_completed_successfully
-      shared-database-bootstrap:
-        condition: service_completed_successfully
-    volumes:
-      - *certs-volume
-    networks: *local-networks
+      postgres-shared:
+        condition: service_started
+    networks: *networks-common
 
   lakekeeper-migrate:
-    container_name: local-lakehouse-lakekeeper-migrate
+    container_name: lakehouse-lakekeeper-migrate
     image: *lakekeeper-image
-    env_file: *env-file
+    env_file: *env_file-common
     restart: "no"
     command: ["migrate"]
     depends_on:
-      shared-database-bootstrap:
-        condition: service_completed_successfully
       openfga:
         condition: service_healthy
-    networks: *local-networks
-
-  lakekeeper-bootstrap:
-    container_name: local-lakehouse-lakekeeper-bootstrap
-    image: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
-    env_file: *env-file
-    entrypoint:
-      - /bin/bash
-      - -c
-      - |
-        set -euo pipefail
-        for name in "$${WAREHOUSE_NAME}_landing" "$${WAREHOUSE_NAME}"; do \
-          uv run /opt/work/bootstrap-warehouse.py \
-            --lakekeeper-project-name "$$KC_REALM_NAME" \
-            --keycloak-url "$$KEYCLOAK_URL_INTERNAL" \
-            --keycloak-admin-credentials "$$KC_BOOTSTRAP_ADMIN_USERNAME:$$KC_BOOTSTRAP_ADMIN_PASSWORD" \
-            --keycloak-user-realm "$$KC_REALM_NAME" \
-            --bootstrap-credentials "machine-infra:s3cr3t" \
-            --token-scope lakekeeper \
-            --server-admin "$$ADP_SUPERUSER" \
-            --log-level=DEBUG \
-            --warehouse-json-file "/opt/work/warehouses/$$name.json" \
-            "http://lakekeeper:8181"; \
-        done
-    restart: "no"
-    depends_on:
-      lakekeeper:
-        condition: service_healthy
-    volumes:
-      - "../ansible/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py"
-      - "./warehouses/lakekeeper:/opt/work/warehouses:ro"
-      - *certs-volume
-    networks: *local-networks
+    networks: *networks-common
 
   #########################################################
-  # Marimo notebooks
+  # Shared Redis cache
   #########################################################
-  marimo:
-    container_name: local-lakehouse-marimo
-    build:
-      context: marimo
-    env_file: *env-file
+  redis-shared:
+    container_name: lakehouse-redis-shared
+    env_file: *env_file-common
+    image: redis:8.4-bookworm
     healthcheck:
-      test: ["CMD-SHELL", "healthcheck-localhost.sh 8080 /health healthy"]
-      start_period: 5s
+      test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 30s
-    networks: *local-networks
+      retries: 50
+      start_period: 30s
+    restart: unless-stopped
     volumes:
-      - ./marimo/notebooks:/home/nbuser/notebooks
-      - "./healthcheck-localhost.sh:/usr/local/bin/healthcheck-localhost.sh:ro"
+      - shared_redis_data:/data
+    networks: *networks-common
+
   #########################################################
   # Trino query engine
   #########################################################
-
   trino:
-    container_name: local-lakehouse-trino
-    image: *trino-image
-    env_file: *env-file
+    container_name: lakehouse-trino
+    image: trinodb/trino:483
+    env_file: *env_file-common
     depends_on:
       keycloak:
         condition: service_healthy
@@ -386,263 +254,31 @@ services:
       timeout: 30s
       retries: 2
     volumes:
-      - "./trino/etc:/etc/trino"
-      - "./warehouses/trino:/etc/trino/catalog"
-      - *certs-volume
-    networks: *local-networks
+      - "./trino/etc:/etc/trino:ro"
+      - "warehouses_bootstrap_data:/opt/data"
+    networks: *networks-common
 
   #########################################################
-  # Shared Redis cache for Superset and Airflow
+  # Warehouses bootstrap
+  #
+  # Creates Lakekeeper warehouses and the matching Trino
+  # Iceberg catalogs.
   #########################################################
-  shared-redis:
-    container_name: local-lakehouse-shared-redis
-    env_file: *env-file
-    image: *redis-image
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 30s
-      retries: 50
-      start_period: 30s
-    restart: unless-stopped
+  warehouses-bootstrap:
+    container_name: lakehouse-warehouse-bootstrap
+    image: ghcr.io/astral-sh/uv:python3.14-trixie-slim
+    env_file: *env_file-common
+    entrypoint: ["/bin/bash", "/opt/work/bootstrap.sh"]
+    restart: "no"
+    depends_on:
+      lakekeeper:
+        condition: service_healthy
+      trino:
+        condition: service_healthy
     volumes:
-      - shared_redis_data:/data
-    networks: *local-networks
-  #########################################################
-  # Superset BI tool
-  #########################################################
-
-  superset-app:
-    profiles:
-      - superset
-    container_name: local-lakehouse-superset-app
-    env_file: *env-file
-    image: *superset-image
-    command: ["/app/docker/docker-bootstrap-cert.sh", "app-gunicorn"]
-    user: *superset-user
-    restart: unless-stopped
-    depends_on:
-      <<: *superset-depends-on
-      superset-init:
-        condition: service_completed_successfully
-    volumes: *superset-volumes
-    networks: *local-networks
-
-  superset-init:
-    profiles:
-      - superset
-    container_name: local-lakehouse-superset-init
-    env_file: *env-file
-    image: *superset-image
-    command: ["/app/docker/docker-init.sh"]
-    depends_on:
-      <<: *superset-depends-on
-      shared-database:
-        condition: service_healthy
-    user: *superset-user
-    volumes: *superset-volumes
-    networks: *local-networks
-    healthcheck:
-      disable: true
-
-  superset-worker:
-    profiles:
-      - superset-worker
-    container_name: local-lakehouse-superset-worker
-    env_file: *env-file
-    image: *superset-image
-    command: ["/app/docker/docker-bootstrap.sh", "worker"]
-    restart: unless-stopped
-    depends_on:
-      <<: *superset-depends-on
-      superset-app:
-        condition: service_healthy
-    user: *superset-user
-    volumes: *superset-volumes
-    networks: *local-networks
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME",
-        ]
-      interval: 15s
-
-  superset-worker-beat:
-    profiles:
-      - superset-worker
-    container_name: local-lakehouse-superset-worker-beat
-    env_file: *env-file
-    image: *superset-image
-    command: ["/app/docker/docker-bootstrap.sh", "beat"]
-    restart: unless-stopped
-    depends_on:
-      <<: *superset-depends-on
-      superset-app:
-        condition: service_healthy
-    user: *superset-user
-    volumes: *superset-volumes
-    networks: *local-networks
-    healthcheck:
-      disable: true
-
-  #########################################################
-  # Apache Airflow ELT Orchestration
-  #########################################################
-  airflow-apiserver:
-    <<: *airflow-common
-    container_name: local-lakehouse-airflow-apiserver
-    profiles:
-      - airflow
-    env_file: *env-file
-    command: ["api-server", "--proxy-headers"]
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/airflow/api/v2/monitor/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    restart: always
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
-
-  airflow-scheduler:
-    <<: *airflow-common
-    container_name: local-lakehouse-airflow-scheduler
-    profiles:
-      - airflow
-    command: scheduler
-    healthcheck:
-      test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    restart: always
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
-
-  airflow-dag-processor:
-    <<: *airflow-common
-    container_name: local-lakehouse-airflow-dag-processor
-    profiles:
-      - airflow
-    command: dag-processor
-    healthcheck:
-      test: ["CMD-SHELL", 'airflow jobs check --job-type DagProcessorJob --hostname "$${HOSTNAME}"']
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    restart: always
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
-
-  airflow-worker:
-    <<: *airflow-common
-    container_name: local-lakehouse-airflow-worker
-    profiles:
-      - airflow
-    command: celery worker
-    healthcheck:
-      # yamllint disable rule:line-length
-      test: ["CMD-SHELL", 'celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}" || celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"']
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    environment:
-      <<: *airflow-common-env
-      # Required to handle warm shutdown of the celery workers properly
-      # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
-      DUMB_INIT_SETSID: "0"
-    restart: always
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-apiserver:
-        condition: service_healthy
-      airflow-init:
-        condition: service_completed_successfully
-
-  airflow-triggerer:
-    <<: *airflow-common
-    container_name: local-lakehouse-airflow-triggerer
-    profiles:
-      - airflow
-    command: triggerer
-    healthcheck:
-      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    restart: always
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
-
-  airflow-init:
-    <<: *airflow-common
-    container_name: local-lakehouse-airflow-init
-    profiles:
-      - airflow
-    env_file: *env-file
-    entrypoint: /bin/bash
-    # yamllint disable rule:line-length
-    command: ["/opt/airflow/airflow-init.sh"]
-    # yamllint enable rule:line-length
-    environment:
-      <<: *airflow-common-env
-      _AIRFLOW_DB_MIGRATE: 'true'
-      _AIRFLOW_WWW_USER_CREATE: 'true'
-      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
-      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
-      _PIP_ADDITIONAL_REQUIREMENTS: ''
-    user: "0:0"
-
-  # Airflow cluster monitoring
-  flower:
-    <<: *airflow-common
-    container_name: local-lakehouse-airflow-flower
-    command: ["celery", "flower", "--url-prefix=airflow-flower"]
-    profiles:
-      - airflow
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:5555/airflow-flower/"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    restart: always
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
-networks:
-  local-lakehouse_net:
-    name: local-lakehouse-network
-
-volumes:
-  mkcert_data:
-    name: local-lakehouse_mkcert_data
-  keycloak_data:
-    name: local-lakehouse_keycloak_data
-  marimo_data:
-    name: local-lakehouse_marimo_data
-  minio_data:
-    name: local-lakehouse_minio_data
-  shared_database_data:
-    name: local-lakehouse_shared_database_data
-  shared_redis_data:
-    name: local-lakehouse_shared_redis_data
-  uv_cache:
-    name: local-lakehouse_uv_cache
+      - "./warehouses/bootstrap.sh:/opt/work/bootstrap.sh:ro"
+      - "./warehouses/create-trino-catalog.py:/opt/work/create-trino-catalog.py:ro"
+      - "./warehouses/generate-warehouse-json.py:/opt/work/generate-warehouse-json.py:ro"
+      - "../ansible/roles/lakekeeper/files/bootstrap-warehouse.py:/opt/work/bootstrap-warehouse.py:ro"
+      - "warehouses_bootstrap_data:/opt/data"
+    networks: *networks-common
