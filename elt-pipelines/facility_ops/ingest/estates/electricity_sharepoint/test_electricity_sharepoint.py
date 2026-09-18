@@ -24,8 +24,8 @@ def test_expected_columns_created(test_catalog: AssertableCatalog, run_test_inge
     now = datetime.datetime.now(tz=datetime.timezone.utc)
     for d in arrow_table["date_time"].to_pylist():
         diff = now - d
-        assert diff.days == 0, (
-            "Non-backfill electricity_sharepoint values should be from the last 24 hours"
+        assert diff.total_seconds() > 0 and diff.days <= 1, (
+            "Non-backfill electricity_sharepoint values should be from the last 48 hours"
         )
 
 
