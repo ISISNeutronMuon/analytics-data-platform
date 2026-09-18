@@ -20,7 +20,11 @@ def _make_dbt_args(ingest: ELTIngestManifest, remote: bool):
 
 def run_transform(project: PipelinesProject, ingest: ELTIngestManifest, remote: bool = False):
     """Transform the data ingested from the specified source"""
-    os.environ["DBT_ENGINE_SEND_ANONYMOUS_USAGE_STATS"] = "false"
+
+    # Disable telemetry unless it's explicitly been set
+    if not os.getenv("DBT_ENGINE_SEND_ANONYMOUS_USAGE_STATS"):
+        os.environ["DBT_ENGINE_SEND_ANONYMOUS_USAGE_STATS"] = "false"
+
     args = _make_dbt_args(ingest, remote)
     LOGGER.debug(f"Invoking 'dbt {' '.join(args)}'")
 
