@@ -1,5 +1,6 @@
 import contextlib
 import logging
+import os
 
 from dbt.exceptions import UninstalledPackagesFoundError
 
@@ -19,6 +20,7 @@ def _make_dbt_args(ingest: ELTIngestManifest, remote: bool):
 
 def run_transform(project: PipelinesProject, ingest: ELTIngestManifest, remote: bool = False):
     """Transform the data ingested from the specified source"""
+    os.environ["DBT_ENGINE_SEND_ANONYMOUS_USAGE_STATS"] = "false"
     args = _make_dbt_args(ingest, remote)
     LOGGER.debug(f"Invoking 'dbt {' '.join(args)}'")
 
