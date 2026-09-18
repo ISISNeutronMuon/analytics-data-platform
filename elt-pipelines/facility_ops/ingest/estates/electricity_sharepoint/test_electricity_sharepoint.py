@@ -25,7 +25,7 @@ def test_expected_columns_created(test_catalog: AssertableCatalog, run_test_inge
     for d in arrow_table["date_time"].to_pylist():
         diff = now - d
         assert diff.days == 0, (
-            "Default electricity_sharepoint values should all be from today"
+            "Non-backfill electricity_sharepoint values should be from the last 24 hours"
         )
 
 
