@@ -31,14 +31,19 @@ def connect_catalog(warehouse_name: str) -> Catalog:
     if conf is None:
         raise RuntimeError(f"Couldn't load iceberg configuration for for catalog '{name}'")
 
-    if "warehouse" in conf and warehouse_name != conf["warehouse"]:
-        msg = (
-            "elt configures the destination warehouse based on the pipeline directory. "
-            "Preconfigured value '%s' is being replaced by '%s'"
-        )
-        LOGGER.warning(msg, conf["warehouse"], warehouse_name)
+    if "warehouse" not in conf or (
+        warehouse_name != conf["warehouse"]
+        # Leave file based (testing) warehouses as they are
+        and not conf["warehouse"].startswith("file:")
+    ):
+        if "warehouse" in conf:
+            msg = (
+                "elt configures the destination warehouse based on the pipeline directory. "
+                "Preconfigured value '%s' is being replaced by '%s'"
+            )
+            LOGGER.warning(msg, conf["warehouse"], warehouse_name)
 
-    conf["warehouse"] = warehouse_name
+        conf["warehouse"] = warehouse_name
 
     return load_catalog(name, **conf)
 
