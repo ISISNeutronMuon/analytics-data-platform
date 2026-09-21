@@ -38,7 +38,7 @@ renamed as (
         date(fault_date_str) as fault_date,
 
         -- Desktop Opralog used local time rather than UTC. Convert to UTC here.
-        {{ parse_utc_timestamp('fault_date_str', 'yyyy-MM-dd', 'fault_time_str', src_timezone='Europe/London') }} as fault_occurred_at,
+        cast({{ parse_utc_timestamp('fault_date_str', 'yyyy-MM-dd', 'fault_time_str', src_timezone='Europe/London') }} as timestamp(6)) as fault_occurred_at,
 
         {{ adapter.quote('group') }},
         faultdescription as fault_description,
@@ -48,12 +48,4 @@ renamed as (
 
 )
 
-select
-equipment,
-cycle_name,
-downtime_mins,
-fault_date,
-cast(fault_occurred_at as timestamp(6)) as fault_occurred_at,
-fault_description,
-managers_comments
-from renamed
+select * from renamed
