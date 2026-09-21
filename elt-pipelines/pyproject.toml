@@ -9,8 +9,9 @@ dependencies = [
     "pydantic-settings>=2.14.2",
 ]
 
-[tool.setuptools]
-packages = ["facility_ops", "fase"]
+[tool.setuptools.packages.find]
+include = ["facility_ops*", "fase*"]
+namespaces = true
 
 [project.optional-dependencies]
 proposal = [
