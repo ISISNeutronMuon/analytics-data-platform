@@ -66,7 +66,7 @@ equipment_up_at_col as (
 
   select
 
-    equipment,
+    {{ normalize_whitespace('equipment') }} as equipment,
     fault_date,
     cycle_name,
     cycle_phase,
