@@ -63,6 +63,10 @@ class AssertableCatalog:
     def assert_has_n_rows(self, table_id: tuple[str, ...], n: int):
         assert self.get_num_rows(table_id) == n
 
+    def assert_at_least_rows(self, table_id: tuple[str, ...], n: int):
+        num_rows = self.get_num_rows(table_id)
+        assert num_rows >= n, f"Found {num_rows} rows in {table_id}, expected at least {n}"
+
     def get_num_rows(self, table_id: tuple[str, ...]):
         assert self._catalog.table_exists(table_id)
         t = self._catalog.load_table(table_id)
