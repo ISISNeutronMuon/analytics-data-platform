@@ -16,7 +16,7 @@ babel==2.18.0
 certifi==2026.2.25
     # via requests
 chardet==7.4.3
-    # via -r requirements/requirements.in
+    # via -r requirements.in
 charset-normalizer==3.4.7
     # via requests
 click==8.3.2
@@ -27,7 +27,7 @@ daff==1.4.2
     # via dbt-core
 dbt-adapters==1.24.5
     # via
-    #   -r requirements/requirements.in
+    #   -r requirements.in
     #   dbt-core
     #   dbt-trino
 dbt-common==1.38.0
@@ -35,11 +35,11 @@ dbt-common==1.38.0
     #   dbt-adapters
     #   dbt-core
     #   dbt-trino
-dbt-core==1.12.0
+dbt-core==1.12.3
     # via
-    #   -r requirements/requirements.in
+    #   -r requirements.in
     #   dbt-trino
-dbt-core-experimental-parser==2.0.0a5
+dbt-core-experimental-parser==2.0.0rc1
     # via dbt-core
 dbt-extractor==0.6.0
     # via dbt-core
@@ -49,7 +49,7 @@ dbt-protos==1.0.541
     #   dbt-common
     #   dbt-core
 dbt-trino==1.10.2
-    # via -r requirements/requirements.in
+    # via -r requirements.in
 deepdiff==8.6.2
     # via dbt-common
 idna==3.15
@@ -78,7 +78,7 @@ lz4==4.4.5
     # via trino
 markupsafe==3.0.3
     # via jinja2
-mashumaro[msgpack]==3.14
+mashumaro==3.14
     # via
     #   dbt-adapters
     #   dbt-common
@@ -90,6 +90,8 @@ more-itertools==10.8.0
 msgpack==1.2.1
     # via mashumaro
 networkx==3.6.1
+    # via dbt-core
+opentelemetry-api==1.44.0
     # via dbt-core
 orderly-set==5.5.0
     # via deepdiff
@@ -158,7 +160,7 @@ snowplow-tracker==1.1.0
     # via dbt-core
 sqlglot==30.14.0
     # via metricflow
-sqlparse==0.5.5
+sqlparse==0.6.0
     # via dbt-core
 tabulate==0.10.0
     # via metricflow
@@ -173,6 +175,7 @@ typing-extensions==4.15.0
     #   dbt-core
     #   mashumaro
     #   metricflow
+    #   opentelemetry-api
     #   pydantic
     #   pydantic-core
     #   snowplow-tracker
