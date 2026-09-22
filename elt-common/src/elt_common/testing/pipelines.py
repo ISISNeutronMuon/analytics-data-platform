@@ -77,7 +77,7 @@ def sql_warehouses(request, tmp_path_factory):
     LOGGER.debug(f"Creating {test_warehouse_names} warehouses in {test_dir}")
 
     warehouses = {
-        warehouse_name: SqlCatalogWarehouse(warehouse_name, test_dir)
+        warehouse_name: SqlCatalogWarehouse(f"{warehouse_name}_landing", test_dir)
         for warehouse_name in test_warehouse_names
     }
 
@@ -91,7 +91,7 @@ def test_catalog(sql_warehouses, request, monkeypatch):
 
     monkeypatch.setenv("PYICEBERG_CATALOG__DEFAULT__TYPE", "sql")
     monkeypatch.setenv("PYICEBERG_CATALOG__DEFAULT__URI", warehouse.uri)
-    monkeypatch.setenv("PYICEBERG_CATALOG__DEFAULT__WAREHOUSE", test_warehouse_name)
+    monkeypatch.setenv("PYICEBERG_CATALOG__DEFAULT__WAREHOUSE", warehouse.warehouse_path)
 
     catalog = warehouse.connect()
     ret = AssertableCatalog(catalog)
