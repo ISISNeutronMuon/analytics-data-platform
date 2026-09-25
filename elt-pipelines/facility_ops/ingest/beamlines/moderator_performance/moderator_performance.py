@@ -54,16 +54,16 @@ RUNS_CONFIG: Dict[str, Any] = {"PEARL": {"cycle_start": "15_2", "skip": [95382]}
 
 
 def find_available_runs_from_archive(
-    run_mode: RunMode,
-    archive_mount: Path,
-    beamline: str,
-    cycle_start: str,
-    skip: Sequence[int],
+    run_mode: RunMode, archive_mount: Path, beamline: str
 ) -> Dict[str, Sequence[RunFile]]:
     """Look over the archive for the beamline and find the available runs
 
     If the mode=incremental only look at the most recent cycle.
     """
+    runs_config = RUNS_CONFIG[beamline]
+    cycle_start = runs_config["cycle_start"]
+    skip = runs_config["skip"]
+
     LOGGER.debug(
         f"Finding available runs (mode={run_mode}) for {beamline} starting at cycle {cycle_start}"
     )
@@ -145,14 +145,7 @@ def extract_monitor_peaks(archive_mount: str, run_mode: RunMode = "incremental")
 
     for beamline, fit_config in FIT_CONFIGS.items():
         LOGGER.info(f"Fitting monitor peaks for '{beamline}'")
-        beamline_runs = RUNS_CONFIG[beamline]
-        available_runs = find_available_runs_from_archive(
-            run_mode,
-            archive,
-            beamline,
-            beamline_runs["cycle_start"],
-            beamline_runs["skip"],
-        )
+        available_runs = find_available_runs_from_archive(run_mode, archive, beamline)
 
         for cycle, runs in available_runs.items():
             if not runs:
