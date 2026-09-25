@@ -50,7 +50,7 @@ FIT_CONFIGS = {
     )
 }
 
-RUNS_CONFIG: Dict[str, Any] = {"pearl": {"cycle_start": "15_2", "skip": [95382]}}
+RUNS_CONFIG: Dict[str, Any] = {"PEARL": {"cycle_start": "15_2", "skip": [95382]}}
 
 
 def find_available_runs_from_archive(
@@ -145,7 +145,7 @@ def extract_monitor_peaks(archive_mount: str, run_mode: RunMode = "incremental")
 
     for beamline, fit_config in FIT_CONFIGS.items():
         LOGGER.info(f"Fitting monitor peaks for '{beamline}'")
-        beamline_runs = RUNS_CONFIG[beamline.lower()]
+        beamline_runs = RUNS_CONFIG[beamline]
         available_runs = find_available_runs_from_archive(
             run_mode,
             archive,
