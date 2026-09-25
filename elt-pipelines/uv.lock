@@ -756,6 +756,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "elt-common" },
+    { name = "pydantic" },
     { name = "pydantic-settings" },
 ]
 
@@ -803,6 +804,7 @@ requires-dist = [
     { name = "numpy", marker = "extra == 'moderator-performance'", specifier = ">=2.4.2,<3" },
     { name = "openpyxl", marker = "extra == 'sharepoint'", specifier = ">=3.1.5" },
     { name = "pandas", marker = "extra == 'sharepoint'", specifier = ">=3.0.3" },
+    { name = "pydantic", specifier = ">=2.13.4" },
     { name = "pydantic-settings", specifier = ">=2.14.2" },
     { name = "requests", marker = "extra == 'statusdisplay'", specifier = ">=2.34.2" },
     { name = "scipy", marker = "extra == 'moderator-performance'", specifier = ">=1.17.1,<2" },
