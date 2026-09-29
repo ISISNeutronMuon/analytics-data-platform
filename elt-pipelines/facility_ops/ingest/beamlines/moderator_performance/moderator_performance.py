@@ -104,23 +104,30 @@ def find_available_runs_from_archive(
         map(lambda x: f"{19}{x}" if x.startswith("9") else f"{20}{x}", cycle_dirs),
         reverse=True,
     )
+    cycles = []
+    for cycle_year in cycle_years:
+        cycle = cycle_year[2:]
+        cycles.append(cycle)
+        # Don't use any cycles earlier than cycle_start
+        if cycle_start == cycle:
+            break
 
-    LOGGER.debug(f"{len(cycle_years)} total cycle directories")
+    LOGGER.debug(f"{len(cycles)} total cycle directories")
     if runs_config and runs_config.cycles is not None:
-        cycle_years = [c for c in cycle_years if c[2:] in runs_config.cycles]
-        LOGGER.debug(f"{len(cycle_years)} cycle directories matched instrument config")
+        cycles = [c for c in cycles if c in runs_config.cycles]
+        LOGGER.debug(f"{len(cycles)} cycle directories matched instrument config")
 
-    if not cycle_years:
+    if not cycles:
         LOGGER.warning("No matching cycle directories")
         return {}
 
     if run_mode == "incremental":
-        cycle_years = [cycle_years[0]]
-        LOGGER.debug(f"Incremental mode, only using most recent cycle {cycle_years[0]}")
+        cycles = [cycles[0]]
+        LOGGER.debug(f"Incremental mode, only using most recent cycle {cycles[0]}")
 
     available_runs = {}
-    for cycle_year in cycle_years:
-        cycle_dir = f"{CYCLE_DIR_PREFIX}{cycle_year[2:]}"
+    for cycle in cycles:
+        cycle_dir = f"{CYCLE_DIR_PREFIX}{cycle}"
         LOGGER.debug(f"Checking cycle {cycle_dir}")
         cycle_path = data_dir / cycle_dir
 
@@ -138,10 +145,6 @@ def find_available_runs_from_archive(
         if cycle_runs:
             available_runs[cycle_dir] = sorted(cycle_runs)
             LOGGER.debug(f"Found {len(cycle_runs)} runs in {cycle_dir}")
-
-        # Stop if we've reached the cycle_start
-        if cycle_start in cycle_dir:
-            break
 
     LOGGER.debug(f"Found {len(available_runs)} cycles with runs")
     return available_runs
