@@ -142,6 +142,7 @@ def fit_monitor_peak(
 
     pcharge = monitor_ws.run_info.proton_charge_uamps
     if monitor_ws.run_info.proton_charge_uamps < 1.0:
+        LOGGER.debug(f"Skipping {nxs_file.stem}, proton_charge_uamps was below 1.0")
         return None
 
     freq_data = monitor_ws.data.to_frequencies().normalise(pcharge)
