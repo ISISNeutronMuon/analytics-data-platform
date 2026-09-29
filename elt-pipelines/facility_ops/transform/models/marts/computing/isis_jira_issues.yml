@@ -1,0 +1,15 @@
+models:
+  - name: isis_jira_issues
+    description: >
+      All issues from ISIS Jira projects
+    columns:
+      - name: issue_key
+        data_tests:
+          - not_null
+      - name: issue_type
+      - name: project_name
+      - name: status
+      - name: priority
+      - name: created_at
+      - name: updated_at
+      - name: teams
