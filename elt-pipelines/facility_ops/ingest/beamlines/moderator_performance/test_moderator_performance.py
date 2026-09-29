@@ -4,7 +4,8 @@ import json
 from elt_common.testing.pipelines import AssertableCatalog
 
 _archive_mount = "//isis/inst$"
-_table_id = ("beamlines_moderator_performance", "monitor_peaks")
+_namespace = "beamlines_moderator_performance"
+_table_id = (_namespace, "monitor_peaks")
 
 
 def test_cycle_22_5(test_catalog: AssertableCatalog, run_test_ingest):
@@ -64,3 +65,11 @@ def test_default_run_mode_only_most_recent_cycle(
     runs_config = {"PEARL": {"cycles": ["20_2", "24_1"], "runs": [113285, 119342]}}
     run_test_ingest(archive_mount=_archive_mount, runs_config=json.dumps(runs_config))
     test_catalog.assert_has_n_rows(_table_id, 1)
+
+
+def test_empty_cycles_nothing_ingested(
+    test_catalog: AssertableCatalog, run_test_ingest
+):
+    runs_config = {"PEARL": {"cycles": []}}
+    run_test_ingest(archive_mount=_archive_mount, runs_config=json.dumps(runs_config))
+    test_catalog.assert_has_exact_tables(_namespace, [])

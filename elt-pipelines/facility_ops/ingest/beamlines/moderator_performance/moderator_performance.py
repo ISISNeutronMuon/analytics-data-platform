@@ -104,14 +104,15 @@ def find_available_runs_from_archive(
         map(lambda x: f"{19}{x}" if x.startswith("9") else f"{20}{x}", cycle_dirs),
         reverse=True,
     )
-    if not cycle_years:
-        LOGGER.warning("No cycles directory found.")
-        return {}
 
     LOGGER.debug(f"{len(cycle_years)} total cycle directories")
-    if runs_config and runs_config.cycles:
+    if runs_config and runs_config.cycles is not None:
         cycle_years = [c for c in cycle_years if c[2:] in runs_config.cycles]
         LOGGER.debug(f"{len(cycle_years)} cycle directories matched instrument config")
+
+    if not cycle_years:
+        LOGGER.warning("No matching cycle directories")
+        return {}
 
     if run_mode == "incremental":
         cycle_years = [cycle_years[0]]
@@ -128,7 +129,7 @@ def find_available_runs_from_archive(
         file_runs = ((f, get_run_number(f, beamline)) for f in files)
 
         # Filter unwanted runs
-        if runs_config and runs_config.runs:
+        if runs_config and runs_config.runs is not None:
             file_runs = ((f, r) for (f, r) in file_runs if r in runs_config.runs)
         file_runs = ((f, r) for (f, r) in file_runs if r not in skip)
 
