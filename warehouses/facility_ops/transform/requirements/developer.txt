@@ -127,7 +127,7 @@ pydantic==2.11.7
     #   metricflow
 pydantic-core==2.33.2
     # via pydantic
-pygments==2.19.2
+pygments==2.20.0
     # via
     #   diff-cover
     #   pytest
@@ -178,10 +178,10 @@ snowplow-tracker==1.1.0
     # via dbt-core
 sqlfluff==3.4.2
     # via
-    #   -r requirements/developer.in
+    #   -r developer.in
     #   sqlfluff-templater-dbt
 sqlfluff-templater-dbt==3.4.2
-    # via -r requirements/developer.in
+    # via -r developer.in
 sqlglot==30.14.0
     # via metricflow
 sqlparse==0.5.5
