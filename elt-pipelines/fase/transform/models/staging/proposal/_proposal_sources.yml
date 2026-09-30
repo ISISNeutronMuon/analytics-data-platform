@@ -1,0 +1,20 @@
+version: 2
+
+sources:
+  - name: fase_proposal
+    database: fase_landing
+    tables:
+      - name: proposals
+      - name: faps
+      - name: fap_proposals
+      - name: generic_templates
+      - name: questions
+      - name: answers
+  - name: fase_facility_common
+    database: fase_landing
+    tables:
+      - name: legacy_reference_numbers
+  - name: fase_facility_schedule
+    database: fase_landing
+    tables:
+      - name: sp_proposal_list_cache

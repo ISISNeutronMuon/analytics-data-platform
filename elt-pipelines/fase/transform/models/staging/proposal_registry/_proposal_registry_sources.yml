@@ -1,0 +1,18 @@
+version: 2
+
+sources:
+  - name: fase_proposal_registry
+    database: fase_landing
+    tables:
+      - name: unique_role_assignment
+      - name: proposer
+      - name: proposal_summary
+      - name: round
+      - name: access_route
+      - name: resource_request
+      - name: resource_name
+      - name: resource_labels
+      - name: assignable_resource
+      - name: resource_review
+      - name: resource_allocation
+      - name: experiment_equipment

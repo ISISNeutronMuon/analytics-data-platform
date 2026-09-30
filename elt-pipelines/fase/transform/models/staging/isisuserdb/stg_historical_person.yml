@@ -1,0 +1,20 @@
+models:
+  - name: stg_historical_person
+    description: >
+      Historical person view replacement from FASE ISISUSERDB
+    columns:
+      - name: user_number
+        data_tests:
+          - not_null
+      - name: from_date
+      - name: thru_date
+      - name: person_rid
+      - name: status
+      - name: establishment_id
+      - name: old_establishment_id
+      - name: org_name
+      - name: org_url
+      - name: org_country
+      - name: org_type
+      - name: dept_name
+      - name: department_labels

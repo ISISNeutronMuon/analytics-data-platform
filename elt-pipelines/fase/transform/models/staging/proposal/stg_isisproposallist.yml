@@ -1,0 +1,33 @@
+models:
+  - name: stg_isisproposallist
+    config:
+      tags: ["proposal"]
+    description: >
+      ISIS Proposal List
+    columns:
+      - name: "submission date"
+        data_tests:
+        - not_null
+      - name: "rb number"
+        data_tests:
+        - not_null
+      - name: "original rb number"
+      - name: "instrument requested"
+      - name: "requested time"
+      - name: "instrument allocated"
+      - name: "allocated time"
+      - name: "pi name"
+      - name: "pi country"
+      - name: "pi organisation"
+      - name: "pi department"
+      - name: "pi user number"
+      - name: "pi email"
+      - name: "ec name"
+      - name: "ec email"
+      - name: "local contact"
+      - name: "access route"
+      - name: "fap"
+      - name: "proposal"
+      - name: "abstract"
+      - name: "title"
+      - name: "round"

@@ -1,0 +1,26 @@
+models:
+  - name: stg_reporting_proposal
+    description: >
+      Proposal summary view replacement from FASE
+    columns:
+      - name: proposal_id
+        data_tests:
+          - not_null
+      - name: reference_number
+        data_tests:
+          - not_null
+      - name: title
+      - name: withdrawn
+      - name: round
+      - name: round_id
+      - name: route
+      - name: route_id
+      - name: facility
+      - name: pi_un
+      - name: requested_equipment
+      - name: requested_time
+      - name: requested_time_units
+      - name: allocated_equipment
+      - name: allocated_time
+      - name: allocated_time_units
+      - name: submission_date

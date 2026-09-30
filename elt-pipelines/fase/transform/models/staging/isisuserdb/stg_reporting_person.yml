@@ -1,0 +1,25 @@
+models:
+  - name: stg_reporting_person
+    description: >
+      Reporting person view replacement from FASE
+    columns:
+      - name: user_number
+        data_tests:
+          - not_null
+      - name: display_name
+      - name: title
+      - name: given_name
+      - name: first_name_known_as
+      - name: family_name
+      - name: marketing_email
+      - name: account_email
+      - name: work_phone
+      - name: mobile_phone
+      - name: visiting_department
+      - name: status
+      - name: org_name
+      - name: org_url
+      - name: org_country
+      - name: org_type
+      - name: dept_name
+      - name: department_labels
