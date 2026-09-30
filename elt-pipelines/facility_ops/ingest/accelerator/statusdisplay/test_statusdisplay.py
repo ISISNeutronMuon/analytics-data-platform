@@ -17,8 +17,7 @@ def test_expected_columns_created(test_catalog: AssertableCatalog, run_test_inge
             "phases.element",  # phases is a list type
         ],
     )
-    num_rows = test_catalog.get_num_rows(_table_id)
-    assert num_rows >= 153, f"Found {num_rows} cycles, expected at least 153"
+    test_catalog.assert_at_least_rows(_table_id, 153)
 
     test_catalog.clean_catalog()
 
