@@ -18,9 +18,9 @@ class Extract(BaseExtract[GitHubCredentials]):
 
     def extract_resource_properties(self):
         yield (
-            "github_repository_information",
+            "repositories",
             ResourceProperties(
-                extractor=self.extract_repository_information,
+                extractor=self.extract_repositories,
                 write_properties=ResourceWriteProperties(write_mode="replace"),
             ),
         )
@@ -32,5 +32,5 @@ class Extract(BaseExtract[GitHubCredentials]):
     # - fork: Flag indicating if this is a fork (bool)
     # - default_branch: The name of the default branch (string)
     # - size_kilobytes: The size of the repository (integer)
-    def extract_repository_information(self):
+    def extract_repositories(self):
         pass
