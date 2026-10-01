@@ -17,6 +17,7 @@ def test_expected_columns_created(test_catalog: AssertableCatalog, run_test_inge
             "default_branch",
             "size_kilobytes",
             "license",
+            "readme_size_kilobytes",
         ],
     )
     test_catalog.assert_at_least_rows(_repositories_table_id, 1)

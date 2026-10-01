@@ -6,7 +6,7 @@ from elt_common.extract import (
     ResourceWriteProperties,
     Watermark,
 )
-from github import Github
+from github import Github, UnknownObjectException
 from github import Auth
 from pydantic_settings import BaseSettings
 import pyarrow as pa
@@ -46,6 +46,13 @@ class Extract(BaseExtract[GitHubCredentials]):
             else:
                 license_name = license.name
 
+            readme_bytes: int
+            try:
+                readme = repo.get_readme()
+                readme_bytes = readme.size
+            except UnknownObjectException:
+                readme_bytes = 0
+
             repos.append(
                 {
                     "name": repo.name,
@@ -55,6 +62,7 @@ class Extract(BaseExtract[GitHubCredentials]):
                     "default_branch": repo.default_branch,
                     "size_kilobytes": repo.size,
                     "license": license_name,
+                    "readme_size_kilobytes": readme_bytes / 1000,
                 }
             )
 
@@ -67,6 +75,7 @@ class Extract(BaseExtract[GitHubCredentials]):
                 pa.field("default_branch", pa.string()),
                 pa.field("size_kilobytes", pa.int64()),
                 pa.field("license", pa.string()),
+                pa.field("readme_size_kilobytes", pa.int64()),
             ]
         )
         repos_table = pa.Table.from_pylist(repos, schema=repos_schema)
