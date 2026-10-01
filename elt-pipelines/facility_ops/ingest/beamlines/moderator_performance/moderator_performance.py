@@ -6,9 +6,11 @@ It currently requires the ISIS archive to be mounted locally.
 import logging
 from collections import namedtuple
 import functools
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Literal, Sequence, Iterator
+from typing import Any, Dict, Literal, Sequence, Iterator, Annotated
 
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 from elt_common.extract import (
@@ -29,9 +31,24 @@ LOGGER = logging.getLogger(__name__)
 
 RunFile = namedtuple("RunFile", ("run_number", "path"))
 RunMode = Literal["backfill", "incremental"]
+InstrumentName = Literal["PEARL"]
+
+
+@dataclass
+class InstrumentRunConfig:
+    """Optional configuration values that can be specified on a per-instrument basis"""
+
+    cycles: list[Annotated[str, Field(pattern=r"^\d\d_\d$")]] | None = None
+    """Exhaustive list of cycles to include"""
+
+    runs: list[int] | None = None
+    """Exhaustive list of runs to include"""
+
+
+InstrumentRunConfigs = dict[InstrumentName, InstrumentRunConfig]
 
 CYCLE_DIR_PREFIX = "cycle_"
-FIT_CONFIGS = {
+FIT_CONFIGS: dict[InstrumentName, MonitorFitConfig] = {
     "PEARL": MonitorFitConfig(
         beamline="PEARL",
         curve_fit_args={
@@ -47,23 +64,27 @@ FIT_CONFIGS = {
                 (np.inf, 5200, 1900),
             ),
         },
-    )
+    ),
 }
 
-RUNS_CONFIG: Dict[str, Any] = {"pearl": {"cycle_start": "15_2", "skip": [95382]}}
+FIXED_RUNS_CONFIG: Dict[str, Any] = {"PEARL": {"cycle_start": "15_2", "skip": [95382]}}
+"""Values for determining runs to fit which cannot be configured at runtime"""
 
 
 def find_available_runs_from_archive(
     run_mode: RunMode,
     archive_mount: Path,
-    beamline: str,
-    cycle_start: str,
-    skip: Sequence[int],
+    beamline: InstrumentName,
+    runs_config: InstrumentRunConfig | None,
 ) -> Dict[str, Sequence[RunFile]]:
     """Look over the archive for the beamline and find the available runs
 
     If the mode=incremental only look at the most recent cycle.
     """
+    fixed_runs_config = FIXED_RUNS_CONFIG[beamline]
+    cycle_start = fixed_runs_config["cycle_start"]
+    skip = fixed_runs_config["skip"]
+
     LOGGER.debug(
         f"Finding available runs (mode={run_mode}) for {beamline} starting at cycle {cycle_start}"
     )
@@ -83,40 +104,49 @@ def find_available_runs_from_archive(
         map(lambda x: f"{19}{x}" if x.startswith("9") else f"{20}{x}", cycle_dirs),
         reverse=True,
     )
-    if not cycle_years:
-        LOGGER.warning("No cycles directory found.")
+    cycles = []
+    for cycle_year in cycle_years:
+        cycle = cycle_year[2:]
+        cycles.append(cycle)
+        # Don't use any cycles earlier than cycle_start
+        if cycle_start == cycle:
+            break
+
+    LOGGER.debug(f"{len(cycles)} total cycle directories")
+    if runs_config and runs_config.cycles is not None:
+        cycles = [c for c in cycles if c in runs_config.cycles]
+        LOGGER.debug(f"{len(cycles)} cycle directories matched instrument config")
+
+    if not cycles:
+        LOGGER.warning("No matching cycle directories")
         return {}
 
     if run_mode == "incremental":
-        cycle_years = [cycle_years[0]]
+        cycles = [cycles[0]]
+        LOGGER.debug(f"Incremental mode, only using most recent cycle {cycles[0]}")
 
     available_runs = {}
-    for cycle_year in cycle_years:
-        cycle_dir = f"{CYCLE_DIR_PREFIX}{cycle_year[2:]}"
+    for cycle in cycles:
+        cycle_dir = f"{CYCLE_DIR_PREFIX}{cycle}"
         LOGGER.debug(f"Checking cycle {cycle_dir}")
         cycle_path = data_dir / cycle_dir
 
         # Find all .nxs files and extract run numbers
-        cycle_runs = []
-        for file in cycle_path.glob(f"{beamline}*.nxs"):
-            try:
-                run_str = file.stem[len(beamline) :]
-                run_number = int(run_str)
-                if run_number not in skip:
-                    cycle_runs.append(RunFile(run_number, file))
-            except (ValueError, IndexError):
-                LOGGER.warning(f"Could not parse run number from {file.name}")
-                continue
+        files = cycle_path.glob(f"{beamline}*.nxs")
+        file_runs = ((f, get_run_number(f, beamline)) for f in files)
+
+        # Filter unwanted runs
+        if runs_config and runs_config.runs is not None:
+            file_runs = ((f, r) for (f, r) in file_runs if r in runs_config.runs)
+        file_runs = ((f, r) for (f, r) in file_runs if r not in skip)
+
+        cycle_runs = [RunFile(r, f) for (f, r) in file_runs]
 
         if cycle_runs:
             available_runs[cycle_dir] = sorted(cycle_runs)
             LOGGER.debug(f"Found {len(cycle_runs)} runs in {cycle_dir}")
 
-        # Stop if we've reached the cycle_start
-        if cycle_start in cycle_dir:
-            break
-
-    LOGGER.debug(f"Found {len(available_runs)} cycles.")
+    LOGGER.debug(f"Found {len(available_runs)} cycles with runs")
     return available_runs
 
 
@@ -140,25 +170,27 @@ def make_table_row(cycle_name: str, peak: MonitorPeak):
     }
 
 
-def extract_monitor_peaks(archive_mount: str, run_mode: RunMode = "incremental"):
+def extract_monitor_peaks(
+    archive_mount: str,
+    run_mode: RunMode = "incremental",
+    runs_config: InstrumentRunConfigs | None = None,
+):
     archive = Path(archive_mount)
 
     for beamline, fit_config in FIT_CONFIGS.items():
-        LOGGER.info(f"Fitting monitor peaks for '{beamline}'")
-        beamline_runs = RUNS_CONFIG[beamline.lower()]
+        LOGGER.info(f"Finding available runs for '{beamline}'")
         available_runs = find_available_runs_from_archive(
-            run_mode,
-            archive,
-            beamline,
-            beamline_runs["cycle_start"],
-            beamline_runs["skip"],
+            run_mode, archive, beamline, runs_config[beamline] if runs_config else None
         )
 
+        LOGGER.info(f"Fitting monitor peaks for '{beamline}'")
         for cycle, runs in available_runs.items():
             if not runs:
                 continue
-            LOGGER.debug(f"Fitting runs {runs[0].run_number} -> {runs[-1].run_number}")
-            fitted_peaks = (fit_monitor_peak(run.path, fit_config) for run in runs)
+            LOGGER.debug(f"Fitting {len(runs)} runs")
+            fitted_peaks = (
+                fit_monitor_peak(run_file.path, fit_config) for run_file in runs
+            )
             peaks = (p for p in fitted_peaks if p is not None)
             rows = [make_table_row(cycle, peak) for peak in peaks]
             if not rows:
@@ -167,9 +199,22 @@ def extract_monitor_peaks(archive_mount: str, run_mode: RunMode = "incremental")
             yield pa.Table.from_pylist(rows)
 
 
+def get_run_number(run_file: Path, beamline: str):
+    """Extract the run number from a data archive file path.
+
+    e.g. .../PEARL00114302.nxs -> 114302
+
+    Note that this is designed for use on nexus files. The names of non-nexus
+    files may include additional characters which cause the function to fail,
+    e.g. PEARL00114307_ICPevent.txt
+    """
+    return int(run_file.stem[len(beamline) :])
+
+
 class Configuration(BaseSettings):
     archive_mount: str
     run_mode: RunMode = "incremental"
+    runs_config: InstrumentRunConfigs | None = None
 
 
 class Extract(BaseExtract):
@@ -180,7 +225,9 @@ class Extract(BaseExtract):
             "monitor_peaks",
             ResourceProperties(
                 extractor=lambda _: extract_monitor_peaks(
-                    self.config.archive_mount, self.config.run_mode
+                    self.config.archive_mount,
+                    self.config.run_mode,
+                    self.config.runs_config,
                 ),
                 write_properties=ResourceWriteProperties(
                     write_mode="merge",
