@@ -1,7 +1,7 @@
 from elt_common.extract import BaseExtract, ResourceProperties, ResourceWriteProperties
-from pydantic_settings import BaseSettings
 from github import Github
 from github import Auth
+from pydantic_settings import BaseSettings
 
 
 class GitHubCredentials(BaseSettings):
