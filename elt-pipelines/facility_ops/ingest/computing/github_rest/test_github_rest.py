@@ -15,7 +15,7 @@ def test_expected_columns_created(test_catalog: AssertableCatalog, run_test_inge
             "public",
             "fork",
             "default_branch",
-            "size_kilobytes",
+            "repo_size_kilobytes",
             "license",
             "readme_size_kilobytes",
         ],

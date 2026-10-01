@@ -60,7 +60,7 @@ class Extract(BaseExtract[GitHubCredentials]):
                     "public": not repo.private,
                     "fork": repo.fork,
                     "default_branch": repo.default_branch,
-                    "size_kilobytes": repo.size,
+                    "repo_size_kilobytes": repo.size,
                     "license": license_name,
                     "readme_size_kilobytes": readme_bytes / 1000,
                 }
@@ -73,7 +73,7 @@ class Extract(BaseExtract[GitHubCredentials]):
                 pa.field("public", pa.bool_()),
                 pa.field("fork", pa.bool_()),
                 pa.field("default_branch", pa.string()),
-                pa.field("size_kilobytes", pa.int64()),
+                pa.field("repo_size_kilobytes", pa.int64()),
                 pa.field("license", pa.string()),
                 pa.field("readme_size_kilobytes", pa.int64()),
             ]
