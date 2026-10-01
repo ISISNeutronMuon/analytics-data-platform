@@ -39,6 +39,13 @@ class Extract(BaseExtract[GitHubCredentials]):
         organization = self._client.get_organization("ISISNeutronMuon")
 
         for repo in organization.get_repos():
+            license = repo.license
+            license_name: str | None
+            if license is None:
+                license_name = None
+            else:
+                license_name = license.name
+
             repos.append(
                 {
                     "name": repo.name,
@@ -47,6 +54,7 @@ class Extract(BaseExtract[GitHubCredentials]):
                     "fork": repo.fork,
                     "default_branch": repo.default_branch,
                     "size_kilobytes": repo.size,
+                    "license": license_name,
                 }
             )
 
@@ -58,6 +66,7 @@ class Extract(BaseExtract[GitHubCredentials]):
                 pa.field("fork", pa.bool_()),
                 pa.field("default_branch", pa.string()),
                 pa.field("size_kilobytes", pa.int64()),
+                pa.field("license", pa.string()),
             ]
         )
         repos_table = pa.Table.from_pylist(repos, schema=repos_schema)
