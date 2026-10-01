@@ -22,11 +22,7 @@ class Extract(BaseExtract[GitHubCredentials]):
 
     def __init__(self, cfg: GitHubCredentials):
         super().__init__(cfg)
-        self._client = Github(
-            auth=Auth.Token(cfg.access_token),
-            base_url=f"{cfg.url}",  # /api/v3
-        )
-        # self._client = Github(auth=Auth.Token(cfg.access_token))
+        self._client = Github(auth=Auth.Token(cfg.access_token))
 
     def extract_resource_properties(self):
         yield (
@@ -37,25 +33,20 @@ class Extract(BaseExtract[GitHubCredentials]):
             ),
         )
 
-    # Create a table with the following columns:
-    # - name: The name of the repository (string)
-    # - owner: The owner of the repository (string)
-    # - public: Flag indicating if public (bool)
-    # - fork: Flag indicating if this is a fork (bool)
-    # - default_branch: The name of the default branch (string)
-    # - size_kilobytes: The size of the repository (integer)
     def extract_repositories(self, _: Watermark | None) -> Iterator[pa.Table]:
         repos = []
 
-        for repo in self._client.get_repos():
+        organization = self._client.get_organization("ISISNeutronMuon")
+
+        for repo in organization.get_repos():
             repos.append(
                 {
                     "name": repo.name,
-                    "owner": repo.owner,
-                    "public": True,  # look into this. Placeholder
+                    "owner": repo.owner.login,
+                    "public": not repo.private,
                     "fork": repo.fork,
                     "default_branch": repo.default_branch,
-                    "size": repo.size,
+                    "size_kilobytes": repo.size,
                 }
             )
 
@@ -63,12 +54,11 @@ class Extract(BaseExtract[GitHubCredentials]):
             [
                 pa.field("name", pa.string()),
                 pa.field("owner", pa.string()),
-                pa.field("public", pa.bool()),
-                pa.field("fork", pa.bool()),
+                pa.field("public", pa.bool_()),
+                pa.field("fork", pa.bool_()),
                 pa.field("default_branch", pa.string()),
-                pa.field("size", pa.int()),
+                pa.field("size_kilobytes", pa.int64()),
             ]
         )
         repos_table = pa.Table.from_pylist(repos, schema=repos_schema)
         yield repos_table
-        # pass
