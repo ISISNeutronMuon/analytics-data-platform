@@ -2,7 +2,6 @@
 
 import json
 import logging
-from abc import abstractmethod
 from collections.abc import Callable, Generator, Iterable, Iterator
 from typing import Any, NamedTuple
 
@@ -62,6 +61,9 @@ class SqlDatabaseSourceConfig(BaseSettings):
     username: str | None = None
     password: SecretStr | None = None
 
+    tables: list[str] | None = None
+    """If table names are provided, default to extracting these tables using the replace mode"""
+
     chunk_size: int = 5000
     """If the query returns more than chunk_size rows, fetch them in multiple chunks of at most this size"""
 
@@ -99,10 +101,14 @@ class TableInfo(NamedTuple):
     destination_table_name: str | None = None
 
 
-class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
+class SqlDatabaseExtract[T: SqlDatabaseSourceConfig](BaseExtract[SqlDatabaseSourceConfig]):
     """Base class for defining SQL ingest Extract classes.
 
-    Example usage, for an ingest script that reads from 3 tables::
+    Basic usage, for script that ingests 3 tables in "replace" mode::
+
+        Extract = SqlDatabaseExtract
+
+    Example usage, for an ingest script that reads from 3 tables with different write modes::
 
         class Extract(SqlDatabaseExtract):
             def table_info(self):
@@ -119,7 +125,9 @@ class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
                 }
     """
 
-    config_cls = SqlDatabaseSourceConfig
+    def __init_subclass__(cls, config_cls=T) -> None:
+        cls.config_cls = config_cls
+        return super().__init_subclass__()
 
     def __init__(self, config: SqlDatabaseSourceConfig):
         super().__init__(config)
@@ -131,7 +139,6 @@ class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
         self._engine = sa.create_engine(config.connection_url)
         self._metadata = sa.MetaData(schema=config.database_schema)
 
-    @abstractmethod
     def table_info(self) -> dict[str, TableInfo | None]:
         """Define the tables to be extracted from the DB.
 
@@ -144,6 +151,18 @@ class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
         (e.g. filtering) extend :py:meth:`extract_resource_properties` with
         custom extractors.
         """
+        if self.config.tables is not None:
+            return {
+                table_name: TableInfo(
+                    write_properties=ResourceWriteProperties(write_mode="replace")
+                )
+                for table_name in self.config.tables
+            }
+
+        raise NotImplementedError(
+            f"{type(self).__name__} must either set 'tables' in its configuration "
+            "or override table_info()"
+        )
 
     def extract_resource_properties(self):
         """Open a connection to the DB and return ingest properties for tables

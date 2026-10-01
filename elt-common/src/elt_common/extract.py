@@ -1,12 +1,13 @@
 import dataclasses as dc
 import datetime as dt
-import importlib.util
+import importlib
 import json
 import sys
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Iterator
 from pathlib import Path
-from types import ModuleType
-from typing import TYPE_CHECKING, Callable, ClassVar, Iterator, Optional, get_args
+from types import ModuleType, get_original_bases
+from typing import TYPE_CHECKING, ClassVar, TypeVar, get_args, get_origin
 
 from pydantic_settings import BaseSettings
 
@@ -99,9 +100,9 @@ class ResourceProperties:
     :ivar watermark_column: Column in the extracted data that should be used for watermarking.
     """
 
-    extractor: Callable[[Optional[Watermark]], "Iterator[pa.Table]"]
+    extractor: Callable[[Watermark | None], "Iterator[pa.Table]"]
     write_properties: ResourceWriteProperties = _default_write_properties
-    watermark_column: Optional[str] = None
+    watermark_column: str | None = None
 
 
 class BaseExtract[C: BaseSettings](ABC):
@@ -114,6 +115,19 @@ class BaseExtract[C: BaseSettings](ABC):
 
     Intended to be used with pydantic-settings.
     """
+
+    def __init_subclass__(cls, **kwargs) -> None:
+        super().__init_subclass__(**kwargs)
+        for base in get_original_bases(cls):
+            origin = get_origin(base)
+            if not (isinstance(origin, type) and issubclass(origin, BaseExtract)):
+                continue
+            (arg,) = get_args(base)
+            if isinstance(arg, TypeVar):  # e.g. BaseExtract[T] -> use T's bound
+                arg = arg.__bound__
+            if isinstance(arg, type) and issubclass(arg, BaseSettings):
+                cls.config_cls = arg
+            break
 
     def __init__(self, config: C):
         self._config = config
