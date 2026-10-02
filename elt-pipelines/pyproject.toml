@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "elt-common",
-    "PyGithub",
     "pydantic-settings>=2.14.2",
 ]
 
@@ -42,6 +41,10 @@ moderator-performance = [
 ]
 jira = [
     "atlassian-python-api>=5.0.3",
+]
+
+github_rest = [
+    "github>=2.10.0"
 ]
 
 [tool.uv.sources]
