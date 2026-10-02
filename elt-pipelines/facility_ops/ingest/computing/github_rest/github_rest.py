@@ -48,6 +48,8 @@ class Extract(BaseExtract[GitHubCredentials]):
             try:
                 readme = repo.get_readme()
                 readme_bytes = readme.size
+            # when no README.md is present, the response is an object with a status: 404 key-value pair.
+            # the UnknownObjectException is raised so we need to catch it
             except UnknownObjectException:
                 readme_bytes = 0
 
