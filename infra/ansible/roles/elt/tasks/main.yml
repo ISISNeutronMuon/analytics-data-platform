@@ -21,21 +21,24 @@
     loop_var: ssh_key_file
 
 - name: Configure git user to use GitHub deploy key
-  community.general.ssh_config:
-    user: ubuntu
-    remote_user: git
-    hostname: "github.com"
-    identity_file: "{{ ansible_facts['env']['HOME'] }}/.ssh/id_adp_github_deploy_key"
-    identities_only: true
-    strict_host_key_checking: true
-    user_known_hosts_file: "{{ ansible_facts['env']['HOME'] }}/.ssh/.ssh/known_hosts"
-    state: present
+  no_log: true
+  ansible.builtin.copy:
+    dest: "{{ ansible_facts['env']['HOME'] }}/.ssh/config"
+    mode: "0600"
+    content: |
+      Host github-adp
+          HostName github.com
+          User git
+          IdentityFile ~/.ssh/id_adp_github_deploy_key
+          IdentitiesOnly yes
+          StrictHostKeyChecking yes
+          UserKnownHostsFile ~/.ssh/known_hosts
 
-- name: Pin github.com host key
+- name: Accept github.com host key
   ansible.builtin.known_hosts:
     name: github.com
-    key: "github.com ssh-ed25519 {{ secrets_github['pub_key_fingerprint_ed25519'] }}"
-    path: "{{ ansible_facts['env']['HOME'] }}/.ssh/.ssh/known_hosts"
+    key: "github.com ssh-ed25519 {{ secrets_github['pub_key_ed25519'] }}"
+    path: "{{ ansible_facts['env']['HOME'] }}/.ssh/known_hosts"
 
 # ---------- UV & Python ----------
 - name: Check if uv exists
