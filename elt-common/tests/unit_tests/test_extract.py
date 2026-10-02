@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 
 from elt_common.extract import BaseExtract, Watermark, create_extract_obj
-from elt_common.sources.sqldatabase import SqlDatabaseExtract
 from elt_common.pipeline_types import ELTIngestManifest
+from elt_common.sources.sqldatabase import SqlDatabaseExtract
 
 _value_type_error_msg = "'value' must be a string, number, or ISO format datetime"
 
@@ -116,4 +116,17 @@ def test_create_extract_obj_sql_extract(monkeypatch):
 
     assert isinstance(extract_obj, BaseExtract)
     assert isinstance(extract_obj, SqlDatabaseExtract)
+    assert extract_obj.config.chunk_size == 100
+
+
+def test_create_extract_obj_sql_extract_custom_config(monkeypatch):
+    job = make_manifest("sql_extract_custom_config")
+    monkeypatch.setenv("SQL_EXTRACT_CUSTOM_CONFIG__DRIVERNAME", "sqlite")
+    monkeypatch.setenv("SQL_EXTRACT_CUSTOM_CONFIG__CHUNK_SIZE", "100")
+
+    extract_obj = create_extract_obj(job)
+
+    assert isinstance(extract_obj, BaseExtract)
+    assert isinstance(extract_obj, SqlDatabaseExtract)
+    assert extract_obj.config.database == "hardcoded_dbname"
     assert extract_obj.config.chunk_size == 100

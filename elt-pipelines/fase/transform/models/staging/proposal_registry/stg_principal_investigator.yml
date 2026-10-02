@@ -1,0 +1,11 @@
+models:
+  - name: stg_principal_investigator
+    description: >
+      Principal investigator view replacement from FASE
+    columns:
+      - name: proposal_id
+        data_tests:
+          - not_null
+      - name: un
+        data_tests:
+          - not_null

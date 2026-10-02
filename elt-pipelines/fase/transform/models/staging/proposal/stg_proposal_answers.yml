@@ -1,0 +1,18 @@
+models:
+  - name: stg_proposal_answers
+    description: >
+      Proposal answer view replacement from FASE
+    columns:
+      - name: proposal_pk
+        data_tests:
+        - not_null
+      - name: proposal_id
+        data_tests:
+        - not_null
+      - name: generic_template_id
+      - name: generic_template_natural_key
+      - name: generic_template_title
+      - name: answer_id
+      - name: question_natural_key
+      - name: full_value
+      - name: first_value

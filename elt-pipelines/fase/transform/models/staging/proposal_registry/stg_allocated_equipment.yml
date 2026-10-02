@@ -1,0 +1,11 @@
+models:
+  - name: stg_allocated_equipment
+    description: >
+      Allocated equipment view from FASE proposal registry
+    columns:
+      - name: proposal_id
+        data_tests:
+          - not_null
+      - name: name
+      - name: quantity
+      - name: units

@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: fase_isisuserdb
+    database: fase_landing
+    tables:
+      - name: address
+      - name: person
+      - name: department
+      - name: establishment
+      - name: establishment_new
+      - name: establishment_category_link
+      - name: department_label_link
+      - name: category
+      - name: label
