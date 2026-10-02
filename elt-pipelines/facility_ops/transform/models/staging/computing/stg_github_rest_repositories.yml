@@ -1,0 +1,15 @@
+models:
+  - name: stg_github_rest_repositories
+    description: >
+      Repository data from ISISNeutronMuon
+    columns:
+      - name: name
+        data_tests:
+          - not_null
+      - name: owner
+      - name: public
+      - name: fork
+      - name: default_branch
+      - name: repo_size_kilobytes
+      - name: license
+      - name: readme_size_kilobytes
