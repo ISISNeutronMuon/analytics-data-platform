@@ -3,10 +3,10 @@ models:
     description: >
       Repository data from ISISNeutronMuon
     columns:
-      - name: name
+      - name: repo_name
         data_tests:
           - not_null
-      - name: owner
+      - name: repo_owner
       - name: public
       - name: fork
       - name: default_branch

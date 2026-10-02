@@ -4,8 +4,8 @@ with source as (
 
 cleaned as (
     select
-        name,
-        owner,
+        repo_name,
+        repo_owner,
         public,
         fork,
         default_branch,

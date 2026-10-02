@@ -55,8 +55,8 @@ class Extract(BaseExtract[GitHubCredentials]):
 
             repos.append(
                 {
-                    "name": repo.name,
-                    "owner": repo.owner.login,
+                    "repo_name": repo.name,
+                    "repo_owner": repo.owner.login,
                     "public": not repo.private,
                     "fork": repo.fork,
                     "default_branch": repo.default_branch,
@@ -68,8 +68,8 @@ class Extract(BaseExtract[GitHubCredentials]):
 
         repos_schema = pa.schema(
             [
-                pa.field("name", pa.string()),
-                pa.field("owner", pa.string()),
+                pa.field("repo_name", pa.string()),
+                pa.field("repo_owner", pa.string()),
                 pa.field("public", pa.bool_()),
                 pa.field("fork", pa.bool_()),
                 pa.field("default_branch", pa.string()),
