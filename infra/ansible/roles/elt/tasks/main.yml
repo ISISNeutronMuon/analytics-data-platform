@@ -1,4 +1,42 @@
 ---
+# ---------- SSH ----------
+- name: Ensure SSH deploy key files are present
+  no_log: true
+  ansible.builtin.copy:
+    dest: "{{ ssh_key_file.filename }}"
+    content: "{{ ssh_key_file.content }}"
+    mode: "{{ ssh_key_file.mode }}"
+  loop:
+    - {
+        filename: "{{ ansible_facts['env']['HOME'] }}/.ssh/id_adp_github_deploy_key.pub",
+        content: "{{ secrets_elt_gh_deploy['pub_key'] }}",
+        mode: "0644",
+      }
+    - {
+        filename: "{{ ansible_facts['env']['HOME'] }}/.ssh/id_adp_github_deploy_key",
+        content: "{{ secrets_elt_gh_deploy['key'] }}",
+        mode: "0600",
+      }
+  loop_control:
+    loop_var: ssh_key_file
+
+- name: Configure git user to use GitHub deploy key
+  community.general.ssh_config:
+    user: ubuntu
+    remote_user: git
+    hostname: "github.com"
+    identity_file: "{{ ansible_facts['env']['HOME'] }}/.ssh/id_adp_github_deploy_key"
+    identities_only: true
+    strict_host_key_checking: true
+    user_known_hosts_file: "{{ ansible_facts['env']['HOME'] }}/.ssh/.ssh/known_hosts"
+    state: present
+
+- name: Pin github.com host key
+  ansible.builtin.known_hosts:
+    name: github.com
+    key: "github.com ssh-ed25519 {{ secrets_github['pub_key_fingerprint_ed25519'] }}"
+    path: "{{ ansible_facts['env']['HOME'] }}/.ssh/.ssh/known_hosts"
+
 # ---------- UV & Python ----------
 - name: Check if uv exists
   stat:
