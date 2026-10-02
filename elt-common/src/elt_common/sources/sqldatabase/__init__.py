@@ -101,7 +101,7 @@ class TableInfo(NamedTuple):
     destination_table_name: str | None = None
 
 
-class SqlDatabaseExtract[T: SqlDatabaseSourceConfig](BaseExtract[SqlDatabaseSourceConfig]):
+class SqlDatabaseExtract(BaseExtract[SqlDatabaseSourceConfig]):
     """Base class for defining SQL ingest Extract classes.
 
     Basic usage, for script that ingests 3 tables in "replace" mode::
@@ -125,9 +125,7 @@ class SqlDatabaseExtract[T: SqlDatabaseSourceConfig](BaseExtract[SqlDatabaseSour
                 }
     """
 
-    def __init_subclass__(cls, config_cls=T) -> None:
-        cls.config_cls = config_cls
-        return super().__init_subclass__()
+    config_cls = SqlDatabaseSourceConfig
 
     def __init__(self, config: SqlDatabaseSourceConfig):
         super().__init__(config)

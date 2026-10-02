@@ -16,7 +16,9 @@ _append_tables = {
 }
 
 
-class Extract(SqlDatabaseExtract[MSSQLSourceConfig]):
+class Extract(SqlDatabaseExtract):
+    config_cls = MSSQLSourceConfig
+
     def __init__(self, config):
         super().__init__(config)
         self._entry_ids = []
