@@ -13,7 +13,6 @@ import pyarrow as pa
 
 
 class GitHubCredentials(BaseSettings):
-    url: str
     access_token: str
 
 
