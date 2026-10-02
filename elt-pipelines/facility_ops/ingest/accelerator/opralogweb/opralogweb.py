@@ -1,11 +1,11 @@
 from itertools import batched
 
-from html2text import html2text
 import pyarrow as pa
 import sqlalchemy as sa
-
-from elt_common.extract import ResourceWriteProperties, ResourceProperties, Watermark
+from elt_common.extract import ResourceProperties, ResourceWriteProperties, Watermark
 from elt_common.sources.sqldatabase import SqlDatabaseExtract, TableInfo
+from elt_common.sources.sqldatabase.mssql import MSSQLSourceConfig
+from html2text import html2text
 
 # Append only tables mapped to their id columns (for watermarking)
 _append_tables = {
@@ -16,7 +16,7 @@ _append_tables = {
 }
 
 
-class Extract(SqlDatabaseExtract):
+class Extract(SqlDatabaseExtract[MSSQLSourceConfig]):
     def __init__(self, config):
         super().__init__(config)
         self._entry_ids = []
