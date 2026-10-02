@@ -6,3 +6,7 @@ sources:
     tables:
       - name: isis_jira_issues
       - name: issue_status_changelogs
+  - name: computing_github_rest
+    database: facility_ops_landing
+    tables:
+      - name: repositories
