@@ -78,5 +78,4 @@ class Extract(BaseExtract[GitHubCredentials]):
                 pa.field("readme_size_kilobytes", pa.int64()),
             ]
         )
-        repos_table = pa.Table.from_pylist(repos, schema=repos_schema)
-        yield repos_table
+        yield pa.Table.from_pylist(repos, schema=repos_schema)
