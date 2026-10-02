@@ -16,7 +16,7 @@ babel==2.18.0
 certifi==2026.2.25
     # via requests
 chardet==7.4.3
-    # via -r requirements/requirements.in
+    # via -r requirements.in
 charset-normalizer==3.4.7
     # via requests
 click==8.3.2
@@ -27,7 +27,7 @@ daff==1.4.2
     # via dbt-core
 dbt-adapters==1.24.5
     # via
-    #   -r requirements/requirements.in
+    #   -r requirements.in
     #   dbt-core
     #   dbt-trino
 dbt-common==1.38.0
@@ -37,7 +37,7 @@ dbt-common==1.38.0
     #   dbt-trino
 dbt-core==1.12.0
     # via
-    #   -r requirements/requirements.in
+    #   -r requirements.in
     #   dbt-trino
 dbt-core-experimental-parser==2.0.0a5
     # via dbt-core
@@ -49,7 +49,7 @@ dbt-protos==1.0.541
     #   dbt-common
     #   dbt-core
 dbt-trino==1.10.2
-    # via -r requirements/requirements.in
+    # via -r requirements.in
 deepdiff==8.6.2
     # via dbt-common
 idna==3.15
@@ -181,7 +181,7 @@ typing-inspection==0.4.2
     # via pydantic
 tzlocal==5.3.1
     # via trino
-urllib3==2.7.0
+urllib3==2.8.0
     # via requests
 zipp==3.23.1
     # via importlib-metadata
