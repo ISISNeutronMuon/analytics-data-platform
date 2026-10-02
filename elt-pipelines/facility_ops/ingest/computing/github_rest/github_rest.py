@@ -35,7 +35,6 @@ class Extract(BaseExtract[GitHubCredentials]):
 
     def extract_repositories(self, _: Watermark | None) -> Iterator[pa.Table]:
         repos = []
-
         organization = self._client.get_organization("ISISNeutronMuon")
 
         for repo in organization.get_repos():
